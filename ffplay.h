@@ -4,38 +4,78 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
+#include <gcrypt.h> 
+#include<pthread.h>
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
 #ifdef __GNUC__
-#    define AV_GCC_VERSION_AT_LEAST(x,y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
-#    define AV_GCC_VERSION_AT_MOST(x,y)  (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
+#define AV_GCC_VERSION_AT_LEAST(x, y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
+#define AV_GCC_VERSION_AT_MOST(x, y) (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
 #else
-#    define AV_GCC_VERSION_AT_LEAST(x,y) 0
-#    define AV_GCC_VERSION_AT_MOST(x,y)  0
+#define AV_GCC_VERSION_AT_LEAST(x, y) 0
+#define AV_GCC_VERSION_AT_MOST(x, y) 0
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
-#    define av_unused __attribute__((unused))
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#    define attribute_deprecated __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#    define attribute_deprecated __declspec(deprecated)
 #else
-#    define av_unused
+#    define attribute_deprecated
+#endif
+
+
+#if defined(__GNUC__) || defined(__clang__)
+#define av_unused __attribute__((unused))
+#else
+#define av_unused
 #endif
 
 #ifndef av_always_inline
-#if AV_GCC_VERSION_AT_LEAST(3,1)
-#    define av_always_inline __attribute__((always_inline)) inline
+#if AV_GCC_VERSION_AT_LEAST(3, 1)
+#define av_always_inline __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
-#    define av_always_inline __forceinline
+#define av_always_inline __forceinline
 #else
-#    define av_always_inline inline
+#define av_always_inline inline
 #endif
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(2,6) || defined(__clang__)
-#    define av_const __attribute__((const))
+#if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
+    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
+#elif defined(__DJGPP__)
+    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (FFMIN(n, 16)))) v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
+    #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
+#elif defined(__GNUC__) || defined(__clang__)
+    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (n))) v
+#elif defined(_MSC_VER)
+    #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  __declspec(align(n)) t v
+    #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
 #else
-#    define av_const
+    #define DECLARE_ALIGNED(n,t,v)      t v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t v
+    #define DECLARE_ASM_CONST(n,t,v)    static const t v
 #endif
+
+#if AV_GCC_VERSION_AT_LEAST(2, 6) || defined(__clang__)
+#define av_const __attribute__((const))
+#else
+#define av_const
+#endif
+
+#define YUVRGB_TABLE_HEADROOM 512
+#define YUVRGB_TABLE_LUMA_HEADROOM 512
+#define SWS_MAX_FILTER_SIZE 256
+
+#define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
+
 
 static av_always_inline av_const int av_popcount_c(uint32_t x)
 {
@@ -47,93 +87,93 @@ static av_always_inline av_const int av_popcount_c(uint32_t x)
 }
 
 #if _INTEGRAL_MAX_BITS >= 128
-    // minimum signed 128 bit value
-    #define _I128_MIN   (-170141183460469231731687303715884105727i128 - 1)
-    // maximum signed 128 bit value
-    #define _I128_MAX     170141183460469231731687303715884105727i128
-    // maximum unsigned 128 bit value
-    #define _UI128_MAX    0xffffffffffffffffffffffffffffffffui128
+// minimum signed 128 bit value
+#define _I128_MIN (-170141183460469231731687303715884105727i128 - 1)
+// maximum signed 128 bit value
+#define _I128_MAX 170141183460469231731687303715884105727i128
+// maximum unsigned 128 bit value
+#define _UI128_MAX 0xffffffffffffffffffffffffffffffffui128
 #endif
 
 #ifndef SIZE_MAX
-    #ifdef _WIN64
-        #define SIZE_MAX _UI64_MAX
-    #else
-        #define SIZE_MAX UINT_MAX
-    #endif
+#ifdef _WIN64
+#define SIZE_MAX _UI64_MAX
+#else
+#define SIZE_MAX UINT_MAX
+#endif
 #endif
 
 #if __STDC_WANT_SECURE_LIB__
-    #ifndef RSIZE_MAX
-        #define RSIZE_MAX (SIZE_MAX >> 1)
-    #endif
+#ifndef RSIZE_MAX
+#define RSIZE_MAX (SIZE_MAX >> 1)
+#endif
 #endif
 
 #ifndef av_ceil_log2
-#   define av_ceil_log2     av_ceil_log2_c
+#define av_ceil_log2 av_ceil_log2_c
 #endif
 #ifndef av_clip
-#   define av_clip          av_clip_c
+#define av_clip av_clip_c
 #endif
 #ifndef av_clip64
-#   define av_clip64        av_clip64_c
+#define av_clip64 av_clip64_c
 #endif
 #ifndef av_clip_uint8
-#   define av_clip_uint8    av_clip_uint8_c
+#define av_clip_uint8 av_clip_uint8_c
 #endif
 #ifndef av_clip_int8
-#   define av_clip_int8     av_clip_int8_c
+#define av_clip_int8 av_clip_int8_c
 #endif
 #ifndef av_clip_uint16
-#   define av_clip_uint16   av_clip_uint16_c
+#define av_clip_uint16 av_clip_uint16_c
 #endif
 #ifndef av_clip_int16
-#   define av_clip_int16    av_clip_int16_c
+#define av_clip_int16 av_clip_int16_c
 #endif
 #ifndef av_clipl_int32
-#   define av_clipl_int32   av_clipl_int32_c
+#define av_clipl_int32 av_clipl_int32_c
 #endif
 #ifndef av_clip_intp2
-#   define av_clip_intp2    av_clip_intp2_c
+#define av_clip_intp2 av_clip_intp2_c
 #endif
 #ifndef av_clip_uintp2
-#   define av_clip_uintp2   av_clip_uintp2_c
+#define av_clip_uintp2 av_clip_uintp2_c
 #endif
 #ifndef av_mod_uintp2
-#   define av_mod_uintp2    av_mod_uintp2_c
+#define av_mod_uintp2 av_mod_uintp2_c
 #endif
 #ifndef av_sat_add32
-#   define av_sat_add32     av_sat_add32_c
+#define av_sat_add32 av_sat_add32_c
 #endif
 #ifndef av_sat_dadd32
-#   define av_sat_dadd32    av_sat_dadd32_c
+#define av_sat_dadd32 av_sat_dadd32_c
 #endif
 #ifndef av_sat_sub32
-#   define av_sat_sub32     av_sat_sub32_c
+#define av_sat_sub32 av_sat_sub32_c
 #endif
 #ifndef av_sat_dsub32
-#   define av_sat_dsub32    av_sat_dsub32_c
+#define av_sat_dsub32 av_sat_dsub32_c
 #endif
 #ifndef av_sat_add64
-#   define av_sat_add64     av_sat_add64_c
+#define av_sat_add64 av_sat_add64_c
 #endif
 #ifndef av_sat_sub64
-#   define av_sat_sub64     av_sat_sub64_c
+#define av_sat_sub64 av_sat_sub64_c
 #endif
 #ifndef av_clipf
-#   define av_clipf         av_clipf_c
+#define av_clipf av_clipf_c
 #endif
 #ifndef av_clipd
-#   define av_clipd         av_clipd_c
+#define av_clipd av_clipd_c
 #endif
 #ifndef av_popcount
-#   define av_popcount      av_popcount_c
+#define av_popcount av_popcount_c
 #endif
 #ifndef av_popcount64
-#   define av_popcount64    av_popcount64_c
+#define av_popcount64 av_popcount64_c
 #endif
 #ifndef av_parity
-#   define av_parity        av_parity_c
+#define av_parity av_parity_c
 #endif
 
 #ifdef _WIN32
@@ -145,12 +185,12 @@ static int init_report(const char *env);
 static FILE *report_file;
 int hide_banner = 0;
 
-enum show_muxdemuxers {
+enum show_muxdemuxers
+{
     SHOW_DEFAULT,
     SHOW_DEMUXERS,
     SHOW_MUXERS,
 };
-
 
 #ifndef FFMPEG_CONFIG_H
 #define FFMPEG_CONFIG_H
@@ -162,11 +202,10 @@ enum show_muxdemuxers {
 #define CC_IDENT "gcc 10.2.0 (Rev3, Built by MSYS2 project)"
 #define av_restrict restrict
 #define EXTERN_PREFIX ""
-#define EXTERN_ASM 
+#define EXTERN_ASM
 #define BUILDSUF ""
 #define SLIBSUF ".dll"
 #define HAVE_MMX2 HAVE_MMXEXT
-#define SWS_MAX_FILTER_SIZE 256
 #define ARCH_AARCH64 0
 #define ARCH_ALPHA 0
 #define ARCH_ARM 0
@@ -2837,7 +2876,7 @@ enum show_muxdemuxers {
 
 #define USE_ONEPASS_SUBTITLE_RENDER 1
 
-#define SWS_BICUBIC           4
+#define SWS_BICUBIC 4
 static unsigned sws_flags = SWS_BICUBIC;
 
 #define AV_FRAME_FLAG_CORRUPT (1 << 0)
@@ -2851,7 +2890,7 @@ static unsigned sws_flags = SWS_BICUBIC;
 #define VIDEO_PICTURE_QUEUE_SIZE 3
 #define SUBPICTURE_QUEUE_SIZE 16
 #define SAMPLE_QUEUE_SIZE 9
-#define FFMAX(a,b) ((a) > (b) ? (a) : (b))
+#define FFMAX(a, b) ((a) > (b) ? (a) : (b))
 #define FRAME_QUEUE_SIZE FFMAX(SAMPLE_QUEUE_SIZE, FFMAX(VIDEO_PICTURE_QUEUE_SIZE, SUBPICTURE_QUEUE_SIZE))
 
 #define FF_PROFILE_UNKNOWN -99
@@ -3088,216 +3127,520 @@ static unsigned sws_flags = SWS_BICUBIC;
 #define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
 #define FF_SUB_TEXT_FMT_ASS 0
 
-#define INDENT        1
-#define SHOW_VERSION  2
-#define SHOW_CONFIG   4
+#define INDENT 1
+#define SHOW_VERSION 2
+#define SHOW_CONFIG 4
 #define SHOW_COPYRIGHT 8
 
 #define FFMPEG_VERSION "N-99357-g14d6838638"
 
-#define AV_CODEC_CAP_DRAW_HORIZ_BAND     (1 <<  0)
-#define AV_CODEC_CAP_DR1                 (1 <<  1)
-#define AV_CODEC_CAP_TRUNCATED           (1 <<  3)
-#define AV_CODEC_CAP_DELAY               (1 <<  5)
-#define AV_CODEC_CAP_SMALL_LAST_FRAME    (1 <<  6)
-#define AV_CODEC_CAP_SUBFRAMES           (1 <<  8)
-#define AV_CODEC_CAP_EXPERIMENTAL        (1 <<  9)
-#define AV_CODEC_CAP_CHANNEL_CONF        (1 << 10)
-#define AV_CODEC_CAP_FRAME_THREADS       (1 << 12)
-#define AV_CODEC_CAP_SLICE_THREADS       (1 << 13)
-#define AV_CODEC_CAP_PARAM_CHANGE        (1 << 14)
-#define AV_CODEC_CAP_AUTO_THREADS        (1 << 15)
+#define AV_CODEC_CAP_DRAW_HORIZ_BAND (1 << 0)
+#define AV_CODEC_CAP_DR1 (1 << 1)
+#define AV_CODEC_CAP_TRUNCATED (1 << 3)
+#define AV_CODEC_CAP_DELAY (1 << 5)
+#define AV_CODEC_CAP_SMALL_LAST_FRAME (1 << 6)
+#define AV_CODEC_CAP_SUBFRAMES (1 << 8)
+#define AV_CODEC_CAP_EXPERIMENTAL (1 << 9)
+#define AV_CODEC_CAP_CHANNEL_CONF (1 << 10)
+#define AV_CODEC_CAP_FRAME_THREADS (1 << 12)
+#define AV_CODEC_CAP_SLICE_THREADS (1 << 13)
+#define AV_CODEC_CAP_PARAM_CHANGE (1 << 14)
+#define AV_CODEC_CAP_AUTO_THREADS (1 << 15)
 #define AV_CODEC_CAP_VARIABLE_FRAME_SIZE (1 << 16)
-#define AV_CODEC_CAP_AVOID_PROBING       (1 << 17)
-#define AV_CODEC_CAP_HARDWARE            (1 << 18)
-#define AV_CODEC_CAP_HYBRID              (1 << 19)
+#define AV_CODEC_CAP_AVOID_PROBING (1 << 17)
+#define AV_CODEC_CAP_HARDWARE (1 << 18)
+#define AV_CODEC_CAP_HYBRID (1 << 19)
 #define AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE (1 << 20)
-#define AV_CODEC_CAP_ENCODER_FLUSH   (1 << 21)
+#define AV_CODEC_CAP_ENCODER_FLUSH (1 << 21)
 
 void *grow_array(void *array, int elem_size, int *size, int new_size);
 
-#define GROW_ARRAY(array, nb_elems)\
+#define GROW_ARRAY(array, nb_elems) \
     array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
 
-#define GET_PIX_FMT_NAME(pix_fmt)\
+#define GET_PIX_FMT_NAME(pix_fmt) \
     const char *name = av_get_pix_fmt_name(pix_fmt);
 
-#define GET_CODEC_NAME(id)\
+#define GET_CODEC_NAME(id) \
     const char *name = avcodec_descriptor_get(id)->name;
 
-#define GET_SAMPLE_FMT_NAME(sample_fmt)\
+#define GET_SAMPLE_FMT_NAME(sample_fmt) \
     const char *name = av_get_sample_fmt_name(sample_fmt)
 
-#define GET_SAMPLE_RATE_NAME(rate)\
-    char name[16];\
+#define GET_SAMPLE_RATE_NAME(rate) \
+    char name[16];                 \
     snprintf(name, sizeof(name), "%d", rate);
 
-#define GET_CH_LAYOUT_NAME(ch_layout)\
-    char name[16];\
-    snprintf(name, sizeof(name), "0x%"PRIx64, ch_layout);
+#define GET_CH_LAYOUT_NAME(ch_layout) \
+    char name[16];                    \
+    snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
 
-#define GET_CH_LAYOUT_DESC(ch_layout)\
-    char name[128];\
+#define GET_CH_LAYOUT_DESC(ch_layout) \
+    char name[128];                   \
     av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
 
 #define AV_LOG_SKIP_REPEATED 1
 
 #define AV_LOG_PRINT_LEVEL 2
 
-#define AV_VERSION_INT(a, b, c) ((a)<<16 | (b)<<8 | (c))
-#define AV_VERSION_DOT(a, b, c) a ##.## b ##.## c
+#define AV_VERSION_INT(a, b, c) ((a) << 16 | (b) << 8 | (c))
+#define AV_VERSION_DOT(a, b, c) a##.##b##.##c
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 #define AV_VERSION_MAJOR(a) ((a) >> 16)
-#define AV_VERSION_MINOR(a) (((a) & 0x00FF00) >> 8)
-#define AV_VERSION_MICRO(a) ((a) & 0xFF)
+#define AV_VERSION_MINOR(a) (((a)&0x00FF00) >> 8)
+#define AV_VERSION_MICRO(a) ((a)&0xFF)
 
-#define LIBAVUTIL_VERSION_MAJOR  56
-#define LIBAVUTIL_VERSION_MINOR  60
+#define LIBAVUTIL_VERSION_MAJOR 56
+#define LIBAVUTIL_VERSION_MINOR 60
 #define LIBAVUTIL_VERSION_MICRO 100
 
-#define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
-                                               LIBAVUTIL_VERSION_MINOR, \
-                                               LIBAVUTIL_VERSION_MICRO)
-#define LIBAVUTIL_VERSION       AV_VERSION(LIBAVUTIL_VERSION_MAJOR,     \
-                                           LIBAVUTIL_VERSION_MINOR,     \
-                                           LIBAVUTIL_VERSION_MICRO)
-#define LIBAVUTIL_BUILD         LIBAVUTIL_VERSION_INT
+#define LIBAVUTIL_VERSION_INT AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
+                                             LIBAVUTIL_VERSION_MINOR, \
+                                             LIBAVUTIL_VERSION_MICRO)
+#define LIBAVUTIL_VERSION AV_VERSION(LIBAVUTIL_VERSION_MAJOR, \
+                                     LIBAVUTIL_VERSION_MINOR, \
+                                     LIBAVUTIL_VERSION_MICRO)
+#define LIBAVUTIL_BUILD LIBAVUTIL_VERSION_INT
 
-#define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
+#define LIBAVUTIL_IDENT "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
 
-#define LIBAVCODEC_VERSION_MAJOR  58
+#define LIBAVCODEC_VERSION_MAJOR 58
 #define LIBAVCODEC_VERSION_MINOR 111
 #define LIBAVCODEC_VERSION_MICRO 101
 
-#define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
-                                               LIBAVCODEC_VERSION_MINOR, \
-                                               LIBAVCODEC_VERSION_MICRO)
-#define LIBAVCODEC_VERSION      AV_VERSION(LIBAVCODEC_VERSION_MAJOR,    \
-                                           LIBAVCODEC_VERSION_MINOR,    \
-                                           LIBAVCODEC_VERSION_MICRO)
-#define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
+#define LIBAVCODEC_VERSION_INT AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
+                                              LIBAVCODEC_VERSION_MINOR, \
+                                              LIBAVCODEC_VERSION_MICRO)
+#define LIBAVCODEC_VERSION AV_VERSION(LIBAVCODEC_VERSION_MAJOR, \
+                                      LIBAVCODEC_VERSION_MINOR, \
+                                      LIBAVCODEC_VERSION_MICRO)
+#define LIBAVCODEC_BUILD LIBAVCODEC_VERSION_INT
 
-#define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
+#define LIBAVCODEC_IDENT "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
 
-#define LIBAVFORMAT_VERSION_MAJOR  58
-#define LIBAVFORMAT_VERSION_MINOR  62
+#define LIBAVFORMAT_VERSION_MAJOR 58
+#define LIBAVFORMAT_VERSION_MINOR 62
 #define LIBAVFORMAT_VERSION_MICRO 100
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
                                                LIBAVFORMAT_VERSION_MICRO)
-#define LIBAVFORMAT_VERSION     AV_VERSION(LIBAVFORMAT_VERSION_MAJOR,   \
-                                           LIBAVFORMAT_VERSION_MINOR,   \
-                                           LIBAVFORMAT_VERSION_MICRO)
-#define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
+#define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, \
+                                       LIBAVFORMAT_VERSION_MINOR, \
+                                       LIBAVFORMAT_VERSION_MICRO)
+#define LIBAVFORMAT_BUILD LIBAVFORMAT_VERSION_INT
 
-#define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
+#define LIBAVFORMAT_IDENT "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 
-#define LIBAVDEVICE_VERSION_MAJOR  58
-#define LIBAVDEVICE_VERSION_MINOR  11
+#define LIBAVDEVICE_VERSION_MAJOR 58
+#define LIBAVDEVICE_VERSION_MINOR 11
 #define LIBAVDEVICE_VERSION_MICRO 102
 
 #define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
                                                LIBAVDEVICE_VERSION_MINOR, \
                                                LIBAVDEVICE_VERSION_MICRO)
-#define LIBAVDEVICE_VERSION     AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
-                                           LIBAVDEVICE_VERSION_MINOR, \
-                                           LIBAVDEVICE_VERSION_MICRO)
-#define LIBAVDEVICE_BUILD       LIBAVDEVICE_VERSION_INT
+#define LIBAVDEVICE_VERSION AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
+                                       LIBAVDEVICE_VERSION_MINOR, \
+                                       LIBAVDEVICE_VERSION_MICRO)
+#define LIBAVDEVICE_BUILD LIBAVDEVICE_VERSION_INT
 
-#define LIBAVDEVICE_IDENT       "Lavd" AV_STRINGIFY(LIBAVDEVICE_VERSION)
+#define LIBAVDEVICE_IDENT "Lavd" AV_STRINGIFY(LIBAVDEVICE_VERSION)
 
-#define LIBAVFILTER_VERSION_MAJOR   7
-#define LIBAVFILTER_VERSION_MINOR  87
+#define LIBAVFILTER_VERSION_MAJOR 7
+#define LIBAVFILTER_VERSION_MINOR 87
 #define LIBAVFILTER_VERSION_MICRO 100
-
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
                                                LIBAVFILTER_VERSION_MICRO)
-#define LIBAVFILTER_VERSION     AV_VERSION(LIBAVFILTER_VERSION_MAJOR,   \
-                                           LIBAVFILTER_VERSION_MINOR,   \
-                                           LIBAVFILTER_VERSION_MICRO)
-#define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
+#define LIBAVFILTER_VERSION AV_VERSION(LIBAVFILTER_VERSION_MAJOR, \
+                                       LIBAVFILTER_VERSION_MINOR, \
+                                       LIBAVFILTER_VERSION_MICRO)
+#define LIBAVFILTER_BUILD LIBAVFILTER_VERSION_INT
 
-#define LIBAVFILTER_IDENT       "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
+#define LIBAVFILTER_IDENT "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
 
+#define LIBAVRESAMPLE_VERSION_MAJOR 4
+#define LIBAVRESAMPLE_VERSION_MINOR 0
+#define LIBAVRESAMPLE_VERSION_MICRO 0
 
-#define LIBAVRESAMPLE_VERSION_MAJOR  4
-#define LIBAVRESAMPLE_VERSION_MINOR  0
-#define LIBAVRESAMPLE_VERSION_MICRO  0
+#define LIBAVRESAMPLE_VERSION_INT AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
+                                                 LIBAVRESAMPLE_VERSION_MINOR, \
+                                                 LIBAVRESAMPLE_VERSION_MICRO)
+#define LIBAVRESAMPLE_VERSION AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
+                                         LIBAVRESAMPLE_VERSION_MINOR, \
+                                         LIBAVRESAMPLE_VERSION_MICRO)
+#define LIBAVRESAMPLE_BUILD LIBAVRESAMPLE_VERSION_INT
 
-#define LIBAVRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
-                                                  LIBAVRESAMPLE_VERSION_MINOR, \
-                                                  LIBAVRESAMPLE_VERSION_MICRO)
-#define LIBAVRESAMPLE_VERSION          AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
-                                                  LIBAVRESAMPLE_VERSION_MINOR, \
-                                                  LIBAVRESAMPLE_VERSION_MICRO)
-#define LIBAVRESAMPLE_BUILD        LIBAVRESAMPLE_VERSION_INT
+#define LIBAVRESAMPLE_IDENT "Lavr" AV_STRINGIFY(LIBAVRESAMPLE_VERSION)
 
-#define LIBAVRESAMPLE_IDENT        "Lavr" AV_STRINGIFY(LIBAVRESAMPLE_VERSION)
-
-#define LIBSWSCALE_VERSION_MAJOR   5
-#define LIBSWSCALE_VERSION_MINOR   8
+#define LIBSWSCALE_VERSION_MAJOR 5
+#define LIBSWSCALE_VERSION_MINOR 8
 #define LIBSWSCALE_VERSION_MICRO 100
 
-#define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
-                                               LIBSWSCALE_VERSION_MINOR, \
-                                               LIBSWSCALE_VERSION_MICRO)
-#define LIBSWSCALE_VERSION      AV_VERSION(LIBSWSCALE_VERSION_MAJOR, \
-                                           LIBSWSCALE_VERSION_MINOR, \
-                                           LIBSWSCALE_VERSION_MICRO)
-#define LIBSWSCALE_BUILD        LIBSWSCALE_VERSION_INT
+#define LIBSWSCALE_VERSION_INT AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
+                                              LIBSWSCALE_VERSION_MINOR, \
+                                              LIBSWSCALE_VERSION_MICRO)
+#define LIBSWSCALE_VERSION AV_VERSION(LIBSWSCALE_VERSION_MAJOR, \
+                                      LIBSWSCALE_VERSION_MINOR, \
+                                      LIBSWSCALE_VERSION_MICRO)
+#define LIBSWSCALE_BUILD LIBSWSCALE_VERSION_INT
 
-#define LIBSWSCALE_IDENT        "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
+#define LIBSWSCALE_IDENT "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
 
-#define LIBSWRESAMPLE_VERSION_MAJOR   3
-#define LIBSWRESAMPLE_VERSION_MINOR   8
+#define LIBSWRESAMPLE_VERSION_MAJOR 3
+#define LIBSWRESAMPLE_VERSION_MINOR 8
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
-#define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
-                                                  LIBSWRESAMPLE_VERSION_MINOR, \
-                                                  LIBSWRESAMPLE_VERSION_MICRO)
-#define LIBSWRESAMPLE_VERSION      AV_VERSION(LIBSWRESAMPLE_VERSION_MAJOR, \
-                                              LIBSWRESAMPLE_VERSION_MINOR, \
-                                              LIBSWRESAMPLE_VERSION_MICRO)
-#define LIBSWRESAMPLE_BUILD        LIBSWRESAMPLE_VERSION_INT
+#define LIBSWRESAMPLE_VERSION_INT AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
+                                                 LIBSWRESAMPLE_VERSION_MINOR, \
+                                                 LIBSWRESAMPLE_VERSION_MICRO)
+#define LIBSWRESAMPLE_VERSION AV_VERSION(LIBSWRESAMPLE_VERSION_MAJOR, \
+                                         LIBSWRESAMPLE_VERSION_MINOR, \
+                                         LIBSWRESAMPLE_VERSION_MICRO)
+#define LIBSWRESAMPLE_BUILD LIBSWRESAMPLE_VERSION_INT
 
-#define LIBSWRESAMPLE_IDENT        "SwR" AV_STRINGIFY(LIBSWRESAMPLE_VERSION)
+#define LIBSWRESAMPLE_IDENT "SwR" AV_STRINGIFY(LIBSWRESAMPLE_VERSION)
 
-#define LIBPOSTPROC_VERSION_MAJOR  55
-#define LIBPOSTPROC_VERSION_MINOR   8
+#define LIBPOSTPROC_VERSION_MAJOR 55
+#define LIBPOSTPROC_VERSION_MINOR 8
 #define LIBPOSTPROC_VERSION_MICRO 100
 
 #define LIBPOSTPROC_VERSION_INT AV_VERSION_INT(LIBPOSTPROC_VERSION_MAJOR, \
                                                LIBPOSTPROC_VERSION_MINOR, \
                                                LIBPOSTPROC_VERSION_MICRO)
-#define LIBPOSTPROC_VERSION     AV_VERSION(LIBPOSTPROC_VERSION_MAJOR, \
-                                           LIBPOSTPROC_VERSION_MINOR, \
-                                           LIBPOSTPROC_VERSION_MICRO)
-#define LIBPOSTPROC_BUILD       LIBPOSTPROC_VERSION_INT
+#define LIBPOSTPROC_VERSION AV_VERSION(LIBPOSTPROC_VERSION_MAJOR, \
+                                       LIBPOSTPROC_VERSION_MINOR, \
+                                       LIBPOSTPROC_VERSION_MICRO)
+#define LIBPOSTPROC_BUILD LIBPOSTPROC_VERSION_INT
 
-#define LIBPOSTPROC_IDENT       "postproc" AV_STRINGIFY(LIBPOSTPROC_VERSION)
+#define LIBPOSTPROC_IDENT "postproc" AV_STRINGIFY(LIBPOSTPROC_VERSION)
 
-#define AV_CODEC_PROP_INTRA_ONLY    (1 << 0)
-#define AV_CODEC_PROP_LOSSY         (1 << 1)
-#define AV_CODEC_PROP_LOSSLESS      (1 << 2)
-#define AV_CODEC_PROP_REORDER       (1 << 3)
-#define AV_CODEC_PROP_BITMAP_SUB    (1 << 16)
-#define AV_CODEC_PROP_TEXT_SUB      (1 << 17)
+#define AV_CODEC_PROP_INTRA_ONLY (1 << 0)
+#define AV_CODEC_PROP_LOSSY (1 << 1)
+#define AV_CODEC_PROP_LOSSLESS (1 << 2)
+#define AV_CODEC_PROP_REORDER (1 << 3)
+#define AV_CODEC_PROP_BITMAP_SUB (1 << 16)
+#define AV_CODEC_PROP_TEXT_SUB (1 << 17)
 
-#define AVFILTER_FLAG_DYNAMIC_INPUTS        (1 << 0)
-#define AVFILTER_FLAG_DYNAMIC_OUTPUTS       (1 << 1)
-#define AVFILTER_FLAG_SLICE_THREADS         (1 << 2)
-#define AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC  (1 << 16)
+#define AVFILTER_FLAG_DYNAMIC_INPUTS (1 << 0)
+#define AVFILTER_FLAG_DYNAMIC_OUTPUTS (1 << 1)
+#define AVFILTER_FLAG_SLICE_THREADS (1 << 2)
+#define AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC (1 << 16)
 #define AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL (1 << 17)
 #define AVFILTER_FLAG_SUPPORT_TIMELINE (AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL)
 
+#define AV_PIX_FMT_FLAG_BE (1 << 0)
+#define AV_PIX_FMT_FLAG_PAL (1 << 1)
+#define AV_PIX_FMT_FLAG_BITSTREAM (1 << 2)
+#define AV_PIX_FMT_FLAG_HWACCEL (1 << 3)
+#define AV_PIX_FMT_FLAG_PLANAR (1 << 4)
+#define AV_PIX_FMT_FLAG_RGB (1 << 5)
+
+#define AV_LOG_SKIP_REPEATED 1
+
+#define AV_OPT_FLAG_ENCODING_PARAM 1 ///< a generic parameter which can be set by the user for muxing or encoding
+#define AV_OPT_FLAG_DECODING_PARAM 2 ///< a generic parameter which can be set by the user for demuxing or decoding
+#define AV_OPT_FLAG_AUDIO_PARAM 8
+#define AV_OPT_FLAG_VIDEO_PARAM 16
+#define AV_OPT_FLAG_SUBTITLE_PARAM 32
+#define AV_OPT_FLAG_EXPORT 64
+#define AV_OPT_FLAG_READONLY 128
+#define AV_OPT_FLAG_BSF_PARAM (1 << 8)        ///< a generic parameter which can be set by the user for bit stream filtering
+#define AV_OPT_FLAG_RUNTIME_PARAM (1 << 15)   ///< a generic parameter which can be set by the user at runtime
+#define AV_OPT_FLAG_FILTERING_PARAM (1 << 16) ///< a generic parameter which can be set by the user for filtering
+#define AV_OPT_FLAG_DEPRECATED (1 << 17)      ///< set if option is deprecated, users should refer to AVOption.help text for more information
+
+#define HAS_ARG 0x0001
+#define OPT_BOOL 0x0002
+#define OPT_EXPERT 0x0004
+#define OPT_STRING 0x0008
+#define OPT_VIDEO 0x0010
+#define OPT_AUDIO 0x0020
+#define OPT_INT 0x0080
+#define OPT_FLOAT 0x0100
+#define OPT_SUBTITLE 0x0200
+#define OPT_INT64 0x0400
+#define OPT_EXIT 0x0800
+#define OPT_DATA 0x1000
+#define OPT_PERFILE 0x2000 /* the option is per-file (currently ffmpeg-only). \
+                              implied by OPT_OFFSET or OPT_SPEC */
+#define OPT_OFFSET 0x4000  /* option is specified as an offset in a passed optctx */
+#define OPT_SPEC 0x8000    /* option is to be stored in an array of SpecifierOpt.  \
+                              Implies OPT_OFFSET. Next element after the offset is \
+                              an int containing element count in the array. */
+#define OPT_TIME 0x10000
+#define OPT_DOUBLE 0x20000
+#define OPT_INPUT 0x40000
+#define OPT_OUTPUT 0x80000
+
+#define AV_LOG_QUIET -8
+#define AV_LOG_PANIC 0
+#define AV_LOG_FATAL 8
+#define AV_LOG_ERROR 16
+#define AV_LOG_WARNING 24
+#define AV_LOG_INFO 32
+#define AV_LOG_VERBOSE 40
+#define AV_LOG_DEBUG 48
+#define AV_LOG_TRACE 56
+#define AV_LOG_MAX_OFFSET (AV_LOG_TRACE - AV_LOG_QUIET)
+#define AV_LOG_C(x) ((x) << 8)
+
+static int report_file_level = AV_LOG_DEBUG;
+
+#define MV_DIR_FORWARD 1
+#define MV_DIR_BACKWARD 2
+#define MV_DIRECT 4     ///< bidirectional mode where the difference equals the MV of the last P/S/I-Frame (MPEG-4)
+#define MV_TYPE_16X16 0 ///< 1 vector for the whole mb
+#define MV_TYPE_8X8 1   ///< 4 vectors (H.263, MPEG-4 4MV)
+#define MV_TYPE_16X8 2  ///< 2 vectors, one per 16x8 block
+#define MV_TYPE_FIELD 3 ///< 2 vectors, one per field
+#define MV_TYPE_DMV 4   ///< 2 vectors, special mpeg2 Dual Prime Vectors
+#define UNI_AC_ENC_INDEX(run, level) ((run)*128 + (level))
+#define VIDEO_FORMAT_COMPONENT 0
+#define VIDEO_FORMAT_PAL 1
+#define VIDEO_FORMAT_NTSC 2
+#define VIDEO_FORMAT_SECAM 3
+#define VIDEO_FORMAT_MAC 4
+#define VIDEO_FORMAT_UNSPECIFIED 5
+#define CHROMA_420 1
+#define CHROMA_422 2
+#define CHROMA_444 3
+#define SLICE_OK 0
+#define SLICE_ERROR -1
+#define SLICE_END -2   ///<end marker found
+#define SLICE_NOEND -3 ///<no end marker or error found but mb count exceeded
+
+#define MAX_RUN 64
+#define MAX_LEVEL 64
+#define MAX_THREADS 32
+#define MAX_B_FRAMES 16
+
+#define AVFMT_FLAG_GENPTS 0x0001          ///< Generate missing pts even if it requires parsing future frames.
+#define AVFMT_FLAG_IGNIDX 0x0002          ///< Ignore index.
+#define AVFMT_FLAG_NONBLOCK 0x0004        ///< Do not block when reading packets from input.
+#define AVFMT_FLAG_IGNDTS 0x0008          ///< Ignore DTS on frames that contain both DTS & PTS
+#define AVFMT_FLAG_NOFILLIN 0x0010        ///< Do not infer any values from other values, just return what is stored in the container
+#define AVFMT_FLAG_NOPARSE 0x0020         ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
+#define AVFMT_FLAG_NOBUFFER 0x0040        ///< Do not buffer frames when possible
+#define AVFMT_FLAG_CUSTOM_IO 0x0080       ///< The caller has supplied a custom AVIOContext, don't avio_close() it.
+#define AVFMT_FLAG_DISCARD_CORRUPT 0x0100 ///< Discard frames marked corrupted
+#define AVFMT_FLAG_FLUSH_PACKETS 0x0200   ///< Flush the AVIOContext every packet.
+#define AVFMT_FLAG_BITEXACT 0x0400
+#if FF_API_LAVF_MP4A_LATM
+#define AVFMT_FLAG_MP4A_LATM 0x8000 ///< Deprecated, does nothing.
+#endif
+#define AVFMT_FLAG_SORT_DTS 0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
+#define AVFMT_FLAG_PRIV_OPT 0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
+#if FF_API_LAVF_KEEPSIDE_FLAG
+#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Deprecated, does nothing.
+#endif
+#define AVFMT_FLAG_FAST_SEEK 0x80000 ///< Enable fast, but inaccurate seeks for some formats
+#define AVFMT_FLAG_SHORTEST 0x100000 ///< Stop muxing when the shortest stream stops.
+#define AVFMT_FLAG_AUTO_BSF 0x200000 ///< Add bitstream filters as requested by the muxer
+
+#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
+#define MAX_STD_TIMEBASES (30 * 12 + 30 + 3 + 6)
+#define MAX_REORDER_DELAY 16
+
+#if ARCH_IA64 // Limit static arrays to avoid gcc failing "short data segment overflowed"
+#define MAX_MV 1024
+#else
+#define MAX_MV 4096
+#endif
+#define MAX_DMV (2 * MAX_MV)
+#define ME_MAP_SIZE 64
+
+#if AV_HAVE_BIGENDIAN
+#define AV_PIX_FMT_NE(be, le) AV_PIX_FMT_##be
+#else
+#define AV_PIX_FMT_NE(be, le) AV_PIX_FMT_##le
+#endif
+
+#define AV_PIX_FMT_RGB32 AV_PIX_FMT_NE(ARGB, BGRA)
+#define AV_PIX_FMT_RGB32_1 AV_PIX_FMT_NE(RGBA, ABGR)
+#define AV_PIX_FMT_BGR32 AV_PIX_FMT_NE(ABGR, RGBA)
+#define AV_PIX_FMT_BGR32_1 AV_PIX_FMT_NE(BGRA, ARGB)
+#define AV_PIX_FMT_0RGB32 AV_PIX_FMT_NE(0RGB, BGR0)
+#define AV_PIX_FMT_0BGR32 AV_PIX_FMT_NE(0BGR, RGB0)
+
+#define AV_PIX_FMT_GRAY9 AV_PIX_FMT_NE(GRAY9BE, GRAY9LE)
+#define AV_PIX_FMT_GRAY10 AV_PIX_FMT_NE(GRAY10BE, GRAY10LE)
+#define AV_PIX_FMT_GRAY12 AV_PIX_FMT_NE(GRAY12BE, GRAY12LE)
+#define AV_PIX_FMT_GRAY14 AV_PIX_FMT_NE(GRAY14BE, GRAY14LE)
+#define AV_PIX_FMT_GRAY16 AV_PIX_FMT_NE(GRAY16BE, GRAY16LE)
+#define AV_PIX_FMT_YA16 AV_PIX_FMT_NE(YA16BE, YA16LE)
+#define AV_PIX_FMT_RGB48 AV_PIX_FMT_NE(RGB48BE, RGB48LE)
+#define AV_PIX_FMT_RGB565 AV_PIX_FMT_NE(RGB565BE, RGB565LE)
+#define AV_PIX_FMT_RGB555 AV_PIX_FMT_NE(RGB555BE, RGB555LE)
+#define AV_PIX_FMT_RGB444 AV_PIX_FMT_NE(RGB444BE, RGB444LE)
+#define AV_PIX_FMT_RGBA64 AV_PIX_FMT_NE(RGBA64BE, RGBA64LE)
+#define AV_PIX_FMT_BGR48 AV_PIX_FMT_NE(BGR48BE, BGR48LE)
+#define AV_PIX_FMT_BGR565 AV_PIX_FMT_NE(BGR565BE, BGR565LE)
+#define AV_PIX_FMT_BGR555 AV_PIX_FMT_NE(BGR555BE, BGR555LE)
+#define AV_PIX_FMT_BGR444 AV_PIX_FMT_NE(BGR444BE, BGR444LE)
+#define AV_PIX_FMT_BGRA64 AV_PIX_FMT_NE(BGRA64BE, BGRA64LE)
+
+#define AV_PIX_FMT_YUV420P9 AV_PIX_FMT_NE(YUV420P9BE, YUV420P9LE)
+#define AV_PIX_FMT_YUV422P9 AV_PIX_FMT_NE(YUV422P9BE, YUV422P9LE)
+#define AV_PIX_FMT_YUV444P9 AV_PIX_FMT_NE(YUV444P9BE, YUV444P9LE)
+#define AV_PIX_FMT_YUV420P10 AV_PIX_FMT_NE(YUV420P10BE, YUV420P10LE)
+#define AV_PIX_FMT_YUV422P10 AV_PIX_FMT_NE(YUV422P10BE, YUV422P10LE)
+#define AV_PIX_FMT_YUV440P10 AV_PIX_FMT_NE(YUV440P10BE, YUV440P10LE)
+#define AV_PIX_FMT_YUV444P10 AV_PIX_FMT_NE(YUV444P10BE, YUV444P10LE)
+#define AV_PIX_FMT_YUV420P12 AV_PIX_FMT_NE(YUV420P12BE, YUV420P12LE)
+#define AV_PIX_FMT_YUV422P12 AV_PIX_FMT_NE(YUV422P12BE, YUV422P12LE)
+#define AV_PIX_FMT_YUV440P12 AV_PIX_FMT_NE(YUV440P12BE, YUV440P12LE)
+#define AV_PIX_FMT_YUV444P12 AV_PIX_FMT_NE(YUV444P12BE, YUV444P12LE)
+#define AV_PIX_FMT_YUV420P14 AV_PIX_FMT_NE(YUV420P14BE, YUV420P14LE)
+#define AV_PIX_FMT_YUV422P14 AV_PIX_FMT_NE(YUV422P14BE, YUV422P14LE)
+#define AV_PIX_FMT_YUV444P14 AV_PIX_FMT_NE(YUV444P14BE, YUV444P14LE)
+#define AV_PIX_FMT_YUV420P16 AV_PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
+#define AV_PIX_FMT_YUV422P16 AV_PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
+#define AV_PIX_FMT_YUV444P16 AV_PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
+
+#define AV_PIX_FMT_GBRP9 AV_PIX_FMT_NE(GBRP9BE, GBRP9LE)
+#define AV_PIX_FMT_GBRP10 AV_PIX_FMT_NE(GBRP10BE, GBRP10LE)
+#define AV_PIX_FMT_GBRP12 AV_PIX_FMT_NE(GBRP12BE, GBRP12LE)
+#define AV_PIX_FMT_GBRP14 AV_PIX_FMT_NE(GBRP14BE, GBRP14LE)
+#define AV_PIX_FMT_GBRP16 AV_PIX_FMT_NE(GBRP16BE, GBRP16LE)
+#define AV_PIX_FMT_GBRAP10 AV_PIX_FMT_NE(GBRAP10BE, GBRAP10LE)
+#define AV_PIX_FMT_GBRAP12 AV_PIX_FMT_NE(GBRAP12BE, GBRAP12LE)
+#define AV_PIX_FMT_GBRAP16 AV_PIX_FMT_NE(GBRAP16BE, GBRAP16LE)
+
+#define AV_PIX_FMT_BAYER_BGGR16 AV_PIX_FMT_NE(BAYER_BGGR16BE, BAYER_BGGR16LE)
+#define AV_PIX_FMT_BAYER_RGGB16 AV_PIX_FMT_NE(BAYER_RGGB16BE, BAYER_RGGB16LE)
+#define AV_PIX_FMT_BAYER_GBRG16 AV_PIX_FMT_NE(BAYER_GBRG16BE, BAYER_GBRG16LE)
+#define AV_PIX_FMT_BAYER_GRBG16 AV_PIX_FMT_NE(BAYER_GRBG16BE, BAYER_GRBG16LE)
+
+#define AV_PIX_FMT_GBRPF32 AV_PIX_FMT_NE(GBRPF32BE, GBRPF32LE)
+#define AV_PIX_FMT_GBRAPF32 AV_PIX_FMT_NE(GBRAPF32BE, GBRAPF32LE)
+
+#define AV_PIX_FMT_GRAYF32 AV_PIX_FMT_NE(GRAYF32BE, GRAYF32LE)
+
+#define AV_PIX_FMT_YUVA420P9 AV_PIX_FMT_NE(YUVA420P9BE, YUVA420P9LE)
+#define AV_PIX_FMT_YUVA422P9 AV_PIX_FMT_NE(YUVA422P9BE, YUVA422P9LE)
+#define AV_PIX_FMT_YUVA444P9 AV_PIX_FMT_NE(YUVA444P9BE, YUVA444P9LE)
+#define AV_PIX_FMT_YUVA420P10 AV_PIX_FMT_NE(YUVA420P10BE, YUVA420P10LE)
+#define AV_PIX_FMT_YUVA422P10 AV_PIX_FMT_NE(YUVA422P10BE, YUVA422P10LE)
+#define AV_PIX_FMT_YUVA444P10 AV_PIX_FMT_NE(YUVA444P10BE, YUVA444P10LE)
+#define AV_PIX_FMT_YUVA422P12 AV_PIX_FMT_NE(YUVA422P12BE, YUVA422P12LE)
+#define AV_PIX_FMT_YUVA444P12 AV_PIX_FMT_NE(YUVA444P12BE, YUVA444P12LE)
+#define AV_PIX_FMT_YUVA420P16 AV_PIX_FMT_NE(YUVA420P16BE, YUVA420P16LE)
+#define AV_PIX_FMT_YUVA422P16 AV_PIX_FMT_NE(YUVA422P16BE, YUVA422P16LE)
+#define AV_PIX_FMT_YUVA444P16 AV_PIX_FMT_NE(YUVA444P16BE, YUVA444P16LE)
+
+#define AV_PIX_FMT_XYZ12 AV_PIX_FMT_NE(XYZ12BE, XYZ12LE)
+#define AV_PIX_FMT_NV20 AV_PIX_FMT_NE(NV20BE, NV20LE)
+#define AV_PIX_FMT_AYUV64 AV_PIX_FMT_NE(AYUV64BE, AYUV64LE)
+#define AV_PIX_FMT_P010 AV_PIX_FMT_NE(P010BE, P010LE)
+#define AV_PIX_FMT_P016 AV_PIX_FMT_NE(P016BE, P016LE)
+
+#define AV_NOPTS_VALUE ((int64_t)UINT64_C(0x8000000000000000))
+#define AV_TIME_BASE 1000000
+#define AV_TIME_BASE_Q \
+    (AVRational) { 1, AV_TIME_BASE }
+
+#define AV_HAVE_BIGENDIAN 0
+#define AV_HAVE_FAST_UNALIGNED 1
+
+#define FF_FDEBUG_TS 0x0001
+#define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
+#define AVFMT_AVOID_NEG_TS_AUTO -1               ///< Enabled when required by target format
+#define AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE 1   ///< Shift timestamps so they are non negative
+#define AVFMT_AVOID_NEG_TS_MAKE_ZERO 2           ///< Shift timestamps so that they start at 0
+
+#ifdef _WIN64
+typedef unsigned __int64 size_t;
+typedef __int64 ptrdiff_t;
+typedef __int64 intptr_t;
+#else
+typedef unsigned int size_t;
+typedef int ptrdiff_t;
+typedef int intptr_t;
+#endif
+
+#define atomic_store(object, desired) \
+    do                                \
+    {                                 \
+        *(object) = (desired);        \
+    } while (0)
+
+#define atomic_store_explicit(object, desired, order) \
+    atomic_store(object, desired)
+
+#define atomic_load(object) \
+    (*(object))
+
+#define atomic_load_explicit(object, order) \
+    atomic_load(object)
+
+#define ATOMIC_FLAG_INIT 0
+
+#define ATOMIC_VAR_INIT(value) (value)
+
+#define atomic_init(obj, value) \
+    do                          \
+    {                           \
+        *(obj) = (value);       \
+    } while (0)
+
+#define kill_dependency(y) ((void)0)
+
+#define atomic_thread_fence(order) \
+    ((void)0)
+
+#define atomic_signal_fence(order) \
+    ((void)0)
+
+#define atomic_is_lock_free(obj) 0
+
+#define FFMIN(a, b) ((a) > (b) ? (b) : (a))
+#define AV_BUFFER_FLAG_READONLY (1 << 0)
+
+#define SWS_PARAM_DEFAULT           123456
+
+
+#define RED_DITHER            "0*8"
+#define GREEN_DITHER          "1*8"
+#define BLUE_DITHER           "2*8"
+#define Y_COEFF               "3*8"
+#define VR_COEFF              "4*8"
+#define UB_COEFF              "5*8"
+#define VG_COEFF              "6*8"
+#define UG_COEFF              "7*8"
+#define Y_OFFSET              "8*8"
+#define U_OFFSET              "9*8"
+#define V_OFFSET              "10*8"
+#define LUM_MMX_FILTER_OFFSET "11*8"
+#define CHR_MMX_FILTER_OFFSET "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)
+#define DSTW_OFFSET           "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*2"
+#define ESP_OFFSET            "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*2+8"
+#define VROUNDER_OFFSET       "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*2+16"
+#define U_TEMP                "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*2+24"
+#define V_TEMP                "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*2+32"
+#define Y_TEMP                "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*2+40"
+#define ALP_MMX_FILTER_OFFSET "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*2+48"
+#define UV_OFF_PX             "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*3+48"
+#define UV_OFF_BYTE           "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*3+56"
+#define DITHER16              "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*3+64"
+#define DITHER32              "11*8+4*4*"AV_STRINGIFY(MAX_FILTER_SIZE)"*3+80"
+#define DITHER32_INT          (11*8+4*4*MAX_FILTER_SIZE*3+80) // value equal to above, used for checking that the struct hasn't been changed by mistake
+#define XYZ_GAMMA (2.6f)
+#define RGB_GAMMA (2.2f)
+
+#define AVPROBE_SCORE_RETRY (AVPROBE_SCORE_MAX/4)
+#define AVPROBE_SCORE_STREAM_RETRY (AVPROBE_SCORE_MAX/4-1)
+
+#define AVPROBE_SCORE_EXTENSION  50 ///< score for file extension
+#define AVPROBE_SCORE_MIME       75 ///< score for file mime type
+#define AVPROBE_SCORE_MAX       100 ///< maximum score
 
 typedef struct AVStream AVStream;
 double get_rotation(AVStream *st);
 
-typedef struct AVComponentDescriptor {
+typedef struct AVComponentDescriptor
+{
     int plane;
     int step;
     int offset;
@@ -3305,9 +3648,10 @@ typedef struct AVComponentDescriptor {
     int depth;
 } AVComponentDescriptor;
 
-typedef struct AVPixFmtDescriptor {
+typedef struct AVPixFmtDescriptor
+{
     const char *name;
-    uint8_t nb_components;  ///< The number of components each pixel has, (1-4)
+    uint8_t nb_components; ///< The number of components each pixel has, (1-4)
     uint8_t log2_chroma_w;
     uint8_t log2_chroma_h;
     uint64_t flags;
@@ -3315,45 +3659,27 @@ typedef struct AVPixFmtDescriptor {
     const char *alias;
 } AVPixFmtDescriptor;
 
-#define AV_PIX_FMT_FLAG_BE           (1 << 0)
-/**
- * Pixel format has a palette in data[1], values are indexes in this palette.
- */
-#define AV_PIX_FMT_FLAG_PAL          (1 << 1)
-/**
- * All values of a component are bit-wise packed end to end.
- */
-#define AV_PIX_FMT_FLAG_BITSTREAM    (1 << 2)
-/**
- * Pixel format is an HW accelerated format.
- */
-#define AV_PIX_FMT_FLAG_HWACCEL      (1 << 3)
-/**
- * At least one pixel component is not in the first data plane.
- */
-#define AV_PIX_FMT_FLAG_PLANAR       (1 << 4)
-/**
- * The pixel format contains RGB-like data (as opposed to YUV/grayscale).
- */
-#define AV_PIX_FMT_FLAG_RGB          (1 << 5)
-
-typedef struct SpecifierOpt {
-    char *specifier;    /**< stream/chapter/program/... specifier */
-    union {
+typedef struct SpecifierOpt
+{
+    char *specifier; /**< stream/chapter/program/... specifier */
+    union
+    {
         uint8_t *str;
-        int        i;
-        int64_t  i64;
+        int i;
+        int64_t i64;
         uint64_t ui64;
-        float      f;
-        double   dbl;
+        float f;
+        double dbl;
     } u;
 } SpecifierOpt;
 
-typedef struct OptionDef {
+typedef struct OptionDef
+{
     const char *name;
     int flags;
 
-     union {
+    union
+    {
         void *dst_ptr;
         int (*func_arg)(void *, const char *, const char *);
         size_t off;
@@ -3362,25 +3688,29 @@ typedef struct OptionDef {
     const char *argname;
 } OptionDef;
 
-typedef struct Option {
-    const OptionDef  *opt;
-    const char       *key;
-    const char       *val;
+typedef struct Option
+{
+    const OptionDef *opt;
+    const char *key;
+    const char *val;
 } Option;
 
-typedef struct OptionGroupDef {
+typedef struct OptionGroupDef
+{
     const char *name;
     const char *sep;
     int flags;
 } OptionGroupDef;
 
 typedef struct AVDictionary AVDictionary;
-typedef struct OptionGroup {
+
+typedef struct OptionGroup
+{
     const OptionGroupDef *group_def;
     const char *arg;
 
     Option *opts;
-    int  nb_opts;
+    int nb_opts;
 
     AVDictionary *codec_opts;
     AVDictionary *format_opts;
@@ -3389,27 +3719,23 @@ typedef struct OptionGroup {
     AVDictionary *swr_opts;
 } OptionGroup;
 
-typedef struct OptionGroupList {
+typedef struct OptionGroupList
+{
     const OptionGroupDef *group_def;
     OptionGroup *groups;
-    int       nb_groups;
+    int nb_groups;
 } OptionGroupList;
 
-typedef struct OptionParseContext {
+typedef struct OptionParseContext
+{
     OptionGroup global_opts;
     OptionGroupList *groups;
-    int           nb_groups;
+    int nb_groups;
     OptionGroup cur_group;
 } OptionParseContext;
 
 void show_banner(int argc, char **argv, const OptionDef *options);
 
-/**
- * Print the version of the program to stdout. The version message
- * depends on the current versions of the repository and of the libav*
- * libraries.
- * This option processing function does not utilize the arguments.
- */
 int show_version(void *optctx, const char *opt, const char *arg);
 
 int show_buildconf(void *optctx, const char *opt, const char *arg);
@@ -3432,7 +3758,7 @@ int show_layouts(void *optctx, const char *opt, const char *arg);
 int show_sample_fmts(void *optctx, const char *opt, const char *arg);
 int show_colors(void *optctx, const char *opt, const char *arg);
 
-void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
+void log_callback_help(void *ptr, int level, const char *fmt, va_list vl);
 int opt_cpuflags(void *optctx, const char *opt, const char *arg);
 int opt_default(void *optctx, const char *opt, const char *arg);
 int opt_loglevel(void *optctx, const char *opt, const char *arg);
@@ -3442,53 +3768,58 @@ int opt_codec_debug(void *optctx, const char *opt, const char *arg);
 int opt_timelimit(void *optctx, const char *opt, const char *arg);
 
 #if CONFIG_AVDEVICE
-#define CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                \
-    { "sources"    , OPT_EXIT | HAS_ARG, { .func_arg = show_sources },                                                  \
-      "list sources of the input device", "device" },                                                                   \
-    { "sinks"      , OPT_EXIT | HAS_ARG, { .func_arg = show_sinks },                                                    \
-      "list sinks of the output device", "device" },                                                                    \
+#define CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                       \
+    {"sources", OPT_EXIT | HAS_ARG, {.func_arg = show_sources}, "list sources of the input device", "device"}, \
+        {"sinks", OPT_EXIT | HAS_ARG, {.func_arg = show_sinks}, "list sinks of the output device", "device"},
 
 #else
 #define CMDUTILS_COMMON_OPTIONS_AVDEVICE
 #endif
-#define CMDUTILS_COMMON_OPTIONS                                                                                         \
-    { "buildconf",   OPT_EXIT,             { .func_arg = show_buildconf },   "show build configuration" },              \
-    { "formats",     OPT_EXIT,             { .func_arg = show_formats },     "show available formats" },                \
-    { "muxers",      OPT_EXIT,             { .func_arg = show_muxers },      "show available muxers" },                 \
-    { "demuxers",    OPT_EXIT,             { .func_arg = show_demuxers },    "show available demuxers" },               \
-    { "devices",     OPT_EXIT,             { .func_arg = show_devices },     "show available devices" },                \
-    { "codecs",      OPT_EXIT,             { .func_arg = show_codecs },      "show available codecs" },                 \
-    { "decoders",    OPT_EXIT,             { .func_arg = show_decoders },    "show available decoders" },               \
-    { "encoders",    OPT_EXIT,             { .func_arg = show_encoders },    "show available encoders" },               \
-    { "bsfs",        OPT_EXIT,             { .func_arg = show_bsfs },        "show available bit stream filters" },     \
-    { "protocols",   OPT_EXIT,             { .func_arg = show_protocols },   "show available protocols" },              \
-    { "filters",     OPT_EXIT,             { .func_arg = show_filters },     "show available filters" },                \
-    { "pix_fmts",    OPT_EXIT,             { .func_arg = show_pix_fmts },    "show available pixel formats" },          \
-    { "layouts",     OPT_EXIT,             { .func_arg = show_layouts },     "show standard channel layouts" },         \
-    { "sample_fmts", OPT_EXIT,             { .func_arg = show_sample_fmts }, "show available audio sample formats" },   \
-    { "colors",      OPT_EXIT,             { .func_arg = show_colors },      "show available color names" },            \
-    { "loglevel",    HAS_ARG,              { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
-    { "v",           HAS_ARG,              { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
-    { "report",      0,                    { .func_arg = opt_report },       "generate a report" },                     \
-    { "max_alloc",   HAS_ARG,              { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
-    { "cpuflags",    HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags },     "force specific cpu flags", "flags" },     \
-    { "hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner},     "do not show program banner", "hide_banner" },          \
-    CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                    \
+#define CMDUTILS_COMMON_OPTIONS                                                                                       \
+    {"buildconf", OPT_EXIT, {.func_arg = show_buildconf}, "show build configuration"},                                \
+        {"formats", OPT_EXIT, {.func_arg = show_formats}, "show available formats"},                                  \
+        {"muxers", OPT_EXIT, {.func_arg = show_muxers}, "show available muxers"},                                     \
+        {"demuxers", OPT_EXIT, {.func_arg = show_demuxers}, "show available demuxers"},                               \
+        {"devices", OPT_EXIT, {.func_arg = show_devices}, "show available devices"},                                  \
+        {"codecs", OPT_EXIT, {.func_arg = show_codecs}, "show available codecs"},                                     \
+        {"decoders", OPT_EXIT, {.func_arg = show_decoders}, "show available decoders"},                               \
+        {"encoders", OPT_EXIT, {.func_arg = show_encoders}, "show available encoders"},                               \
+        {"bsfs", OPT_EXIT, {.func_arg = show_bsfs}, "show available bit stream filters"},                             \
+        {"protocols", OPT_EXIT, {.func_arg = show_protocols}, "show available protocols"},                            \
+        {"filters", OPT_EXIT, {.func_arg = show_filters}, "show available filters"},                                  \
+        {"pix_fmts", OPT_EXIT, {.func_arg = show_pix_fmts}, "show available pixel formats"},                          \
+        {"layouts", OPT_EXIT, {.func_arg = show_layouts}, "show standard channel layouts"},                           \
+        {"sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts}, "show available audio sample formats"},             \
+        {"colors", OPT_EXIT, {.func_arg = show_colors}, "show available color names"},                                \
+        {"loglevel", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"},                           \
+        {"v", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"},                                  \
+        {"report", 0, {.func_arg = opt_report}, "generate a report"},                                                 \
+        {"max_alloc", HAS_ARG, {.func_arg = opt_max_alloc}, "set maximum size of a single allocated block", "bytes"}, \
+        {"cpuflags", HAS_ARG | OPT_EXPERT, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags"},          \
+        {"hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner}, "do not show program banner", "hide_banner"},          \
+        CMDUTILS_COMMON_OPTIONS_AVDEVICE
 
-
-
+typedef enum memory_order
+{
+    memory_order_relaxed,
+    memory_order_consume,
+    memory_order_acquire,
+    memory_order_release,
+    memory_order_acq_rel,
+    memory_order_seq_cst
+} memory_order;
 
 typedef enum
 {
-    SDL_FIRSTEVENT     = 0,     /**< Unused (do not remove) */
+    SDL_FIRSTEVENT = 0, /**< Unused (do not remove) */
     /* Application events */
-    SDL_QUIT           = 0x100, /**< User-requested quit */
+    SDL_QUIT = 0x100, /**< User-requested quit */
     /* These application events have special meaning on iOS, see README-ios.md for details */
-    SDL_APP_TERMINATING,        /**< The application is being terminated by the OS
+    SDL_APP_TERMINATING,         /**< The application is being terminated by the OS
                                      Called on iOS in applicationWillTerminate()
                                      Called on Android in onDestroy()
                                 */
-    SDL_APP_LOWMEMORY,          /**< The application is low on memory, free memory if possible.
+    SDL_APP_LOWMEMORY,           /**< The application is low on memory, free memory if possible.
                                      Called on iOS in applicationDidReceiveMemoryWarning()
                                      Called on Android in onLowMemory()
                                 */
@@ -3496,7 +3827,7 @@ typedef enum
                                      Called on iOS in applicationWillResignActive()
                                      Called on Android in onPause()
                                 */
-    SDL_APP_DIDENTERBACKGROUND, /**< The application did enter the background and may not get CPU for some time
+    SDL_APP_DIDENTERBACKGROUND,  /**< The application did enter the background and may not get CPU for some time
                                      Called on iOS in applicationDidEnterBackground()
                                      Called on Android in onPause()
                                 */
@@ -3504,505 +3835,399 @@ typedef enum
                                      Called on iOS in applicationWillEnterForeground()
                                      Called on Android in onResume()
                                 */
-    SDL_APP_DIDENTERFOREGROUND, /**< The application is now interactive
+    SDL_APP_DIDENTERFOREGROUND,  /**< The application is now interactive
                                      Called on iOS in applicationDidBecomeActive()
                                      Called on Android in onResume()
                                 */
     /* Display events */
-    SDL_DISPLAYEVENT   = 0x150,  /**< Display state change */
+    SDL_DISPLAYEVENT = 0x150, /**< Display state change */
     /* Window events */
-    SDL_WINDOWEVENT    = 0x200, /**< Window state change */
-    SDL_SYSWMEVENT,             /**< System specific event */
-    SDL_KEYDOWN        = 0x300, /**< Key pressed */
-    SDL_KEYUP,                  /**< Key released */
-    SDL_TEXTEDITING,            /**< Keyboard text editing (composition) */
-    SDL_TEXTINPUT,              /**< Keyboard text input */
-    SDL_KEYMAPCHANGED,          /**< Keymap changed due to a system event such as an
+    SDL_WINDOWEVENT = 0x200, /**< Window state change */
+    SDL_SYSWMEVENT,          /**< System specific event */
+    SDL_KEYDOWN = 0x300,     /**< Key pressed */
+    SDL_KEYUP,               /**< Key released */
+    SDL_TEXTEDITING,         /**< Keyboard text editing (composition) */
+    SDL_TEXTINPUT,           /**< Keyboard text input */
+    SDL_KEYMAPCHANGED,       /**< Keymap changed due to a system event such as an
                                      input language or keyboard layout change.
                                 */
 
     /* Mouse events */
-    SDL_MOUSEMOTION    = 0x400, /**< Mouse moved */
-    SDL_MOUSEBUTTONDOWN,        /**< Mouse button pressed SDL_MOUSEMOTION*/
-    SDL_MOUSEBUTTONUP,          /**< Mouse button released */
-    SDL_MOUSEWHEEL,             /**< Mouse wheel motion */
-    SDL_JOYAXISMOTION  = 0x600, /**< Joystick axis motion */
-    SDL_JOYBALLMOTION,          /**< Joystick trackball motion */
-    SDL_JOYHATMOTION,           /**< Joystick hat position change */
-    SDL_JOYBUTTONDOWN,          /**< Joystick button pressed */
-    SDL_JOYBUTTONUP,            /**< Joystick button released */
-    SDL_JOYDEVICEADDED,         /**< A new joystick has been inserted into the system */
-    SDL_JOYDEVICEREMOVED,       /**< An opened joystick has been removed */
-    SDL_CONTROLLERAXISMOTION  = 0x650, /**< Game controller axis motion */
-    SDL_CONTROLLERBUTTONDOWN,          /**< Game controller button pressed */
-    SDL_CONTROLLERBUTTONUP,            /**< Game controller button released */
-    SDL_CONTROLLERDEVICEADDED,         /**< A new Game controller has been inserted into the system */
-    SDL_CONTROLLERDEVICEREMOVED,       /**< An opened Game controller has been removed */
-    SDL_CONTROLLERDEVICEREMAPPED,      /**< The controller mapping was updated */
-    SDL_FINGERDOWN      = 0x700,
+    SDL_MOUSEMOTION = 0x400,          /**< Mouse moved */
+    SDL_MOUSEBUTTONDOWN,              /**< Mouse button pressed SDL_MOUSEMOTION*/
+    SDL_MOUSEBUTTONUP,                /**< Mouse button released */
+    SDL_MOUSEWHEEL,                   /**< Mouse wheel motion */
+    SDL_JOYAXISMOTION = 0x600,        /**< Joystick axis motion */
+    SDL_JOYBALLMOTION,                /**< Joystick trackball motion */
+    SDL_JOYHATMOTION,                 /**< Joystick hat position change */
+    SDL_JOYBUTTONDOWN,                /**< Joystick button pressed */
+    SDL_JOYBUTTONUP,                  /**< Joystick button released */
+    SDL_JOYDEVICEADDED,               /**< A new joystick has been inserted into the system */
+    SDL_JOYDEVICEREMOVED,             /**< An opened joystick has been removed */
+    SDL_CONTROLLERAXISMOTION = 0x650, /**< Game controller axis motion */
+    SDL_CONTROLLERBUTTONDOWN,         /**< Game controller button pressed */
+    SDL_CONTROLLERBUTTONUP,           /**< Game controller button released */
+    SDL_CONTROLLERDEVICEADDED,        /**< A new Game controller has been inserted into the system */
+    SDL_CONTROLLERDEVICEREMOVED,      /**< An opened Game controller has been removed */
+    SDL_CONTROLLERDEVICEREMAPPED,     /**< The controller mapping was updated */
+    SDL_FINGERDOWN = 0x700,
     SDL_FINGERUP,
     SDL_FINGERMOTION,
-    SDL_DOLLARGESTURE   = 0x800,
+    SDL_DOLLARGESTURE = 0x800,
     SDL_DOLLARRECORD,
     SDL_MULTIGESTURE,
-    SDL_CLIPBOARDUPDATE = 0x900, /**< The clipboard changed */
-    SDL_DROPFILE        = 0x1000, /**< The system requests a file open */
-    SDL_DROPTEXT,                 /**< text/plain drag-and-drop event */
-    SDL_DROPBEGIN,                /**< A new set of drops is beginning (NULL filename) */
-    SDL_DROPCOMPLETE,             /**< Current set of drops is now complete (NULL filename) */
-    SDL_AUDIODEVICEADDED = 0x1100, /**< A new audio device is available */
-    SDL_AUDIODEVICEREMOVED,        /**< An audio device has been removed. */
-    SDL_SENSORUPDATE = 0x1200,     /**< A sensor was updated */
+    SDL_CLIPBOARDUPDATE = 0x900,       /**< The clipboard changed */
+    SDL_DROPFILE = 0x1000,             /**< The system requests a file open */
+    SDL_DROPTEXT,                      /**< text/plain drag-and-drop event */
+    SDL_DROPBEGIN,                     /**< A new set of drops is beginning (NULL filename) */
+    SDL_DROPCOMPLETE,                  /**< Current set of drops is now complete (NULL filename) */
+    SDL_AUDIODEVICEADDED = 0x1100,     /**< A new audio device is available */
+    SDL_AUDIODEVICEREMOVED,            /**< An audio device has been removed. */
+    SDL_SENSORUPDATE = 0x1200,         /**< A sensor was updated */
     SDL_RENDER_TARGETS_RESET = 0x2000, /**< The render targets have been reset and their contents need to be updated */
-    SDL_RENDER_DEVICE_RESET, /**< The device has been reset and all textures need to be recreated */
-    SDL_USEREVENT    = 0x8000,
-    SDL_LASTEVENT    = 0xFFFF
+    SDL_RENDER_DEVICE_RESET,           /**< The device has been reset and all textures need to be recreated */
+    SDL_USEREVENT = 0x8000,
+    SDL_LASTEVENT = 0xFFFF
 } SDL_EventType;
 
 typedef enum
 {
-    SDL_WINDOWEVENT_NONE,           /**< Never used */
-    SDL_WINDOWEVENT_SHOWN,          /**< Window has been shown */
-    SDL_WINDOWEVENT_HIDDEN,         /**< Window has been hidden */
-    SDL_WINDOWEVENT_EXPOSED,        /**< Window has been exposed and should be
+    SDL_WINDOWEVENT_NONE,         /**< Never used */
+    SDL_WINDOWEVENT_SHOWN,        /**< Window has been shown */
+    SDL_WINDOWEVENT_HIDDEN,       /**< Window has been hidden */
+    SDL_WINDOWEVENT_EXPOSED,      /**< Window has been exposed and should be
                                          redrawn */
-    SDL_WINDOWEVENT_MOVED,          /**< Window has been moved to data1, data2
+    SDL_WINDOWEVENT_MOVED,        /**< Window has been moved to data1, data2
                                      */
-    SDL_WINDOWEVENT_RESIZED,        /**< Window has been resized to data1xdata2 */
-    SDL_WINDOWEVENT_SIZE_CHANGED,   /**< The window size has changed, either as
+    SDL_WINDOWEVENT_RESIZED,      /**< Window has been resized to data1xdata2 */
+    SDL_WINDOWEVENT_SIZE_CHANGED, /**< The window size has changed, either as
                                          a result of an API call or through the
                                          system or user changing the window size. */
-    SDL_WINDOWEVENT_MINIMIZED,      /**< Window has been minimized */
-    SDL_WINDOWEVENT_MAXIMIZED,      /**< Window has been maximized */
-    SDL_WINDOWEVENT_RESTORED,       /**< Window has been restored to normal size
+    SDL_WINDOWEVENT_MINIMIZED,    /**< Window has been minimized */
+    SDL_WINDOWEVENT_MAXIMIZED,    /**< Window has been maximized */
+    SDL_WINDOWEVENT_RESTORED,     /**< Window has been restored to normal size
                                          and position */
-    SDL_WINDOWEVENT_ENTER,          /**< Window has gained mouse focus */
-    SDL_WINDOWEVENT_LEAVE,          /**< Window has lost mouse focus */
-    SDL_WINDOWEVENT_FOCUS_GAINED,   /**< Window has gained keyboard focus */
-    SDL_WINDOWEVENT_FOCUS_LOST,     /**< Window has lost keyboard focus */
-    SDL_WINDOWEVENT_CLOSE,          /**< The window manager requests that the window be closed */
-    SDL_WINDOWEVENT_TAKE_FOCUS,     /**< Window is being offered a focus (should SetWindowInputFocus() on itself or a subwindow, or ignore) */
-    SDL_WINDOWEVENT_HIT_TEST        /**< Window had a hit test that wasn't SDL_HITTEST_NORMAL. */
+    SDL_WINDOWEVENT_ENTER,        /**< Window has gained mouse focus */
+    SDL_WINDOWEVENT_LEAVE,        /**< Window has lost mouse focus */
+    SDL_WINDOWEVENT_FOCUS_GAINED, /**< Window has gained keyboard focus */
+    SDL_WINDOWEVENT_FOCUS_LOST,   /**< Window has lost keyboard focus */
+    SDL_WINDOWEVENT_CLOSE,        /**< The window manager requests that the window be closed */
+    SDL_WINDOWEVENT_TAKE_FOCUS,   /**< Window is being offered a focus (should SetWindowInputFocus() on itself or a subwindow, or ignore) */
+    SDL_WINDOWEVENT_HIT_TEST      /**< Window had a hit test that wasn't SDL_HITTEST_NORMAL. */
 } SDL_WindowEventID;
 
+typedef enum SwsDither {
+    SWS_DITHER_NONE = 0,
+    SWS_DITHER_AUTO,
+    SWS_DITHER_BAYER,
+    SWS_DITHER_ED,
+    SWS_DITHER_A_DITHER,
+    SWS_DITHER_X_DITHER,
+    NB_SWS_DITHER,
+} SwsDither;
+
+typedef enum SwsAlphaBlend {
+    SWS_ALPHA_BLEND_NONE  = 0,
+    SWS_ALPHA_BLEND_UNIFORM,
+    SWS_ALPHA_BLEND_CHECKERBOARD,
+    SWS_ALPHA_BLEND_NB,
+} SwsAlphaBlend;
+
 #define FF_QUIT_EVENT (SDL_USEREVENT + 2)
-
-#define AV_LOG_SKIP_REPEATED 1
-
-#define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
-#define AV_OPT_FLAG_DECODING_PARAM  2   ///< a generic parameter which can be set by the user for demuxing or decoding
-#define AV_OPT_FLAG_AUDIO_PARAM     8
-#define AV_OPT_FLAG_VIDEO_PARAM     16
-#define AV_OPT_FLAG_SUBTITLE_PARAM  32
-#define AV_OPT_FLAG_EXPORT          64
-#define AV_OPT_FLAG_READONLY        128
-#define AV_OPT_FLAG_BSF_PARAM       (1<<8) ///< a generic parameter which can be set by the user for bit stream filtering
-#define AV_OPT_FLAG_RUNTIME_PARAM   (1<<15) ///< a generic parameter which can be set by the user at runtime
-#define AV_OPT_FLAG_FILTERING_PARAM (1<<16) ///< a generic parameter which can be set by the user for filtering
-#define AV_OPT_FLAG_DEPRECATED      (1<<17) ///< set if option is deprecated, users should refer to AVOption.help text for more information
-
-#define HAS_ARG    0x0001
-#define OPT_BOOL   0x0002
-#define OPT_EXPERT 0x0004
-#define OPT_STRING 0x0008
-#define OPT_VIDEO  0x0010
-#define OPT_AUDIO  0x0020
-#define OPT_INT    0x0080
-#define OPT_FLOAT  0x0100
-#define OPT_SUBTITLE 0x0200
-#define OPT_INT64  0x0400
-#define OPT_EXIT   0x0800
-#define OPT_DATA   0x1000
-#define OPT_PERFILE  0x2000     /* the option is per-file (currently ffmpeg-only).
-                                   implied by OPT_OFFSET or OPT_SPEC */
-#define OPT_OFFSET 0x4000       /* option is specified as an offset in a passed optctx */
-#define OPT_SPEC   0x8000       /* option is to be stored in an array of SpecifierOpt.
-                                   Implies OPT_OFFSET. Next element after the offset is
-                                   an int containing element count in the array. */
-#define OPT_TIME  0x10000
-#define OPT_DOUBLE 0x20000
-#define OPT_INPUT  0x40000
-#define OPT_OUTPUT 0x80000
-
-#define AV_LOG_QUIET    -8
-#define AV_LOG_PANIC     0
-#define AV_LOG_FATAL     8
-#define AV_LOG_ERROR    16
-#define AV_LOG_WARNING  24
-#define AV_LOG_INFO     32
-#define AV_LOG_VERBOSE  40
-#define AV_LOG_DEBUG    48
-#define AV_LOG_TRACE    56
-#define AV_LOG_MAX_OFFSET (AV_LOG_TRACE - AV_LOG_QUIET)
-#define AV_LOG_C(x) ((x) << 8)
-
-static int report_file_level = AV_LOG_DEBUG;
-
-#define MV_DIR_FORWARD   1
-#define MV_DIR_BACKWARD  2
-#define MV_DIRECT        4 ///< bidirectional mode where the difference equals the MV of the last P/S/I-Frame (MPEG-4)
-#define MV_TYPE_16X16       0   ///< 1 vector for the whole mb
-#define MV_TYPE_8X8         1   ///< 4 vectors (H.263, MPEG-4 4MV)
-#define MV_TYPE_16X8        2   ///< 2 vectors, one per 16x8 block
-#define MV_TYPE_FIELD       3   ///< 2 vectors, one per field
-#define MV_TYPE_DMV         4   ///< 2 vectors, special mpeg2 Dual Prime Vectors
-#define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
-#define VIDEO_FORMAT_COMPONENT   0
-#define VIDEO_FORMAT_PAL         1
-#define VIDEO_FORMAT_NTSC        2
-#define VIDEO_FORMAT_SECAM       3
-#define VIDEO_FORMAT_MAC         4
-#define VIDEO_FORMAT_UNSPECIFIED 5
-#define CHROMA_420 1
-#define CHROMA_422 2
-#define CHROMA_444 3
-#define SLICE_OK         0
-#define SLICE_ERROR     -1
-#define SLICE_END       -2 ///<end marker found
-#define SLICE_NOEND     -3 ///<no end marker or error found but mb count exceeded
-
-#define MAX_RUN    64
-#define MAX_LEVEL  64
-#define MAX_THREADS 32
-#define MAX_B_FRAMES 16
-
-#define AVFMT_FLAG_GENPTS       0x0001 ///< Generate missing pts even if it requires parsing future frames.
-#define AVFMT_FLAG_IGNIDX       0x0002 ///< Ignore index.
-#define AVFMT_FLAG_NONBLOCK     0x0004 ///< Do not block when reading packets from input.
-#define AVFMT_FLAG_IGNDTS       0x0008 ///< Ignore DTS on frames that contain both DTS & PTS
-#define AVFMT_FLAG_NOFILLIN     0x0010 ///< Do not infer any values from other values, just return what is stored in the container
-#define AVFMT_FLAG_NOPARSE      0x0020 ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
-#define AVFMT_FLAG_NOBUFFER     0x0040 ///< Do not buffer frames when possible
-#define AVFMT_FLAG_CUSTOM_IO    0x0080 ///< The caller has supplied a custom AVIOContext, don't avio_close() it.
-#define AVFMT_FLAG_DISCARD_CORRUPT  0x0100 ///< Discard frames marked corrupted
-#define AVFMT_FLAG_FLUSH_PACKETS    0x0200 ///< Flush the AVIOContext every packet.
-#define AVFMT_FLAG_BITEXACT         0x0400
-#if FF_API_LAVF_MP4A_LATM
-#define AVFMT_FLAG_MP4A_LATM    0x8000 ///< Deprecated, does nothing.
-#endif
-#define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
-#define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
-#if FF_API_LAVF_KEEPSIDE_FLAG
-#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Deprecated, does nothing.
-#endif
-#define AVFMT_FLAG_FAST_SEEK   0x80000 ///< Enable fast, but inaccurate seeks for some formats
-#define AVFMT_FLAG_SHORTEST   0x100000 ///< Stop muxing when the shortest stream stops.
-#define AVFMT_FLAG_AUTO_BSF   0x200000 ///< Add bitstream filters as requested by the muxer
-
-#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
-#define MAX_STD_TIMEBASES (30*12+30+3+6)
-#define MAX_REORDER_DELAY 16
-
-#if ARCH_IA64 // Limit static arrays to avoid gcc failing "short data segment overflowed"
-#define MAX_MV 1024
-#else
-#define MAX_MV 4096
-#endif
-#define MAX_DMV (2*MAX_MV)
-#define ME_MAP_SIZE 64
-
-#if AV_HAVE_BIGENDIAN
-#   define AV_PIX_FMT_NE(be, le) AV_PIX_FMT_##be
-#else
-#   define AV_PIX_FMT_NE(be, le) AV_PIX_FMT_##le
-#endif
-
-#define AV_PIX_FMT_RGB32   AV_PIX_FMT_NE(ARGB, BGRA)
-#define AV_PIX_FMT_RGB32_1 AV_PIX_FMT_NE(RGBA, ABGR)
-#define AV_PIX_FMT_BGR32   AV_PIX_FMT_NE(ABGR, RGBA)
-#define AV_PIX_FMT_BGR32_1 AV_PIX_FMT_NE(BGRA, ARGB)
-#define AV_PIX_FMT_0RGB32  AV_PIX_FMT_NE(0RGB, BGR0)
-#define AV_PIX_FMT_0BGR32  AV_PIX_FMT_NE(0BGR, RGB0)
-
-#define AV_PIX_FMT_GRAY9  AV_PIX_FMT_NE(GRAY9BE,  GRAY9LE)
-#define AV_PIX_FMT_GRAY10 AV_PIX_FMT_NE(GRAY10BE, GRAY10LE)
-#define AV_PIX_FMT_GRAY12 AV_PIX_FMT_NE(GRAY12BE, GRAY12LE)
-#define AV_PIX_FMT_GRAY14 AV_PIX_FMT_NE(GRAY14BE, GRAY14LE)
-#define AV_PIX_FMT_GRAY16 AV_PIX_FMT_NE(GRAY16BE, GRAY16LE)
-#define AV_PIX_FMT_YA16   AV_PIX_FMT_NE(YA16BE,   YA16LE)
-#define AV_PIX_FMT_RGB48  AV_PIX_FMT_NE(RGB48BE,  RGB48LE)
-#define AV_PIX_FMT_RGB565 AV_PIX_FMT_NE(RGB565BE, RGB565LE)
-#define AV_PIX_FMT_RGB555 AV_PIX_FMT_NE(RGB555BE, RGB555LE)
-#define AV_PIX_FMT_RGB444 AV_PIX_FMT_NE(RGB444BE, RGB444LE)
-#define AV_PIX_FMT_RGBA64 AV_PIX_FMT_NE(RGBA64BE, RGBA64LE)
-#define AV_PIX_FMT_BGR48  AV_PIX_FMT_NE(BGR48BE,  BGR48LE)
-#define AV_PIX_FMT_BGR565 AV_PIX_FMT_NE(BGR565BE, BGR565LE)
-#define AV_PIX_FMT_BGR555 AV_PIX_FMT_NE(BGR555BE, BGR555LE)
-#define AV_PIX_FMT_BGR444 AV_PIX_FMT_NE(BGR444BE, BGR444LE)
-#define AV_PIX_FMT_BGRA64 AV_PIX_FMT_NE(BGRA64BE, BGRA64LE)
-
-#define AV_PIX_FMT_YUV420P9  AV_PIX_FMT_NE(YUV420P9BE , YUV420P9LE)
-#define AV_PIX_FMT_YUV422P9  AV_PIX_FMT_NE(YUV422P9BE , YUV422P9LE)
-#define AV_PIX_FMT_YUV444P9  AV_PIX_FMT_NE(YUV444P9BE , YUV444P9LE)
-#define AV_PIX_FMT_YUV420P10 AV_PIX_FMT_NE(YUV420P10BE, YUV420P10LE)
-#define AV_PIX_FMT_YUV422P10 AV_PIX_FMT_NE(YUV422P10BE, YUV422P10LE)
-#define AV_PIX_FMT_YUV440P10 AV_PIX_FMT_NE(YUV440P10BE, YUV440P10LE)
-#define AV_PIX_FMT_YUV444P10 AV_PIX_FMT_NE(YUV444P10BE, YUV444P10LE)
-#define AV_PIX_FMT_YUV420P12 AV_PIX_FMT_NE(YUV420P12BE, YUV420P12LE)
-#define AV_PIX_FMT_YUV422P12 AV_PIX_FMT_NE(YUV422P12BE, YUV422P12LE)
-#define AV_PIX_FMT_YUV440P12 AV_PIX_FMT_NE(YUV440P12BE, YUV440P12LE)
-#define AV_PIX_FMT_YUV444P12 AV_PIX_FMT_NE(YUV444P12BE, YUV444P12LE)
-#define AV_PIX_FMT_YUV420P14 AV_PIX_FMT_NE(YUV420P14BE, YUV420P14LE)
-#define AV_PIX_FMT_YUV422P14 AV_PIX_FMT_NE(YUV422P14BE, YUV422P14LE)
-#define AV_PIX_FMT_YUV444P14 AV_PIX_FMT_NE(YUV444P14BE, YUV444P14LE)
-#define AV_PIX_FMT_YUV420P16 AV_PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
-#define AV_PIX_FMT_YUV422P16 AV_PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
-#define AV_PIX_FMT_YUV444P16 AV_PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
-
-#define AV_PIX_FMT_GBRP9     AV_PIX_FMT_NE(GBRP9BE ,    GBRP9LE)
-#define AV_PIX_FMT_GBRP10    AV_PIX_FMT_NE(GBRP10BE,    GBRP10LE)
-#define AV_PIX_FMT_GBRP12    AV_PIX_FMT_NE(GBRP12BE,    GBRP12LE)
-#define AV_PIX_FMT_GBRP14    AV_PIX_FMT_NE(GBRP14BE,    GBRP14LE)
-#define AV_PIX_FMT_GBRP16    AV_PIX_FMT_NE(GBRP16BE,    GBRP16LE)
-#define AV_PIX_FMT_GBRAP10   AV_PIX_FMT_NE(GBRAP10BE,   GBRAP10LE)
-#define AV_PIX_FMT_GBRAP12   AV_PIX_FMT_NE(GBRAP12BE,   GBRAP12LE)
-#define AV_PIX_FMT_GBRAP16   AV_PIX_FMT_NE(GBRAP16BE,   GBRAP16LE)
-
-#define AV_PIX_FMT_BAYER_BGGR16 AV_PIX_FMT_NE(BAYER_BGGR16BE,    BAYER_BGGR16LE)
-#define AV_PIX_FMT_BAYER_RGGB16 AV_PIX_FMT_NE(BAYER_RGGB16BE,    BAYER_RGGB16LE)
-#define AV_PIX_FMT_BAYER_GBRG16 AV_PIX_FMT_NE(BAYER_GBRG16BE,    BAYER_GBRG16LE)
-#define AV_PIX_FMT_BAYER_GRBG16 AV_PIX_FMT_NE(BAYER_GRBG16BE,    BAYER_GRBG16LE)
-
-#define AV_PIX_FMT_GBRPF32    AV_PIX_FMT_NE(GBRPF32BE,  GBRPF32LE)
-#define AV_PIX_FMT_GBRAPF32   AV_PIX_FMT_NE(GBRAPF32BE, GBRAPF32LE)
-
-#define AV_PIX_FMT_GRAYF32    AV_PIX_FMT_NE(GRAYF32BE, GRAYF32LE)
-
-#define AV_PIX_FMT_YUVA420P9  AV_PIX_FMT_NE(YUVA420P9BE , YUVA420P9LE)
-#define AV_PIX_FMT_YUVA422P9  AV_PIX_FMT_NE(YUVA422P9BE , YUVA422P9LE)
-#define AV_PIX_FMT_YUVA444P9  AV_PIX_FMT_NE(YUVA444P9BE , YUVA444P9LE)
-#define AV_PIX_FMT_YUVA420P10 AV_PIX_FMT_NE(YUVA420P10BE, YUVA420P10LE)
-#define AV_PIX_FMT_YUVA422P10 AV_PIX_FMT_NE(YUVA422P10BE, YUVA422P10LE)
-#define AV_PIX_FMT_YUVA444P10 AV_PIX_FMT_NE(YUVA444P10BE, YUVA444P10LE)
-#define AV_PIX_FMT_YUVA422P12 AV_PIX_FMT_NE(YUVA422P12BE, YUVA422P12LE)
-#define AV_PIX_FMT_YUVA444P12 AV_PIX_FMT_NE(YUVA444P12BE, YUVA444P12LE)
-#define AV_PIX_FMT_YUVA420P16 AV_PIX_FMT_NE(YUVA420P16BE, YUVA420P16LE)
-#define AV_PIX_FMT_YUVA422P16 AV_PIX_FMT_NE(YUVA422P16BE, YUVA422P16LE)
-#define AV_PIX_FMT_YUVA444P16 AV_PIX_FMT_NE(YUVA444P16BE, YUVA444P16LE)
-
-#define AV_PIX_FMT_XYZ12      AV_PIX_FMT_NE(XYZ12BE, XYZ12LE)
-#define AV_PIX_FMT_NV20       AV_PIX_FMT_NE(NV20BE,  NV20LE)
-#define AV_PIX_FMT_AYUV64     AV_PIX_FMT_NE(AYUV64BE, AYUV64LE)
-#define AV_PIX_FMT_P010       AV_PIX_FMT_NE(P010BE,  P010LE)
-#define AV_PIX_FMT_P016       AV_PIX_FMT_NE(P016BE,  P016LE)
-
-#define AV_NOPTS_VALUE          ((int64_t)UINT64_C(0x8000000000000000))
-#define AV_TIME_BASE            1000000
-#define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
-
-#define AV_HAVE_BIGENDIAN 0
-#define AV_HAVE_FAST_UNALIGNED 1
-
-#define FF_FDEBUG_TS        0x0001
-#define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001 ///< The call resulted in updated metadata.
-#define AVFMT_AVOID_NEG_TS_AUTO             -1 ///< Enabled when required by target format
-#define AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE 1 ///< Shift timestamps so they are non negative
-#define AVFMT_AVOID_NEG_TS_MAKE_ZERO         2 ///< Shift timestamps so that they start at 0
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define SDL_ALPHA_OPAQUE 255
 #define SDL_ALPHA_TRANSPARENT 0
 
-#define SDL_WINDOWPOS_CENTERED_MASK    0x2FFF0000u
-#define SDL_WINDOWPOS_CENTERED_DISPLAY(X)  (SDL_WINDOWPOS_CENTERED_MASK|(X))
-#define SDL_WINDOWPOS_CENTERED         SDL_WINDOWPOS_CENTERED_DISPLAY(0)
-#define SDL_WINDOWPOS_ISCENTERED(X)    \
-            (((X)&0xFFFF0000) == SDL_WINDOWPOS_CENTERED_MASK)
+#define SDL_WINDOWPOS_CENTERED_MASK 0x2FFF0000u
+#define SDL_WINDOWPOS_CENTERED_DISPLAY(X) (SDL_WINDOWPOS_CENTERED_MASK | (X))
+#define SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED_DISPLAY(0)
+#define SDL_WINDOWPOS_ISCENTERED(X) \
+    (((X)&0xFFFF0000) == SDL_WINDOWPOS_CENTERED_MASK)
 
-#define SDL_AUDIO_ALLOW_FREQUENCY_CHANGE    0x00000001
-#define SDL_AUDIO_ALLOW_FORMAT_CHANGE       0x00000002
-#define SDL_AUDIO_ALLOW_CHANNELS_CHANGE     0x00000004
-#define SDL_AUDIO_ALLOW_SAMPLES_CHANGE      0x00000008
-#define SDL_AUDIO_ALLOW_ANY_CHANGE          (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE|SDL_AUDIO_ALLOW_FORMAT_CHANGE|SDL_AUDIO_ALLOW_CHANNELS_CHANGE|SDL_AUDIO_ALLOW_SAMPLES_CHANGE)
+#define SDL_AUDIO_ALLOW_FREQUENCY_CHANGE 0x00000001
+#define SDL_AUDIO_ALLOW_FORMAT_CHANGE 0x00000002
+#define SDL_AUDIO_ALLOW_CHANNELS_CHANGE 0x00000004
+#define SDL_AUDIO_ALLOW_SAMPLES_CHANGE 0x00000008
+#define SDL_AUDIO_ALLOW_ANY_CHANGE (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE | SDL_AUDIO_ALLOW_CHANNELS_CHANGE | SDL_AUDIO_ALLOW_SAMPLES_CHANGE)
 
-#define AV_CODEC_FLAG2_FAST           (1 <<  0)
-#define AVFMT_NOFILE        0x0001
-#define AVFMT_NEEDNUMBER    0x0002 /**< Needs '%d' in filename. */
-#define AVFMT_SHOW_IDS      0x0008 /**< Show format stream IDs numbers. */
-#define AVFMT_GLOBALHEADER  0x0040 /**< Format wants global header. */
-#define AVFMT_NOTIMESTAMPS  0x0080 /**< Format does not need / have any timestamps. */
+#define AV_CODEC_FLAG2_FAST (1 << 0)
+#define AVFMT_NOFILE 0x0001
+#define AVFMT_NEEDNUMBER 0x0002    /**< Needs '%d' in filename. */
+#define AVFMT_SHOW_IDS 0x0008      /**< Show format stream IDs numbers. */
+#define AVFMT_GLOBALHEADER 0x0040  /**< Format wants global header. */
+#define AVFMT_NOTIMESTAMPS 0x0080  /**< Format does not need / have any timestamps. */
 #define AVFMT_GENERIC_INDEX 0x0100 /**< Use generic index building code. */
-#define AVFMT_TS_DISCONT    0x0200 /**< Format allows timestamp discontinuities. Note, muxers always require valid (monotone) timestamps */
-#define AVFMT_VARIABLE_FPS  0x0400 /**< Format allows variable fps. */
-#define AVFMT_NODIMENSIONS  0x0800 /**< Format does not need width/height */
-#define AVFMT_NOSTREAMS     0x1000 /**< Format does not require any streams */
-#define AVFMT_NOBINSEARCH   0x2000 /**< Format does not allow to fall back on binary search via read_timestamp */
-#define AVFMT_NOGENSEARCH   0x4000 /**< Format does not allow to fall back on generic search */
-#define AVFMT_NO_BYTE_SEEK  0x8000 /**< Format does not allow seeking by bytes */
-#define AVFMT_ALLOW_FLUSH  0x10000 /**< Format allows flushing. If not set, the muxer will not receive a NULL packet in the write_packet function. */
-#define AVFMT_TS_NONSTRICT 0x20000 /**< Format does not require strictly
-                                        increasing timestamps, but they must
+#define AVFMT_TS_DISCONT 0x0200    /**< Format allows timestamp discontinuities. Note, muxers always require valid (monotone) timestamps */
+#define AVFMT_VARIABLE_FPS 0x0400  /**< Format allows variable fps. */
+#define AVFMT_NODIMENSIONS 0x0800  /**< Format does not need width/height */
+#define AVFMT_NOSTREAMS 0x1000     /**< Format does not require any streams */
+#define AVFMT_NOBINSEARCH 0x2000   /**< Format does not allow to fall back on binary search via read_timestamp */
+#define AVFMT_NOGENSEARCH 0x4000   /**< Format does not allow to fall back on generic search */
+#define AVFMT_NO_BYTE_SEEK 0x8000  /**< Format does not allow seeking by bytes */
+#define AVFMT_ALLOW_FLUSH 0x10000  /**< Format allows flushing. If not set, the muxer will not receive a NULL packet in the write_packet function. */
+#define AVFMT_TS_NONSTRICT 0x20000 /**< Format does not require strictly     \
+                                        increasing timestamps, but they must \
                                         still be monotonic */
-#define AVFMT_TS_NEGATIVE  0x40000 /**< Format allows muxing negative
-                                        timestamps. If not set the timestamp
-                                        will be shifted in av_write_frame and
-                                        av_interleaved_write_frame so they
-                                        start from 0.
-                                        The user or muxer can override this through
-                                        AVFormatContext.avoid_negative_ts
+#define AVFMT_TS_NEGATIVE 0x40000  /**< Format allows muxing negative               \
+                                        timestamps. If not set the timestamp        \
+                                        will be shifted in av_write_frame and       \
+                                        av_interleaved_write_frame so they          \
+                                        start from 0.                               \
+                                        The user or muxer can override this through \
+                                        AVFormatContext.avoid_negative_ts           \
                                         */
 
-#define AVFMT_SEEK_TO_PTS   0x4000000 /**< Seeking is based on PTS */
+#define AVFMT_SEEK_TO_PTS 0x4000000 /**< Seeking is based on PTS */
 
-#define AV_DISPOSITION_DEFAULT   0x0001
-#define AV_DISPOSITION_DUB       0x0002
-#define AV_DISPOSITION_ORIGINAL  0x0004
-#define AV_DISPOSITION_COMMENT   0x0008
-#define AV_DISPOSITION_LYRICS    0x0010
-#define AV_DISPOSITION_KARAOKE   0x0020
+#define AV_DISPOSITION_DEFAULT 0x0001
+#define AV_DISPOSITION_DUB 0x0002
+#define AV_DISPOSITION_ORIGINAL 0x0004
+#define AV_DISPOSITION_COMMENT 0x0008
+#define AV_DISPOSITION_LYRICS 0x0010
+#define AV_DISPOSITION_KARAOKE 0x0020
 
-#define AV_DISPOSITION_FORCED    0x0040
-#define AV_DISPOSITION_HEARING_IMPAIRED  0x0080  /**< stream for hearing impaired audiences */
-#define AV_DISPOSITION_VISUAL_IMPAIRED   0x0100  /**< stream for visual impaired audiences */
-#define AV_DISPOSITION_CLEAN_EFFECTS     0x0200  /**< stream without voice */
+#define AV_DISPOSITION_FORCED 0x0040
+#define AV_DISPOSITION_HEARING_IMPAIRED 0x0080 /**< stream for hearing impaired audiences */
+#define AV_DISPOSITION_VISUAL_IMPAIRED 0x0100  /**< stream for visual impaired audiences */
+#define AV_DISPOSITION_CLEAN_EFFECTS 0x0200    /**< stream without voice */
 
-#define AV_DISPOSITION_ATTACHED_PIC      0x0400
+#define AV_DISPOSITION_ATTACHED_PIC 0x0400
 
-#define AV_DISPOSITION_TIMED_THUMBNAILS  0x0800
+#define AV_DISPOSITION_TIMED_THUMBNAILS 0x0800
 
-#define AV_CH_FRONT_LEFT             0x00000001
-#define AV_CH_FRONT_RIGHT            0x00000002
-#define AV_CH_FRONT_CENTER           0x00000004
-#define AV_CH_LOW_FREQUENCY          0x00000008
-#define AV_CH_BACK_LEFT              0x00000010
-#define AV_CH_BACK_RIGHT             0x00000020
-#define AV_CH_FRONT_LEFT_OF_CENTER   0x00000040
-#define AV_CH_FRONT_RIGHT_OF_CENTER  0x00000080
-#define AV_CH_BACK_CENTER            0x00000100
-#define AV_CH_SIDE_LEFT              0x00000200
-#define AV_CH_SIDE_RIGHT             0x00000400
-#define AV_CH_TOP_CENTER             0x00000800
-#define AV_CH_TOP_FRONT_LEFT         0x00001000
-#define AV_CH_TOP_FRONT_CENTER       0x00002000
-#define AV_CH_TOP_FRONT_RIGHT        0x00004000
-#define AV_CH_TOP_BACK_LEFT          0x00008000
-#define AV_CH_TOP_BACK_CENTER        0x00010000
-#define AV_CH_TOP_BACK_RIGHT         0x00020000
-#define AV_CH_STEREO_LEFT            0x20000000  ///< Stereo downmix.
-#define AV_CH_STEREO_RIGHT           0x40000000  ///< See AV_CH_STEREO_LEFT.
-#define AV_CH_WIDE_LEFT              0x0000000080000000ULL
-#define AV_CH_WIDE_RIGHT             0x0000000100000000ULL
-#define AV_CH_SURROUND_DIRECT_LEFT   0x0000000200000000ULL
-#define AV_CH_SURROUND_DIRECT_RIGHT  0x0000000400000000ULL
-#define AV_CH_LOW_FREQUENCY_2        0x0000000800000000ULL
-#define AV_CH_TOP_SIDE_LEFT          0x0000001000000000ULL
-#define AV_CH_TOP_SIDE_RIGHT         0x0000002000000000ULL
-#define AV_CH_BOTTOM_FRONT_CENTER    0x0000004000000000ULL
-#define AV_CH_BOTTOM_FRONT_LEFT      0x0000008000000000ULL
-#define AV_CH_BOTTOM_FRONT_RIGHT     0x0000010000000000ULL
+#define AV_CH_FRONT_LEFT 0x00000001
+#define AV_CH_FRONT_RIGHT 0x00000002
+#define AV_CH_FRONT_CENTER 0x00000004
+#define AV_CH_LOW_FREQUENCY 0x00000008
+#define AV_CH_BACK_LEFT 0x00000010
+#define AV_CH_BACK_RIGHT 0x00000020
+#define AV_CH_FRONT_LEFT_OF_CENTER 0x00000040
+#define AV_CH_FRONT_RIGHT_OF_CENTER 0x00000080
+#define AV_CH_BACK_CENTER 0x00000100
+#define AV_CH_SIDE_LEFT 0x00000200
+#define AV_CH_SIDE_RIGHT 0x00000400
+#define AV_CH_TOP_CENTER 0x00000800
+#define AV_CH_TOP_FRONT_LEFT 0x00001000
+#define AV_CH_TOP_FRONT_CENTER 0x00002000
+#define AV_CH_TOP_FRONT_RIGHT 0x00004000
+#define AV_CH_TOP_BACK_LEFT 0x00008000
+#define AV_CH_TOP_BACK_CENTER 0x00010000
+#define AV_CH_TOP_BACK_RIGHT 0x00020000
+#define AV_CH_STEREO_LEFT 0x20000000  ///< Stereo downmix.
+#define AV_CH_STEREO_RIGHT 0x40000000 ///< See AV_CH_STEREO_LEFT.
+#define AV_CH_WIDE_LEFT 0x0000000080000000ULL
+#define AV_CH_WIDE_RIGHT 0x0000000100000000ULL
+#define AV_CH_SURROUND_DIRECT_LEFT 0x0000000200000000ULL
+#define AV_CH_SURROUND_DIRECT_RIGHT 0x0000000400000000ULL
+#define AV_CH_LOW_FREQUENCY_2 0x0000000800000000ULL
+#define AV_CH_TOP_SIDE_LEFT 0x0000001000000000ULL
+#define AV_CH_TOP_SIDE_RIGHT 0x0000002000000000ULL
+#define AV_CH_BOTTOM_FRONT_CENTER 0x0000004000000000ULL
+#define AV_CH_BOTTOM_FRONT_LEFT 0x0000008000000000ULL
+#define AV_CH_BOTTOM_FRONT_RIGHT 0x0000010000000000ULL
 
 /** Channel mask value used for AVCodecContext.request_channel_layout
     to indicate that the user requests the channel order of the decoder output
     to be the native codec channel order. */
-#define AV_CH_LAYOUT_NATIVE          0x8000000000000000ULL
-#define AV_CH_LAYOUT_MONO              (AV_CH_FRONT_CENTER)
-#define AV_CH_LAYOUT_STEREO            (AV_CH_FRONT_LEFT|AV_CH_FRONT_RIGHT)
-#define AV_CH_LAYOUT_2POINT1           (AV_CH_LAYOUT_STEREO|AV_CH_LOW_FREQUENCY)
-#define AV_CH_LAYOUT_2_1               (AV_CH_LAYOUT_STEREO|AV_CH_BACK_CENTER)
-#define AV_CH_LAYOUT_SURROUND          (AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER)
-#define AV_CH_LAYOUT_3POINT1           (AV_CH_LAYOUT_SURROUND|AV_CH_LOW_FREQUENCY)
-#define AV_CH_LAYOUT_4POINT0           (AV_CH_LAYOUT_SURROUND|AV_CH_BACK_CENTER)
-#define AV_CH_LAYOUT_4POINT1           (AV_CH_LAYOUT_4POINT0|AV_CH_LOW_FREQUENCY)
-#define AV_CH_LAYOUT_2_2               (AV_CH_LAYOUT_STEREO|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT)
-#define AV_CH_LAYOUT_QUAD              (AV_CH_LAYOUT_STEREO|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-#define AV_CH_LAYOUT_5POINT0           (AV_CH_LAYOUT_SURROUND|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT)
-#define AV_CH_LAYOUT_5POINT1           (AV_CH_LAYOUT_5POINT0|AV_CH_LOW_FREQUENCY)
-#define AV_CH_LAYOUT_5POINT0_BACK      (AV_CH_LAYOUT_SURROUND|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-#define AV_CH_LAYOUT_5POINT1_BACK      (AV_CH_LAYOUT_5POINT0_BACK|AV_CH_LOW_FREQUENCY)
-#define AV_CH_LAYOUT_6POINT0           (AV_CH_LAYOUT_5POINT0|AV_CH_BACK_CENTER)
-#define AV_CH_LAYOUT_6POINT0_FRONT     (AV_CH_LAYOUT_2_2|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-#define AV_CH_LAYOUT_HEXAGONAL         (AV_CH_LAYOUT_5POINT0_BACK|AV_CH_BACK_CENTER)
-#define AV_CH_LAYOUT_6POINT1           (AV_CH_LAYOUT_5POINT1|AV_CH_BACK_CENTER)
-#define AV_CH_LAYOUT_6POINT1_BACK      (AV_CH_LAYOUT_5POINT1_BACK|AV_CH_BACK_CENTER)
-#define AV_CH_LAYOUT_6POINT1_FRONT     (AV_CH_LAYOUT_6POINT0_FRONT|AV_CH_LOW_FREQUENCY)
-#define AV_CH_LAYOUT_7POINT0           (AV_CH_LAYOUT_5POINT0|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-#define AV_CH_LAYOUT_7POINT0_FRONT     (AV_CH_LAYOUT_5POINT0|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-#define AV_CH_LAYOUT_7POINT1           (AV_CH_LAYOUT_5POINT1|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
-#define AV_CH_LAYOUT_7POINT1_WIDE      (AV_CH_LAYOUT_5POINT1|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-#define AV_CH_LAYOUT_7POINT1_WIDE_BACK (AV_CH_LAYOUT_5POINT1_BACK|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
-#define AV_CH_LAYOUT_OCTAGONAL         (AV_CH_LAYOUT_5POINT0|AV_CH_BACK_LEFT|AV_CH_BACK_CENTER|AV_CH_BACK_RIGHT)
-#define AV_CH_LAYOUT_HEXADECAGONAL     (AV_CH_LAYOUT_OCTAGONAL|AV_CH_WIDE_LEFT|AV_CH_WIDE_RIGHT|AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_RIGHT|AV_CH_TOP_BACK_CENTER|AV_CH_TOP_FRONT_CENTER|AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT)
-#define AV_CH_LAYOUT_STEREO_DOWNMIX    (AV_CH_STEREO_LEFT|AV_CH_STEREO_RIGHT)
-#define AV_CH_LAYOUT_22POINT2          (AV_CH_LAYOUT_5POINT1_BACK|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER|AV_CH_BACK_CENTER|AV_CH_LOW_FREQUENCY_2|AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT|AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT|AV_CH_TOP_FRONT_CENTER|AV_CH_TOP_CENTER|AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_RIGHT|AV_CH_TOP_SIDE_LEFT|AV_CH_TOP_SIDE_RIGHT|AV_CH_TOP_BACK_CENTER|AV_CH_BOTTOM_FRONT_CENTER|AV_CH_BOTTOM_FRONT_LEFT|AV_CH_BOTTOM_FRONT_RIGHT)
+#define AV_CH_LAYOUT_NATIVE 0x8000000000000000ULL
+#define AV_CH_LAYOUT_MONO (AV_CH_FRONT_CENTER)
+#define AV_CH_LAYOUT_STEREO (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
+#define AV_CH_LAYOUT_2POINT1 (AV_CH_LAYOUT_STEREO | AV_CH_LOW_FREQUENCY)
+#define AV_CH_LAYOUT_2_1 (AV_CH_LAYOUT_STEREO | AV_CH_BACK_CENTER)
+#define AV_CH_LAYOUT_SURROUND (AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER)
+#define AV_CH_LAYOUT_3POINT1 (AV_CH_LAYOUT_SURROUND | AV_CH_LOW_FREQUENCY)
+#define AV_CH_LAYOUT_4POINT0 (AV_CH_LAYOUT_SURROUND | AV_CH_BACK_CENTER)
+#define AV_CH_LAYOUT_4POINT1 (AV_CH_LAYOUT_4POINT0 | AV_CH_LOW_FREQUENCY)
+#define AV_CH_LAYOUT_2_2 (AV_CH_LAYOUT_STEREO | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT)
+#define AV_CH_LAYOUT_QUAD (AV_CH_LAYOUT_STEREO | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+#define AV_CH_LAYOUT_5POINT0 (AV_CH_LAYOUT_SURROUND | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT)
+#define AV_CH_LAYOUT_5POINT1 (AV_CH_LAYOUT_5POINT0 | AV_CH_LOW_FREQUENCY)
+#define AV_CH_LAYOUT_5POINT0_BACK (AV_CH_LAYOUT_SURROUND | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+#define AV_CH_LAYOUT_5POINT1_BACK (AV_CH_LAYOUT_5POINT0_BACK | AV_CH_LOW_FREQUENCY)
+#define AV_CH_LAYOUT_6POINT0 (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_CENTER)
+#define AV_CH_LAYOUT_6POINT0_FRONT (AV_CH_LAYOUT_2_2 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+#define AV_CH_LAYOUT_HEXAGONAL (AV_CH_LAYOUT_5POINT0_BACK | AV_CH_BACK_CENTER)
+#define AV_CH_LAYOUT_6POINT1 (AV_CH_LAYOUT_5POINT1 | AV_CH_BACK_CENTER)
+#define AV_CH_LAYOUT_6POINT1_BACK (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_BACK_CENTER)
+#define AV_CH_LAYOUT_6POINT1_FRONT (AV_CH_LAYOUT_6POINT0_FRONT | AV_CH_LOW_FREQUENCY)
+#define AV_CH_LAYOUT_7POINT0 (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+#define AV_CH_LAYOUT_7POINT0_FRONT (AV_CH_LAYOUT_5POINT0 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+#define AV_CH_LAYOUT_7POINT1 (AV_CH_LAYOUT_5POINT1 | AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT)
+#define AV_CH_LAYOUT_7POINT1_WIDE (AV_CH_LAYOUT_5POINT1 | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+#define AV_CH_LAYOUT_7POINT1_WIDE_BACK (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+#define AV_CH_LAYOUT_OCTAGONAL (AV_CH_LAYOUT_5POINT0 | AV_CH_BACK_LEFT | AV_CH_BACK_CENTER | AV_CH_BACK_RIGHT)
+#define AV_CH_LAYOUT_HEXADECAGONAL (AV_CH_LAYOUT_OCTAGONAL | AV_CH_WIDE_LEFT | AV_CH_WIDE_RIGHT | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT | AV_CH_TOP_BACK_CENTER | AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT)
+#define AV_CH_LAYOUT_STEREO_DOWNMIX (AV_CH_STEREO_LEFT | AV_CH_STEREO_RIGHT)
+#define AV_CH_LAYOUT_22POINT2 (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_BACK_CENTER | AV_CH_LOW_FREQUENCY_2 | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT | AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT | AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_CENTER | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT | AV_CH_TOP_SIDE_LEFT | AV_CH_TOP_SIDE_RIGHT | AV_CH_TOP_BACK_CENTER | AV_CH_BOTTOM_FRONT_CENTER | AV_CH_BOTTOM_FRONT_LEFT | AV_CH_BOTTOM_FRONT_RIGHT)
 
-#define SDLK_SCANCODE_MASK (1<<30)
-#define SDL_SCANCODE_TO_KEYCODE(X)  (X | SDLK_SCANCODE_MASK)
+#define SDLK_SCANCODE_MASK (1 << 30)
+#define SDL_SCANCODE_TO_KEYCODE(X) (X | SDLK_SCANCODE_MASK)
 
-#define SDL_BUTTON(X)       (1 << ((X)-1))
-#define SDL_BUTTON_LEFT     1
-#define SDL_BUTTON_MIDDLE   2
-#define SDL_BUTTON_RIGHT    3
-#define SDL_BUTTON_X1       4
-#define SDL_BUTTON_X2       5
-#define SDL_BUTTON_LMASK    SDL_BUTTON(SDL_BUTTON_LEFT)
-#define SDL_BUTTON_MMASK    SDL_BUTTON(SDL_BUTTON_MIDDLE)
-#define SDL_BUTTON_RMASK    SDL_BUTTON(SDL_BUTTON_RIGHT)
-#define SDL_BUTTON_X1MASK   SDL_BUTTON(SDL_BUTTON_X1)
-#define SDL_BUTTON_X2MASK   SDL_BUTTON(SDL_BUTTON_X2)
+#define SDL_BUTTON(X) (1 << ((X)-1))
+#define SDL_BUTTON_LEFT 1
+#define SDL_BUTTON_MIDDLE 2
+#define SDL_BUTTON_RIGHT 3
+#define SDL_BUTTON_X1 4
+#define SDL_BUTTON_X2 5
+#define SDL_BUTTON_LMASK SDL_BUTTON(SDL_BUTTON_LEFT)
+#define SDL_BUTTON_MMASK SDL_BUTTON(SDL_BUTTON_MIDDLE)
+#define SDL_BUTTON_RMASK SDL_BUTTON(SDL_BUTTON_RIGHT)
+#define SDL_BUTTON_X1MASK SDL_BUTTON(SDL_BUTTON_X1)
+#define SDL_BUTTON_X2MASK SDL_BUTTON(SDL_BUTTON_X2)
 
-typedef enum
-{
-    SDL_SCANCODE_UNKNOWN = 0,
+#define LINE_SZ 1024
+#define NB_LEVELS 8
 
-    /**
+#ifndef attribute_align_arg
+#if ARCH_X86_32 && AV_GCC_VERSION_AT_LEAST(4, 2)
+#define attribute_align_arg __attribute__((force_align_arg_pointer))
+#else
+#define attribute_align_arg
+#endif
+#endif
+
+#define AV_CODEC_FLAG_DROPCHANGED (1 << 5)
+#define AVERROR_INPUT_CHANGED (-0x636e6701) ///< Input changed between calls. Reconfiguration is required. (can be OR-ed with AVERROR_OUTPUT_CHANGED)
+#define MKTAG(a, b, c, d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
+
+
+
+#if EDOM > 0
+#define AVERROR(e) (-(e))   ///< Returns a negative error code from a POSIX error code, to return from library functions.
+#define AVUNERROR(e) (-(e)) ///< Returns a POSIX error code from a library function error return value.
+#else
+#define AVERROR(e) (e)
+#define AVUNERROR(e) (e)
+#endif
+
+#define AV_INPUT_BUFFER_PADDING_SIZE 64
+#define AV_INPUT_BUFFER_MIN_SIZE 16384
+
+#define av_assert0(cond)                                                 \
+    do                                                                   \
+    {                                                                    \
+        if (!(cond))                                                     \
+        {                                                                \
+            av_log(NULL, AV_LOG_PANIC, "Assertion %s failed at %s:%d\n", \
+                   AV_STRINGIFY(cond), __FILE__, __LINE__);              \
+            abort();                                                     \
+        }                                                                \
+    } while (0)
+
+#if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 0
+#define av_assert1(cond) av_assert0(cond)
+#else
+#define av_assert1(cond) ((void)0)
+#endif
+
+#if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 1
+#define av_assert2(cond) av_assert0(cond)
+#define av_assert2_fpu() av_assert0_fpu()
+#else
+#define av_assert2(cond) ((void)0)
+#define av_assert2_fpu() ((void)0)
+#endif
+
+#define SRWLOCK_INIT RTL_SRWLOCK_INIT
+#define AV_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+#define PTHREAD_MUTEX_INITIALIZER SRWLOCK_INIT
+#define AVMutex pthread_mutex_t
+
+#define ff_mutex_init pthread_mutex_init
+#define ff_mutex_lock pthread_mutex_lock
+#define ff_mutex_unlock pthread_mutex_unlock
+#define ff_mutex_destroy pthread_mutex_destroy
+#define pthread_mutex_lock strict_pthread_mutex_lock
+
+#define BUFFER_FLAG_REALLOCATABLE (1 << 0)
+#define ALIGN (HAVE_AVX512 ? 64 : (HAVE_AVX ? 32 : 16))
+
+#define WHITESPACES " \n\t\r"
+
+#define AV_STRINGIFY(s)         AV_TOSTRING(s)
+#define AV_TOSTRING(s) #s
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846  /* pi */
+#endif
+
+#define CONV_FP(x) ((double) (x)) / (1 << 16)
+
+// double to fixed point
+#define CONV_DB(x) (int32_t) ((x) * (1 << 16))
+
+
+
+#define AV_IS_INPUT_DEVICE(category) \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_INPUT))
+
+#define AV_IS_OUTPUT_DEVICE(category) \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_OUTPUT))
+
+    typedef enum
+    {
+        SDL_SCANCODE_UNKNOWN = 0,
+
+        /**
      *  \name Usage page 0x07
      *
      *  These values are from usage page 0x07 (USB keyboard page).
      */
-    /* @{ */
+        /* @{ */
 
-    SDL_SCANCODE_A = 4,
-    SDL_SCANCODE_B = 5,
-    SDL_SCANCODE_C = 6,
-    SDL_SCANCODE_D = 7,
-    SDL_SCANCODE_E = 8,
-    SDL_SCANCODE_F = 9,
-    SDL_SCANCODE_G = 10,
-    SDL_SCANCODE_H = 11,
-    SDL_SCANCODE_I = 12,
-    SDL_SCANCODE_J = 13,
-    SDL_SCANCODE_K = 14,
-    SDL_SCANCODE_L = 15,
-    SDL_SCANCODE_M = 16,
-    SDL_SCANCODE_N = 17,
-    SDL_SCANCODE_O = 18,
-    SDL_SCANCODE_P = 19,
-    SDL_SCANCODE_Q = 20,
-    SDL_SCANCODE_R = 21,
-    SDL_SCANCODE_S = 22,
-    SDL_SCANCODE_T = 23,
-    SDL_SCANCODE_U = 24,
-    SDL_SCANCODE_V = 25,
-    SDL_SCANCODE_W = 26,
-    SDL_SCANCODE_X = 27,
-    SDL_SCANCODE_Y = 28,
-    SDL_SCANCODE_Z = 29,
+        SDL_SCANCODE_A = 4,
+        SDL_SCANCODE_B = 5,
+        SDL_SCANCODE_C = 6,
+        SDL_SCANCODE_D = 7,
+        SDL_SCANCODE_E = 8,
+        SDL_SCANCODE_F = 9,
+        SDL_SCANCODE_G = 10,
+        SDL_SCANCODE_H = 11,
+        SDL_SCANCODE_I = 12,
+        SDL_SCANCODE_J = 13,
+        SDL_SCANCODE_K = 14,
+        SDL_SCANCODE_L = 15,
+        SDL_SCANCODE_M = 16,
+        SDL_SCANCODE_N = 17,
+        SDL_SCANCODE_O = 18,
+        SDL_SCANCODE_P = 19,
+        SDL_SCANCODE_Q = 20,
+        SDL_SCANCODE_R = 21,
+        SDL_SCANCODE_S = 22,
+        SDL_SCANCODE_T = 23,
+        SDL_SCANCODE_U = 24,
+        SDL_SCANCODE_V = 25,
+        SDL_SCANCODE_W = 26,
+        SDL_SCANCODE_X = 27,
+        SDL_SCANCODE_Y = 28,
+        SDL_SCANCODE_Z = 29,
 
-    SDL_SCANCODE_1 = 30,
-    SDL_SCANCODE_2 = 31,
-    SDL_SCANCODE_3 = 32,
-    SDL_SCANCODE_4 = 33,
-    SDL_SCANCODE_5 = 34,
-    SDL_SCANCODE_6 = 35,
-    SDL_SCANCODE_7 = 36,
-    SDL_SCANCODE_8 = 37,
-    SDL_SCANCODE_9 = 38,
-    SDL_SCANCODE_0 = 39,
+        SDL_SCANCODE_1 = 30,
+        SDL_SCANCODE_2 = 31,
+        SDL_SCANCODE_3 = 32,
+        SDL_SCANCODE_4 = 33,
+        SDL_SCANCODE_5 = 34,
+        SDL_SCANCODE_6 = 35,
+        SDL_SCANCODE_7 = 36,
+        SDL_SCANCODE_8 = 37,
+        SDL_SCANCODE_9 = 38,
+        SDL_SCANCODE_0 = 39,
 
-    SDL_SCANCODE_RETURN = 40,
-    SDL_SCANCODE_ESCAPE = 41,
-    SDL_SCANCODE_BACKSPACE = 42,
-    SDL_SCANCODE_TAB = 43,
-    SDL_SCANCODE_SPACE = 44,
+        SDL_SCANCODE_RETURN = 40,
+        SDL_SCANCODE_ESCAPE = 41,
+        SDL_SCANCODE_BACKSPACE = 42,
+        SDL_SCANCODE_TAB = 43,
+        SDL_SCANCODE_SPACE = 44,
 
-    SDL_SCANCODE_MINUS = 45,
-    SDL_SCANCODE_EQUALS = 46,
-    SDL_SCANCODE_LEFTBRACKET = 47,
-    SDL_SCANCODE_RIGHTBRACKET = 48,
-    SDL_SCANCODE_BACKSLASH = 49, /**< Located at the lower left of the return
+        SDL_SCANCODE_MINUS = 45,
+        SDL_SCANCODE_EQUALS = 46,
+        SDL_SCANCODE_LEFTBRACKET = 47,
+        SDL_SCANCODE_RIGHTBRACKET = 48,
+        SDL_SCANCODE_BACKSLASH = 49, /**< Located at the lower left of the return
                                   *   key on ISO keyboards and at the right end
                                   *   of the QWERTY row on ANSI keyboards.
                                   *   Produces REVERSE SOLIDUS (backslash) and
@@ -4016,7 +4241,7 @@ typedef enum
                                   *   layout, and ASTERISK and MICRO SIGN in a
                                   *   French Windows layout.
                                   */
-    SDL_SCANCODE_NONUSHASH = 50, /**< ISO USB keyboards actually use this code
+        SDL_SCANCODE_NONUSHASH = 50, /**< ISO USB keyboards actually use this code
                                   *   instead of 49 for the same key, but all
                                   *   OSes I've seen treat the two codes
                                   *   identically. So, as an implementor, unless
@@ -4028,9 +4253,9 @@ typedef enum
                                   *   will never generate it with most (all?)
                                   *   keyboards.
                                   */
-    SDL_SCANCODE_SEMICOLON = 51,
-    SDL_SCANCODE_APOSTROPHE = 52,
-    SDL_SCANCODE_GRAVE = 53, /**< Located in the top left corner (on both ANSI
+        SDL_SCANCODE_SEMICOLON = 51,
+        SDL_SCANCODE_APOSTROPHE = 52,
+        SDL_SCANCODE_GRAVE = 53, /**< Located in the top left corner (on both ANSI
                               *   and ISO keyboards). Produces GRAVE ACCENT and
                               *   TILDE in a US Windows layout and in US and UK
                               *   Mac layouts on ANSI keyboards, GRAVE ACCENT
@@ -4047,60 +4272,60 @@ typedef enum
                               *   SIGN in a Swiss German, German, or French Mac
                               *   layout on ANSI keyboards.
                               */
-    SDL_SCANCODE_COMMA = 54,
-    SDL_SCANCODE_PERIOD = 55,
-    SDL_SCANCODE_SLASH = 56,
+        SDL_SCANCODE_COMMA = 54,
+        SDL_SCANCODE_PERIOD = 55,
+        SDL_SCANCODE_SLASH = 56,
 
-    SDL_SCANCODE_CAPSLOCK = 57,
+        SDL_SCANCODE_CAPSLOCK = 57,
 
-    SDL_SCANCODE_F1 = 58,
-    SDL_SCANCODE_F2 = 59,
-    SDL_SCANCODE_F3 = 60,
-    SDL_SCANCODE_F4 = 61,
-    SDL_SCANCODE_F5 = 62,
-    SDL_SCANCODE_F6 = 63,
-    SDL_SCANCODE_F7 = 64,
-    SDL_SCANCODE_F8 = 65,
-    SDL_SCANCODE_F9 = 66,
-    SDL_SCANCODE_F10 = 67,
-    SDL_SCANCODE_F11 = 68,
-    SDL_SCANCODE_F12 = 69,
+        SDL_SCANCODE_F1 = 58,
+        SDL_SCANCODE_F2 = 59,
+        SDL_SCANCODE_F3 = 60,
+        SDL_SCANCODE_F4 = 61,
+        SDL_SCANCODE_F5 = 62,
+        SDL_SCANCODE_F6 = 63,
+        SDL_SCANCODE_F7 = 64,
+        SDL_SCANCODE_F8 = 65,
+        SDL_SCANCODE_F9 = 66,
+        SDL_SCANCODE_F10 = 67,
+        SDL_SCANCODE_F11 = 68,
+        SDL_SCANCODE_F12 = 69,
 
-    SDL_SCANCODE_PRINTSCREEN = 70,
-    SDL_SCANCODE_SCROLLLOCK = 71,
-    SDL_SCANCODE_PAUSE = 72,
-    SDL_SCANCODE_INSERT = 73, /**< insert on PC, help on some Mac keyboards (but
+        SDL_SCANCODE_PRINTSCREEN = 70,
+        SDL_SCANCODE_SCROLLLOCK = 71,
+        SDL_SCANCODE_PAUSE = 72,
+        SDL_SCANCODE_INSERT = 73, /**< insert on PC, help on some Mac keyboards (but
                                    does send code 73, not 117) */
-    SDL_SCANCODE_HOME = 74,
-    SDL_SCANCODE_PAGEUP = 75,
-    SDL_SCANCODE_DELETE = 76,
-    SDL_SCANCODE_END = 77,
-    SDL_SCANCODE_PAGEDOWN = 78,
-    SDL_SCANCODE_RIGHT = 79,
-    SDL_SCANCODE_LEFT = 80,
-    SDL_SCANCODE_DOWN = 81,
-    SDL_SCANCODE_UP = 82,
+        SDL_SCANCODE_HOME = 74,
+        SDL_SCANCODE_PAGEUP = 75,
+        SDL_SCANCODE_DELETE = 76,
+        SDL_SCANCODE_END = 77,
+        SDL_SCANCODE_PAGEDOWN = 78,
+        SDL_SCANCODE_RIGHT = 79,
+        SDL_SCANCODE_LEFT = 80,
+        SDL_SCANCODE_DOWN = 81,
+        SDL_SCANCODE_UP = 82,
 
-    SDL_SCANCODE_NUMLOCKCLEAR = 83, /**< num lock on PC, clear on Mac keyboards
+        SDL_SCANCODE_NUMLOCKCLEAR = 83, /**< num lock on PC, clear on Mac keyboards
                                      */
-    SDL_SCANCODE_KP_DIVIDE = 84,
-    SDL_SCANCODE_KP_MULTIPLY = 85,
-    SDL_SCANCODE_KP_MINUS = 86,
-    SDL_SCANCODE_KP_PLUS = 87,
-    SDL_SCANCODE_KP_ENTER = 88,
-    SDL_SCANCODE_KP_1 = 89,
-    SDL_SCANCODE_KP_2 = 90,
-    SDL_SCANCODE_KP_3 = 91,
-    SDL_SCANCODE_KP_4 = 92,
-    SDL_SCANCODE_KP_5 = 93,
-    SDL_SCANCODE_KP_6 = 94,
-    SDL_SCANCODE_KP_7 = 95,
-    SDL_SCANCODE_KP_8 = 96,
-    SDL_SCANCODE_KP_9 = 97,
-    SDL_SCANCODE_KP_0 = 98,
-    SDL_SCANCODE_KP_PERIOD = 99,
+        SDL_SCANCODE_KP_DIVIDE = 84,
+        SDL_SCANCODE_KP_MULTIPLY = 85,
+        SDL_SCANCODE_KP_MINUS = 86,
+        SDL_SCANCODE_KP_PLUS = 87,
+        SDL_SCANCODE_KP_ENTER = 88,
+        SDL_SCANCODE_KP_1 = 89,
+        SDL_SCANCODE_KP_2 = 90,
+        SDL_SCANCODE_KP_3 = 91,
+        SDL_SCANCODE_KP_4 = 92,
+        SDL_SCANCODE_KP_5 = 93,
+        SDL_SCANCODE_KP_6 = 94,
+        SDL_SCANCODE_KP_7 = 95,
+        SDL_SCANCODE_KP_8 = 96,
+        SDL_SCANCODE_KP_9 = 97,
+        SDL_SCANCODE_KP_0 = 98,
+        SDL_SCANCODE_KP_PERIOD = 99,
 
-    SDL_SCANCODE_NONUSBACKSLASH = 100, /**< This is the additional key that ISO
+        SDL_SCANCODE_NONUSBACKSLASH = 100, /**< This is the additional key that ISO
                                         *   keyboards have over ANSI ones,
                                         *   located between left shift and Y.
                                         *   Produces GRAVE ACCENT and TILDE in a
@@ -4110,855 +4335,869 @@ typedef enum
                                         *   LESS-THAN SIGN and GREATER-THAN SIGN
                                         *   in a Swiss German, German, or French
                                         *   layout. */
-    SDL_SCANCODE_APPLICATION = 101, /**< windows contextual menu, compose */
-    SDL_SCANCODE_POWER = 102, /**< The USB document says this is a status flag,
+        SDL_SCANCODE_APPLICATION = 101,    /**< windows contextual menu, compose */
+        SDL_SCANCODE_POWER = 102,          /**< The USB document says this is a status flag,
                                *   not a physical key - but some Mac keyboards
                                *   do have a power key. */
-    SDL_SCANCODE_KP_EQUALS = 103,
-    SDL_SCANCODE_F13 = 104,
-    SDL_SCANCODE_F14 = 105,
-    SDL_SCANCODE_F15 = 106,
-    SDL_SCANCODE_F16 = 107,
-    SDL_SCANCODE_F17 = 108,
-    SDL_SCANCODE_F18 = 109,
-    SDL_SCANCODE_F19 = 110,
-    SDL_SCANCODE_F20 = 111,
-    SDL_SCANCODE_F21 = 112,
-    SDL_SCANCODE_F22 = 113,
-    SDL_SCANCODE_F23 = 114,
-    SDL_SCANCODE_F24 = 115,
-    SDL_SCANCODE_EXECUTE = 116,
-    SDL_SCANCODE_HELP = 117,
-    SDL_SCANCODE_MENU = 118,
-    SDL_SCANCODE_SELECT = 119,
-    SDL_SCANCODE_STOP = 120,
-    SDL_SCANCODE_AGAIN = 121,   /**< redo */
-    SDL_SCANCODE_UNDO = 122,
-    SDL_SCANCODE_CUT = 123,
-    SDL_SCANCODE_COPY = 124,
-    SDL_SCANCODE_PASTE = 125,
-    SDL_SCANCODE_FIND = 126,
-    SDL_SCANCODE_MUTE = 127,
-    SDL_SCANCODE_VOLUMEUP = 128,
-    SDL_SCANCODE_VOLUMEDOWN = 129,
-/* not sure whether there's a reason to enable these */
-/*     SDL_SCANCODE_LOCKINGCAPSLOCK = 130,  */
-/*     SDL_SCANCODE_LOCKINGNUMLOCK = 131, */
-/*     SDL_SCANCODE_LOCKINGSCROLLLOCK = 132, */
-    SDL_SCANCODE_KP_COMMA = 133,
-    SDL_SCANCODE_KP_EQUALSAS400 = 134,
+        SDL_SCANCODE_KP_EQUALS = 103,
+        SDL_SCANCODE_F13 = 104,
+        SDL_SCANCODE_F14 = 105,
+        SDL_SCANCODE_F15 = 106,
+        SDL_SCANCODE_F16 = 107,
+        SDL_SCANCODE_F17 = 108,
+        SDL_SCANCODE_F18 = 109,
+        SDL_SCANCODE_F19 = 110,
+        SDL_SCANCODE_F20 = 111,
+        SDL_SCANCODE_F21 = 112,
+        SDL_SCANCODE_F22 = 113,
+        SDL_SCANCODE_F23 = 114,
+        SDL_SCANCODE_F24 = 115,
+        SDL_SCANCODE_EXECUTE = 116,
+        SDL_SCANCODE_HELP = 117,
+        SDL_SCANCODE_MENU = 118,
+        SDL_SCANCODE_SELECT = 119,
+        SDL_SCANCODE_STOP = 120,
+        SDL_SCANCODE_AGAIN = 121, /**< redo */
+        SDL_SCANCODE_UNDO = 122,
+        SDL_SCANCODE_CUT = 123,
+        SDL_SCANCODE_COPY = 124,
+        SDL_SCANCODE_PASTE = 125,
+        SDL_SCANCODE_FIND = 126,
+        SDL_SCANCODE_MUTE = 127,
+        SDL_SCANCODE_VOLUMEUP = 128,
+        SDL_SCANCODE_VOLUMEDOWN = 129,
+        /* not sure whether there's a reason to enable these */
+        /*     SDL_SCANCODE_LOCKINGCAPSLOCK = 130,  */
+        /*     SDL_SCANCODE_LOCKINGNUMLOCK = 131, */
+        /*     SDL_SCANCODE_LOCKINGSCROLLLOCK = 132, */
+        SDL_SCANCODE_KP_COMMA = 133,
+        SDL_SCANCODE_KP_EQUALSAS400 = 134,
 
-    SDL_SCANCODE_INTERNATIONAL1 = 135, /**< used on Asian keyboards, see
+        SDL_SCANCODE_INTERNATIONAL1 = 135, /**< used on Asian keyboards, see
                                             footnotes in USB doc */
-    SDL_SCANCODE_INTERNATIONAL2 = 136,
-    SDL_SCANCODE_INTERNATIONAL3 = 137, /**< Yen */
-    SDL_SCANCODE_INTERNATIONAL4 = 138,
-    SDL_SCANCODE_INTERNATIONAL5 = 139,
-    SDL_SCANCODE_INTERNATIONAL6 = 140,
-    SDL_SCANCODE_INTERNATIONAL7 = 141,
-    SDL_SCANCODE_INTERNATIONAL8 = 142,
-    SDL_SCANCODE_INTERNATIONAL9 = 143,
-    SDL_SCANCODE_LANG1 = 144, /**< Hangul/English toggle */
-    SDL_SCANCODE_LANG2 = 145, /**< Hanja conversion */
-    SDL_SCANCODE_LANG3 = 146, /**< Katakana */
-    SDL_SCANCODE_LANG4 = 147, /**< Hiragana */
-    SDL_SCANCODE_LANG5 = 148, /**< Zenkaku/Hankaku */
-    SDL_SCANCODE_LANG6 = 149, /**< reserved */
-    SDL_SCANCODE_LANG7 = 150, /**< reserved */
-    SDL_SCANCODE_LANG8 = 151, /**< reserved */
-    SDL_SCANCODE_LANG9 = 152, /**< reserved */
+        SDL_SCANCODE_INTERNATIONAL2 = 136,
+        SDL_SCANCODE_INTERNATIONAL3 = 137, /**< Yen */
+        SDL_SCANCODE_INTERNATIONAL4 = 138,
+        SDL_SCANCODE_INTERNATIONAL5 = 139,
+        SDL_SCANCODE_INTERNATIONAL6 = 140,
+        SDL_SCANCODE_INTERNATIONAL7 = 141,
+        SDL_SCANCODE_INTERNATIONAL8 = 142,
+        SDL_SCANCODE_INTERNATIONAL9 = 143,
+        SDL_SCANCODE_LANG1 = 144, /**< Hangul/English toggle */
+        SDL_SCANCODE_LANG2 = 145, /**< Hanja conversion */
+        SDL_SCANCODE_LANG3 = 146, /**< Katakana */
+        SDL_SCANCODE_LANG4 = 147, /**< Hiragana */
+        SDL_SCANCODE_LANG5 = 148, /**< Zenkaku/Hankaku */
+        SDL_SCANCODE_LANG6 = 149, /**< reserved */
+        SDL_SCANCODE_LANG7 = 150, /**< reserved */
+        SDL_SCANCODE_LANG8 = 151, /**< reserved */
+        SDL_SCANCODE_LANG9 = 152, /**< reserved */
 
-    SDL_SCANCODE_ALTERASE = 153, /**< Erase-Eaze */
-    SDL_SCANCODE_SYSREQ = 154,
-    SDL_SCANCODE_CANCEL = 155,
-    SDL_SCANCODE_CLEAR = 156,
-    SDL_SCANCODE_PRIOR = 157,
-    SDL_SCANCODE_RETURN2 = 158,
-    SDL_SCANCODE_SEPARATOR = 159,
-    SDL_SCANCODE_OUT = 160,
-    SDL_SCANCODE_OPER = 161,
-    SDL_SCANCODE_CLEARAGAIN = 162,
-    SDL_SCANCODE_CRSEL = 163,
-    SDL_SCANCODE_EXSEL = 164,
+        SDL_SCANCODE_ALTERASE = 153, /**< Erase-Eaze */
+        SDL_SCANCODE_SYSREQ = 154,
+        SDL_SCANCODE_CANCEL = 155,
+        SDL_SCANCODE_CLEAR = 156,
+        SDL_SCANCODE_PRIOR = 157,
+        SDL_SCANCODE_RETURN2 = 158,
+        SDL_SCANCODE_SEPARATOR = 159,
+        SDL_SCANCODE_OUT = 160,
+        SDL_SCANCODE_OPER = 161,
+        SDL_SCANCODE_CLEARAGAIN = 162,
+        SDL_SCANCODE_CRSEL = 163,
+        SDL_SCANCODE_EXSEL = 164,
 
-    SDL_SCANCODE_KP_00 = 176,
-    SDL_SCANCODE_KP_000 = 177,
-    SDL_SCANCODE_THOUSANDSSEPARATOR = 178,
-    SDL_SCANCODE_DECIMALSEPARATOR = 179,
-    SDL_SCANCODE_CURRENCYUNIT = 180,
-    SDL_SCANCODE_CURRENCYSUBUNIT = 181,
-    SDL_SCANCODE_KP_LEFTPAREN = 182,
-    SDL_SCANCODE_KP_RIGHTPAREN = 183,
-    SDL_SCANCODE_KP_LEFTBRACE = 184,
-    SDL_SCANCODE_KP_RIGHTBRACE = 185,
-    SDL_SCANCODE_KP_TAB = 186,
-    SDL_SCANCODE_KP_BACKSPACE = 187,
-    SDL_SCANCODE_KP_A = 188,
-    SDL_SCANCODE_KP_B = 189,
-    SDL_SCANCODE_KP_C = 190,
-    SDL_SCANCODE_KP_D = 191,
-    SDL_SCANCODE_KP_E = 192,
-    SDL_SCANCODE_KP_F = 193,
-    SDL_SCANCODE_KP_XOR = 194,
-    SDL_SCANCODE_KP_POWER = 195,
-    SDL_SCANCODE_KP_PERCENT = 196,
-    SDL_SCANCODE_KP_LESS = 197,
-    SDL_SCANCODE_KP_GREATER = 198,
-    SDL_SCANCODE_KP_AMPERSAND = 199,
-    SDL_SCANCODE_KP_DBLAMPERSAND = 200,
-    SDL_SCANCODE_KP_VERTICALBAR = 201,
-    SDL_SCANCODE_KP_DBLVERTICALBAR = 202,
-    SDL_SCANCODE_KP_COLON = 203,
-    SDL_SCANCODE_KP_HASH = 204,
-    SDL_SCANCODE_KP_SPACE = 205,
-    SDL_SCANCODE_KP_AT = 206,
-    SDL_SCANCODE_KP_EXCLAM = 207,
-    SDL_SCANCODE_KP_MEMSTORE = 208,
-    SDL_SCANCODE_KP_MEMRECALL = 209,
-    SDL_SCANCODE_KP_MEMCLEAR = 210,
-    SDL_SCANCODE_KP_MEMADD = 211,
-    SDL_SCANCODE_KP_MEMSUBTRACT = 212,
-    SDL_SCANCODE_KP_MEMMULTIPLY = 213,
-    SDL_SCANCODE_KP_MEMDIVIDE = 214,
-    SDL_SCANCODE_KP_PLUSMINUS = 215,
-    SDL_SCANCODE_KP_CLEAR = 216,
-    SDL_SCANCODE_KP_CLEARENTRY = 217,
-    SDL_SCANCODE_KP_BINARY = 218,
-    SDL_SCANCODE_KP_OCTAL = 219,
-    SDL_SCANCODE_KP_DECIMAL = 220,
-    SDL_SCANCODE_KP_HEXADECIMAL = 221,
-    SDL_SCANCODE_LCTRL = 224,
-    SDL_SCANCODE_LSHIFT = 225,
-    SDL_SCANCODE_LALT = 226, /**< alt, option */
-    SDL_SCANCODE_LGUI = 227, /**< windows, command (apple), meta */
-    SDL_SCANCODE_RCTRL = 228,
-    SDL_SCANCODE_RSHIFT = 229,
-    SDL_SCANCODE_RALT = 230, /**< alt gr, option */
-    SDL_SCANCODE_RGUI = 231, /**< windows, command (apple), meta */
+        SDL_SCANCODE_KP_00 = 176,
+        SDL_SCANCODE_KP_000 = 177,
+        SDL_SCANCODE_THOUSANDSSEPARATOR = 178,
+        SDL_SCANCODE_DECIMALSEPARATOR = 179,
+        SDL_SCANCODE_CURRENCYUNIT = 180,
+        SDL_SCANCODE_CURRENCYSUBUNIT = 181,
+        SDL_SCANCODE_KP_LEFTPAREN = 182,
+        SDL_SCANCODE_KP_RIGHTPAREN = 183,
+        SDL_SCANCODE_KP_LEFTBRACE = 184,
+        SDL_SCANCODE_KP_RIGHTBRACE = 185,
+        SDL_SCANCODE_KP_TAB = 186,
+        SDL_SCANCODE_KP_BACKSPACE = 187,
+        SDL_SCANCODE_KP_A = 188,
+        SDL_SCANCODE_KP_B = 189,
+        SDL_SCANCODE_KP_C = 190,
+        SDL_SCANCODE_KP_D = 191,
+        SDL_SCANCODE_KP_E = 192,
+        SDL_SCANCODE_KP_F = 193,
+        SDL_SCANCODE_KP_XOR = 194,
+        SDL_SCANCODE_KP_POWER = 195,
+        SDL_SCANCODE_KP_PERCENT = 196,
+        SDL_SCANCODE_KP_LESS = 197,
+        SDL_SCANCODE_KP_GREATER = 198,
+        SDL_SCANCODE_KP_AMPERSAND = 199,
+        SDL_SCANCODE_KP_DBLAMPERSAND = 200,
+        SDL_SCANCODE_KP_VERTICALBAR = 201,
+        SDL_SCANCODE_KP_DBLVERTICALBAR = 202,
+        SDL_SCANCODE_KP_COLON = 203,
+        SDL_SCANCODE_KP_HASH = 204,
+        SDL_SCANCODE_KP_SPACE = 205,
+        SDL_SCANCODE_KP_AT = 206,
+        SDL_SCANCODE_KP_EXCLAM = 207,
+        SDL_SCANCODE_KP_MEMSTORE = 208,
+        SDL_SCANCODE_KP_MEMRECALL = 209,
+        SDL_SCANCODE_KP_MEMCLEAR = 210,
+        SDL_SCANCODE_KP_MEMADD = 211,
+        SDL_SCANCODE_KP_MEMSUBTRACT = 212,
+        SDL_SCANCODE_KP_MEMMULTIPLY = 213,
+        SDL_SCANCODE_KP_MEMDIVIDE = 214,
+        SDL_SCANCODE_KP_PLUSMINUS = 215,
+        SDL_SCANCODE_KP_CLEAR = 216,
+        SDL_SCANCODE_KP_CLEARENTRY = 217,
+        SDL_SCANCODE_KP_BINARY = 218,
+        SDL_SCANCODE_KP_OCTAL = 219,
+        SDL_SCANCODE_KP_DECIMAL = 220,
+        SDL_SCANCODE_KP_HEXADECIMAL = 221,
+        SDL_SCANCODE_LCTRL = 224,
+        SDL_SCANCODE_LSHIFT = 225,
+        SDL_SCANCODE_LALT = 226, /**< alt, option */
+        SDL_SCANCODE_LGUI = 227, /**< windows, command (apple), meta */
+        SDL_SCANCODE_RCTRL = 228,
+        SDL_SCANCODE_RSHIFT = 229,
+        SDL_SCANCODE_RALT = 230, /**< alt gr, option */
+        SDL_SCANCODE_RGUI = 231, /**< windows, command (apple), meta */
 
-    SDL_SCANCODE_MODE = 257,    /**< I'm not sure if this is really not covered
+        SDL_SCANCODE_MODE = 257, /**< I'm not sure if this is really not covered
                                  *   by any of the above, but since there's a
                                  *   special KMOD_MODE for it I'm adding it here
                                  */
-    SDL_SCANCODE_AUDIONEXT = 258,
-    SDL_SCANCODE_AUDIOPREV = 259,
-    SDL_SCANCODE_AUDIOSTOP = 260,
-    SDL_SCANCODE_AUDIOPLAY = 261,
-    SDL_SCANCODE_AUDIOMUTE = 262,
-    SDL_SCANCODE_MEDIASELECT = 263,
-    SDL_SCANCODE_WWW = 264,
-    SDL_SCANCODE_MAIL = 265,
-    SDL_SCANCODE_CALCULATOR = 266,
-    SDL_SCANCODE_COMPUTER = 267,
-    SDL_SCANCODE_AC_SEARCH = 268,
-    SDL_SCANCODE_AC_HOME = 269,
-    SDL_SCANCODE_AC_BACK = 270,
-    SDL_SCANCODE_AC_FORWARD = 271,
-    SDL_SCANCODE_AC_STOP = 272,
-    SDL_SCANCODE_AC_REFRESH = 273,
-    SDL_SCANCODE_AC_BOOKMARKS = 274,
-    SDL_SCANCODE_BRIGHTNESSDOWN = 275,
-    SDL_SCANCODE_BRIGHTNESSUP = 276,
-    SDL_SCANCODE_DISPLAYSWITCH = 277, /**< display mirroring/dual display
+        SDL_SCANCODE_AUDIONEXT = 258,
+        SDL_SCANCODE_AUDIOPREV = 259,
+        SDL_SCANCODE_AUDIOSTOP = 260,
+        SDL_SCANCODE_AUDIOPLAY = 261,
+        SDL_SCANCODE_AUDIOMUTE = 262,
+        SDL_SCANCODE_MEDIASELECT = 263,
+        SDL_SCANCODE_WWW = 264,
+        SDL_SCANCODE_MAIL = 265,
+        SDL_SCANCODE_CALCULATOR = 266,
+        SDL_SCANCODE_COMPUTER = 267,
+        SDL_SCANCODE_AC_SEARCH = 268,
+        SDL_SCANCODE_AC_HOME = 269,
+        SDL_SCANCODE_AC_BACK = 270,
+        SDL_SCANCODE_AC_FORWARD = 271,
+        SDL_SCANCODE_AC_STOP = 272,
+        SDL_SCANCODE_AC_REFRESH = 273,
+        SDL_SCANCODE_AC_BOOKMARKS = 274,
+        SDL_SCANCODE_BRIGHTNESSDOWN = 275,
+        SDL_SCANCODE_BRIGHTNESSUP = 276,
+        SDL_SCANCODE_DISPLAYSWITCH = 277, /**< display mirroring/dual display
                                            switch, video mode switch */
-    SDL_SCANCODE_KBDILLUMTOGGLE = 278,
-    SDL_SCANCODE_KBDILLUMDOWN = 279,
-    SDL_SCANCODE_KBDILLUMUP = 280,
-    SDL_SCANCODE_EJECT = 281,
-    SDL_SCANCODE_SLEEP = 282,
-    SDL_SCANCODE_APP1 = 283,
-    SDL_SCANCODE_APP2 = 284,
-    SDL_SCANCODE_AUDIOREWIND = 285,
-    SDL_SCANCODE_AUDIOFASTFORWARD = 286,
-    SDL_NUM_SCANCODES = 512 /**< not a key, just marks the number of scancodes
+        SDL_SCANCODE_KBDILLUMTOGGLE = 278,
+        SDL_SCANCODE_KBDILLUMDOWN = 279,
+        SDL_SCANCODE_KBDILLUMUP = 280,
+        SDL_SCANCODE_EJECT = 281,
+        SDL_SCANCODE_SLEEP = 282,
+        SDL_SCANCODE_APP1 = 283,
+        SDL_SCANCODE_APP2 = 284,
+        SDL_SCANCODE_AUDIOREWIND = 285,
+        SDL_SCANCODE_AUDIOFASTFORWARD = 286,
+        SDL_NUM_SCANCODES = 512 /**< not a key, just marks the number of scancodes
                                  for array bounds */
-} SDL_Scancode;
+    } SDL_Scancode;
 
-typedef enum
-{
-    SDLK_UNKNOWN = 0,
+    typedef enum
+    {
+        SDLK_UNKNOWN = 0,
 
-    SDLK_RETURN = '\r',
-    SDLK_ESCAPE = '\033',
-    SDLK_BACKSPACE = '\b',
-    SDLK_TAB = '\t',
-    SDLK_SPACE = ' ',
-    SDLK_EXCLAIM = '!',
-    SDLK_QUOTEDBL = '"',
-    SDLK_HASH = '#',
-    SDLK_PERCENT = '%',
-    SDLK_DOLLAR = '$',
-    SDLK_AMPERSAND = '&',
-    SDLK_QUOTE = '\'',
-    SDLK_LEFTPAREN = '(',
-    SDLK_RIGHTPAREN = ')',
-    SDLK_ASTERISK = '*',
-    SDLK_PLUS = '+',
-    SDLK_COMMA = ',',
-    SDLK_MINUS = '-',
-    SDLK_PERIOD = '.',
-    SDLK_SLASH = '/',
-    SDLK_0 = '0',
-    SDLK_1 = '1',
-    SDLK_2 = '2',
-    SDLK_3 = '3',
-    SDLK_4 = '4',
-    SDLK_5 = '5',
-    SDLK_6 = '6',
-    SDLK_7 = '7',
-    SDLK_8 = '8',
-    SDLK_9 = '9',
-    SDLK_COLON = ':',
-    SDLK_SEMICOLON = ';',
-    SDLK_LESS = '<',
-    SDLK_EQUALS = '=',
-    SDLK_GREATER = '>',
-    SDLK_QUESTION = '?',
-    SDLK_AT = '@',
-    /*
+        SDLK_RETURN = '\r',
+        SDLK_ESCAPE = '\033',
+        SDLK_BACKSPACE = '\b',
+        SDLK_TAB = '\t',
+        SDLK_SPACE = ' ',
+        SDLK_EXCLAIM = '!',
+        SDLK_QUOTEDBL = '"',
+        SDLK_HASH = '#',
+        SDLK_PERCENT = '%',
+        SDLK_DOLLAR = '$',
+        SDLK_AMPERSAND = '&',
+        SDLK_QUOTE = '\'',
+        SDLK_LEFTPAREN = '(',
+        SDLK_RIGHTPAREN = ')',
+        SDLK_ASTERISK = '*',
+        SDLK_PLUS = '+',
+        SDLK_COMMA = ',',
+        SDLK_MINUS = '-',
+        SDLK_PERIOD = '.',
+        SDLK_SLASH = '/',
+        SDLK_0 = '0',
+        SDLK_1 = '1',
+        SDLK_2 = '2',
+        SDLK_3 = '3',
+        SDLK_4 = '4',
+        SDLK_5 = '5',
+        SDLK_6 = '6',
+        SDLK_7 = '7',
+        SDLK_8 = '8',
+        SDLK_9 = '9',
+        SDLK_COLON = ':',
+        SDLK_SEMICOLON = ';',
+        SDLK_LESS = '<',
+        SDLK_EQUALS = '=',
+        SDLK_GREATER = '>',
+        SDLK_QUESTION = '?',
+        SDLK_AT = '@',
+        /*
        Skip uppercase letters
      */
-    SDLK_LEFTBRACKET = '[',
-    SDLK_BACKSLASH = '\\',
-    SDLK_RIGHTBRACKET = ']',
-    SDLK_CARET = '^',
-    SDLK_UNDERSCORE = '_',
-    SDLK_BACKQUOTE = '`',
-    SDLK_a = 'a',
-    SDLK_b = 'b',
-    SDLK_c = 'c',
-    SDLK_d = 'd',
-    SDLK_e = 'e',
-    SDLK_f = 'f',
-    SDLK_g = 'g',
-    SDLK_h = 'h',
-    SDLK_i = 'i',
-    SDLK_j = 'j',
-    SDLK_k = 'k',
-    SDLK_l = 'l',
-    SDLK_m = 'm',
-    SDLK_n = 'n',
-    SDLK_o = 'o',
-    SDLK_p = 'p',
-    SDLK_q = 'q',
-    SDLK_r = 'r',
-    SDLK_s = 's',
-    SDLK_t = 't',
-    SDLK_u = 'u',
-    SDLK_v = 'v',
-    SDLK_w = 'w',
-    SDLK_x = 'x',
-    SDLK_y = 'y',
-    SDLK_z = 'z',
+        SDLK_LEFTBRACKET = '[',
+        SDLK_BACKSLASH = '\\',
+        SDLK_RIGHTBRACKET = ']',
+        SDLK_CARET = '^',
+        SDLK_UNDERSCORE = '_',
+        SDLK_BACKQUOTE = '`',
+        SDLK_a = 'a',
+        SDLK_b = 'b',
+        SDLK_c = 'c',
+        SDLK_d = 'd',
+        SDLK_e = 'e',
+        SDLK_f = 'f',
+        SDLK_g = 'g',
+        SDLK_h = 'h',
+        SDLK_i = 'i',
+        SDLK_j = 'j',
+        SDLK_k = 'k',
+        SDLK_l = 'l',
+        SDLK_m = 'm',
+        SDLK_n = 'n',
+        SDLK_o = 'o',
+        SDLK_p = 'p',
+        SDLK_q = 'q',
+        SDLK_r = 'r',
+        SDLK_s = 's',
+        SDLK_t = 't',
+        SDLK_u = 'u',
+        SDLK_v = 'v',
+        SDLK_w = 'w',
+        SDLK_x = 'x',
+        SDLK_y = 'y',
+        SDLK_z = 'z',
 
-    SDLK_CAPSLOCK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CAPSLOCK),
+        SDLK_CAPSLOCK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CAPSLOCK),
 
-    SDLK_F1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F1),
-    SDLK_F2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F2),
-    SDLK_F3 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F3),
-    SDLK_F4 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F4),
-    SDLK_F5 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F5),
-    SDLK_F6 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F6),
-    SDLK_F7 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F7),
-    SDLK_F8 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F8),
-    SDLK_F9 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F9),
-    SDLK_F10 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F10),
-    SDLK_F11 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F11),
-    SDLK_F12 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F12),
+        SDLK_F1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F1),
+        SDLK_F2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F2),
+        SDLK_F3 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F3),
+        SDLK_F4 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F4),
+        SDLK_F5 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F5),
+        SDLK_F6 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F6),
+        SDLK_F7 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F7),
+        SDLK_F8 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F8),
+        SDLK_F9 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F9),
+        SDLK_F10 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F10),
+        SDLK_F11 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F11),
+        SDLK_F12 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F12),
 
-    SDLK_PRINTSCREEN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PRINTSCREEN),
-    SDLK_SCROLLLOCK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SCROLLLOCK),
-    SDLK_PAUSE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAUSE),
-    SDLK_INSERT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_INSERT),
-    SDLK_HOME = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_HOME),
-    SDLK_PAGEUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAGEUP),
-    SDLK_DELETE = '\177',
-    SDLK_END = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_END),
-    SDLK_PAGEDOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAGEDOWN),
-    SDLK_RIGHT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RIGHT),
-    SDLK_LEFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LEFT),
-    SDLK_DOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_DOWN),
-    SDLK_UP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_UP),
+        SDLK_PRINTSCREEN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PRINTSCREEN),
+        SDLK_SCROLLLOCK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SCROLLLOCK),
+        SDLK_PAUSE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAUSE),
+        SDLK_INSERT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_INSERT),
+        SDLK_HOME = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_HOME),
+        SDLK_PAGEUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAGEUP),
+        SDLK_DELETE = '\177',
+        SDLK_END = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_END),
+        SDLK_PAGEDOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PAGEDOWN),
+        SDLK_RIGHT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RIGHT),
+        SDLK_LEFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LEFT),
+        SDLK_DOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_DOWN),
+        SDLK_UP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_UP),
 
-    SDLK_NUMLOCKCLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_NUMLOCKCLEAR),
-    SDLK_KP_DIVIDE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DIVIDE),
-    SDLK_KP_MULTIPLY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MULTIPLY),
-    SDLK_KP_MINUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MINUS),
-    SDLK_KP_PLUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PLUS),
-    SDLK_KP_ENTER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_ENTER),
-    SDLK_KP_1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_1),
-    SDLK_KP_2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_2),
-    SDLK_KP_3 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_3),
-    SDLK_KP_4 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_4),
-    SDLK_KP_5 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_5),
-    SDLK_KP_6 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_6),
-    SDLK_KP_7 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_7),
-    SDLK_KP_8 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_8),
-    SDLK_KP_9 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_9),
-    SDLK_KP_0 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_0),
-    SDLK_KP_PERIOD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PERIOD),
+        SDLK_NUMLOCKCLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_NUMLOCKCLEAR),
+        SDLK_KP_DIVIDE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DIVIDE),
+        SDLK_KP_MULTIPLY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MULTIPLY),
+        SDLK_KP_MINUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MINUS),
+        SDLK_KP_PLUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PLUS),
+        SDLK_KP_ENTER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_ENTER),
+        SDLK_KP_1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_1),
+        SDLK_KP_2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_2),
+        SDLK_KP_3 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_3),
+        SDLK_KP_4 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_4),
+        SDLK_KP_5 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_5),
+        SDLK_KP_6 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_6),
+        SDLK_KP_7 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_7),
+        SDLK_KP_8 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_8),
+        SDLK_KP_9 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_9),
+        SDLK_KP_0 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_0),
+        SDLK_KP_PERIOD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PERIOD),
 
-    SDLK_APPLICATION = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_APPLICATION),
-    SDLK_POWER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_POWER),
-    SDLK_KP_EQUALS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_EQUALS),
-    SDLK_F13 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F13),
-    SDLK_F14 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F14),
-    SDLK_F15 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F15),
-    SDLK_F16 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F16),
-    SDLK_F17 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F17),
-    SDLK_F18 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F18),
-    SDLK_F19 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F19),
-    SDLK_F20 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F20),
-    SDLK_F21 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F21),
-    SDLK_F22 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F22),
-    SDLK_F23 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F23),
-    SDLK_F24 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F24),
-    SDLK_EXECUTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_EXECUTE),
-    SDLK_HELP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_HELP),
-    SDLK_MENU = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MENU),
-    SDLK_SELECT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SELECT),
-    SDLK_STOP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_STOP),
-    SDLK_AGAIN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AGAIN),
-    SDLK_UNDO = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_UNDO),
-    SDLK_CUT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CUT),
-    SDLK_COPY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_COPY),
-    SDLK_PASTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PASTE),
-    SDLK_FIND = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_FIND),
-    SDLK_MUTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MUTE),
-    SDLK_VOLUMEUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_VOLUMEUP),
-    SDLK_VOLUMEDOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_VOLUMEDOWN),
-    SDLK_KP_COMMA = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_COMMA),
-    SDLK_KP_EQUALSAS400 =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_EQUALSAS400),
+        SDLK_APPLICATION = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_APPLICATION),
+        SDLK_POWER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_POWER),
+        SDLK_KP_EQUALS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_EQUALS),
+        SDLK_F13 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F13),
+        SDLK_F14 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F14),
+        SDLK_F15 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F15),
+        SDLK_F16 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F16),
+        SDLK_F17 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F17),
+        SDLK_F18 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F18),
+        SDLK_F19 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F19),
+        SDLK_F20 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F20),
+        SDLK_F21 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F21),
+        SDLK_F22 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F22),
+        SDLK_F23 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F23),
+        SDLK_F24 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_F24),
+        SDLK_EXECUTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_EXECUTE),
+        SDLK_HELP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_HELP),
+        SDLK_MENU = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MENU),
+        SDLK_SELECT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SELECT),
+        SDLK_STOP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_STOP),
+        SDLK_AGAIN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AGAIN),
+        SDLK_UNDO = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_UNDO),
+        SDLK_CUT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CUT),
+        SDLK_COPY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_COPY),
+        SDLK_PASTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PASTE),
+        SDLK_FIND = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_FIND),
+        SDLK_MUTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MUTE),
+        SDLK_VOLUMEUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_VOLUMEUP),
+        SDLK_VOLUMEDOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_VOLUMEDOWN),
+        SDLK_KP_COMMA = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_COMMA),
+        SDLK_KP_EQUALSAS400 =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_EQUALSAS400),
 
-    SDLK_ALTERASE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_ALTERASE),
-    SDLK_SYSREQ = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SYSREQ),
-    SDLK_CANCEL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CANCEL),
-    SDLK_CLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CLEAR),
-    SDLK_PRIOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PRIOR),
-    SDLK_RETURN2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RETURN2),
-    SDLK_SEPARATOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SEPARATOR),
-    SDLK_OUT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_OUT),
-    SDLK_OPER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_OPER),
-    SDLK_CLEARAGAIN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CLEARAGAIN),
-    SDLK_CRSEL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CRSEL),
-    SDLK_EXSEL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_EXSEL),
+        SDLK_ALTERASE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_ALTERASE),
+        SDLK_SYSREQ = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SYSREQ),
+        SDLK_CANCEL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CANCEL),
+        SDLK_CLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CLEAR),
+        SDLK_PRIOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_PRIOR),
+        SDLK_RETURN2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RETURN2),
+        SDLK_SEPARATOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SEPARATOR),
+        SDLK_OUT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_OUT),
+        SDLK_OPER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_OPER),
+        SDLK_CLEARAGAIN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CLEARAGAIN),
+        SDLK_CRSEL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CRSEL),
+        SDLK_EXSEL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_EXSEL),
 
-    SDLK_KP_00 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_00),
-    SDLK_KP_000 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_000),
-    SDLK_THOUSANDSSEPARATOR =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_THOUSANDSSEPARATOR),
-    SDLK_DECIMALSEPARATOR =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_DECIMALSEPARATOR),
-    SDLK_CURRENCYUNIT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CURRENCYUNIT),
-    SDLK_CURRENCYSUBUNIT =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CURRENCYSUBUNIT),
-    SDLK_KP_LEFTPAREN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_LEFTPAREN),
-    SDLK_KP_RIGHTPAREN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_RIGHTPAREN),
-    SDLK_KP_LEFTBRACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_LEFTBRACE),
-    SDLK_KP_RIGHTBRACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_RIGHTBRACE),
-    SDLK_KP_TAB = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_TAB),
-    SDLK_KP_BACKSPACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_BACKSPACE),
-    SDLK_KP_A = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_A),
-    SDLK_KP_B = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_B),
-    SDLK_KP_C = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_C),
-    SDLK_KP_D = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_D),
-    SDLK_KP_E = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_E),
-    SDLK_KP_F = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_F),
-    SDLK_KP_XOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_XOR),
-    SDLK_KP_POWER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_POWER),
-    SDLK_KP_PERCENT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PERCENT),
-    SDLK_KP_LESS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_LESS),
-    SDLK_KP_GREATER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_GREATER),
-    SDLK_KP_AMPERSAND = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_AMPERSAND),
-    SDLK_KP_DBLAMPERSAND =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DBLAMPERSAND),
-    SDLK_KP_VERTICALBAR =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_VERTICALBAR),
-    SDLK_KP_DBLVERTICALBAR =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DBLVERTICALBAR),
-    SDLK_KP_COLON = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_COLON),
-    SDLK_KP_HASH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_HASH),
-    SDLK_KP_SPACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_SPACE),
-    SDLK_KP_AT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_AT),
-    SDLK_KP_EXCLAM = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_EXCLAM),
-    SDLK_KP_MEMSTORE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMSTORE),
-    SDLK_KP_MEMRECALL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMRECALL),
-    SDLK_KP_MEMCLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMCLEAR),
-    SDLK_KP_MEMADD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMADD),
-    SDLK_KP_MEMSUBTRACT =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMSUBTRACT),
-    SDLK_KP_MEMMULTIPLY =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMMULTIPLY),
-    SDLK_KP_MEMDIVIDE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMDIVIDE),
-    SDLK_KP_PLUSMINUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PLUSMINUS),
-    SDLK_KP_CLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_CLEAR),
-    SDLK_KP_CLEARENTRY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_CLEARENTRY),
-    SDLK_KP_BINARY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_BINARY),
-    SDLK_KP_OCTAL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_OCTAL),
-    SDLK_KP_DECIMAL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DECIMAL),
-    SDLK_KP_HEXADECIMAL =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_HEXADECIMAL),
+        SDLK_KP_00 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_00),
+        SDLK_KP_000 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_000),
+        SDLK_THOUSANDSSEPARATOR =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_THOUSANDSSEPARATOR),
+        SDLK_DECIMALSEPARATOR =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_DECIMALSEPARATOR),
+        SDLK_CURRENCYUNIT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CURRENCYUNIT),
+        SDLK_CURRENCYSUBUNIT =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CURRENCYSUBUNIT),
+        SDLK_KP_LEFTPAREN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_LEFTPAREN),
+        SDLK_KP_RIGHTPAREN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_RIGHTPAREN),
+        SDLK_KP_LEFTBRACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_LEFTBRACE),
+        SDLK_KP_RIGHTBRACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_RIGHTBRACE),
+        SDLK_KP_TAB = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_TAB),
+        SDLK_KP_BACKSPACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_BACKSPACE),
+        SDLK_KP_A = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_A),
+        SDLK_KP_B = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_B),
+        SDLK_KP_C = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_C),
+        SDLK_KP_D = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_D),
+        SDLK_KP_E = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_E),
+        SDLK_KP_F = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_F),
+        SDLK_KP_XOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_XOR),
+        SDLK_KP_POWER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_POWER),
+        SDLK_KP_PERCENT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PERCENT),
+        SDLK_KP_LESS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_LESS),
+        SDLK_KP_GREATER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_GREATER),
+        SDLK_KP_AMPERSAND = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_AMPERSAND),
+        SDLK_KP_DBLAMPERSAND =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DBLAMPERSAND),
+        SDLK_KP_VERTICALBAR =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_VERTICALBAR),
+        SDLK_KP_DBLVERTICALBAR =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DBLVERTICALBAR),
+        SDLK_KP_COLON = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_COLON),
+        SDLK_KP_HASH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_HASH),
+        SDLK_KP_SPACE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_SPACE),
+        SDLK_KP_AT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_AT),
+        SDLK_KP_EXCLAM = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_EXCLAM),
+        SDLK_KP_MEMSTORE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMSTORE),
+        SDLK_KP_MEMRECALL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMRECALL),
+        SDLK_KP_MEMCLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMCLEAR),
+        SDLK_KP_MEMADD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMADD),
+        SDLK_KP_MEMSUBTRACT =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMSUBTRACT),
+        SDLK_KP_MEMMULTIPLY =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMMULTIPLY),
+        SDLK_KP_MEMDIVIDE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_MEMDIVIDE),
+        SDLK_KP_PLUSMINUS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_PLUSMINUS),
+        SDLK_KP_CLEAR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_CLEAR),
+        SDLK_KP_CLEARENTRY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_CLEARENTRY),
+        SDLK_KP_BINARY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_BINARY),
+        SDLK_KP_OCTAL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_OCTAL),
+        SDLK_KP_DECIMAL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_DECIMAL),
+        SDLK_KP_HEXADECIMAL =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KP_HEXADECIMAL),
 
-    SDLK_LCTRL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LCTRL),
-    SDLK_LSHIFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LSHIFT),
-    SDLK_LALT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LALT),
-    SDLK_LGUI = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LGUI),
-    SDLK_RCTRL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RCTRL),
-    SDLK_RSHIFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RSHIFT),
-    SDLK_RALT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RALT),
-    SDLK_RGUI = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RGUI),
+        SDLK_LCTRL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LCTRL),
+        SDLK_LSHIFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LSHIFT),
+        SDLK_LALT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LALT),
+        SDLK_LGUI = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_LGUI),
+        SDLK_RCTRL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RCTRL),
+        SDLK_RSHIFT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RSHIFT),
+        SDLK_RALT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RALT),
+        SDLK_RGUI = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_RGUI),
 
-    SDLK_MODE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MODE),
+        SDLK_MODE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MODE),
 
-    SDLK_AUDIONEXT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIONEXT),
-    SDLK_AUDIOPREV = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOPREV),
-    SDLK_AUDIOSTOP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOSTOP),
-    SDLK_AUDIOPLAY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOPLAY),
-    SDLK_AUDIOMUTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOMUTE),
-    SDLK_MEDIASELECT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MEDIASELECT),
-    SDLK_WWW = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_WWW),
-    SDLK_MAIL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MAIL),
-    SDLK_CALCULATOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CALCULATOR),
-    SDLK_COMPUTER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_COMPUTER),
-    SDLK_AC_SEARCH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_SEARCH),
-    SDLK_AC_HOME = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_HOME),
-    SDLK_AC_BACK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_BACK),
-    SDLK_AC_FORWARD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_FORWARD),
-    SDLK_AC_STOP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_STOP),
-    SDLK_AC_REFRESH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_REFRESH),
-    SDLK_AC_BOOKMARKS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_BOOKMARKS),
+        SDLK_AUDIONEXT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIONEXT),
+        SDLK_AUDIOPREV = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOPREV),
+        SDLK_AUDIOSTOP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOSTOP),
+        SDLK_AUDIOPLAY = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOPLAY),
+        SDLK_AUDIOMUTE = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOMUTE),
+        SDLK_MEDIASELECT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MEDIASELECT),
+        SDLK_WWW = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_WWW),
+        SDLK_MAIL = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_MAIL),
+        SDLK_CALCULATOR = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_CALCULATOR),
+        SDLK_COMPUTER = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_COMPUTER),
+        SDLK_AC_SEARCH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_SEARCH),
+        SDLK_AC_HOME = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_HOME),
+        SDLK_AC_BACK = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_BACK),
+        SDLK_AC_FORWARD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_FORWARD),
+        SDLK_AC_STOP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_STOP),
+        SDLK_AC_REFRESH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_REFRESH),
+        SDLK_AC_BOOKMARKS = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AC_BOOKMARKS),
 
-    SDLK_BRIGHTNESSDOWN =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_BRIGHTNESSDOWN),
-    SDLK_BRIGHTNESSUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_BRIGHTNESSUP),
-    SDLK_DISPLAYSWITCH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_DISPLAYSWITCH),
-    SDLK_KBDILLUMTOGGLE =
-        SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KBDILLUMTOGGLE),
-    SDLK_KBDILLUMDOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KBDILLUMDOWN),
-    SDLK_KBDILLUMUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KBDILLUMUP),
-    SDLK_EJECT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_EJECT),
-    SDLK_SLEEP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SLEEP),
-    SDLK_APP1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_APP1),
-    SDLK_APP2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_APP2),
+        SDLK_BRIGHTNESSDOWN =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_BRIGHTNESSDOWN),
+        SDLK_BRIGHTNESSUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_BRIGHTNESSUP),
+        SDLK_DISPLAYSWITCH = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_DISPLAYSWITCH),
+        SDLK_KBDILLUMTOGGLE =
+            SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KBDILLUMTOGGLE),
+        SDLK_KBDILLUMDOWN = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KBDILLUMDOWN),
+        SDLK_KBDILLUMUP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_KBDILLUMUP),
+        SDLK_EJECT = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_EJECT),
+        SDLK_SLEEP = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_SLEEP),
+        SDLK_APP1 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_APP1),
+        SDLK_APP2 = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_APP2),
 
-    SDLK_AUDIOREWIND = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOREWIND),
-    SDLK_AUDIOFASTFORWARD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOFASTFORWARD)
-} SDL_KeyCode;
+        SDLK_AUDIOREWIND = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOREWIND),
+        SDLK_AUDIOFASTFORWARD = SDL_SCANCODE_TO_KEYCODE(SDL_SCANCODE_AUDIOFASTFORWARD)
+    } SDL_KeyCode;
 
-typedef enum
-{
-    SDL_ADDEVENT,
-    SDL_PEEKEVENT,
-    SDL_GETEVENT
-} SDL_eventaction;
+    typedef enum
+    {
+        SDL_ADDEVENT,
+        SDL_PEEKEVENT,
+        SDL_GETEVENT
+    } SDL_eventaction;
 
-typedef enum
-{
-    SDL_PIXELTYPE_UNKNOWN,
-    SDL_PIXELTYPE_INDEX1,
-    SDL_PIXELTYPE_INDEX4,
-    SDL_PIXELTYPE_INDEX8,
-    SDL_PIXELTYPE_PACKED8,
-    SDL_PIXELTYPE_PACKED16,
-    SDL_PIXELTYPE_PACKED32,
-    SDL_PIXELTYPE_ARRAYU8,
-    SDL_PIXELTYPE_ARRAYU16,
-    SDL_PIXELTYPE_ARRAYU32,
-    SDL_PIXELTYPE_ARRAYF16,
-    SDL_PIXELTYPE_ARRAYF32
-} SDL_PixelType;
+    typedef enum
+    {
+        SDL_PIXELTYPE_UNKNOWN,
+        SDL_PIXELTYPE_INDEX1,
+        SDL_PIXELTYPE_INDEX4,
+        SDL_PIXELTYPE_INDEX8,
+        SDL_PIXELTYPE_PACKED8,
+        SDL_PIXELTYPE_PACKED16,
+        SDL_PIXELTYPE_PACKED32,
+        SDL_PIXELTYPE_ARRAYU8,
+        SDL_PIXELTYPE_ARRAYU16,
+        SDL_PIXELTYPE_ARRAYU32,
+        SDL_PIXELTYPE_ARRAYF16,
+        SDL_PIXELTYPE_ARRAYF32
+    } SDL_PixelType;
 
-/** Bitmap pixel order, high bit -> low bit. */
-typedef enum
-{
-    SDL_BITMAPORDER_NONE,
-    SDL_BITMAPORDER_4321,
-    SDL_BITMAPORDER_1234
-} SDL_BitmapOrder;
+    /** Bitmap pixel order, high bit -> low bit. */
+    typedef enum
+    {
+        SDL_BITMAPORDER_NONE,
+        SDL_BITMAPORDER_4321,
+        SDL_BITMAPORDER_1234
+    } SDL_BitmapOrder;
 
-/** Packed component order, high bit -> low bit. */
-typedef enum
-{
-    SDL_PACKEDORDER_NONE,
-    SDL_PACKEDORDER_XRGB,
-    SDL_PACKEDORDER_RGBX,
-    SDL_PACKEDORDER_ARGB,
-    SDL_PACKEDORDER_RGBA,
-    SDL_PACKEDORDER_XBGR,
-    SDL_PACKEDORDER_BGRX,
-    SDL_PACKEDORDER_ABGR,
-    SDL_PACKEDORDER_BGRA
-} SDL_PackedOrder;
+    /** Packed component order, high bit -> low bit. */
+    typedef enum
+    {
+        SDL_PACKEDORDER_NONE,
+        SDL_PACKEDORDER_XRGB,
+        SDL_PACKEDORDER_RGBX,
+        SDL_PACKEDORDER_ARGB,
+        SDL_PACKEDORDER_RGBA,
+        SDL_PACKEDORDER_XBGR,
+        SDL_PACKEDORDER_BGRX,
+        SDL_PACKEDORDER_ABGR,
+        SDL_PACKEDORDER_BGRA
+    } SDL_PackedOrder;
 
-/** Array component order, low byte -> high byte. */
-/* !!! FIXME: in 2.1, make these not overlap differently with
+    /** Array component order, low byte -> high byte. */
+    /* !!! FIXME: in 2.1, make these not overlap differently with
    !!! FIXME:  SDL_PACKEDORDER_*, so we can simplify SDL_ISPIXELFORMAT_ALPHA */
-typedef enum
-{
-    SDL_ARRAYORDER_NONE,
-    SDL_ARRAYORDER_RGB,
-    SDL_ARRAYORDER_RGBA,
-    SDL_ARRAYORDER_ARGB,
-    SDL_ARRAYORDER_BGR,
-    SDL_ARRAYORDER_BGRA,
-    SDL_ARRAYORDER_ABGR
-} SDL_ArrayOrder;
+    typedef enum
+    {
+        SDL_ARRAYORDER_NONE,
+        SDL_ARRAYORDER_RGB,
+        SDL_ARRAYORDER_RGBA,
+        SDL_ARRAYORDER_ARGB,
+        SDL_ARRAYORDER_BGR,
+        SDL_ARRAYORDER_BGRA,
+        SDL_ARRAYORDER_ABGR
+    } SDL_ArrayOrder;
 
-/** Packed component layout. */
-typedef enum
-{
-    SDL_PACKEDLAYOUT_NONE,
-    SDL_PACKEDLAYOUT_332,
-    SDL_PACKEDLAYOUT_4444,
-    SDL_PACKEDLAYOUT_1555,
-    SDL_PACKEDLAYOUT_5551,
-    SDL_PACKEDLAYOUT_565,
-    SDL_PACKEDLAYOUT_8888,
-    SDL_PACKEDLAYOUT_2101010,
-    SDL_PACKEDLAYOUT_1010102
-} SDL_PackedLayout;
+    /** Packed component layout. */
+    typedef enum
+    {
+        SDL_PACKEDLAYOUT_NONE,
+        SDL_PACKEDLAYOUT_332,
+        SDL_PACKEDLAYOUT_4444,
+        SDL_PACKEDLAYOUT_1555,
+        SDL_PACKEDLAYOUT_5551,
+        SDL_PACKEDLAYOUT_565,
+        SDL_PACKEDLAYOUT_8888,
+        SDL_PACKEDLAYOUT_2101010,
+        SDL_PACKEDLAYOUT_1010102
+    } SDL_PackedLayout;
 
 #define SDL_static_cast(type, expression) ((type)(expression))
 
-#define SDL_MAX_SINT8   ((Sint8)0x7F)           /* 127 */
-#define SDL_MIN_SINT8   ((Sint8)(~0x7F))        /* -128 */
-typedef int8_t Sint8;
+#define SDL_MAX_SINT8 ((Sint8)0x7F)    /* 127 */
+#define SDL_MIN_SINT8 ((Sint8)(~0x7F)) /* -128 */
+    typedef int8_t Sint8;
 /**
  * \brief An unsigned 8-bit integer type.
  */
-#define SDL_MAX_UINT8   ((Uint8)0xFF)           /* 255 */
-#define SDL_MIN_UINT8   ((Uint8)0x00)           /* 0 */
-typedef uint8_t Uint8;
+#define SDL_MAX_UINT8 ((Uint8)0xFF) /* 255 */
+#define SDL_MIN_UINT8 ((Uint8)0x00) /* 0 */
+    typedef uint8_t Uint8;
 /**
  * \brief A signed 16-bit integer type.
  */
-#define SDL_MAX_SINT16  ((Sint16)0x7FFF)        /* 32767 */
-#define SDL_MIN_SINT16  ((Sint16)(~0x7FFF))     /* -32768 */
-typedef int16_t Sint16;
+#define SDL_MAX_SINT16 ((Sint16)0x7FFF)    /* 32767 */
+#define SDL_MIN_SINT16 ((Sint16)(~0x7FFF)) /* -32768 */
+    typedef int16_t Sint16;
 /**
  * \brief An unsigned 16-bit integer type.
  */
-#define SDL_MAX_UINT16  ((Uint16)0xFFFF)        /* 65535 */
-#define SDL_MIN_UINT16  ((Uint16)0x0000)        /* 0 */
-typedef uint16_t Uint16;
+#define SDL_MAX_UINT16 ((Uint16)0xFFFF) /* 65535 */
+#define SDL_MIN_UINT16 ((Uint16)0x0000) /* 0 */
+    typedef uint16_t Uint16;
 /**
  * \brief A signed 32-bit integer type.
  */
-#define SDL_MAX_SINT32  ((Sint32)0x7FFFFFFF)    /* 2147483647 */
-#define SDL_MIN_SINT32  ((Sint32)(~0x7FFFFFFF)) /* -2147483648 */
-typedef int32_t Sint32;
+#define SDL_MAX_SINT32 ((Sint32)0x7FFFFFFF)    /* 2147483647 */
+#define SDL_MIN_SINT32 ((Sint32)(~0x7FFFFFFF)) /* -2147483648 */
+    typedef int32_t Sint32;
 /**
  * \brief An unsigned 32-bit integer type.
  */
-#define SDL_MAX_UINT32  ((Uint32)0xFFFFFFFFu)   /* 4294967295 */
-#define SDL_MIN_UINT32  ((Uint32)0x00000000)    /* 0 */
-typedef uint32_t Uint32;
+#define SDL_MAX_UINT32 ((Uint32)0xFFFFFFFFu) /* 4294967295 */
+#define SDL_MIN_UINT32 ((Uint32)0x00000000)  /* 0 */
+    typedef uint32_t Uint32;
 
 /**
  * \brief A signed 64-bit integer type.
  */
-#define SDL_MAX_SINT64  ((Sint64)0x7FFFFFFFFFFFFFFFll)      /* 9223372036854775807 */
-#define SDL_MIN_SINT64  ((Sint64)(~0x7FFFFFFFFFFFFFFFll))   /* -9223372036854775808 */
-typedef int64_t Sint64;
+#define SDL_MAX_SINT64 ((Sint64)0x7FFFFFFFFFFFFFFFll)    /* 9223372036854775807 */
+#define SDL_MIN_SINT64 ((Sint64)(~0x7FFFFFFFFFFFFFFFll)) /* -9223372036854775808 */
+    typedef int64_t Sint64;
 /**
  * \brief An unsigned 64-bit integer type.
  */
-#define SDL_MAX_UINT64  ((Uint64)0xFFFFFFFFFFFFFFFFull)     /* 18446744073709551615 */
-#define SDL_MIN_UINT64  ((Uint64)(0x0000000000000000ull))   /* 0 */
-typedef uint64_t Uint64;
+#define SDL_MAX_UINT64 ((Uint64)0xFFFFFFFFFFFFFFFFull)   /* 18446744073709551615 */
+#define SDL_MIN_UINT64 ((Uint64)(0x0000000000000000ull)) /* 0 */
+    typedef uint64_t Uint64;
 
-#define SDL_FOURCC(A, B, C, D) \
-    ((SDL_static_cast(Uint32, SDL_static_cast(Uint8, (A))) << 0) | \
-     (SDL_static_cast(Uint32, SDL_static_cast(Uint8, (B))) << 8) | \
+#define SDL_FOURCC(A, B, C, D)                                      \
+    ((SDL_static_cast(Uint32, SDL_static_cast(Uint8, (A))) << 0) |  \
+     (SDL_static_cast(Uint32, SDL_static_cast(Uint8, (B))) << 8) |  \
      (SDL_static_cast(Uint32, SDL_static_cast(Uint8, (C))) << 16) | \
      (SDL_static_cast(Uint32, SDL_static_cast(Uint8, (D))) << 24))
 
 #define SDL_DEFINE_PIXELFOURCC(A, B, C, D) SDL_FOURCC(A, B, C, D)
 
-#define SDL_DEFINE_PIXELFORMAT(type, order, layout, bits, bytes) \
+#define SDL_DEFINE_PIXELFORMAT(type, order, layout, bits, bytes)       \
     ((1 << 28) | ((type) << 24) | ((order) << 20) | ((layout) << 16) | \
      ((bits) << 8) | ((bytes) << 0))
 
-#define SDL_PIXELFLAG(X)    (((X) >> 28) & 0x0F)
-#define SDL_PIXELTYPE(X)    (((X) >> 24) & 0x0F)
-#define SDL_PIXELORDER(X)   (((X) >> 20) & 0x0F)
-#define SDL_PIXELLAYOUT(X)  (((X) >> 16) & 0x0F)
+#define SDL_PIXELFLAG(X) (((X) >> 28) & 0x0F)
+#define SDL_PIXELTYPE(X) (((X) >> 24) & 0x0F)
+#define SDL_PIXELORDER(X) (((X) >> 20) & 0x0F)
+#define SDL_PIXELLAYOUT(X) (((X) >> 16) & 0x0F)
 #define SDL_BITSPERPIXEL(X) (((X) >> 8) & 0xFF)
-#define SDL_BYTESPERPIXEL(X) \
-    (SDL_ISPIXELFORMAT_FOURCC(X) ? \
-        ((((X) == SDL_PIXELFORMAT_YUY2) || \
-          ((X) == SDL_PIXELFORMAT_UYVY) || \
-          ((X) == SDL_PIXELFORMAT_YVYU)) ? 2 : 1) : (((X) >> 0) & 0xFF))
+#define SDL_BYTESPERPIXEL(X)                                          \
+    (SDL_ISPIXELFORMAT_FOURCC(X) ? ((((X) == SDL_PIXELFORMAT_YUY2) || \
+                                     ((X) == SDL_PIXELFORMAT_UYVY) || \
+                                     ((X) == SDL_PIXELFORMAT_YVYU))   \
+                                        ? 2                           \
+                                        : 1)                          \
+                                 : (((X) >> 0) & 0xFF))
 
-#define SDL_ISPIXELFORMAT_INDEXED(format)   \
-    (!SDL_ISPIXELFORMAT_FOURCC(format) && \
+#define SDL_ISPIXELFORMAT_INDEXED(format)                \
+    (!SDL_ISPIXELFORMAT_FOURCC(format) &&                \
      ((SDL_PIXELTYPE(format) == SDL_PIXELTYPE_INDEX1) || \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_INDEX4) || \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_INDEX8)))
 
-#define SDL_ISPIXELFORMAT_PACKED(format) \
-    (!SDL_ISPIXELFORMAT_FOURCC(format) && \
-     ((SDL_PIXELTYPE(format) == SDL_PIXELTYPE_PACKED8) || \
+#define SDL_ISPIXELFORMAT_PACKED(format)                   \
+    (!SDL_ISPIXELFORMAT_FOURCC(format) &&                  \
+     ((SDL_PIXELTYPE(format) == SDL_PIXELTYPE_PACKED8) ||  \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_PACKED16) || \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_PACKED32)))
 
-#define SDL_ISPIXELFORMAT_ARRAY(format) \
-    (!SDL_ISPIXELFORMAT_FOURCC(format) && \
-     ((SDL_PIXELTYPE(format) == SDL_PIXELTYPE_ARRAYU8) || \
+#define SDL_ISPIXELFORMAT_ARRAY(format)                    \
+    (!SDL_ISPIXELFORMAT_FOURCC(format) &&                  \
+     ((SDL_PIXELTYPE(format) == SDL_PIXELTYPE_ARRAYU8) ||  \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_ARRAYU16) || \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_ARRAYU32) || \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_ARRAYF16) || \
       (SDL_PIXELTYPE(format) == SDL_PIXELTYPE_ARRAYF32)))
 
-#define SDL_ISPIXELFORMAT_ALPHA(format)   \
-    ((SDL_ISPIXELFORMAT_PACKED(format) && \
-     ((SDL_PIXELORDER(format) == SDL_PACKEDORDER_ARGB) || \
-      (SDL_PIXELORDER(format) == SDL_PACKEDORDER_RGBA) || \
-      (SDL_PIXELORDER(format) == SDL_PACKEDORDER_ABGR) || \
-      (SDL_PIXELORDER(format) == SDL_PACKEDORDER_BGRA))) || \
-    (SDL_ISPIXELFORMAT_ARRAY(format) && \
-     ((SDL_PIXELORDER(format) == SDL_ARRAYORDER_ARGB) || \
-      (SDL_PIXELORDER(format) == SDL_ARRAYORDER_RGBA) || \
-      (SDL_PIXELORDER(format) == SDL_ARRAYORDER_ABGR) || \
-      (SDL_PIXELORDER(format) == SDL_ARRAYORDER_BGRA))))
+#define SDL_ISPIXELFORMAT_ALPHA(format)                      \
+    ((SDL_ISPIXELFORMAT_PACKED(format) &&                    \
+      ((SDL_PIXELORDER(format) == SDL_PACKEDORDER_ARGB) ||   \
+       (SDL_PIXELORDER(format) == SDL_PACKEDORDER_RGBA) ||   \
+       (SDL_PIXELORDER(format) == SDL_PACKEDORDER_ABGR) ||   \
+       (SDL_PIXELORDER(format) == SDL_PACKEDORDER_BGRA))) || \
+     (SDL_ISPIXELFORMAT_ARRAY(format) &&                     \
+      ((SDL_PIXELORDER(format) == SDL_ARRAYORDER_ARGB) ||    \
+       (SDL_PIXELORDER(format) == SDL_ARRAYORDER_RGBA) ||    \
+       (SDL_PIXELORDER(format) == SDL_ARRAYORDER_ABGR) ||    \
+       (SDL_PIXELORDER(format) == SDL_ARRAYORDER_BGRA))))
 
 /* The flag is set to 1 because 0x1? is not in the printable ASCII range */
-#define SDL_ISPIXELFORMAT_FOURCC(format)    \
+#define SDL_ISPIXELFORMAT_FOURCC(format) \
     ((format) && (SDL_PIXELFLAG(format) != 1))
 
-#define EPERM           1
-#define ENOENT          2
-#define ESRCH           3
-#define EINTR           4
-#define EIO             5
-#define ENXIO           6
-#define E2BIG           7
-#define ENOEXEC         8
-#define EBADF           9
-#define ECHILD          10
-#define EAGAIN          11
-#define ENOMEM          12
-#define EACCES          13
-#define EFAULT          14
-#define EBUSY           16
-#define EEXIST          17
-#define EXDEV           18
-#define ENODEV          19
-#define ENOTDIR         20
-#define EISDIR          21
-#define ENFILE          23
-#define EMFILE          24
-#define ENOTTY          25
-#define EFBIG           27
-#define ENOSPC          28
-#define ESPIPE          29
-#define EROFS           30
-#define EMLINK          31
-#define EPIPE           32
-#define EDOM            33
-#define EDEADLK         36
-#define ENAMETOOLONG    38
-#define ENOLCK          39
-#define ENOSYS          40
-#define ENOTEMPTY       41
+#define EPERM 1
+#define ENOENT 2
+#define ESRCH 3
+#define EINTR 4
+#define EIO 5
+#define ENXIO 6
+#define E2BIG 7
+#define ENOEXEC 8
+#define EBADF 9
+#define ECHILD 10
+#define EAGAIN 11
+#define ENOMEM 12
+#define EACCES 13
+#define EFAULT 14
+#define EBUSY 16
+#define EEXIST 17
+#define EXDEV 18
+#define ENODEV 19
+#define ENOTDIR 20
+#define EISDIR 21
+#define ENFILE 23
+#define EMFILE 24
+#define ENOTTY 25
+#define EFBIG 27
+#define ENOSPC 28
+#define ESPIPE 29
+#define EROFS 30
+#define EMLINK 31
+#define EPIPE 32
+#define EDOM 33
+#define EDEADLK 36
+#define ENAMETOOLONG 38
+#define ENOLCK 39
+#define ENOSYS 40
+#define ENOTEMPTY 41
+
+#define RY_IDX 0
+#define GY_IDX 1
+#define BY_IDX 2
+#define RU_IDX 3
+#define GU_IDX 4
+#define BU_IDX 5
+#define RV_IDX 6
+#define GV_IDX 7
+#define BV_IDX 8
+#define RGB2YUV_SHIFT 15
 
 #define FFERRTAG(a, b, c, d) (-(int)MKTAG(a, b, c, d))
 
-#define AVERROR_BSF_NOT_FOUND      FFERRTAG(0xF8,'B','S','F') ///< Bitstream filter not found
-#define AVERROR_BUG                FFERRTAG( 'B','U','G','!') ///< Internal bug, also see AVERROR_BUG2
-#define AVERROR_BUFFER_TOO_SMALL   FFERRTAG( 'B','U','F','S') ///< Buffer too small
-#define AVERROR_DECODER_NOT_FOUND  FFERRTAG(0xF8,'D','E','C') ///< Decoder not found
-#define AVERROR_DEMUXER_NOT_FOUND  FFERRTAG(0xF8,'D','E','M') ///< Demuxer not found
-#define AVERROR_ENCODER_NOT_FOUND  FFERRTAG(0xF8,'E','N','C') ///< Encoder not found
-#define AVERROR_EOF                FFERRTAG( 'E','O','F',' ') ///< End of file
-#define AVERROR_EXIT               FFERRTAG( 'E','X','I','T') ///< Immediate exit was requested; the called function should not be restarted
-#define AVERROR_EXTERNAL           FFERRTAG( 'E','X','T',' ') ///< Generic error in an external library
-#define AVERROR_FILTER_NOT_FOUND   FFERRTAG(0xF8,'F','I','L') ///< Filter not found
-#define AVERROR_INVALIDDATA        FFERRTAG( 'I','N','D','A') ///< Invalid data found when processing input
-#define AVERROR_MUXER_NOT_FOUND    FFERRTAG(0xF8,'M','U','X') ///< Muxer not found
-#define AVERROR_OPTION_NOT_FOUND   FFERRTAG(0xF8,'O','P','T') ///< Option not found
-#define AVERROR_PATCHWELCOME       FFERRTAG( 'P','A','W','E') ///< Not yet implemented in FFmpeg, patches welcome
-#define AVERROR_PROTOCOL_NOT_FOUND FFERRTAG(0xF8,'P','R','O') ///< Protocol not found
-#define AVERROR_STREAM_NOT_FOUND   FFERRTAG(0xF8,'S','T','R') ///< Stream not found
+#define AVERROR_BSF_NOT_FOUND FFERRTAG(0xF8, 'B', 'S', 'F')      ///< Bitstream filter not found
+#define AVERROR_BUG FFERRTAG('B', 'U', 'G', '!')                 ///< Internal bug, also see AVERROR_BUG2
+#define AVERROR_BUFFER_TOO_SMALL FFERRTAG('B', 'U', 'F', 'S')    ///< Buffer too small
+#define AVERROR_DECODER_NOT_FOUND FFERRTAG(0xF8, 'D', 'E', 'C')  ///< Decoder not found
+#define AVERROR_DEMUXER_NOT_FOUND FFERRTAG(0xF8, 'D', 'E', 'M')  ///< Demuxer not found
+#define AVERROR_ENCODER_NOT_FOUND FFERRTAG(0xF8, 'E', 'N', 'C')  ///< Encoder not found
+#define AVERROR_EOF FFERRTAG('E', 'O', 'F', ' ')                 ///< End of file
+#define AVERROR_EXIT FFERRTAG('E', 'X', 'I', 'T')                ///< Immediate exit was requested; the called function should not be restarted
+#define AVERROR_EXTERNAL FFERRTAG('E', 'X', 'T', ' ')            ///< Generic error in an external library
+#define AVERROR_FILTER_NOT_FOUND FFERRTAG(0xF8, 'F', 'I', 'L')   ///< Filter not found
+#define AVERROR_INVALIDDATA FFERRTAG('I', 'N', 'D', 'A')         ///< Invalid data found when processing input
+#define AVERROR_MUXER_NOT_FOUND FFERRTAG(0xF8, 'M', 'U', 'X')    ///< Muxer not found
+#define AVERROR_OPTION_NOT_FOUND FFERRTAG(0xF8, 'O', 'P', 'T')   ///< Option not found
+#define AVERROR_PATCHWELCOME FFERRTAG('P', 'A', 'W', 'E')        ///< Not yet implemented in FFmpeg, patches welcome
+#define AVERROR_PROTOCOL_NOT_FOUND FFERRTAG(0xF8, 'P', 'R', 'O') ///< Protocol not found
+#define AVERROR_STREAM_NOT_FOUND FFERRTAG(0xF8, 'S', 'T', 'R')   ///< Stream not found
 
-#define AV_DICT_MATCH_CASE      1   /**< Only get an entry with exact-case key match. Only relevant in av_dict_get(). */
-#define AV_DICT_IGNORE_SUFFIX   2   /**< Return first entry in a dictionary whose first part corresponds to the search key,
-                                         ignoring the suffix of the found key string. Only relevant in av_dict_get(). */
-#define AV_DICT_DONT_STRDUP_KEY 4   /**< Take ownership of a key that's been
-                                         allocated with av_malloc() or another memory allocation function. */
-#define AV_DICT_DONT_STRDUP_VAL 8   /**< Take ownership of a value that's been
-                                         allocated with av_malloc() or another memory allocation function. */
-#define AV_DICT_DONT_OVERWRITE 16   ///< Don't overwrite existing entries.
-#define AV_DICT_APPEND         32   /**< If the entry already exists, append to it.  Note that no
-                                      delimiter is added, the strings are simply concatenated. */
-#define AV_DICT_MULTIKEY       64   /**< Allow to store several equal keys in the dictionary */
+#define AV_DICT_MATCH_CASE 1      /**< Only get an entry with exact-case key match. Only relevant in av_dict_get(). */
+#define AV_DICT_IGNORE_SUFFIX 2   /**< Return first entry in a dictionary whose first part corresponds to the search key, \
+                                       ignoring the suffix of the found key string. Only relevant in av_dict_get(). */
+#define AV_DICT_DONT_STRDUP_KEY 4 /**< Take ownership of a key that's been \
+                                       allocated with av_malloc() or another memory allocation function. */
+#define AV_DICT_DONT_STRDUP_VAL 8 /**< Take ownership of a value that's been \
+                                       allocated with av_malloc() or another memory allocation function. */
+#define AV_DICT_DONT_OVERWRITE 16 ///< Don't overwrite existing entries.
+#define AV_DICT_APPEND 32         /**< If the entry already exists, append to it.  Note that no \
+                                    delimiter is added, the strings are simply concatenated. */
+#define AV_DICT_MULTIKEY 64       /**< Allow to store several equal keys in the dictionary */
 
-#define AV_OPT_SEARCH_CHILDREN   (1 << 0) /**< Search in possible children of the given object first. */
+#define AV_OPT_SEARCH_CHILDREN (1 << 0) /**< Search in possible children of the given object first. */
 
-typedef enum
-{
-    SDL_BLENDMODE_NONE = 0x00000000,     /**< no blending dstRGBA = srcRGBA */
-    SDL_BLENDMODE_BLEND = 0x00000001,    /**< alpha blending dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA)) dstA = srcA + (dstA * (1-srcA)) */
-    SDL_BLENDMODE_ADD = 0x00000002,      /**< additive blending dstRGB = (srcRGB * srcA) + dstRGB dstA = dstA */
-    SDL_BLENDMODE_MOD = 0x00000004,      /**< color modulate dstRGB = srcRGB * dstRGB dstA = dstA */
-    SDL_BLENDMODE_MUL = 0x00000008,      /**< color multiply dstRGB = (srcRGB * dstRGB) + (dstRGB * (1-srcA)) dstA = (srcA * dstA) + (dstA * (1-srcA)) */
-    SDL_BLENDMODE_INVALID = 0x7FFFFFFF
-} SDL_BlendMode;
+    typedef enum
+    {
+        SDL_BLENDMODE_NONE = 0x00000000,  /**< no blending dstRGBA = srcRGBA */
+        SDL_BLENDMODE_BLEND = 0x00000001, /**< alpha blending dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA)) dstA = srcA + (dstA * (1-srcA)) */
+        SDL_BLENDMODE_ADD = 0x00000002,   /**< additive blending dstRGB = (srcRGB * srcA) + dstRGB dstA = dstA */
+        SDL_BLENDMODE_MOD = 0x00000004,   /**< color modulate dstRGB = srcRGB * dstRGB dstA = dstA */
+        SDL_BLENDMODE_MUL = 0x00000008,   /**< color multiply dstRGB = (srcRGB * dstRGB) + (dstRGB * (1-srcA)) dstA = (srcA * dstA) + (dstA * (1-srcA)) */
+        SDL_BLENDMODE_INVALID = 0x7FFFFFFF
+    } SDL_BlendMode;
 
-typedef struct SDL_Rect
-{
-    int x, y;
-    int w, h;
-} SDL_Rect;
+    typedef struct SDL_Rect
+    {
+        int x, y;
+        int w, h;
+    } SDL_Rect;
 
-enum AVRounding {
-    AV_ROUND_ZERO     = 0, ///< Round toward zero.
-    AV_ROUND_INF      = 1, ///< Round away from zero.
-    AV_ROUND_DOWN     = 2, ///< Round toward -infinity.
-    AV_ROUND_UP       = 3, ///< Round toward +infinity.
-    AV_ROUND_NEAR_INF = 5, ///< Round to nearest and halfway cases away from zero.
-    AV_ROUND_PASS_MINMAX = 8192,
-};
+    enum AVRounding
+    {
+        AV_ROUND_ZERO = 0,     ///< Round toward zero.
+        AV_ROUND_INF = 1,      ///< Round away from zero.
+        AV_ROUND_DOWN = 2,     ///< Round toward -infinity.
+        AV_ROUND_UP = 3,       ///< Round toward +infinity.
+        AV_ROUND_NEAR_INF = 5, ///< Round to nearest and halfway cases away from zero.
+        AV_ROUND_PASS_MINMAX = 8192,
+    };
 
-typedef enum
-{
-    SDL_TEXTUREACCESS_STATIC,    /**< Changes rarely, not lockable */
-    SDL_TEXTUREACCESS_STREAMING, /**< Changes frequently, lockable */
-    SDL_TEXTUREACCESS_TARGET     /**< Texture can be used as a render target */
-} SDL_TextureAccess;
+    typedef enum
+    {
+        SDL_TEXTUREACCESS_STATIC,    /**< Changes rarely, not lockable */
+        SDL_TEXTUREACCESS_STREAMING, /**< Changes frequently, lockable */
+        SDL_TEXTUREACCESS_TARGET     /**< Texture can be used as a render target */
+    } SDL_TextureAccess;
 
-#define AUDIO_U8        0x0008  /**< Unsigned 8-bit samples */
-#define AUDIO_S8        0x8008  /**< Signed 8-bit samples */
-#define AUDIO_U16LSB    0x0010  /**< Unsigned 16-bit samples */
-#define AUDIO_S16LSB    0x8010  /**< Signed 16-bit samples */
-#define AUDIO_U16MSB    0x1010  /**< As above, but big-endian byte order */
-#define AUDIO_S16MSB    0x9010  /**< As above, but big-endian byte order */
-#define AUDIO_U16       AUDIO_U16LSB
-#define AUDIO_S16       AUDIO_S16LSB
+#define AUDIO_U8 0x0008     /**< Unsigned 8-bit samples */
+#define AUDIO_S8 0x8008     /**< Signed 8-bit samples */
+#define AUDIO_U16LSB 0x0010 /**< Unsigned 16-bit samples */
+#define AUDIO_S16LSB 0x8010 /**< Signed 16-bit samples */
+#define AUDIO_U16MSB 0x1010 /**< As above, but big-endian byte order */
+#define AUDIO_S16MSB 0x9010 /**< As above, but big-endian byte order */
+#define AUDIO_U16 AUDIO_U16LSB
+#define AUDIO_S16 AUDIO_S16LSB
 
-#define AUDIO_S32LSB    0x8020  /**< 32-bit integer samples */
-#define AUDIO_S32MSB    0x9020  /**< As above, but big-endian byte order */
-#define AUDIO_S32       AUDIO_S32LSB
+#define AUDIO_S32LSB 0x8020 /**< 32-bit integer samples */
+#define AUDIO_S32MSB 0x9020 /**< As above, but big-endian byte order */
+#define AUDIO_S32 AUDIO_S32LSB
 
-#define AUDIO_F32LSB    0x8120  /**< 32-bit floating point samples */
-#define AUDIO_F32MSB    0x9120  /**< As above, but big-endian byte order */
-#define AUDIO_F32       AUDIO_F32LSB
+#define AUDIO_F32LSB 0x8120 /**< 32-bit floating point samples */
+#define AUDIO_F32MSB 0x9120 /**< As above, but big-endian byte order */
+#define AUDIO_F32 AUDIO_F32LSB
 
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
-#define AUDIO_U16SYS    AUDIO_U16LSB
-#define AUDIO_S16SYS    AUDIO_S16LSB
-#define AUDIO_S32SYS    AUDIO_S32LSB
-#define AUDIO_F32SYS    AUDIO_F32LSB
+#define AUDIO_U16SYS AUDIO_U16LSB
+#define AUDIO_S16SYS AUDIO_S16LSB
+#define AUDIO_S32SYS AUDIO_S32LSB
+#define AUDIO_F32SYS AUDIO_F32LSB
 #else
-#define AUDIO_U16SYS    AUDIO_U16MSB
-#define AUDIO_S16SYS    AUDIO_S16MSB
-#define AUDIO_S32SYS    AUDIO_S32MSB
-#define AUDIO_F32SYS    AUDIO_F32MSB
+#define AUDIO_U16SYS AUDIO_U16MSB
+#define AUDIO_S16SYS AUDIO_S16MSB
+#define AUDIO_S32SYS AUDIO_S32MSB
+#define AUDIO_F32SYS AUDIO_F32MSB
 #endif
 
-typedef enum
-{
-    SDL_PIXELFORMAT_UNKNOWN,
-    SDL_PIXELFORMAT_INDEX1LSB =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX1, SDL_BITMAPORDER_4321, 0,
-                               1, 0),
-    SDL_PIXELFORMAT_INDEX1MSB =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX1, SDL_BITMAPORDER_1234, 0,
-                               1, 0),
-    SDL_PIXELFORMAT_INDEX4LSB =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX4, SDL_BITMAPORDER_4321, 0,
-                               4, 0),
-    SDL_PIXELFORMAT_INDEX4MSB =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX4, SDL_BITMAPORDER_1234, 0,
-                               4, 0),
-    SDL_PIXELFORMAT_INDEX8 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX8, 0, 0, 8, 1),
-    SDL_PIXELFORMAT_RGB332 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED8, SDL_PACKEDORDER_XRGB,
-                               SDL_PACKEDLAYOUT_332, 8, 1),
-    SDL_PIXELFORMAT_RGB444 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB,
-                               SDL_PACKEDLAYOUT_4444, 12, 2),
-    SDL_PIXELFORMAT_BGR444 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR,
-                               SDL_PACKEDLAYOUT_4444, 12, 2),
-    SDL_PIXELFORMAT_RGB555 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB,
-                               SDL_PACKEDLAYOUT_1555, 15, 2),
-    SDL_PIXELFORMAT_BGR555 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR,
-                               SDL_PACKEDLAYOUT_1555, 15, 2),
-    SDL_PIXELFORMAT_ARGB4444 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ARGB,
-                               SDL_PACKEDLAYOUT_4444, 16, 2),
-    SDL_PIXELFORMAT_RGBA4444 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_RGBA,
-                               SDL_PACKEDLAYOUT_4444, 16, 2),
-    SDL_PIXELFORMAT_ABGR4444 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ABGR,
-                               SDL_PACKEDLAYOUT_4444, 16, 2),
-    SDL_PIXELFORMAT_BGRA4444 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_BGRA,
-                               SDL_PACKEDLAYOUT_4444, 16, 2),
-    SDL_PIXELFORMAT_ARGB1555 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ARGB,
-                               SDL_PACKEDLAYOUT_1555, 16, 2),
-    SDL_PIXELFORMAT_RGBA5551 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_RGBA,
-                               SDL_PACKEDLAYOUT_5551, 16, 2),
-    SDL_PIXELFORMAT_ABGR1555 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ABGR,
-                               SDL_PACKEDLAYOUT_1555, 16, 2),
-    SDL_PIXELFORMAT_BGRA5551 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_BGRA,
-                               SDL_PACKEDLAYOUT_5551, 16, 2),
-    SDL_PIXELFORMAT_RGB565 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB,
-                               SDL_PACKEDLAYOUT_565, 16, 2),
-    SDL_PIXELFORMAT_BGR565 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR,
-                               SDL_PACKEDLAYOUT_565, 16, 2),
-    SDL_PIXELFORMAT_RGB24 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_ARRAYU8, SDL_ARRAYORDER_RGB, 0,
-                               24, 3),
-    SDL_PIXELFORMAT_BGR24 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_ARRAYU8, SDL_ARRAYORDER_BGR, 0,
-                               24, 3),
-    SDL_PIXELFORMAT_RGB888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_XRGB,
-                               SDL_PACKEDLAYOUT_8888, 24, 4),
-    SDL_PIXELFORMAT_RGBX8888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_RGBX,
-                               SDL_PACKEDLAYOUT_8888, 24, 4),
-    SDL_PIXELFORMAT_BGR888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_XBGR,
-                               SDL_PACKEDLAYOUT_8888, 24, 4),
-    SDL_PIXELFORMAT_BGRX8888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_BGRX,
-                               SDL_PACKEDLAYOUT_8888, 24, 4),
-    SDL_PIXELFORMAT_ARGB8888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ARGB,
-                               SDL_PACKEDLAYOUT_8888, 32, 4),
-    SDL_PIXELFORMAT_RGBA8888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_RGBA,
-                               SDL_PACKEDLAYOUT_8888, 32, 4),
-    SDL_PIXELFORMAT_ABGR8888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ABGR,
-                               SDL_PACKEDLAYOUT_8888, 32, 4),
-    SDL_PIXELFORMAT_BGRA8888 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_BGRA,
-                               SDL_PACKEDLAYOUT_8888, 32, 4),
-    SDL_PIXELFORMAT_ARGB2101010 =
-        SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ARGB,
-                               SDL_PACKEDLAYOUT_2101010, 32, 4),
+    typedef enum
+    {
+        SDL_PIXELFORMAT_UNKNOWN,
+        SDL_PIXELFORMAT_INDEX1LSB =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX1, SDL_BITMAPORDER_4321, 0,
+                                   1, 0),
+        SDL_PIXELFORMAT_INDEX1MSB =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX1, SDL_BITMAPORDER_1234, 0,
+                                   1, 0),
+        SDL_PIXELFORMAT_INDEX4LSB =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX4, SDL_BITMAPORDER_4321, 0,
+                                   4, 0),
+        SDL_PIXELFORMAT_INDEX4MSB =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX4, SDL_BITMAPORDER_1234, 0,
+                                   4, 0),
+        SDL_PIXELFORMAT_INDEX8 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX8, 0, 0, 8, 1),
+        SDL_PIXELFORMAT_RGB332 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED8, SDL_PACKEDORDER_XRGB,
+                                   SDL_PACKEDLAYOUT_332, 8, 1),
+        SDL_PIXELFORMAT_RGB444 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB,
+                                   SDL_PACKEDLAYOUT_4444, 12, 2),
+        SDL_PIXELFORMAT_BGR444 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR,
+                                   SDL_PACKEDLAYOUT_4444, 12, 2),
+        SDL_PIXELFORMAT_RGB555 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB,
+                                   SDL_PACKEDLAYOUT_1555, 15, 2),
+        SDL_PIXELFORMAT_BGR555 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR,
+                                   SDL_PACKEDLAYOUT_1555, 15, 2),
+        SDL_PIXELFORMAT_ARGB4444 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ARGB,
+                                   SDL_PACKEDLAYOUT_4444, 16, 2),
+        SDL_PIXELFORMAT_RGBA4444 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_RGBA,
+                                   SDL_PACKEDLAYOUT_4444, 16, 2),
+        SDL_PIXELFORMAT_ABGR4444 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ABGR,
+                                   SDL_PACKEDLAYOUT_4444, 16, 2),
+        SDL_PIXELFORMAT_BGRA4444 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_BGRA,
+                                   SDL_PACKEDLAYOUT_4444, 16, 2),
+        SDL_PIXELFORMAT_ARGB1555 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ARGB,
+                                   SDL_PACKEDLAYOUT_1555, 16, 2),
+        SDL_PIXELFORMAT_RGBA5551 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_RGBA,
+                                   SDL_PACKEDLAYOUT_5551, 16, 2),
+        SDL_PIXELFORMAT_ABGR1555 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ABGR,
+                                   SDL_PACKEDLAYOUT_1555, 16, 2),
+        SDL_PIXELFORMAT_BGRA5551 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_BGRA,
+                                   SDL_PACKEDLAYOUT_5551, 16, 2),
+        SDL_PIXELFORMAT_RGB565 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB,
+                                   SDL_PACKEDLAYOUT_565, 16, 2),
+        SDL_PIXELFORMAT_BGR565 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR,
+                                   SDL_PACKEDLAYOUT_565, 16, 2),
+        SDL_PIXELFORMAT_RGB24 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_ARRAYU8, SDL_ARRAYORDER_RGB, 0,
+                                   24, 3),
+        SDL_PIXELFORMAT_BGR24 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_ARRAYU8, SDL_ARRAYORDER_BGR, 0,
+                                   24, 3),
+        SDL_PIXELFORMAT_RGB888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_XRGB,
+                                   SDL_PACKEDLAYOUT_8888, 24, 4),
+        SDL_PIXELFORMAT_RGBX8888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_RGBX,
+                                   SDL_PACKEDLAYOUT_8888, 24, 4),
+        SDL_PIXELFORMAT_BGR888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_XBGR,
+                                   SDL_PACKEDLAYOUT_8888, 24, 4),
+        SDL_PIXELFORMAT_BGRX8888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_BGRX,
+                                   SDL_PACKEDLAYOUT_8888, 24, 4),
+        SDL_PIXELFORMAT_ARGB8888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ARGB,
+                                   SDL_PACKEDLAYOUT_8888, 32, 4),
+        SDL_PIXELFORMAT_RGBA8888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_RGBA,
+                                   SDL_PACKEDLAYOUT_8888, 32, 4),
+        SDL_PIXELFORMAT_ABGR8888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ABGR,
+                                   SDL_PACKEDLAYOUT_8888, 32, 4),
+        SDL_PIXELFORMAT_BGRA8888 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_BGRA,
+                                   SDL_PACKEDLAYOUT_8888, 32, 4),
+        SDL_PIXELFORMAT_ARGB2101010 =
+            SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ARGB,
+                                   SDL_PACKEDLAYOUT_2101010, 32, 4),
 
     /* Aliases for RGBA byte arrays of color data, for the current platform */
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_RGBA8888,
-    SDL_PIXELFORMAT_ARGB32 = SDL_PIXELFORMAT_ARGB8888,
-    SDL_PIXELFORMAT_BGRA32 = SDL_PIXELFORMAT_BGRA8888,
-    SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_ABGR8888,
+        SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_RGBA8888,
+        SDL_PIXELFORMAT_ARGB32 = SDL_PIXELFORMAT_ARGB8888,
+        SDL_PIXELFORMAT_BGRA32 = SDL_PIXELFORMAT_BGRA8888,
+        SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_ABGR8888,
 #else
     SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_ABGR8888,
     SDL_PIXELFORMAT_ARGB32 = SDL_PIXELFORMAT_BGRA8888,
@@ -4966,25 +5205,25 @@ typedef enum
     SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_RGBA8888,
 #endif
 
-    SDL_PIXELFORMAT_YV12 =      /**< Planar mode: Y + V + U  (3 planes) */
+        SDL_PIXELFORMAT_YV12 = /**< Planar mode: Y + V + U  (3 planes) */
         SDL_DEFINE_PIXELFOURCC('Y', 'V', '1', '2'),
-    SDL_PIXELFORMAT_IYUV =      /**< Planar mode: Y + U + V  (3 planes) */
+        SDL_PIXELFORMAT_IYUV = /**< Planar mode: Y + U + V  (3 planes) */
         SDL_DEFINE_PIXELFOURCC('I', 'Y', 'U', 'V'),
-    SDL_PIXELFORMAT_YUY2 =      /**< Packed mode: Y0+U0+Y1+V0 (1 plane) */
+        SDL_PIXELFORMAT_YUY2 = /**< Packed mode: Y0+U0+Y1+V0 (1 plane) */
         SDL_DEFINE_PIXELFOURCC('Y', 'U', 'Y', '2'),
-    SDL_PIXELFORMAT_UYVY =      /**< Packed mode: U0+Y0+V0+Y1 (1 plane) */
+        SDL_PIXELFORMAT_UYVY = /**< Packed mode: U0+Y0+V0+Y1 (1 plane) */
         SDL_DEFINE_PIXELFOURCC('U', 'Y', 'V', 'Y'),
-    SDL_PIXELFORMAT_YVYU =      /**< Packed mode: Y0+V0+Y1+U0 (1 plane) */
+        SDL_PIXELFORMAT_YVYU = /**< Packed mode: Y0+V0+Y1+U0 (1 plane) */
         SDL_DEFINE_PIXELFOURCC('Y', 'V', 'Y', 'U'),
-    SDL_PIXELFORMAT_NV12 =      /**< Planar mode: Y + U/V interleaved  (2 planes) */
+        SDL_PIXELFORMAT_NV12 = /**< Planar mode: Y + U/V interleaved  (2 planes) */
         SDL_DEFINE_PIXELFOURCC('N', 'V', '1', '2'),
-    SDL_PIXELFORMAT_NV21 =      /**< Planar mode: Y + V/U interleaved  (2 planes) */
+        SDL_PIXELFORMAT_NV21 = /**< Planar mode: Y + V/U interleaved  (2 planes) */
         SDL_DEFINE_PIXELFOURCC('N', 'V', '2', '1'),
-    SDL_PIXELFORMAT_EXTERNAL_OES =      /**< Android video texture format */
+        SDL_PIXELFORMAT_EXTERNAL_OES = /**< Android video texture format */
         SDL_DEFINE_PIXELFOURCC('O', 'E', 'S', ' ')
-} SDL_PixelFormatEnum;
+    } SDL_PixelFormatEnum;
 
-typedef Uint16 SDL_AudioFormat;
+    typedef Uint16 SDL_AudioFormat;
 
 #if SDL_DYNAMIC_API
 #include "dynapi/SDL_dynapi_overrides.h"
@@ -4994,10 +5233,10 @@ typedef Uint16 SDL_AudioFormat;
 #define SDLCALL
 #endif
 
-typedef void (__stdcall* SDL_AudioCallback) (void *userdata, Uint8 * stream,
-                                            int len);
+    typedef void(__stdcall *SDL_AudioCallback)(void *userdata, Uint8 *stream,
+                                               int len);
 
-/**
+    /**
  *  The calculated values in this structure are calculated by SDL_OpenAudio().
  *
  *  For multi-channel audio, the default SDL channel mapping is:
@@ -5009,63 +5248,58 @@ typedef void (__stdcall* SDL_AudioCallback) (void *userdata, Uint8 * stream,
  *  7:  FL FR FC LFE BC SL SR       (6.1 surround)
  *  8:  FL FR FC LFE BL BR SL SR    (7.1 surround)
  */
-typedef struct SDL_AudioSpec
-{
-    int freq;                   /**< DSP frequency -- samples per second */
-    SDL_AudioFormat format;     /**< Audio data format */
-    Uint8 channels;             /**< Number of channels: 1 mono, 2 stereo */
-    Uint8 silence;              /**< Audio buffer silence value (calculated) */
-    Uint16 samples;             /**< Audio buffer size in sample FRAMES (total samples divided by channel count) */
-    Uint16 padding;             /**< Necessary for some compile environments */
-    Uint32 size;                /**< Audio buffer size in bytes (calculated) */
-    SDL_AudioCallback callback; /**< Callback that feeds the audio device (NULL to use SDL_QueueAudio()). */
-    void *userdata;             /**< Userdata passed to callback (ignored for NULL callbacks). */
-} SDL_AudioSpec;
+    typedef struct SDL_AudioSpec
+    {
+        int freq;                   /**< DSP frequency -- samples per second */
+        SDL_AudioFormat format;     /**< Audio data format */
+        Uint8 channels;             /**< Number of channels: 1 mono, 2 stereo */
+        Uint8 silence;              /**< Audio buffer silence value (calculated) */
+        Uint16 samples;             /**< Audio buffer size in sample FRAMES (total samples divided by channel count) */
+        Uint16 padding;             /**< Necessary for some compile environments */
+        Uint32 size;                /**< Audio buffer size in bytes (calculated) */
+        SDL_AudioCallback callback; /**< Callback that feeds the audio device (NULL to use SDL_QueueAudio()). */
+        void *userdata;             /**< Userdata passed to callback (ignored for NULL callbacks). */
+    } SDL_AudioSpec;
 
-typedef struct SDL_Color
-{
-    Uint8 r;
-    Uint8 g;
-    Uint8 b;
-    Uint8 a;
-} SDL_Color;
+    typedef struct SDL_Color
+    {
+        Uint8 r;
+        Uint8 g;
+        Uint8 b;
+        Uint8 a;
+    } SDL_Color;
 #define SDL_Colour SDL_Color
 
-typedef struct SDL_Palette
-{
-    int ncolors;
-    SDL_Color *colors;
-    Uint32 version;
-    int refcount;
-} SDL_Palette;
+    typedef struct SDL_Palette
+    {
+        int ncolors;
+        SDL_Color *colors;
+        Uint32 version;
+        int refcount;
+    } SDL_Palette;
 
-typedef struct SDL_PixelFormat
-{
-    Uint32 format;
-    SDL_Palette *palette;
-    Uint8 BitsPerPixel;
-    Uint8 BytesPerPixel;
-    Uint8 padding[2];
-    Uint32 Rmask;
-    Uint32 Gmask;
-    Uint32 Bmask;
-    Uint32 Amask;
-    Uint8 Rloss;
-    Uint8 Gloss;
-    Uint8 Bloss;
-    Uint8 Aloss;
-    Uint8 Rshift;
-    Uint8 Gshift;
-    Uint8 Bshift;
-    Uint8 Ashift;
-    int refcount;
-    struct SDL_PixelFormat *next;
-} SDL_PixelFormat;
-
-/* Ends C function definitions when using C++ */
-#ifdef __cplusplus
-}
-#endif
+    typedef struct SDL_PixelFormat
+    {
+        Uint32 format;
+        SDL_Palette *palette;
+        Uint8 BitsPerPixel;
+        Uint8 BytesPerPixel;
+        Uint8 padding[2];
+        Uint32 Rmask;
+        Uint32 Gmask;
+        Uint32 Bmask;
+        Uint32 Amask;
+        Uint8 Rloss;
+        Uint8 Gloss;
+        Uint8 Bloss;
+        Uint8 Aloss;
+        Uint8 Rshift;
+        Uint8 Gshift;
+        Uint8 Bshift;
+        Uint8 Ashift;
+        int refcount;
+        struct SDL_PixelFormat *next;
+    } SDL_PixelFormat;
 
 
 /* Reset structure packing at previous byte alignment */
@@ -5076,79 +5310,99 @@ typedef struct SDL_PixelFormat
 #pragma pack(pop)
 #endif /* Compiler needs structure packing set */
 
-
 #define AVSEEK_FLAG_BACKWARD 1 ///< seek backward
-#define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes
-#define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
-#define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
+#define AVSEEK_FLAG_BYTE 2     ///< seeking based on position in bytes
+#define AVSEEK_FLAG_ANY 4      ///< seek to any frame, even non-keyframes
+#define AVSEEK_FLAG_FRAME 8    ///< seeking based on frame number
 
 #define SDL_MIX_MAXVOLUME 128
-#define SDL_INIT_TIMER          0x00000001u
-#define SDL_INIT_AUDIO          0x00000010u
-#define SDL_INIT_VIDEO          0x00000020u  /**< SDL_INIT_VIDEO implies SDL_INIT_EVENTS */
-#define SDL_INIT_JOYSTICK       0x00000200u  /**< SDL_INIT_JOYSTICK implies SDL_INIT_EVENTS */
-#define SDL_INIT_HAPTIC         0x00001000u
-#define SDL_INIT_GAMECONTROLLER 0x00002000u  /**< SDL_INIT_GAMECONTROLLER implies SDL_INIT_JOYSTICK */
-#define SDL_INIT_EVENTS         0x00004000u
-#define SDL_INIT_SENSOR         0x00008000u
-#define SDL_INIT_NOPARACHUTE    0x00100000u  /**< compatibility; this flag is ignored. */
-#define SDL_INIT_EVERYTHING ( \
-                SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | \
-                SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR \
-            )
-#define SDL_QUERY   -1
-#define SDL_IGNORE   0
-#define SDL_DISABLE  0
-#define SDL_ENABLE   1
+#define SDL_INIT_TIMER 0x00000001u
+#define SDL_INIT_AUDIO 0x00000010u
+#define SDL_INIT_VIDEO 0x00000020u    /**< SDL_INIT_VIDEO implies SDL_INIT_EVENTS */
+#define SDL_INIT_JOYSTICK 0x00000200u /**< SDL_INIT_JOYSTICK implies SDL_INIT_EVENTS */
+#define SDL_INIT_HAPTIC 0x00001000u
+#define SDL_INIT_GAMECONTROLLER 0x00002000u /**< SDL_INIT_GAMECONTROLLER implies SDL_INIT_JOYSTICK */
+#define SDL_INIT_EVENTS 0x00004000u
+#define SDL_INIT_SENSOR 0x00008000u
+#define SDL_INIT_NOPARACHUTE 0x00100000u /**< compatibility; this flag is ignored. */
+#define SDL_INIT_EVERYTHING (                                            \
+    SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | \
+    SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_SENSOR)
+#define SDL_QUERY -1
+#define SDL_IGNORE 0
+#define SDL_DISABLE 0
+#define SDL_ENABLE 1
 
-#define SDL_WINDOWPOS_UNDEFINED_MASK    0x1FFF0000u
-#define SDL_WINDOWPOS_UNDEFINED_DISPLAY(X)  (SDL_WINDOWPOS_UNDEFINED_MASK|(X))
-#define SDL_WINDOWPOS_UNDEFINED         SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)
-#define SDL_WINDOWPOS_ISUNDEFINED(X)    \
-            (((X)&0xFFFF0000) == SDL_WINDOWPOS_UNDEFINED_MASK)
+#define SDL_WINDOWPOS_UNDEFINED_MASK 0x1FFF0000u
+#define SDL_WINDOWPOS_UNDEFINED_DISPLAY(X) (SDL_WINDOWPOS_UNDEFINED_MASK | (X))
+#define SDL_WINDOWPOS_UNDEFINED SDL_WINDOWPOS_UNDEFINED_DISPLAY(0)
+#define SDL_WINDOWPOS_ISUNDEFINED(X) \
+    (((X)&0xFFFF0000) == SDL_WINDOWPOS_UNDEFINED_MASK)
 
-#define SDL_WINDOWPOS_CENTERED_MASK    0x2FFF0000u
-#define SDL_WINDOWPOS_CENTERED_DISPLAY(X)  (SDL_WINDOWPOS_CENTERED_MASK|(X))
-#define SDL_WINDOWPOS_CENTERED         SDL_WINDOWPOS_CENTERED_DISPLAY(0)
-#define SDL_WINDOWPOS_ISCENTERED(X)    \
-            (((X)&0xFFFF0000) == SDL_WINDOWPOS_CENTERED_MASK)
-#define SDL_HINT_RENDER_SCALE_QUALITY       "SDL_RENDER_SCALE_QUALITY"
+#define SDL_WINDOWPOS_CENTERED_MASK 0x2FFF0000u
+#define SDL_WINDOWPOS_CENTERED_DISPLAY(X) (SDL_WINDOWPOS_CENTERED_MASK | (X))
+#define SDL_WINDOWPOS_CENTERED SDL_WINDOWPOS_CENTERED_DISPLAY(0)
+#define SDL_WINDOWPOS_ISCENTERED(X) \
+    (((X)&0xFFFF0000) == SDL_WINDOWPOS_CENTERED_MASK)
+#define SDL_HINT_RENDER_SCALE_QUALITY "SDL_RENDER_SCALE_QUALITY"
 
-#define FF_PAD_STRUCTURE(name, size, ...) \
-struct ff_pad_helper_##name { __VA_ARGS__ }; \
-typedef struct name { \
-    __VA_ARGS__ \
-    char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
-} name;
+#define FF_PAD_STRUCTURE(name, size, ...)                                  \
+    struct ff_pad_helper_##name                                            \
+    {                                                                      \
+        __VA_ARGS__                                                        \
+    };                                                                     \
+    typedef struct name                                                    \
+    {                                                                      \
+        __VA_ARGS__                                                        \
+        char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
+    } name;
 
 FF_PAD_STRUCTURE(AVBPrint, 1024,
-    char *str;         /**< string so far */
-    unsigned len;      /**< length so far */
-    unsigned size;     /**< allocated memory */
-    unsigned size_max; /**< maximum allocated memory */
-    char reserved_internal_buffer[1];
-)
+                 char *str;         /**< string so far */
+                 unsigned len;      /**< length so far */
+                 unsigned size;     /**< allocated memory */
+                 unsigned size_max; /**< maximum allocated memory */
+                 char reserved_internal_buffer[1];)
 
-#define AV_BPRINT_SIZE_UNLIMITED  ((unsigned)-1)
-#define AV_BPRINT_SIZE_AUTOMATIC  1
+#define AV_BPRINT_SIZE_UNLIMITED ((unsigned)-1)
+#define AV_BPRINT_SIZE_AUTOMATIC 1
 #define AV_BPRINT_SIZE_COUNT_ONLY 0
 
-#define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
+#define FFSWAP(type, a, b) \
+    do                     \
+    {                      \
+        type SWAP_tmp = b; \
+        b = a;             \
+        a = SWAP_tmp;      \
+    } while (0)
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
-#define AV_OPT_SEARCH_CHILDREN   (1 << 0) /**< Search in possible children of the given object first. */
-#define AV_OPT_SEARCH_FAKE_OBJ   (1 << 1)
+#define AV_OPT_SEARCH_CHILDREN (1 << 0) /**< Search in possible children of the given object first. */
+#define AV_OPT_SEARCH_FAKE_OBJ (1 << 1)
 #define AV_OPT_ALLOW_NULL (1 << 2)
 #define AV_OPT_MULTI_COMPONENT_RANGE (1 << 12)
 
+#define atomic_fetch_sub_explicit(object, operand, order) \
+    atomic_fetch_sub(object, operand)
+
+#define ASSERT_PTHREAD(func, ...)                \
+    do                                           \
+    {                                            \
+        ASSERT_PTHREAD_NORET(func, __VA_ARGS__); \
+        return 0;                                \
+    } while (0)
+
+#define av_bprint_room(buf) ((buf)->size - FFMIN((buf)->len, (buf)->size))
+#define av_bprint_is_allocated(buf) ((buf)->str != (buf)->reserved_internal_buffer)
+
 typedef enum
 {
-    SDL_RENDERER_SOFTWARE = 0x00000001,         /**< The renderer is a software fallback */
-    SDL_RENDERER_ACCELERATED = 0x00000002,      /**< The renderer uses hardware
+    SDL_RENDERER_SOFTWARE = 0x00000001,     /**< The renderer is a software fallback */
+    SDL_RENDERER_ACCELERATED = 0x00000002,  /**< The renderer uses hardware
                                                      acceleration */
-    SDL_RENDERER_PRESENTVSYNC = 0x00000004,     /**< Present is synchronized
+    SDL_RENDERER_PRESENTVSYNC = 0x00000004, /**< Present is synchronized
                                                      with the refresh rate */
-    SDL_RENDERER_TARGETTEXTURE = 0x00000008     /**< The renderer supports
+    SDL_RENDERER_TARGETTEXTURE = 0x00000008 /**< The renderer supports
                                                      rendering to texture */
 } SDL_RendererFlags;
 
@@ -5261,19 +5515,21 @@ enum AVSampleFormat
     AV_SAMPLE_FMT_NB ///< Number of sample formats. DO NOT USE if linking dynamically
 };
 
-enum AVDiscard{
+enum AVDiscard
+{
     /* We leave some space between them for extensions (drop some
      * keyframes for intra-only or drop just some bidir frames). */
-    AVDISCARD_NONE    =-16, ///< discard nothing
-    AVDISCARD_DEFAULT =  0, ///< discard useless packets like 0 size packets in avi
-    AVDISCARD_NONREF  =  8, ///< discard all non reference
-    AVDISCARD_BIDIR   = 16, ///< discard all bidirectional frames
-    AVDISCARD_NONINTRA= 24, ///< discard all non intra frames
-    AVDISCARD_NONKEY  = 32, ///< discard all frames except keyframes
-    AVDISCARD_ALL     = 48, ///< discard all
+    AVDISCARD_NONE = -16,    ///< discard nothing
+    AVDISCARD_DEFAULT = 0,   ///< discard useless packets like 0 size packets in avi
+    AVDISCARD_NONREF = 8,    ///< discard all non reference
+    AVDISCARD_BIDIR = 16,    ///< discard all bidirectional frames
+    AVDISCARD_NONINTRA = 24, ///< discard all non intra frames
+    AVDISCARD_NONKEY = 32,   ///< discard all frames except keyframes
+    AVDISCARD_ALL = 48,      ///< discard all
 };
 
-enum AVHWDeviceType {
+enum AVHWDeviceType
+{
     AV_HWDEVICE_TYPE_NONE,
     AV_HWDEVICE_TYPE_VDPAU,
     AV_HWDEVICE_TYPE_CUDA,
@@ -5293,11 +5549,16 @@ typedef struct AVDictionaryEntry
     char *value;
 } AVDictionaryEntry;
 
+struct AVDictionary
+{
+    int count;
+    AVDictionaryEntry *elems;
+};
+
 typedef struct AVDictionary AVDictionary;
 AVDictionary *sws_dict;
 AVDictionary *swr_opts;
 AVDictionary *format_opts, *codec_opts, *resample_opts;
-
 
 typedef struct AVRational
 {
@@ -5305,8 +5566,8 @@ typedef struct AVRational
     int den; ///< Denominator
 } AVRational;
 
-
-enum AVFrameSideDataType {
+enum AVFrameSideDataType
+{
     AV_FRAME_DATA_PANSCAN,
     AV_FRAME_DATA_A53_CC,
     AV_FRAME_DATA_STEREO3D,
@@ -5323,42 +5584,44 @@ enum AVFrameSideDataType {
     AV_FRAME_DATA_SPHERICAL,
     AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
     AV_FRAME_DATA_ICC_PROFILE,
-// #if FF_API_FRAME_QP
-//     AV_FRAME_DATA_QP_TABLE_PROPERTIES,
-//     AV_FRAME_DATA_QP_TABLE_DATA,
-// #endif
-//     AV_FRAME_DATA_S12M_TIMECODE,
-//     AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
-//     AV_FRAME_DATA_REGIONS_OF_INTEREST,
+    // #if FF_API_FRAME_QP
+    //     AV_FRAME_DATA_QP_TABLE_PROPERTIES,
+    //     AV_FRAME_DATA_QP_TABLE_DATA,
+    // #endif
+    //     AV_FRAME_DATA_S12M_TIMECODE,
+    //     AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
+    //     AV_FRAME_DATA_REGIONS_OF_INTEREST,
 };
 
-enum AVPictureType {
+enum AVPictureType
+{
     AV_PICTURE_TYPE_NONE = 0, ///< Undefined
-    AV_PICTURE_TYPE_I,     ///< Intra
-    AV_PICTURE_TYPE_P,     ///< Predicted
-    AV_PICTURE_TYPE_B,     ///< Bi-dir predicted
-    AV_PICTURE_TYPE_S,     ///< S(GMC)-VOP MPEG-4
-    AV_PICTURE_TYPE_SI,    ///< Switching Intra
-    AV_PICTURE_TYPE_SP,    ///< Switching Predicted
-    AV_PICTURE_TYPE_BI,    ///< BI type
+    AV_PICTURE_TYPE_I,        ///< Intra
+    AV_PICTURE_TYPE_P,        ///< Predicted
+    AV_PICTURE_TYPE_B,        ///< Bi-dir predicted
+    AV_PICTURE_TYPE_S,        ///< S(GMC)-VOP MPEG-4
+    AV_PICTURE_TYPE_SI,       ///< Switching Intra
+    AV_PICTURE_TYPE_SP,       ///< Switching Predicted
+    AV_PICTURE_TYPE_BI,       ///< BI type
 };
 
 typedef enum
 {
-    SDL_YUV_CONVERSION_JPEG,        /**< Full range JPEG */
-    SDL_YUV_CONVERSION_BT601,       /**< BT.601 (the default) */
-    SDL_YUV_CONVERSION_BT709,       /**< BT.709 */
-    SDL_YUV_CONVERSION_AUTOMATIC    /**< BT.601 for SD content, BT.709 for HD content */
+    SDL_YUV_CONVERSION_JPEG,     /**< Full range JPEG */
+    SDL_YUV_CONVERSION_BT601,    /**< BT.601 (the default) */
+    SDL_YUV_CONVERSION_BT709,    /**< BT.709 */
+    SDL_YUV_CONVERSION_AUTOMATIC /**< BT.601 for SD content, BT.709 for HD content */
 } SDL_YUV_CONVERSION_MODE;
 
 typedef enum
 {
-    SDL_FLIP_NONE = 0x00000000,     /**< Do not flip */
-    SDL_FLIP_HORIZONTAL = 0x00000001,    /**< flip horizontally */
-    SDL_FLIP_VERTICAL = 0x00000002     /**< flip vertically */
+    SDL_FLIP_NONE = 0x00000000,       /**< Do not flip */
+    SDL_FLIP_HORIZONTAL = 0x00000001, /**< flip horizontally */
+    SDL_FLIP_VERTICAL = 0x00000002    /**< flip vertically */
 } SDL_RendererFlip;
 
-enum RDFTransformType {
+enum RDFTransformType
+{
     DFT_R2C,
     IDFT_C2R,
     IDFT_R2C,
@@ -5366,31 +5629,30 @@ enum RDFTransformType {
 };
 typedef enum
 {
-    SDL_WINDOW_FULLSCREEN = 0x00000001,         /**< fullscreen window */
-    SDL_WINDOW_OPENGL = 0x00000002,             /**< window usable with OpenGL context */
-    SDL_WINDOW_SHOWN = 0x00000004,              /**< window is visible */
-    SDL_WINDOW_HIDDEN = 0x00000008,             /**< window is not visible */
-    SDL_WINDOW_BORDERLESS = 0x00000010,         /**< no window decoration */
-    SDL_WINDOW_RESIZABLE = 0x00000020,          /**< window can be resized */
-    SDL_WINDOW_MINIMIZED = 0x00000040,          /**< window is minimized */
-    SDL_WINDOW_MAXIMIZED = 0x00000080,          /**< window is maximized */
-    SDL_WINDOW_INPUT_GRABBED = 0x00000100,      /**< window has grabbed input focus */
-    SDL_WINDOW_INPUT_FOCUS = 0x00000200,        /**< window has input focus */
-    SDL_WINDOW_MOUSE_FOCUS = 0x00000400,        /**< window has mouse focus */
-    SDL_WINDOW_FULLSCREEN_DESKTOP = ( SDL_WINDOW_FULLSCREEN | 0x00001000 ),
-    SDL_WINDOW_FOREIGN = 0x00000800,            /**< window not created by SDL */
-    SDL_WINDOW_ALLOW_HIGHDPI = 0x00002000,      /**< window should be created in high-DPI mode if supported.
+    SDL_WINDOW_FULLSCREEN = 0x00000001,    /**< fullscreen window */
+    SDL_WINDOW_OPENGL = 0x00000002,        /**< window usable with OpenGL context */
+    SDL_WINDOW_SHOWN = 0x00000004,         /**< window is visible */
+    SDL_WINDOW_HIDDEN = 0x00000008,        /**< window is not visible */
+    SDL_WINDOW_BORDERLESS = 0x00000010,    /**< no window decoration */
+    SDL_WINDOW_RESIZABLE = 0x00000020,     /**< window can be resized */
+    SDL_WINDOW_MINIMIZED = 0x00000040,     /**< window is minimized */
+    SDL_WINDOW_MAXIMIZED = 0x00000080,     /**< window is maximized */
+    SDL_WINDOW_INPUT_GRABBED = 0x00000100, /**< window has grabbed input focus */
+    SDL_WINDOW_INPUT_FOCUS = 0x00000200,   /**< window has input focus */
+    SDL_WINDOW_MOUSE_FOCUS = 0x00000400,   /**< window has mouse focus */
+    SDL_WINDOW_FULLSCREEN_DESKTOP = (SDL_WINDOW_FULLSCREEN | 0x00001000),
+    SDL_WINDOW_FOREIGN = 0x00000800,       /**< window not created by SDL */
+    SDL_WINDOW_ALLOW_HIGHDPI = 0x00002000, /**< window should be created in high-DPI mode if supported.
                                                      On macOS NSHighResolutionCapable must be set true in the
                                                      application's Info.plist for this to have any effect. */
-    SDL_WINDOW_MOUSE_CAPTURE = 0x00004000,      /**< window has mouse captured (unrelated to INPUT_GRABBED) */
-    SDL_WINDOW_ALWAYS_ON_TOP = 0x00008000,      /**< window should always be above others */
-    SDL_WINDOW_SKIP_TASKBAR  = 0x00010000,      /**< window should not be added to the taskbar */
-    SDL_WINDOW_UTILITY       = 0x00020000,      /**< window should be treated as a utility window */
-    SDL_WINDOW_TOOLTIP       = 0x00040000,      /**< window should be treated as a tooltip */
-    SDL_WINDOW_POPUP_MENU    = 0x00080000,      /**< window should be treated as a popup menu */
-    SDL_WINDOW_VULKAN        = 0x10000000       /**< window usable for Vulkan surface */
+    SDL_WINDOW_MOUSE_CAPTURE = 0x00004000, /**< window has mouse captured (unrelated to INPUT_GRABBED) */
+    SDL_WINDOW_ALWAYS_ON_TOP = 0x00008000, /**< window should always be above others */
+    SDL_WINDOW_SKIP_TASKBAR = 0x00010000,  /**< window should not be added to the taskbar */
+    SDL_WINDOW_UTILITY = 0x00020000,       /**< window should be treated as a utility window */
+    SDL_WINDOW_TOOLTIP = 0x00040000,       /**< window should be treated as a tooltip */
+    SDL_WINDOW_POPUP_MENU = 0x00080000,    /**< window should be treated as a popup menu */
+    SDL_WINDOW_VULKAN = 0x10000000         /**< window usable for Vulkan surface */
 } SDL_WindowFlags;
-
 
 typedef struct SDL_cond SDL_cond;
 
@@ -5402,6 +5664,19 @@ typedef struct SDL_Thread SDL_Thread;
 
 struct SDL_Texture;
 typedef struct SDL_Texture SDL_Texture;
+
+typedef intptr_t atomic_uint;
+
+struct AVBuffer
+{
+    uint8_t *data; /**< data described by this buffer */
+    int size;      /**< size of data in bytes */
+    atomic_uint refcount;
+    void (*free)(void *opaque, uint8_t *data);
+    void *opaque;
+    int flags;
+    int flags_internal;
+};
 
 typedef struct AVBuffer AVBuffer;
 
@@ -5420,8 +5695,6 @@ typedef struct AVFrameSideData
     AVDictionary *metadata;
     AVBufferRef *buf;
 } AVFrameSideData;
-
-
 
 typedef struct AVFrame
 {
@@ -5474,7 +5747,8 @@ typedef struct AVFrame
     AVBufferRef *private_ref;
 } AVFrame;
 
-enum AVPacketSideDataType {
+enum AVPacketSideDataType
+{
     AV_PKT_DATA_PALETTE,
     AV_PKT_DATA_NEW_EXTRADATA,
     AV_PKT_DATA_PARAM_CHANGE,
@@ -5504,24 +5778,26 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_NB
 };
 
-typedef struct AVPacketSideData {
+typedef struct AVPacketSideData
+{
     uint8_t *data;
-    int      size;
+    int size;
     enum AVPacketSideDataType type;
 } AVPacketSideData;
 
-typedef struct AVPacket {
+typedef struct AVPacket
+{
     AVBufferRef *buf;
     int64_t pts;
     int64_t dts;
     uint8_t *data;
-    int   size;
-    int   stream_index;
-    int   flags;
+    int size;
+    int stream_index;
+    int flags;
     AVPacketSideData *side_data;
     int side_data_elems;
     int64_t duration;
-    int64_t pos;                            ///< byte position in stream, -1 if unknown
+    int64_t pos; ///< byte position in stream, -1 if unknown
 } AVPacket;
 
 typedef struct MyAVPacketList
@@ -5564,15 +5840,16 @@ typedef struct Clock
     int *queue_serial; /* pointer to the current packet queue serial, used for obsolete clock detection */
 } Clock;
 
-enum AVSubtitleType {
+enum AVSubtitleType
+{
     SUBTITLE_NONE,
-    SUBTITLE_BITMAP,                ///< A bitmap, pict will be set
+    SUBTITLE_BITMAP, ///< A bitmap, pict will be set
     SUBTITLE_TEXT,
     SUBTITLE_ASS,
 };
 
-
-typedef struct AVSubtitleRect {
+typedef struct AVSubtitleRect
+{
     int x;         ///< top left corner  of pict, undefined when pict is not set
     int y;         ///< top left corner  of pict, undefined when pict is not set
     int w;         ///< width            of pict, undefined when pict is not set
@@ -5581,7 +5858,7 @@ typedef struct AVSubtitleRect {
     uint8_t *data[4];
     int linesize[4];
     enum AVSubtitleType type;
-    char *text;                     ///< 0 terminated plain UTF-8 text
+    char *text; ///< 0 terminated plain UTF-8 text
     char *ass;
     int flags;
 } AVSubtitleRect;
@@ -5633,7 +5910,8 @@ enum
     AV_SYNC_EXTERNAL_CLOCK, /* synchronize to an external clock */
 };
 
-typedef enum {
+typedef enum
+{
     AV_CLASS_CATEGORY_NA = 0,
     AV_CLASS_CATEGORY_INPUT,
     AV_CLASS_CATEGORY_OUTPUT,
@@ -5651,36 +5929,40 @@ typedef enum {
     AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
     AV_CLASS_CATEGORY_DEVICE_OUTPUT,
     AV_CLASS_CATEGORY_DEVICE_INPUT,
-    AV_CLASS_CATEGORY_NB  ///< not part of ABI/API
-}AVClassCategory;
+    AV_CLASS_CATEGORY_NB ///< not part of ABI/API
+} AVClassCategory;
 
-typedef struct AVOptionRange {
+typedef struct AVOptionRange
+{
     const char *str;
     double value_min, value_max;
     double component_min, component_max;
     int is_range;
 } AVOptionRange;
 
-typedef struct AVOptionRanges {
+typedef struct AVOptionRanges
+{
     AVOptionRange **range;
     int nb_ranges;
     int nb_components;
 } AVOptionRanges;
 
-typedef struct AVClass {
-    const char* class_name;
-    const char* (*item_name)(void* ctx);
+typedef struct AVClass
+{
+    const char *class_name;
+    const char *(*item_name)(void *ctx);
     const struct AVOption *option;
     int version;
     int log_level_offset_offset;
     int parent_log_context_offset;
-    void* (*child_next)(void *obj, void *prev);
-    const struct AVClass* (*child_class_next)(const struct AVClass *prev);
+    void *(*child_next)(void *obj, void *prev);
+    const struct AVClass *(*child_class_next)(const struct AVClass *prev);
     AVClassCategory category;
-    AVClassCategory (*get_category)(void* ctx);
+    AVClassCategory (*get_category)(void *ctx);
     int (*query_ranges)(struct AVOptionRanges **, void *obj, const char *key, int flags);
 } AVClass;
-enum AVOptionType{
+enum AVOptionType
+{
     AV_OPT_TYPE_FLAGS,
     AV_OPT_TYPE_INT,
     AV_OPT_TYPE_INT64,
@@ -5688,7 +5970,7 @@ enum AVOptionType{
     AV_OPT_TYPE_FLOAT,
     AV_OPT_TYPE_STRING,
     AV_OPT_TYPE_RATIONAL,
-    AV_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
+    AV_OPT_TYPE_BINARY, ///< offset must point to a pointer immediately followed by an int for the length
     AV_OPT_TYPE_DICT,
     AV_OPT_TYPE_UINT64,
     AV_OPT_TYPE_CONST,
@@ -5702,51 +5984,55 @@ enum AVOptionType{
     AV_OPT_TYPE_BOOL,
 };
 
-typedef struct AVOption {
+typedef struct AVOption
+{
     const char *name;
     const char *help;
     int offset;
     enum AVOptionType type;
-    union {
+    union
+    {
         int64_t i64;
         double dbl;
         const char *str;
         /* TODO those are unused now */
         AVRational q;
     } default_val;
-    double min;                 ///< minimum valid value for the option
-    double max;                 ///< maximum valid value for the option
+    double min; ///< minimum valid value for the option
+    double max; ///< maximum valid value for the option
 
     int flags;
-#define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
-#define AV_OPT_FLAG_DECODING_PARAM  2   ///< a generic parameter which can be set by the user for demuxing or decoding
-#define AV_OPT_FLAG_AUDIO_PARAM     8
-#define AV_OPT_FLAG_VIDEO_PARAM     16
-#define AV_OPT_FLAG_SUBTITLE_PARAM  32
-#define AV_OPT_FLAG_EXPORT          64
-#define AV_OPT_FLAG_READONLY        128
-#define AV_OPT_FLAG_BSF_PARAM       (1<<8) ///< a generic parameter which can be set by the user for bit stream filtering
-#define AV_OPT_FLAG_RUNTIME_PARAM   (1<<15) ///< a generic parameter which can be set by the user at runtime
-#define AV_OPT_FLAG_FILTERING_PARAM (1<<16) ///< a generic parameter which can be set by the user for filtering
-#define AV_OPT_FLAG_DEPRECATED      (1<<17) ///< set if option is deprecated, users should refer to AVOption.help text for more information
-#define AV_OPT_FLAG_CHILD_CONSTS    (1<<18) ///< set if option constants can also reside in child objects
+#define AV_OPT_FLAG_ENCODING_PARAM 1 ///< a generic parameter which can be set by the user for muxing or encoding
+#define AV_OPT_FLAG_DECODING_PARAM 2 ///< a generic parameter which can be set by the user for demuxing or decoding
+#define AV_OPT_FLAG_AUDIO_PARAM 8
+#define AV_OPT_FLAG_VIDEO_PARAM 16
+#define AV_OPT_FLAG_SUBTITLE_PARAM 32
+#define AV_OPT_FLAG_EXPORT 64
+#define AV_OPT_FLAG_READONLY 128
+#define AV_OPT_FLAG_BSF_PARAM (1 << 8)        ///< a generic parameter which can be set by the user for bit stream filtering
+#define AV_OPT_FLAG_RUNTIME_PARAM (1 << 15)   ///< a generic parameter which can be set by the user at runtime
+#define AV_OPT_FLAG_FILTERING_PARAM (1 << 16) ///< a generic parameter which can be set by the user for filtering
+#define AV_OPT_FLAG_DEPRECATED (1 << 17)      ///< set if option is deprecated, users should refer to AVOption.help text for more information
+#define AV_OPT_FLAG_CHILD_CONSTS (1 << 18)    ///< set if option constants can also reside in child objects
     const char *unit;
 } AVOption;
 
-enum AVMediaType {
-    AVMEDIA_TYPE_UNKNOWN = -1,  ///< Usually treated as AVMEDIA_TYPE_DATA
+enum AVMediaType
+{
+    AVMEDIA_TYPE_UNKNOWN = -1, ///< Usually treated as AVMEDIA_TYPE_DATA
     AVMEDIA_TYPE_VIDEO,
     AVMEDIA_TYPE_AUDIO,
-    AVMEDIA_TYPE_DATA,          ///< Opaque data information usually continuous
+    AVMEDIA_TYPE_DATA, ///< Opaque data information usually continuous
     AVMEDIA_TYPE_SUBTITLE,
-    AVMEDIA_TYPE_ATTACHMENT,    ///< Opaque data information usually sparse
+    AVMEDIA_TYPE_ATTACHMENT, ///< Opaque data information usually sparse
     AVMEDIA_TYPE_NB
 };
 
 #define AV_CODEC_ID_IFF_BYTERUN1 AV_CODEC_ID_IFF_ILBM
 #define AV_CODEC_ID_H265 AV_CODEC_ID_HEVC
 
-enum AVCodecID {
+enum AVCodecID
+{
     AV_CODEC_ID_NONE,
 
     /* video codecs */
@@ -6007,7 +6293,7 @@ enum AVCodecID {
     AV_CODEC_ID_CRI,
 
     /* various PCM "codecs" */
-    AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
+    AV_CODEC_ID_FIRST_AUDIO = 0x10000, ///< A dummy id pointing at the start of audio codecs
     AV_CODEC_ID_PCM_S16LE = 0x10000,
     AV_CODEC_ID_PCM_S16BE,
     AV_CODEC_ID_PCM_U16LE,
@@ -6216,10 +6502,10 @@ enum AVCodecID {
     AV_CODEC_ID_FASTAUDIO,
 
     /* subtitle codecs */
-    AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
+    AV_CODEC_ID_FIRST_SUBTITLE = 0x17000, ///< A dummy ID pointing at the start of subtitle codecs.
     AV_CODEC_ID_DVD_SUBTITLE = 0x17000,
     AV_CODEC_ID_DVB_SUBTITLE,
-    AV_CODEC_ID_TEXT,  ///< raw UTF-8 text
+    AV_CODEC_ID_TEXT, ///< raw UTF-8 text
     AV_CODEC_ID_XSUB,
     AV_CODEC_ID_SSA,
     AV_CODEC_ID_MOV_TEXT,
@@ -6227,7 +6513,7 @@ enum AVCodecID {
     AV_CODEC_ID_DVB_TELETEXT,
     AV_CODEC_ID_SRT,
 
-    AV_CODEC_ID_MICRODVD   = 0x17800,
+    AV_CODEC_ID_MICRODVD = 0x17800,
     AV_CODEC_ID_EIA_608,
     AV_CODEC_ID_JACOSUB,
     AV_CODEC_ID_SAMI,
@@ -6246,12 +6532,12 @@ enum AVCodecID {
     AV_CODEC_ID_ARIB_CAPTION,
 
     /* other specific kind of codecs (generally used for attachments) */
-    AV_CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
+    AV_CODEC_ID_FIRST_UNKNOWN = 0x18000, ///< A dummy ID pointing at the start of various fake codecs.
     AV_CODEC_ID_TTF = 0x18000,
 
     AV_CODEC_ID_SCTE_35, ///< Contain timestamp estimated through PCR of program stream.
     AV_CODEC_ID_EPG,
-    AV_CODEC_ID_BINTEXT    = 0x18800,
+    AV_CODEC_ID_BINTEXT = 0x18800,
     AV_CODEC_ID_XBIN,
     AV_CODEC_ID_IDF,
     AV_CODEC_ID_OTF,
@@ -6260,18 +6546,18 @@ enum AVCodecID {
     AV_CODEC_ID_TIMED_ID3,
     AV_CODEC_ID_BIN_DATA,
 
-
     AV_CODEC_ID_PROBE = 0x19000, ///< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
 
-    AV_CODEC_ID_MPEG2TS = 0x20000, /**< _FAKE_ codec to indicate a raw MPEG-2 TS
+    AV_CODEC_ID_MPEG2TS = 0x20000,         /**< _FAKE_ codec to indicate a raw MPEG-2 TS
                                 * stream (only used by libavformat) */
-    AV_CODEC_ID_MPEG4SYSTEMS = 0x20001, /**< _FAKE_ codec to indicate a MPEG-4 Systems
+    AV_CODEC_ID_MPEG4SYSTEMS = 0x20001,    /**< _FAKE_ codec to indicate a MPEG-4 Systems
                                 * stream (only used by libavformat) */
-    AV_CODEC_ID_FFMETADATA = 0x21000,   ///< Dummy codec for streams containing only metadata information.
+    AV_CODEC_ID_FFMETADATA = 0x21000,      ///< Dummy codec for streams containing only metadata information.
     AV_CODEC_ID_WRAPPED_AVFRAME = 0x21001, ///< Passthrough codec, AVFrames wrapped in AVPacket
 };
 
-enum AVPixelFormat{
+enum AVPixelFormat
+{
     AV_PIX_FMT_NONE = -1,
     AV_PIX_FMT_YUV420P,   ///< planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
     AV_PIX_FMT_YUYV422,   ///< packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
@@ -6299,137 +6585,137 @@ enum AVPixelFormat{
     AV_PIX_FMT_NV12,      ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
     AV_PIX_FMT_NV21,      ///< as above, but U and V bytes are swapped
 
-    AV_PIX_FMT_ARGB,      ///< packed ARGB 8:8:8:8, 32bpp, ARGBARGB...
-    AV_PIX_FMT_RGBA,      ///< packed RGBA 8:8:8:8, 32bpp, RGBARGBA...
-    AV_PIX_FMT_ABGR,      ///< packed ABGR 8:8:8:8, 32bpp, ABGRABGR...
-    AV_PIX_FMT_BGRA,      ///< packed BGRA 8:8:8:8, 32bpp, BGRABGRA...
+    AV_PIX_FMT_ARGB, ///< packed ARGB 8:8:8:8, 32bpp, ARGBARGB...
+    AV_PIX_FMT_RGBA, ///< packed RGBA 8:8:8:8, 32bpp, RGBARGBA...
+    AV_PIX_FMT_ABGR, ///< packed ABGR 8:8:8:8, 32bpp, ABGRABGR...
+    AV_PIX_FMT_BGRA, ///< packed BGRA 8:8:8:8, 32bpp, BGRABGRA...
 
-    AV_PIX_FMT_GRAY16BE,  ///<        Y        , 16bpp, big-endian
-    AV_PIX_FMT_GRAY16LE,  ///<        Y        , 16bpp, little-endian
-    AV_PIX_FMT_YUV440P,   ///< planar YUV 4:4:0 (1 Cr & Cb sample per 1x2 Y samples)
-    AV_PIX_FMT_YUVJ440P,  ///< planar YUV 4:4:0 full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV440P and setting color_range
-    AV_PIX_FMT_YUVA420P,  ///< planar YUV 4:2:0, 20bpp, (1 Cr & Cb sample per 2x2 Y & A samples)
-    AV_PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
-    AV_PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
+    AV_PIX_FMT_GRAY16BE, ///<        Y        , 16bpp, big-endian
+    AV_PIX_FMT_GRAY16LE, ///<        Y        , 16bpp, little-endian
+    AV_PIX_FMT_YUV440P,  ///< planar YUV 4:4:0 (1 Cr & Cb sample per 1x2 Y samples)
+    AV_PIX_FMT_YUVJ440P, ///< planar YUV 4:4:0 full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV440P and setting color_range
+    AV_PIX_FMT_YUVA420P, ///< planar YUV 4:2:0, 20bpp, (1 Cr & Cb sample per 2x2 Y & A samples)
+    AV_PIX_FMT_RGB48BE,  ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
+    AV_PIX_FMT_RGB48LE,  ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
 
-    AV_PIX_FMT_RGB565BE,  ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), big-endian
-    AV_PIX_FMT_RGB565LE,  ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), little-endian
-    AV_PIX_FMT_RGB555BE,  ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), big-endian   , X=unused/undefined
-    AV_PIX_FMT_RGB555LE,  ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_RGB565BE, ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), big-endian
+    AV_PIX_FMT_RGB565LE, ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), little-endian
+    AV_PIX_FMT_RGB555BE, ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), big-endian   , X=unused/undefined
+    AV_PIX_FMT_RGB555LE, ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), little-endian, X=unused/undefined
 
-    AV_PIX_FMT_BGR565BE,  ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), big-endian
-    AV_PIX_FMT_BGR565LE,  ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), little-endian
-    AV_PIX_FMT_BGR555BE,  ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), big-endian   , X=unused/undefined
-    AV_PIX_FMT_BGR555LE,  ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_BGR565BE, ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), big-endian
+    AV_PIX_FMT_BGR565LE, ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), little-endian
+    AV_PIX_FMT_BGR555BE, ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), big-endian   , X=unused/undefined
+    AV_PIX_FMT_BGR555LE, ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), little-endian, X=unused/undefined
 
-// #if FF_API_VAAPI
-//     /** @name Deprecated pixel formats */
-//     /**@{*/
-//     AV_PIX_FMT_VAAPI_MOCO, ///< HW acceleration through VA API at motion compensation entry-point, Picture.data[3] contains a vaapi_render_state struct which contains macroblocks as well as various fields extracted from headers
-//     AV_PIX_FMT_VAAPI_IDCT, ///< HW acceleration through VA API at IDCT entry-point, Picture.data[3] contains a vaapi_render_state struct which contains fields extracted from headers
-//     AV_PIX_FMT_VAAPI_VLD,  ///< HW decoding through VA API, Picture.data[3] contains a VASurfaceID
-//     /**@}*/
-//     AV_PIX_FMT_VAAPI = AV_PIX_FMT_VAAPI_VLD,
-// #else
-//     AV_PIX_FMT_VAAPI,
-// #endif
-    AV_PIX_FMT_YUV420P16LE,  ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV420P16BE,  ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV422P16LE,  ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV422P16BE,  ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P16LE,  ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P16BE,  ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_DXVA2_VLD,    ///< HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
-    AV_PIX_FMT_RGB444LE,  ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_RGB444BE,  ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), big-endian,    X=unused/undefined
-    AV_PIX_FMT_BGR444LE,  ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_BGR444BE,  ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), big-endian,    X=unused/undefined
-    AV_PIX_FMT_YA8,       ///< 8 bits gray, 8 bits alpha
-    AV_PIX_FMT_Y400A = AV_PIX_FMT_YA8, ///< alias for AV_PIX_FMT_YA8
-    AV_PIX_FMT_GRAY8A= AV_PIX_FMT_YA8, ///< alias for AV_PIX_FMT_YA8
-    AV_PIX_FMT_BGR48BE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
-    AV_PIX_FMT_BGR48LE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
-    AV_PIX_FMT_YUV420P9BE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P9LE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV420P10BE,///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P10LE,///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV422P10BE,///< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P10LE,///< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P9BE, ///< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P9LE, ///< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P10BE,///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P10LE,///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV422P9BE, ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P9LE, ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_GBRP,      ///< planar GBR 4:4:4 24bpp
+    // #if FF_API_VAAPI
+    //     /** @name Deprecated pixel formats */
+    //     /**@{*/
+    //     AV_PIX_FMT_VAAPI_MOCO, ///< HW acceleration through VA API at motion compensation entry-point, Picture.data[3] contains a vaapi_render_state struct which contains macroblocks as well as various fields extracted from headers
+    //     AV_PIX_FMT_VAAPI_IDCT, ///< HW acceleration through VA API at IDCT entry-point, Picture.data[3] contains a vaapi_render_state struct which contains fields extracted from headers
+    //     AV_PIX_FMT_VAAPI_VLD,  ///< HW decoding through VA API, Picture.data[3] contains a VASurfaceID
+    //     /**@}*/
+    //     AV_PIX_FMT_VAAPI = AV_PIX_FMT_VAAPI_VLD,
+    // #else
+    //     AV_PIX_FMT_VAAPI,
+    // #endif
+    AV_PIX_FMT_YUV420P16LE,              ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    AV_PIX_FMT_YUV420P16BE,              ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    AV_PIX_FMT_YUV422P16LE,              ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    AV_PIX_FMT_YUV422P16BE,              ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    AV_PIX_FMT_YUV444P16LE,              ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    AV_PIX_FMT_YUV444P16BE,              ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    AV_PIX_FMT_DXVA2_VLD,                ///< HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
+    AV_PIX_FMT_RGB444LE,                 ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_RGB444BE,                 ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), big-endian,    X=unused/undefined
+    AV_PIX_FMT_BGR444LE,                 ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_BGR444BE,                 ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), big-endian,    X=unused/undefined
+    AV_PIX_FMT_YA8,                      ///< 8 bits gray, 8 bits alpha
+    AV_PIX_FMT_Y400A = AV_PIX_FMT_YA8,   ///< alias for AV_PIX_FMT_YA8
+    AV_PIX_FMT_GRAY8A = AV_PIX_FMT_YA8,  ///< alias for AV_PIX_FMT_YA8
+    AV_PIX_FMT_BGR48BE,                  ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
+    AV_PIX_FMT_BGR48LE,                  ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
+    AV_PIX_FMT_YUV420P9BE,               ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    AV_PIX_FMT_YUV420P9LE,               ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    AV_PIX_FMT_YUV420P10BE,              ///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    AV_PIX_FMT_YUV420P10LE,              ///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    AV_PIX_FMT_YUV422P10BE,              ///< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    AV_PIX_FMT_YUV422P10LE,              ///< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    AV_PIX_FMT_YUV444P9BE,               ///< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    AV_PIX_FMT_YUV444P9LE,               ///< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    AV_PIX_FMT_YUV444P10BE,              ///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    AV_PIX_FMT_YUV444P10LE,              ///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    AV_PIX_FMT_YUV422P9BE,               ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    AV_PIX_FMT_YUV422P9LE,               ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    AV_PIX_FMT_GBRP,                     ///< planar GBR 4:4:4 24bpp
     AV_PIX_FMT_GBR24P = AV_PIX_FMT_GBRP, // alias for #AV_PIX_FMT_GBRP
-    AV_PIX_FMT_GBRP9BE,   ///< planar GBR 4:4:4 27bpp, big-endian
-    AV_PIX_FMT_GBRP9LE,   ///< planar GBR 4:4:4 27bpp, little-endian
-    AV_PIX_FMT_GBRP10BE,  ///< planar GBR 4:4:4 30bpp, big-endian
-    AV_PIX_FMT_GBRP10LE,  ///< planar GBR 4:4:4 30bpp, little-endian
-    AV_PIX_FMT_GBRP16BE,  ///< planar GBR 4:4:4 48bpp, big-endian
-    AV_PIX_FMT_GBRP16LE,  ///< planar GBR 4:4:4 48bpp, little-endian
-    AV_PIX_FMT_YUVA422P,  ///< planar YUV 4:2:2 24bpp, (1 Cr & Cb sample per 2x1 Y & A samples)
-    AV_PIX_FMT_YUVA444P,  ///< planar YUV 4:4:4 32bpp, (1 Cr & Cb sample per 1x1 Y & A samples)
-    AV_PIX_FMT_YUVA420P9BE,  ///< planar YUV 4:2:0 22.5bpp, (1 Cr & Cb sample per 2x2 Y & A samples), big-endian
-    AV_PIX_FMT_YUVA420P9LE,  ///< planar YUV 4:2:0 22.5bpp, (1 Cr & Cb sample per 2x2 Y & A samples), little-endian
-    AV_PIX_FMT_YUVA422P9BE,  ///< planar YUV 4:2:2 27bpp, (1 Cr & Cb sample per 2x1 Y & A samples), big-endian
-    AV_PIX_FMT_YUVA422P9LE,  ///< planar YUV 4:2:2 27bpp, (1 Cr & Cb sample per 2x1 Y & A samples), little-endian
-    AV_PIX_FMT_YUVA444P9BE,  ///< planar YUV 4:4:4 36bpp, (1 Cr & Cb sample per 1x1 Y & A samples), big-endian
-    AV_PIX_FMT_YUVA444P9LE,  ///< planar YUV 4:4:4 36bpp, (1 Cr & Cb sample per 1x1 Y & A samples), little-endian
-    AV_PIX_FMT_YUVA420P10BE, ///< planar YUV 4:2:0 25bpp, (1 Cr & Cb sample per 2x2 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA420P10LE, ///< planar YUV 4:2:0 25bpp, (1 Cr & Cb sample per 2x2 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA422P10BE, ///< planar YUV 4:2:2 30bpp, (1 Cr & Cb sample per 2x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA422P10LE, ///< planar YUV 4:2:2 30bpp, (1 Cr & Cb sample per 2x1 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA444P10BE, ///< planar YUV 4:4:4 40bpp, (1 Cr & Cb sample per 1x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA444P10LE, ///< planar YUV 4:4:4 40bpp, (1 Cr & Cb sample per 1x1 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA420P16BE, ///< planar YUV 4:2:0 40bpp, (1 Cr & Cb sample per 2x2 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA420P16LE, ///< planar YUV 4:2:0 40bpp, (1 Cr & Cb sample per 2x2 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA422P16BE, ///< planar YUV 4:2:2 48bpp, (1 Cr & Cb sample per 2x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA422P16LE, ///< planar YUV 4:2:2 48bpp, (1 Cr & Cb sample per 2x1 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA444P16BE, ///< planar YUV 4:4:4 64bpp, (1 Cr & Cb sample per 1x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA444P16LE, ///< planar YUV 4:4:4 64bpp, (1 Cr & Cb sample per 1x1 Y & A samples, little-endian)
-    AV_PIX_FMT_VDPAU,     ///< HW acceleration through VDPAU, Picture.data[3] contains a VdpVideoSurface
-    AV_PIX_FMT_XYZ12LE,      ///< packed XYZ 4:4:4, 36 bpp, (msb) 12X, 12Y, 12Z (lsb), the 2-byte value for each X/Y/Z is stored as little-endian, the 4 lower bits are set to 0
-    AV_PIX_FMT_XYZ12BE,      ///< packed XYZ 4:4:4, 36 bpp, (msb) 12X, 12Y, 12Z (lsb), the 2-byte value for each X/Y/Z is stored as big-endian, the 4 lower bits are set to 0
-    AV_PIX_FMT_NV16,         ///< interleaved chroma YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
-    AV_PIX_FMT_NV20LE,       ///< interleaved chroma YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_NV20BE,       ///< interleaved chroma YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_RGBA64BE,     ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
-    AV_PIX_FMT_RGBA64LE,     ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
-    AV_PIX_FMT_BGRA64BE,     ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
-    AV_PIX_FMT_BGRA64LE,     ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
-    AV_PIX_FMT_YVYU422,   ///< packed YUV 4:2:2, 16bpp, Y0 Cr Y1 Cb
-    AV_PIX_FMT_YA16BE,       ///< 16 bits gray, 16 bits alpha (big-endian)
-    AV_PIX_FMT_YA16LE,       ///< 16 bits gray, 16 bits alpha (little-endian)
-    AV_PIX_FMT_GBRAP,        ///< planar GBRA 4:4:4:4 32bpp
-    AV_PIX_FMT_GBRAP16BE,    ///< planar GBRA 4:4:4:4 64bpp, big-endian
-    AV_PIX_FMT_GBRAP16LE,    ///< planar GBRA 4:4:4:4 64bpp, little-endian
+    AV_PIX_FMT_GBRP9BE,                  ///< planar GBR 4:4:4 27bpp, big-endian
+    AV_PIX_FMT_GBRP9LE,                  ///< planar GBR 4:4:4 27bpp, little-endian
+    AV_PIX_FMT_GBRP10BE,                 ///< planar GBR 4:4:4 30bpp, big-endian
+    AV_PIX_FMT_GBRP10LE,                 ///< planar GBR 4:4:4 30bpp, little-endian
+    AV_PIX_FMT_GBRP16BE,                 ///< planar GBR 4:4:4 48bpp, big-endian
+    AV_PIX_FMT_GBRP16LE,                 ///< planar GBR 4:4:4 48bpp, little-endian
+    AV_PIX_FMT_YUVA422P,                 ///< planar YUV 4:2:2 24bpp, (1 Cr & Cb sample per 2x1 Y & A samples)
+    AV_PIX_FMT_YUVA444P,                 ///< planar YUV 4:4:4 32bpp, (1 Cr & Cb sample per 1x1 Y & A samples)
+    AV_PIX_FMT_YUVA420P9BE,              ///< planar YUV 4:2:0 22.5bpp, (1 Cr & Cb sample per 2x2 Y & A samples), big-endian
+    AV_PIX_FMT_YUVA420P9LE,              ///< planar YUV 4:2:0 22.5bpp, (1 Cr & Cb sample per 2x2 Y & A samples), little-endian
+    AV_PIX_FMT_YUVA422P9BE,              ///< planar YUV 4:2:2 27bpp, (1 Cr & Cb sample per 2x1 Y & A samples), big-endian
+    AV_PIX_FMT_YUVA422P9LE,              ///< planar YUV 4:2:2 27bpp, (1 Cr & Cb sample per 2x1 Y & A samples), little-endian
+    AV_PIX_FMT_YUVA444P9BE,              ///< planar YUV 4:4:4 36bpp, (1 Cr & Cb sample per 1x1 Y & A samples), big-endian
+    AV_PIX_FMT_YUVA444P9LE,              ///< planar YUV 4:4:4 36bpp, (1 Cr & Cb sample per 1x1 Y & A samples), little-endian
+    AV_PIX_FMT_YUVA420P10BE,             ///< planar YUV 4:2:0 25bpp, (1 Cr & Cb sample per 2x2 Y & A samples, big-endian)
+    AV_PIX_FMT_YUVA420P10LE,             ///< planar YUV 4:2:0 25bpp, (1 Cr & Cb sample per 2x2 Y & A samples, little-endian)
+    AV_PIX_FMT_YUVA422P10BE,             ///< planar YUV 4:2:2 30bpp, (1 Cr & Cb sample per 2x1 Y & A samples, big-endian)
+    AV_PIX_FMT_YUVA422P10LE,             ///< planar YUV 4:2:2 30bpp, (1 Cr & Cb sample per 2x1 Y & A samples, little-endian)
+    AV_PIX_FMT_YUVA444P10BE,             ///< planar YUV 4:4:4 40bpp, (1 Cr & Cb sample per 1x1 Y & A samples, big-endian)
+    AV_PIX_FMT_YUVA444P10LE,             ///< planar YUV 4:4:4 40bpp, (1 Cr & Cb sample per 1x1 Y & A samples, little-endian)
+    AV_PIX_FMT_YUVA420P16BE,             ///< planar YUV 4:2:0 40bpp, (1 Cr & Cb sample per 2x2 Y & A samples, big-endian)
+    AV_PIX_FMT_YUVA420P16LE,             ///< planar YUV 4:2:0 40bpp, (1 Cr & Cb sample per 2x2 Y & A samples, little-endian)
+    AV_PIX_FMT_YUVA422P16BE,             ///< planar YUV 4:2:2 48bpp, (1 Cr & Cb sample per 2x1 Y & A samples, big-endian)
+    AV_PIX_FMT_YUVA422P16LE,             ///< planar YUV 4:2:2 48bpp, (1 Cr & Cb sample per 2x1 Y & A samples, little-endian)
+    AV_PIX_FMT_YUVA444P16BE,             ///< planar YUV 4:4:4 64bpp, (1 Cr & Cb sample per 1x1 Y & A samples, big-endian)
+    AV_PIX_FMT_YUVA444P16LE,             ///< planar YUV 4:4:4 64bpp, (1 Cr & Cb sample per 1x1 Y & A samples, little-endian)
+    AV_PIX_FMT_VDPAU,                    ///< HW acceleration through VDPAU, Picture.data[3] contains a VdpVideoSurface
+    AV_PIX_FMT_XYZ12LE,                  ///< packed XYZ 4:4:4, 36 bpp, (msb) 12X, 12Y, 12Z (lsb), the 2-byte value for each X/Y/Z is stored as little-endian, the 4 lower bits are set to 0
+    AV_PIX_FMT_XYZ12BE,                  ///< packed XYZ 4:4:4, 36 bpp, (msb) 12X, 12Y, 12Z (lsb), the 2-byte value for each X/Y/Z is stored as big-endian, the 4 lower bits are set to 0
+    AV_PIX_FMT_NV16,                     ///< interleaved chroma YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
+    AV_PIX_FMT_NV20LE,                   ///< interleaved chroma YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    AV_PIX_FMT_NV20BE,                   ///< interleaved chroma YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    AV_PIX_FMT_RGBA64BE,                 ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
+    AV_PIX_FMT_RGBA64LE,                 ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
+    AV_PIX_FMT_BGRA64BE,                 ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
+    AV_PIX_FMT_BGRA64LE,                 ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
+    AV_PIX_FMT_YVYU422,                  ///< packed YUV 4:2:2, 16bpp, Y0 Cr Y1 Cb
+    AV_PIX_FMT_YA16BE,                   ///< 16 bits gray, 16 bits alpha (big-endian)
+    AV_PIX_FMT_YA16LE,                   ///< 16 bits gray, 16 bits alpha (little-endian)
+    AV_PIX_FMT_GBRAP,                    ///< planar GBRA 4:4:4:4 32bpp
+    AV_PIX_FMT_GBRAP16BE,                ///< planar GBRA 4:4:4:4 64bpp, big-endian
+    AV_PIX_FMT_GBRAP16LE,                ///< planar GBRA 4:4:4:4 64bpp, little-endian
     AV_PIX_FMT_QSV,
     AV_PIX_FMT_MMAL,
-    AV_PIX_FMT_D3D11VA_VLD,  ///< HW decoding through Direct3D11 via old API, Picture.data[3] contains a ID3D11VideoDecoderOutputView pointer
+    AV_PIX_FMT_D3D11VA_VLD, ///< HW decoding through Direct3D11 via old API, Picture.data[3] contains a ID3D11VideoDecoderOutputView pointer
     AV_PIX_FMT_CUDA,
-    AV_PIX_FMT_0RGB,        ///< packed RGB 8:8:8, 32bpp, XRGBXRGB...   X=unused/undefined
-    AV_PIX_FMT_RGB0,        ///< packed RGB 8:8:8, 32bpp, RGBXRGBX...   X=unused/undefined
-    AV_PIX_FMT_0BGR,        ///< packed BGR 8:8:8, 32bpp, XBGRXBGR...   X=unused/undefined
-    AV_PIX_FMT_BGR0,        ///< packed BGR 8:8:8, 32bpp, BGRXBGRX...   X=unused/undefined
-    AV_PIX_FMT_YUV420P12BE, ///< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P12LE, ///< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV420P14BE, ///< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P14LE, ///< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV422P12BE, ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P12LE, ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV422P14BE, ///< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P14LE, ///< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P12BE, ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P12LE, ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P14BE, ///< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P14LE, ///< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_GBRP12BE,    ///< planar GBR 4:4:4 36bpp, big-endian
-    AV_PIX_FMT_GBRP12LE,    ///< planar GBR 4:4:4 36bpp, little-endian
-    AV_PIX_FMT_GBRP14BE,    ///< planar GBR 4:4:4 42bpp, big-endian
-    AV_PIX_FMT_GBRP14LE,    ///< planar GBR 4:4:4 42bpp, little-endian
-    AV_PIX_FMT_YUVJ411P,    ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples) full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV411P and setting color_range
+    AV_PIX_FMT_0RGB,           ///< packed RGB 8:8:8, 32bpp, XRGBXRGB...   X=unused/undefined
+    AV_PIX_FMT_RGB0,           ///< packed RGB 8:8:8, 32bpp, RGBXRGBX...   X=unused/undefined
+    AV_PIX_FMT_0BGR,           ///< packed BGR 8:8:8, 32bpp, XBGRXBGR...   X=unused/undefined
+    AV_PIX_FMT_BGR0,           ///< packed BGR 8:8:8, 32bpp, BGRXBGRX...   X=unused/undefined
+    AV_PIX_FMT_YUV420P12BE,    ///< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    AV_PIX_FMT_YUV420P12LE,    ///< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    AV_PIX_FMT_YUV420P14BE,    ///< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    AV_PIX_FMT_YUV420P14LE,    ///< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    AV_PIX_FMT_YUV422P12BE,    ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    AV_PIX_FMT_YUV422P12LE,    ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    AV_PIX_FMT_YUV422P14BE,    ///< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    AV_PIX_FMT_YUV422P14LE,    ///< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    AV_PIX_FMT_YUV444P12BE,    ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    AV_PIX_FMT_YUV444P12LE,    ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    AV_PIX_FMT_YUV444P14BE,    ///< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    AV_PIX_FMT_YUV444P14LE,    ///< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    AV_PIX_FMT_GBRP12BE,       ///< planar GBR 4:4:4 36bpp, big-endian
+    AV_PIX_FMT_GBRP12LE,       ///< planar GBR 4:4:4 36bpp, little-endian
+    AV_PIX_FMT_GBRP14BE,       ///< planar GBR 4:4:4 42bpp, big-endian
+    AV_PIX_FMT_GBRP14LE,       ///< planar GBR 4:4:4 42bpp, little-endian
+    AV_PIX_FMT_YUVJ411P,       ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples) full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV411P and setting color_range
     AV_PIX_FMT_BAYER_BGGR8,    ///< bayer, BGBG..(odd line), GRGR..(even line), 8-bit samples */
     AV_PIX_FMT_BAYER_RGGB8,    ///< bayer, RGRG..(odd line), GBGB..(even line), 8-bit samples */
     AV_PIX_FMT_BAYER_GBRG8,    ///< bayer, GBGB..(odd line), RGRG..(even line), 8-bit samples */
@@ -6442,95 +6728,100 @@ enum AVPixelFormat{
     AV_PIX_FMT_BAYER_GBRG16BE, ///< bayer, GBGB..(odd line), RGRG..(even line), 16-bit samples, big-endian */
     AV_PIX_FMT_BAYER_GRBG16LE, ///< bayer, GRGR..(odd line), BGBG..(even line), 16-bit samples, little-endian */
     AV_PIX_FMT_BAYER_GRBG16BE, ///< bayer, GRGR..(odd line), BGBG..(even line), 16-bit samples, big-endian */
-    AV_PIX_FMT_XVMC,///< XVideo Motion Acceleration via common packet passing
-    AV_PIX_FMT_YUV440P10LE, ///< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), little-endian
-    AV_PIX_FMT_YUV440P10BE, ///< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), big-endian
-    AV_PIX_FMT_YUV440P12LE, ///< planar YUV 4:4:0,24bpp, (1 Cr & Cb sample per 1x2 Y samples), little-endian
-    AV_PIX_FMT_YUV440P12BE, ///< planar YUV 4:4:0,24bpp, (1 Cr & Cb sample per 1x2 Y samples), big-endian
-    AV_PIX_FMT_AYUV64LE,    ///< packed AYUV 4:4:4,64bpp (1 Cr & Cb sample per 1x1 Y & A samples), little-endian
-    AV_PIX_FMT_AYUV64BE,    ///< packed AYUV 4:4:4,64bpp (1 Cr & Cb sample per 1x1 Y & A samples), big-endian
-    AV_PIX_FMT_VIDEOTOOLBOX, ///< hardware decoding through Videotoolbox
-    AV_PIX_FMT_P010LE, ///< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, little-endian
-    AV_PIX_FMT_P010BE, ///< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, big-endian
-    AV_PIX_FMT_GBRAP12BE,  ///< planar GBR 4:4:4:4 48bpp, big-endian
-    AV_PIX_FMT_GBRAP12LE,  ///< planar GBR 4:4:4:4 48bpp, little-endian
-    AV_PIX_FMT_GBRAP10BE,  ///< planar GBR 4:4:4:4 40bpp, big-endian
-    AV_PIX_FMT_GBRAP10LE,  ///< planar GBR 4:4:4:4 40bpp, little-endian
-    AV_PIX_FMT_MEDIACODEC, ///< hardware decoding through MediaCodec
-    AV_PIX_FMT_GRAY12BE,   ///<        Y        , 12bpp, big-endian
-    AV_PIX_FMT_GRAY12LE,   ///<        Y        , 12bpp, little-endian
-    AV_PIX_FMT_GRAY10BE,   ///<        Y        , 10bpp, big-endian
-    AV_PIX_FMT_GRAY10LE,   ///<        Y        , 10bpp, little-endian
-    AV_PIX_FMT_P016LE, ///< like NV12, with 16bpp per component, little-endian
-    AV_PIX_FMT_P016BE, ///< like NV12, with 16bpp per component, big-endian
+    AV_PIX_FMT_XVMC,           ///< XVideo Motion Acceleration via common packet passing
+    AV_PIX_FMT_YUV440P10LE,    ///< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), little-endian
+    AV_PIX_FMT_YUV440P10BE,    ///< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), big-endian
+    AV_PIX_FMT_YUV440P12LE,    ///< planar YUV 4:4:0,24bpp, (1 Cr & Cb sample per 1x2 Y samples), little-endian
+    AV_PIX_FMT_YUV440P12BE,    ///< planar YUV 4:4:0,24bpp, (1 Cr & Cb sample per 1x2 Y samples), big-endian
+    AV_PIX_FMT_AYUV64LE,       ///< packed AYUV 4:4:4,64bpp (1 Cr & Cb sample per 1x1 Y & A samples), little-endian
+    AV_PIX_FMT_AYUV64BE,       ///< packed AYUV 4:4:4,64bpp (1 Cr & Cb sample per 1x1 Y & A samples), big-endian
+    AV_PIX_FMT_VIDEOTOOLBOX,   ///< hardware decoding through Videotoolbox
+    AV_PIX_FMT_P010LE,         ///< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, little-endian
+    AV_PIX_FMT_P010BE,         ///< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, big-endian
+    AV_PIX_FMT_GBRAP12BE,      ///< planar GBR 4:4:4:4 48bpp, big-endian
+    AV_PIX_FMT_GBRAP12LE,      ///< planar GBR 4:4:4:4 48bpp, little-endian
+    AV_PIX_FMT_GBRAP10BE,      ///< planar GBR 4:4:4:4 40bpp, big-endian
+    AV_PIX_FMT_GBRAP10LE,      ///< planar GBR 4:4:4:4 40bpp, little-endian
+    AV_PIX_FMT_MEDIACODEC,     ///< hardware decoding through MediaCodec
+    AV_PIX_FMT_GRAY12BE,       ///<        Y        , 12bpp, big-endian
+    AV_PIX_FMT_GRAY12LE,       ///<        Y        , 12bpp, little-endian
+    AV_PIX_FMT_GRAY10BE,       ///<        Y        , 10bpp, big-endian
+    AV_PIX_FMT_GRAY10LE,       ///<        Y        , 10bpp, little-endian
+    AV_PIX_FMT_P016LE,         ///< like NV12, with 16bpp per component, little-endian
+    AV_PIX_FMT_P016BE,         ///< like NV12, with 16bpp per component, big-endian
     AV_PIX_FMT_D3D11,
-    AV_PIX_FMT_GRAY9BE,   ///<        Y        , 9bpp, big-endian
-    AV_PIX_FMT_GRAY9LE,   ///<        Y        , 9bpp, little-endian
+    AV_PIX_FMT_GRAY9BE,    ///<        Y        , 9bpp, big-endian
+    AV_PIX_FMT_GRAY9LE,    ///<        Y        , 9bpp, little-endian
     AV_PIX_FMT_GBRPF32BE,  ///< IEEE-754 single precision planar GBR 4:4:4,     96bpp, big-endian
     AV_PIX_FMT_GBRPF32LE,  ///< IEEE-754 single precision planar GBR 4:4:4,     96bpp, little-endian
     AV_PIX_FMT_GBRAPF32BE, ///< IEEE-754 single precision planar GBRA 4:4:4:4, 128bpp, big-endian
     AV_PIX_FMT_GBRAPF32LE, ///< IEEE-754 single precision planar GBRA 4:4:4:4, 128bpp, little-endian
     AV_PIX_FMT_DRM_PRIME,
     AV_PIX_FMT_OPENCL,
-    AV_PIX_FMT_GRAY14BE,   ///<        Y        , 14bpp, big-endian
-    AV_PIX_FMT_GRAY14LE,   ///<        Y        , 14bpp, little-endian
-    AV_PIX_FMT_GRAYF32BE,  ///< IEEE-754 single precision Y, 32bpp, big-endian
-    AV_PIX_FMT_GRAYF32LE,  ///< IEEE-754 single precision Y, 32bpp, little-endian
+    AV_PIX_FMT_GRAY14BE,     ///<        Y        , 14bpp, big-endian
+    AV_PIX_FMT_GRAY14LE,     ///<        Y        , 14bpp, little-endian
+    AV_PIX_FMT_GRAYF32BE,    ///< IEEE-754 single precision Y, 32bpp, big-endian
+    AV_PIX_FMT_GRAYF32LE,    ///< IEEE-754 single precision Y, 32bpp, little-endian
     AV_PIX_FMT_YUVA422P12BE, ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), 12b alpha, big-endian
     AV_PIX_FMT_YUVA422P12LE, ///< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), 12b alpha, little-endian
     AV_PIX_FMT_YUVA444P12BE, ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), 12b alpha, big-endian
     AV_PIX_FMT_YUVA444P12LE, ///< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), 12b alpha, little-endian
-    AV_PIX_FMT_NV24,      ///< planar YUV 4:4:4, 24bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
-    AV_PIX_FMT_NV42,      ///< as above, but U and V bytes are swapped
-    AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
+    AV_PIX_FMT_NV24,         ///< planar YUV 4:4:4, 24bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
+    AV_PIX_FMT_NV42,         ///< as above, but U and V bytes are swapped
+    AV_PIX_FMT_NB            ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
-enum OutputFormat {
+enum OutputFormat
+{
     FMT_MPEG1,
     FMT_H261,
     FMT_H263,
     FMT_MJPEG,
 };
 
-enum AVDurationEstimationMethod {
+enum AVDurationEstimationMethod
+{
     AVFMT_DURATION_FROM_PTS,    ///< Duration accurately estimated from PTSes
     AVFMT_DURATION_FROM_STREAM, ///< Duration estimated from a stream with a known duration
     AVFMT_DURATION_FROM_BITRATE ///< Duration estimated from bitrate (less accurate)
 };
 
-typedef struct AVProfile {
+typedef struct AVProfile
+{
     int profile;
     const char *name; ///< short name for the profile
 } AVProfile;
 
-struct AVCodecDefault {
+struct AVCodecDefault
+{
     const uint8_t *key;
     const uint8_t *value;
 };
 
 typedef struct AVCodecDefault AVCodecDefault;
 
-enum AVFieldOrder {
+enum AVFieldOrder
+{
     AV_FIELD_UNKNOWN,
     AV_FIELD_PROGRESSIVE,
-    AV_FIELD_TT,          //< Top coded_first, top displayed first
-    AV_FIELD_BB,          //< Bottom coded first, bottom displayed first
-    AV_FIELD_TB,          //< Top coded first, bottom displayed first
-    AV_FIELD_BT,          //< Bottom coded first, top displayed first
+    AV_FIELD_TT, //< Top coded_first, top displayed first
+    AV_FIELD_BB, //< Bottom coded first, bottom displayed first
+    AV_FIELD_TB, //< Top coded first, bottom displayed first
+    AV_FIELD_BT, //< Bottom coded first, top displayed first
 };
 
-
-enum AVAudioServiceType {
-    AV_AUDIO_SERVICE_TYPE_MAIN              = 0,
-    AV_AUDIO_SERVICE_TYPE_EFFECTS           = 1,
+enum AVAudioServiceType
+{
+    AV_AUDIO_SERVICE_TYPE_MAIN = 0,
+    AV_AUDIO_SERVICE_TYPE_EFFECTS = 1,
     AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED = 2,
-    AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED  = 3,
-    AV_AUDIO_SERVICE_TYPE_DIALOGUE          = 4,
-    AV_AUDIO_SERVICE_TYPE_COMMENTARY        = 5,
-    AV_AUDIO_SERVICE_TYPE_EMERGENCY         = 6,
-    AV_AUDIO_SERVICE_TYPE_VOICE_OVER        = 7,
-    AV_AUDIO_SERVICE_TYPE_KARAOKE           = 8,
-    AV_AUDIO_SERVICE_TYPE_NB                   , ///< Not part of ABI
+    AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED = 3,
+    AV_AUDIO_SERVICE_TYPE_DIALOGUE = 4,
+    AV_AUDIO_SERVICE_TYPE_COMMENTARY = 5,
+    AV_AUDIO_SERVICE_TYPE_EMERGENCY = 6,
+    AV_AUDIO_SERVICE_TYPE_VOICE_OVER = 7,
+    AV_AUDIO_SERVICE_TYPE_KARAOKE = 8,
+    AV_AUDIO_SERVICE_TYPE_NB, ///< Not part of ABI
 };
 
 enum ShowMode
@@ -6542,7 +6833,8 @@ enum ShowMode
     SHOW_MODE_NB
 };
 
-enum AVIODataMarkerType {
+enum AVIODataMarkerType
+{
     AVIO_DATA_MARKER_HEADER,
     AVIO_DATA_MARKER_SYNC_POINT,
     AVIO_DATA_MARKER_BOUNDARY_POINT,
@@ -6551,7 +6843,8 @@ enum AVIODataMarkerType {
     AVIO_DATA_MARKER_FLUSH_POINT,
 };
 
-enum AVStreamParseType {
+enum AVStreamParseType
+{
     AVSTREAM_PARSE_NONE,
     AVSTREAM_PARSE_FULL,       /**< full parsing and repack */
     AVSTREAM_PARSE_HEADERS,    /**< Only parse headers, do not repack. */
@@ -6562,32 +6855,36 @@ enum AVStreamParseType {
                                     just codec level data, otherwise position generation would fail */
 };
 
-typedef struct RcOverride{
+typedef struct RcOverride
+{
     int start_frame;
     int end_frame;
     int qscale; // If this is 0 then quality_factor will be used instead.
     float quality_factor;
 } RcOverride;
 
-typedef struct AVCodecDescriptor {
-    enum AVCodecID     id;
+typedef struct AVCodecDescriptor
+{
+    enum AVCodecID id;
     enum AVMediaType type;
-    const char      *name;
+    const char *name;
     const char *long_name;
-    int             props;
+    int props;
     const char *const *mime_types;
     const struct AVProfile *profiles;
 } AVCodecDescriptor;
 
-typedef struct AVCodecContext  AVCodecContext;
+typedef struct AVCodecContext AVCodecContext;
 
-typedef struct ScanTable {
+typedef struct ScanTable
+{
     const uint8_t *scantable;
     uint8_t permutated[64];
     uint8_t raster_end[64];
 } ScanTable;
 
-typedef struct ThreadFrame {
+typedef struct ThreadFrame
+{
     AVFrame *f;
     AVCodecContext *owner[2];
     // progress->data is an array of 2 ints holding progress for top/bottom
@@ -6595,7 +6892,8 @@ typedef struct ThreadFrame {
     AVBufferRef *progress;
 } ThreadFrame;
 
-typedef struct Picture {
+typedef struct Picture
+{
     struct AVFrame *f;
     ThreadFrame tf;
     AVBufferRef *qscale_table_buf;
@@ -6603,35 +6901,35 @@ typedef struct Picture {
     AVBufferRef *motion_val_buf[2];
     // int16_t (*motion_val[2])[2];
     AVBufferRef *mb_type_buf;
-    uint32_t *mb_type;          ///< types and macros are defined in mpegutils.h
+    uint32_t *mb_type; ///< types and macros are defined in mpegutils.h
     AVBufferRef *mbskip_table_buf;
     uint8_t *mbskip_table;
     AVBufferRef *ref_index_buf[2];
     int8_t *ref_index[2];
     AVBufferRef *mb_var_buf;
-    uint16_t *mb_var;           ///< Table for MB variances
+    uint16_t *mb_var; ///< Table for MB variances
     AVBufferRef *mc_mb_var_buf;
-    uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
-    int alloc_mb_width;         ///< mb_width used to allocate tables
-    int alloc_mb_height;        ///< mb_height used to allocate tables
+    uint16_t *mc_mb_var; ///< Table for motion compensated MB variances
+    int alloc_mb_width;  ///< mb_width used to allocate tables
+    int alloc_mb_height; ///< mb_height used to allocate tables
     AVBufferRef *mb_mean_buf;
-    uint8_t *mb_mean;           ///< Table for MB luminance
+    uint8_t *mb_mean; ///< Table for MB luminance
     AVBufferRef *hwaccel_priv_buf;
     void *hwaccel_picture_private; ///< Hardware accelerator private data
-    int field_picture;          ///< whether or not the picture was encoded in separate fields
-    int64_t mb_var_sum;         ///< sum of MB variance for current frame
-    int64_t mc_mb_var_sum;      ///< motion compensated MB variance for current frame
+    int field_picture;             ///< whether or not the picture was encoded in separate fields
+    int64_t mb_var_sum;            ///< sum of MB variance for current frame
+    int64_t mc_mb_var_sum;         ///< motion compensated MB variance for current frame
     int b_frame_score;
-    int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
+    int needs_realloc; ///< Picture needs to be reallocated (eg due to a frame size change)
     int reference;
     int shared;
     uint64_t encoding_error[AV_NUM_DATA_POINTERS];
 } Picture;
 
-
 typedef uint64_t BitBuf;
 
-typedef struct PutBitContext {
+typedef struct PutBitContext
+{
     BitBuf bit_buf;
     int bit_left;
     uint8_t *buf, *buf_ptr, *buf_end;
@@ -6641,21 +6939,24 @@ typedef struct PutBitContext {
 typedef void (*op_fill_func)(uint8_t *block /* align width (8 or 16) */,
                              uint8_t value, ptrdiff_t line_size, int h);
 
-typedef struct BlockDSPContext {
+typedef struct BlockDSPContext
+{
     void (*clear_block)(int16_t *block /* align 32 */);
     void (*clear_blocks)(int16_t *blocks /* align 32 */);
 
     op_fill_func fill_block_tab[2];
 } BlockDSPContext;
 
-typedef struct FDCTDSPContext {
+typedef struct FDCTDSPContext
+{
     void (*fdct)(int16_t *block /* align 16 */);
     void (*fdct248)(int16_t *block /* align 16 */);
 } FDCTDSPContext;
 
 typedef void (*h264_chroma_mc_func)(uint8_t *dst /*align 8*/, uint8_t *src /*align 1*/, ptrdiff_t srcStride, int h, int x, int y);
 
-typedef struct H264ChromaContext {
+typedef struct H264ChromaContext
+{
     h264_chroma_mc_func put_h264_chroma_pixels_tab[4];
     h264_chroma_mc_func avg_h264_chroma_pixels_tab[4];
 } H264ChromaContext;
@@ -6664,14 +6965,16 @@ typedef void (*op_pixels_func)(uint8_t *block /*align width (8 or 16)*/,
                                const uint8_t *pixels /*align 1*/,
                                ptrdiff_t line_size, int h);
 
-typedef struct HpelDSPContext {
+typedef struct HpelDSPContext
+{
     op_pixels_func put_pixels_tab[4][4];
     op_pixels_func avg_pixels_tab[4][4];
     op_pixels_func put_no_rnd_pixels_tab[4][4];
     op_pixels_func avg_no_rnd_pixels_tab[4];
 } HpelDSPContext;
 
-enum idct_permutation_type {
+enum idct_permutation_type
+{
     FF_IDCT_PERM_NONE,
     FF_IDCT_PERM_LIBMPEG2,
     FF_IDCT_PERM_SIMPLE,
@@ -6680,7 +6983,8 @@ enum idct_permutation_type {
     FF_IDCT_PERM_SSE2,
 };
 
-typedef struct IDCTDSPContext {
+typedef struct IDCTDSPContext
+{
     // void (*put_pixels_clamped)(const int16_t *block ,uint8_t *av_restrict pixels,ptrdiff_t line_size);
     // void (*put_signed_pixels_clamped)(const int16_t *block,uint8_t *av_restrict pixels,ptrdiff_t line_size);
     // void (*add_pixels_clamped)(const int16_t *block,uint8_t *av_restrict pixels,ptrdiff_t line_size);
@@ -6697,7 +7001,8 @@ typedef int (*me_cmp_func)(struct MpegEncContext *c,
                            uint8_t *blk1 /* align width (8 or 16) */,
                            uint8_t *blk2 /* align 1 */, ptrdiff_t stride,
                            int h);
-typedef struct MECmpContext {
+typedef struct MECmpContext
+{
     int (*sum_abs_dctelem)(int16_t *block /* align 16 */);
 
     me_cmp_func sad[6]; /* identical to pix_absAxA except additional void * */
@@ -6719,16 +7024,17 @@ typedef struct MECmpContext {
     me_cmp_func me_cmp[6];
     me_cmp_func me_sub_cmp[6];
     me_cmp_func mb_cmp[6];
-    me_cmp_func ildct_cmp[6]; // only width 16 used
+    me_cmp_func ildct_cmp[6];      // only width 16 used
     me_cmp_func frame_skip_cmp[6]; // only width 8 used
 
     me_cmp_func pix_abs[2][4];
     me_cmp_func median_sad[6];
 } MECmpContext;
 
-typedef          int       atomic_int;
+typedef int atomic_int;
 
-typedef struct ERPicture {
+typedef struct ERPicture
+{
     AVFrame *f;
     ThreadFrame *tf;
     // int16_t (*motion_val[2])[2];
@@ -6738,7 +7044,8 @@ typedef struct ERPicture {
     int field_picture;
 } ERPicture;
 
-typedef struct ERContext {
+typedef struct ERContext
+{
     AVCodecContext *avctx;
     MECmpContext mecc;
     int mecc_inited;
@@ -6777,16 +7084,16 @@ typedef struct ERContext {
     void *opaque;
 } ERContext;
 
-typedef struct {
-    int start;          ///< timecode frame start (first base frame number)
-    uint32_t flags;     ///< flags such as drop frame, +24 hours support, ...
-    AVRational rate;    ///< frame rate in rational form
-    unsigned fps;       ///< frame per second; must be consistent with the rate field
+typedef struct
+{
+    int start;       ///< timecode frame start (first base frame number)
+    uint32_t flags;  ///< flags such as drop frame, +24 hours support, ...
+    AVRational rate; ///< frame rate in rational form
+    unsigned fps;    ///< frame per second; must be consistent with the rate field
 } AVTimecode;
 
-
-
-typedef struct MpegVideoDSPContext {
+typedef struct MpegVideoDSPContext
+{
     void (*gmc1)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
                  int srcStride, int h, int x16, int y16, int rounder);
     void (*gmc)(uint8_t *dst /* align 8 */, uint8_t *src /* align 1 */,
@@ -6795,7 +7102,8 @@ typedef struct MpegVideoDSPContext {
                 int shift, int r, int width, int height);
 } MpegVideoDSPContext;
 
-typedef struct MpegvideoEncDSPContext {
+typedef struct MpegvideoEncDSPContext
+{
     int (*try_8x8basis)(int16_t rem[64], int16_t weight[64],
                         int16_t basis[64], int scale);
     void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);
@@ -6805,10 +7113,11 @@ typedef struct MpegvideoEncDSPContext {
 
     // void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,int src_wrap, int width, int height);
 
-    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height,int w, int h, int sides);
+    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w, int h, int sides);
 } MpegvideoEncDSPContext;
 
-typedef struct PixblockDSPContext {
+typedef struct PixblockDSPContext
+{
     // void (*get_pixels)(int16_t *av_restrict block,const uint8_t *pixels,ptrdiff_t stride);
     // void (*get_pixels_unaligned)(int16_t *av_restrict block ,const uint8_t *pixels,ptrdiff_t stride);
     // void (*diff_pixels)(int16_t *av_restrict block ,const uint8_t *s1 ,const uint8_t *s2 ,ptrdiff_t stride);
@@ -6816,48 +7125,51 @@ typedef struct PixblockDSPContext {
 
 } PixblockDSPContext;
 
-typedef void (*qpel_mc_func)(uint8_t *dst,const uint8_t *src,ptrdiff_t stride);
+typedef void (*qpel_mc_func)(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);
 
-
-typedef struct QpelDSPContext {
+typedef struct QpelDSPContext
+{
     qpel_mc_func put_qpel_pixels_tab[2][16];
     qpel_mc_func avg_qpel_pixels_tab[2][16];
     qpel_mc_func put_no_rnd_qpel_pixels_tab[2][16];
 } QpelDSPContext;
 
-typedef struct VideoDSPContext {
-    void (*emulated_edge_mc)(uint8_t *dst, const uint8_t *src,ptrdiff_t dst_linesize,ptrdiff_t src_linesize,int block_w, int block_h,int src_x, int src_y, int w, int h);
+typedef struct VideoDSPContext
+{
+    void (*emulated_edge_mc)(uint8_t *dst, const uint8_t *src, ptrdiff_t dst_linesize, ptrdiff_t src_linesize, int block_w, int block_h, int src_x, int src_y, int w, int h);
 
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;
 
-typedef struct H263DSPContext {
+typedef struct H263DSPContext
+{
     void (*h263_h_loop_filter)(uint8_t *src, int stride, int qscale);
     void (*h263_v_loop_filter)(uint8_t *src, int stride, int qscale);
 } H263DSPContext;
 
-typedef struct MotionEstContext {
+typedef struct MotionEstContext
+{
     AVCodecContext *avctx;
-    int skip;                       ///< set if ME is skipped for the current MB
-    int co_located_mv[4][2];        ///< mv from last P-frame for direct mode ME
+    int skip;                ///< set if ME is skipped for the current MB
+    int co_located_mv[4][2]; ///< mv from last P-frame for direct mode ME
     int direct_basis_mv[4][2];
-    uint8_t *scratchpad;            /**< data area for the ME algo, so that
+    uint8_t *scratchpad; /**< data area for the ME algo, so that
                                      * the ME does not need to malloc/free. */
     uint8_t *best_mb;
     uint8_t *temp_mb[2];
     uint8_t *temp;
     int best_bits;
-    uint32_t *map;                  ///< map to avoid duplicate evaluations
-    uint32_t *score_map;            ///< map to store the scores
+    uint32_t *map;       ///< map to avoid duplicate evaluations
+    uint32_t *score_map; ///< map to store the scores
     unsigned map_generation;
     int pre_penalty_factor;
-    int penalty_factor;             
+    int penalty_factor;
     int sub_penalty_factor;
     int mb_penalty_factor;
     int flags;
     int sub_flags;
     int mb_flags;
-    int pre_pass;                   ///< = 1 for the pre pass
+    int pre_pass; ///< = 1 for the pre pass
     int dia_size;
     int xmin;
     int xmax;
@@ -6874,10 +7186,10 @@ typedef struct MotionEstContext {
     int64_t mb_var_sum_temp;
     int scene_change_score;
 
-    op_pixels_func(*hpel_put)[4];
-    op_pixels_func(*hpel_avg)[4];
-    qpel_mc_func(*qpel_put)[16];
-    qpel_mc_func(*qpel_avg)[16];
+    op_pixels_func (*hpel_put)[4];
+    op_pixels_func (*hpel_avg)[4];
+    qpel_mc_func (*qpel_put)[16];
+    qpel_mc_func (*qpel_avg)[16];
     uint8_t (*mv_penalty)[MAX_DMV * 2 + 1]; ///< bit amount needed to encode a MV
     uint8_t *current_mv_penalty;
     int (*sub_motion_search)(struct MpegEncContext *s,
@@ -6886,16 +7198,18 @@ typedef struct MotionEstContext {
                              int size, int h);
 } MotionEstContext;
 
-typedef struct ScratchpadContext {
-    uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
-    uint8_t *rd_scratchpad;       ///< scratchpad for rate distortion mb decision
+typedef struct ScratchpadContext
+{
+    uint8_t *edge_emu_buffer; ///< temporary buffer for if MVs point to out-of-frame data
+    uint8_t *rd_scratchpad;   ///< scratchpad for rate distortion mb decision
     uint8_t *obmc_scratchpad;
-    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
+    uint8_t *b_scratchpad; ///< scratchpad used for writing into write only buffers
 } ScratchpadContext;
 
 typedef struct AVExpr AVExpr;
 
-typedef struct RateControlEntry{
+typedef struct RateControlEntry
+{
     int pict_type;
     float qscale;
     int mv_bits;
@@ -6912,25 +7226,27 @@ typedef struct RateControlEntry{
     int skip_count;
     int f_code;
     int b_code;
-}RateControlEntry;
+} RateControlEntry;
 
-typedef enum Predictor {
+typedef enum Predictor
+{
     LEFT = 0,
     PLANE,
     MEDIAN,
 } Predictor;
 
-typedef struct RateControlContext{
-    int num_entries;              ///< number of RateControlEntries
+typedef struct RateControlContext
+{
+    int num_entries; ///< number of RateControlEntries
     RateControlEntry *entry;
-    double buffer_index;          ///< amount of bits in the video/audio buffer
+    double buffer_index; ///< amount of bits in the video/audio buffer
     Predictor pred[5];
-    double short_term_qsum;       ///< sum of recent qscales
-    double short_term_qcount;     ///< count of recent qscales
-    double pass1_rc_eq_output_sum;///< sum of the output of the rc equation, this is used for normalization
-    double pass1_wanted_bits;     ///< bits which should have been output by the pass1 code (including complexity init)
+    double short_term_qsum;        ///< sum of recent qscales
+    double short_term_qcount;      ///< count of recent qscales
+    double pass1_rc_eq_output_sum; ///< sum of the output of the rc equation, this is used for normalization
+    double pass1_wanted_bits;      ///< bits which should have been output by the pass1 code (including complexity init)
     double last_qscale;
-    double last_qscale_for[5];    ///< last qscale for a specific pict type, used for max_diff & ipb factor stuff
+    double last_qscale_for[5]; ///< last qscale for a specific pict type, used for max_diff & ipb factor stuff
     int64_t last_mc_mb_var_sum;
     int64_t last_mb_var_sum;
     uint64_t i_cplx_sum[5];
@@ -6940,13 +7256,14 @@ typedef struct RateControlContext{
     int frame_count[5];
     int last_non_b_pict_type;
 
-    void *non_lavc_opaque;        ///< context for non lavc rc code (for example xvid)
-    float dry_run_qscale;         ///< for xvid rc
-    int last_picture_number;      ///< for xvid rc
-    AVExpr * rc_eq_eval;
-}RateControlContext;
+    void *non_lavc_opaque;   ///< context for non lavc rc code (for example xvid)
+    float dry_run_qscale;    ///< for xvid rc
+    int last_picture_number; ///< for xvid rc
+    AVExpr *rc_eq_eval;
+} RateControlContext;
 
-typedef struct GetBitContext {
+typedef struct GetBitContext
+{
     const uint8_t *buffer, *buffer_end;
 #if CACHED_BITSTREAM_READER
     uint64_t cache;
@@ -6957,19 +7274,21 @@ typedef struct GetBitContext {
     int size_in_bits_plus8;
 } GetBitContext;
 
-typedef struct ParseContext{
+typedef struct ParseContext
+{
     uint8_t *buffer;
     int index;
     int last_index;
     unsigned int buffer_size;
-    uint32_t state;             ///< contains the last few bytes in MSB order
+    uint32_t state; ///< contains the last few bytes in MSB order
     int frame_start_found;
-    int overread;               ///< the number of bytes which where irreversibly read from the next frame
-    int overread_index;         ///< the index into ParseContext.buffer of the overread bytes
-    uint64_t state64;           ///< contains the last 8 bytes in MSB order
+    int overread;       ///< the number of bytes which where irreversibly read from the next frame
+    int overread_index; ///< the index into ParseContext.buffer of the overread bytes
+    uint64_t state64;   ///< contains the last 8 bytes in MSB order
 } ParseContext;
 
-typedef struct MpegEncContext {
+typedef struct MpegEncContext
+{
     AVClass *class;
     int y_dc_scale, c_dc_scale;
     int ac_pred;
@@ -6980,90 +7299,90 @@ typedef struct MpegEncContext {
     ScanTable intra_h_scantable;
     ScanTable intra_v_scantable;
     struct AVCodecContext *avctx;
-    int width, height;///< picture size. must be a multiple of 16
+    int width, height; ///< picture size. must be a multiple of 16
     int gop_size;
-    int intra_only;   ///< if true, only intra pictures are generated
-    int64_t bit_rate; ///< wanted bit rate
+    int intra_only;               ///< if true, only intra pictures are generated
+    int64_t bit_rate;             ///< wanted bit rate
     enum OutputFormat out_format; ///< output format
-    int h263_pred;    ///< use MPEG-4/H.263 ac/dc predictions
-    int pb_frame;     ///< PB-frame mode (0 = none, 1 = base, 2 = improved)
-    int h263_plus;    ///< H.263+ headers
-    int h263_flv;     ///< use flv H.263 header
-    enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */
-    int fixed_qscale; ///< fixed qscale if non zero
-    int encoding;     ///< true if we are encoding (vs decoding)
-    int max_b_frames; ///< max number of B-frames for encoding
+    int h263_pred;                ///< use MPEG-4/H.263 ac/dc predictions
+    int pb_frame;                 ///< PB-frame mode (0 = none, 1 = base, 2 = improved)
+    int h263_plus;                ///< H.263+ headers
+    int h263_flv;                 ///< use flv H.263 header
+    enum AVCodecID codec_id;      /* see AV_CODEC_ID_xxx */
+    int fixed_qscale;             ///< fixed qscale if non zero
+    int encoding;                 ///< true if we are encoding (vs decoding)
+    int max_b_frames;             ///< max number of B-frames for encoding
     int luma_elim_threshold;
     int chroma_elim_threshold;
     int strict_std_compliance; ///< strictly follow the std (MPEG-4, ...)
     int workaround_bugs;       ///< workaround bugs in encoders which cannot be detected automatically
     int codec_tag;             ///< internal codec_tag upper case converted from avctx codec_tag
     int context_initialized;
-    int input_picture_number;  ///< used to set pic->display_picture_number, should not be used for/by anything else
-    int coded_picture_number;  ///< used to set pic->coded_picture_number, should not be used for/by anything else
-    int picture_number;       //FIXME remove, unclear definition
-    int picture_in_gop_number; ///< 0-> first pic in gop, ...
-    int mb_width, mb_height;   ///< number of MBs horizontally & vertically
-    int mb_stride;             ///< mb_width+1 used for some arrays to allow simple addressing of left & top MBs without sig11
-    int b8_stride;             ///< 2*mb_width+1 used for some 8x8 block arrays to allow simple addressing
-    int h_edge_pos, v_edge_pos;///< horizontal / vertical position of the right/bottom edge (pixel replication)
-    int mb_num;                ///< number of MBs of a picture
-    ptrdiff_t linesize;        ///< line size, in bytes, may be different from width
-    ptrdiff_t uvlinesize;      ///< line size, for chroma in bytes, may be different from width
-    Picture *picture;          ///< main picture buffer
-    Picture **input_picture;   ///< next pictures on display order for encoding
+    int input_picture_number;          ///< used to set pic->display_picture_number, should not be used for/by anything else
+    int coded_picture_number;          ///< used to set pic->coded_picture_number, should not be used for/by anything else
+    int picture_number;                //FIXME remove, unclear definition
+    int picture_in_gop_number;         ///< 0-> first pic in gop, ...
+    int mb_width, mb_height;           ///< number of MBs horizontally & vertically
+    int mb_stride;                     ///< mb_width+1 used for some arrays to allow simple addressing of left & top MBs without sig11
+    int b8_stride;                     ///< 2*mb_width+1 used for some 8x8 block arrays to allow simple addressing
+    int h_edge_pos, v_edge_pos;        ///< horizontal / vertical position of the right/bottom edge (pixel replication)
+    int mb_num;                        ///< number of MBs of a picture
+    ptrdiff_t linesize;                ///< line size, in bytes, may be different from width
+    ptrdiff_t uvlinesize;              ///< line size, for chroma in bytes, may be different from width
+    Picture *picture;                  ///< main picture buffer
+    Picture **input_picture;           ///< next pictures on display order for encoding
     Picture **reordered_input_picture; ///< pointer to the next pictures in coded order for encoding
-    int64_t user_specified_pts; ///< last non-zero pts from AVFrame which was passed into avcodec_encode_video2()
+    int64_t user_specified_pts;        ///< last non-zero pts from AVFrame which was passed into avcodec_encode_video2()
     int64_t dts_delta;
     int64_t reordered_pts;
     PutBitContext pb;
-    int start_mb_y;            ///< start mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
-    int end_mb_y;              ///< end   mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
+    int start_mb_y; ///< start mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
+    int end_mb_y;   ///< end   mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
     struct MpegEncContext *thread_context[MAX_THREADS];
-    int slice_context_count;   ///< number of used thread_contexts
+    int slice_context_count; ///< number of used thread_contexts
     Picture last_picture;
     Picture next_picture;
     Picture new_picture;
-    Picture current_picture;    ///< buffer to store the decompressed current picture
-    Picture *last_picture_ptr;     ///< pointer to the previous picture.
-    Picture *next_picture_ptr;     ///< pointer to the next picture (for bidir pred)
-    Picture *current_picture_ptr;  ///< pointer to the current picture
-    int last_dc[3];                ///< last DC values for MPEG-1
+    Picture current_picture;      ///< buffer to store the decompressed current picture
+    Picture *last_picture_ptr;    ///< pointer to the previous picture.
+    Picture *next_picture_ptr;    ///< pointer to the next picture (for bidir pred)
+    Picture *current_picture_ptr; ///< pointer to the current picture
+    int last_dc[3];               ///< last DC values for MPEG-1
     int16_t *dc_val_base;
-    int16_t *dc_val[3];            ///< used for MPEG-4 DC prediction, all 3 arrays must be continuous
-    const uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table
-    const uint8_t *c_dc_scale_table;     ///< qscale -> c_dc_scale table
-    const uint8_t *chroma_qscale_table;  ///< qscale -> chroma_qscale (H.263)
+    int16_t *dc_val[3];                 ///< used for MPEG-4 DC prediction, all 3 arrays must be continuous
+    const uint8_t *y_dc_scale_table;    ///< qscale -> y_dc_scale table
+    const uint8_t *c_dc_scale_table;    ///< qscale -> c_dc_scale table
+    const uint8_t *chroma_qscale_table; ///< qscale -> chroma_qscale (H.263)
     uint8_t *coded_block_base;
-    uint8_t *coded_block;          ///< used for coded block pattern prediction (msmpeg4v3, wmv1)
+    uint8_t *coded_block; ///< used for coded block pattern prediction (msmpeg4v3, wmv1)
     int16_t (*ac_val_base)[16];
     // int16_t (*ac_val[3])[16];      ///< used for MPEG-4 AC prediction, all 3 arrays must be continuous
-    int mb_skipped;                ///< MUST BE SET only during DECODING
-    uint8_t *mbskip_table;        /**< used to avoid copy if macroblock skipped (for black regions for example) and used for B-frame encoding & decoding (contains skip table of next P-frame) */
-    uint8_t *mbintra_table;       ///< used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding
-    uint8_t *cbp_table;           ///< used to store cbp, ac_pred for partitioned decoding
-    uint8_t *pred_dir_table;      ///< used to store pred_dir for partitioned decoding
+    int mb_skipped;          ///< MUST BE SET only during DECODING
+    uint8_t *mbskip_table;   /**< used to avoid copy if macroblock skipped (for black regions for example) and used for B-frame encoding & decoding (contains skip table of next P-frame) */
+    uint8_t *mbintra_table;  ///< used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding
+    uint8_t *cbp_table;      ///< used to store cbp, ac_pred for partitioned decoding
+    uint8_t *pred_dir_table; ///< used to store pred_dir for partitioned decoding
     ScratchpadContext sc;
-    int qscale;                 ///< QP
-    int chroma_qscale;          ///< chroma QP
-    unsigned int lambda;        ///< Lagrange multiplier used in rate distortion
-    unsigned int lambda2;       ///< (lambda*lambda) >> FF_LAMBDA_SHIFT
+    int qscale;           ///< QP
+    int chroma_qscale;    ///< chroma QP
+    unsigned int lambda;  ///< Lagrange multiplier used in rate distortion
+    unsigned int lambda2; ///< (lambda*lambda) >> FF_LAMBDA_SHIFT
     int *lambda_table;
-    int adaptive_quant;         ///< use adaptive quantization
-    int dquant;                 ///< qscale difference to prev qscale
-    int closed_gop;             ///< MPEG1/2 GOP is closed
-    int pict_type;              ///< AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B, ...
+    int adaptive_quant; ///< use adaptive quantization
+    int dquant;         ///< qscale difference to prev qscale
+    int closed_gop;     ///< MPEG1/2 GOP is closed
+    int pict_type;      ///< AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B, ...
     int vbv_delay;
-    int last_pict_type; //FIXME removes
-    int last_non_b_pict_type;   ///< used for MPEG-4 gmc B-frames & ratecontrol
+    int last_pict_type;       //FIXME removes
+    int last_non_b_pict_type; ///< used for MPEG-4 gmc B-frames & ratecontrol
     int droppable;
     int frame_rate_index;
     AVRational mpeg2_frame_rate_ext;
-    int last_lambda_for[5];     ///< last lambda for a specific pict type
-    int skipdct;                ///< skip dct and code zero residual
+    int last_lambda_for[5]; ///< last lambda for a specific pict type
+    int skipdct;            ///< skip dct and code zero residual
     /* motion compensation */
-    int unrestricted_mv;        ///< mv can point outside of the coded picture
-    int h263_long_vectors;      ///< use horrible H.263v1 long vector mode
+    int unrestricted_mv;   ///< mv can point outside of the coded picture
+    int h263_long_vectors; ///< use horrible H.263v1 long vector mode
     BlockDSPContext bdsp;
     FDCTDSPContext fdsp;
     H264ChromaContext h264chroma;
@@ -7076,8 +7395,8 @@ typedef struct MpegEncContext {
     QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H263DSPContext h263dsp;
-    int f_code;                 ///< forward MV resolution
-    int b_code;                 ///< backward MV resolution for B-frames (MPEG-4)
+    int f_code; ///< forward MV resolution
+    int b_code; ///< backward MV resolution for B-frames (MPEG-4)
     int16_t (*p_mv_table_base)[2];
     int16_t (*b_forw_mv_table_base)[2];
     int16_t (*b_back_mv_table_base)[2];
@@ -7096,18 +7415,18 @@ typedef struct MpegEncContext {
     // int16_t (*b_field_mv_table[2][2][2])[2];///< MV table (4MV per MB) interlaced B-frame encoding
     // uint8_t (*p_field_select_table[2]);
     // uint8_t (*b_field_select_table[2][2]);
-    int motion_est;                      ///< ME algorithm
+    int motion_est; ///< ME algorithm
     int me_penalty_compensation;
-    int me_pre;                          ///< prepass for motion estimation
+    int me_pre; ///< prepass for motion estimation
     int mv_dir;
     int mv_type;
     int mv[2][4][2];
     int field_select[2][2];
-    int last_mv[2][2][2];             ///< last MV, used for MV prediction in MPEG-1 & B-frame MPEG-4
-    uint8_t *fcode_tab;               ///< smallest fcode needed for each MV
-    int16_t direct_scale_mv[2][64];   ///< precomputed to avoid divisions in ff_mpeg4_set_direct_mv
+    int last_mv[2][2][2];           ///< last MV, used for MV prediction in MPEG-1 & B-frame MPEG-4
+    uint8_t *fcode_tab;             ///< smallest fcode needed for each MV
+    int16_t direct_scale_mv[2][64]; ///< precomputed to avoid divisions in ff_mpeg4_set_direct_mv
     MotionEstContext me;
-    int no_rounding;  /**< apply no rounding to motion compensation (MPEG-4, msmpeg4, ...)
+    int no_rounding; /**< apply no rounding to motion compensation (MPEG-4, msmpeg4, ...)
                         for B-frames rounding mode is always 0 */
     /* macroblock layer */
     int mb_x, mb_y;
@@ -7117,18 +7436,18 @@ typedef struct MpegEncContext {
     int block_index[6]; ///< index to current MB in block based arrays with edges
     int block_wrap[6];
     uint8_t *dest[3];
-    int *mb_index2xy;        ///< mb_index -> mb_x + mb_y*mb_stride
+    int *mb_index2xy; ///< mb_index -> mb_x + mb_y*mb_stride
     /** matrix transmitted in the bitstream */
     uint16_t intra_matrix[64];
     uint16_t chroma_intra_matrix[64];
     uint16_t inter_matrix[64];
     uint16_t chroma_inter_matrix[64];
     int force_duplicated_matrix; ///< Force duplication of mjpeg matrices, useful for rtp streaming
-    int intra_quant_bias;    ///< bias for the quantizer
-    int inter_quant_bias;    ///< bias for the quantizer
-    int min_qcoeff;          ///< minimum encodable coefficient
-    int max_qcoeff;          ///< maximum encodable coefficient
-    int ac_esc_length;       ///< num of bits needed to encode the longest esc
+    int intra_quant_bias;        ///< bias for the quantizer
+    int inter_quant_bias;        ///< bias for the quantizer
+    int min_qcoeff;              ///< minimum encodable coefficient
+    int max_qcoeff;              ///< maximum encodable coefficient
+    int ac_esc_length;           ///< num of bits needed to encode the longest esc
     uint8_t *intra_ac_vlc_length;
     uint8_t *intra_ac_vlc_last_length;
     uint8_t *intra_chroma_ac_vlc_length;
@@ -7167,27 +7486,27 @@ typedef struct MpegEncContext {
     int misc_bits; ///< cbp, mb_type
     int last_bits; ///< temp var used for calculating the above vars
     /* error concealment / resync */
-    int resync_mb_x;                 ///< x position of last resync marker
-    int resync_mb_y;                 ///< y position of last resync marker
-    GetBitContext last_resync_gb;    ///< used to search for the next resync marker
-    int mb_num_left;                 ///< number of MBs left in this video packet (for partitioned Slices only)
-    int next_p_frame_damaged;        ///< set if the next p frame is damaged, to avoid showing trashed B-frames
+    int resync_mb_x;              ///< x position of last resync marker
+    int resync_mb_y;              ///< y position of last resync marker
+    GetBitContext last_resync_gb; ///< used to search for the next resync marker
+    int mb_num_left;              ///< number of MBs left in this video packet (for partitioned Slices only)
+    int next_p_frame_damaged;     ///< set if the next p frame is damaged, to avoid showing trashed B-frames
     ParseContext parse_context;
     /* H.263 specific */
     int gob_index;
-    int obmc;                       ///< overlapped block motion compensation
-    int mb_info;                    ///< interval for outputting info about mb offsets as side data
+    int obmc;    ///< overlapped block motion compensation
+    int mb_info; ///< interval for outputting info about mb offsets as side data
     int prev_mb_info, last_mb_info;
     uint8_t *mb_info_ptr;
     int mb_info_size;
     int ehc_mode;
-    int rc_strategy;                ///< deprecated
+    int rc_strategy; ///< deprecated
 
     /* H.263+ specific */
-    int umvplus;                    ///< == H.263+ && unrestricted_mv
-    int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top
+    int umvplus;      ///< == H.263+ && unrestricted_mv
+    int h263_aic_dir; ///< AIC direction: 0 = left, 1 = top
     int h263_slice_structured;
-    int alt_inter_vlc;              ///< alternative inter vlc
+    int alt_inter_vlc; ///< alternative inter vlc
     int modified_quant;
     int loop_filter;
     int custom_pcf;
@@ -7198,29 +7517,29 @@ typedef struct MpegEncContext {
     ///< number of bits to represent the fractional part of time (encoder only)
     int time_increment_bits;
     int last_time_base;
-    int time_base;                  ///< time in seconds of last I,P,S Frame
-    int64_t time;                   ///< time of current frame
+    int time_base; ///< time in seconds of last I,P,S Frame
+    int64_t time;  ///< time of current frame
     int64_t last_non_b_time;
-    uint16_t pp_time;               ///< time distance between the last 2 p,s,i frames
-    uint16_t pb_time;               ///< time distance between the last b and p,s,i frame
+    uint16_t pp_time; ///< time distance between the last 2 p,s,i frames
+    uint16_t pb_time; ///< time distance between the last b and p,s,i frame
     uint16_t pp_field_time;
-    uint16_t pb_field_time;         ///< like above, just for interlaced
+    uint16_t pb_field_time; ///< like above, just for interlaced
     int real_sprite_warping_points;
-    int sprite_offset[2][2];         ///< sprite offset[isChroma][isMVY]
-    int sprite_delta[2][2];          ///< sprite_delta [isY][isMVY]
+    int sprite_offset[2][2]; ///< sprite offset[isChroma][isMVY]
+    int sprite_delta[2][2];  ///< sprite_delta [isY][isMVY]
     int mcsel;
     int quant_precision;
-    int quarter_sample;              ///< 1->qpel, 0->half pel ME/MC
+    int quarter_sample;    ///< 1->qpel, 0->half pel ME/MC
     int aspect_ratio_info; //FIXME remove
     int sprite_warping_accuracy;
-    int data_partitioning;           ///< data partitioning flag from header
-    int partitioned_frame;           ///< is current frame partitioned
-    int low_delay;                   ///< no reordering needed / has no B-frames
+    int data_partitioning; ///< data partitioning flag from header
+    int partitioned_frame; ///< is current frame partitioned
+    int low_delay;         ///< no reordering needed / has no B-frames
     int vo_type;
-    PutBitContext tex_pb;            ///< used for data partitioned VOPs
-    PutBitContext pb2;               ///< used for data partitioned VOPs
+    PutBitContext tex_pb; ///< used for data partitioned VOPs
+    PutBitContext pb2;    ///< used for data partitioned VOPs
     int mpeg_quant;
-    int padding_bug_score;             ///< used to detect the VERY common padding bug in MPEG-4
+    int padding_bug_score; ///< used to detect the VERY common padding bug in MPEG-4
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_packed;
@@ -7242,23 +7561,23 @@ typedef struct MpegEncContext {
     int rl_chroma_table_index;
     int dc_table_index;
     int use_skip_mb_code;
-    int slice_height;      ///< in macroblocks
-    int first_slice_line;  ///< used in MPEG-4 too to handle resync markers
+    int slice_height;     ///< in macroblocks
+    int first_slice_line; ///< used in MPEG-4 too to handle resync markers
     int flipflop_rounding;
-    int msmpeg4_version;   ///< 0=not msmpeg4, 1=mp41, 2=mp42, 3=mp43/divx3 4=wmv1/7 5=wmv2/8
+    int msmpeg4_version; ///< 0=not msmpeg4, 1=mp41, 2=mp42, 3=mp43/divx3 4=wmv1/7 5=wmv2/8
     int per_mb_rl_table;
     int esc3_level_length;
     int esc3_run_length;
     /** [mb_intra][isChroma][level][run][last] */
-    int (*ac_stats)[2][MAX_LEVEL+1][MAX_RUN+1][2];
+    int (*ac_stats)[2][MAX_LEVEL + 1][MAX_RUN + 1][2];
     int inter_intra_pred;
     int mspel;
     /* decompression specific */
     GetBitContext gb;
     /* MPEG-1 specific */
-    int gop_picture_number;  ///< index of the first picture of a GOP based on fake_pic_num & MPEG-1 specific
-    int last_mv_dir;         ///< last mv_dir, used for B-frame encoding
-    uint8_t *vbv_delay_ptr;  ///< pointer to vbv_delay in the bitstream
+    int gop_picture_number; ///< index of the first picture of a GOP based on fake_pic_num & MPEG-1 specific
+    int last_mv_dir;        ///< last mv_dir, used for B-frame encoding
+    uint8_t *vbv_delay_ptr; ///< pointer to vbv_delay in the bitstream
     /* MPEG-2-specific - I wished not to have to support this mess. */
     int progressive_sequence;
     int mpeg_f_code[2][2];
@@ -7279,7 +7598,7 @@ typedef struct MpegEncContext {
     int repeat_first_field;
     int chroma_420_type;
     int chroma_format;
-    int chroma_x_shift;//depend on pix_format, that depend on chroma_format
+    int chroma_x_shift; //depend on pix_format, that depend on chroma_format
     int chroma_y_shift;
     int progressive_frame;
     int full_pel[2];
@@ -7290,43 +7609,43 @@ typedef struct MpegEncContext {
     /* RTP specific */
     int rtp_mode;
     int rtp_payload_size;
-    char *tc_opt_str;        ///< timecode option string
-    AVTimecode tc;           ///< timecode context
+    char *tc_opt_str; ///< timecode option string
+    AVTimecode tc;    ///< timecode context
     uint8_t *ptr_lastgob;
-    int swap_uv;             //vcr2 codec is an MPEG-2 variant with U and V swapped
-    int pack_pblocks;        //xvmc needs to keep blocks without gaps.
+    int swap_uv;      //vcr2 codec is an MPEG-2 variant with U and V swapped
+    int pack_pblocks; //xvmc needs to keep blocks without gaps.
     // int16_t (*pblocks[12])[64];
-    int16_t (*block)[64]; ///< points to one of the following blocks
-    int16_t (*blocks)[12][64]; // for HQ mode we need to keep the best block
+    int16_t (*block)[64];                                              ///< points to one of the following blocks
+    int16_t (*blocks)[12][64];                                         // for HQ mode we need to keep the best block
     int (*decode_mb)(struct MpegEncContext *s, int16_t block[12][64]); // used by some codecs to avoid a switch()
     int32_t (*block32)[12][64];
-    int dpcm_direction;          // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
+    int dpcm_direction; // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
     int16_t (*dpcm_macroblock)[3][256];
 
     void (*dct_unquantize_mpeg1_intra)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
+                                       int16_t *block /*align 16*/, int n, int qscale);
     void (*dct_unquantize_mpeg1_inter)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
+                                       int16_t *block /*align 16*/, int n, int qscale);
     void (*dct_unquantize_mpeg2_intra)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
+                                       int16_t *block /*align 16*/, int n, int qscale);
     void (*dct_unquantize_mpeg2_inter)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
+                                       int16_t *block /*align 16*/, int n, int qscale);
     void (*dct_unquantize_h263_intra)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
+                                      int16_t *block /*align 16*/, int n, int qscale);
     void (*dct_unquantize_h263_inter)(struct MpegEncContext *s,
-                           int16_t *block/*align 16*/, int n, int qscale);
+                                      int16_t *block /*align 16*/, int n, int qscale);
     void (*dct_unquantize_intra)(struct MpegEncContext *s, // unquantizer to use (MPEG-4 can use both)
-                           int16_t *block/*align 16*/, int n, int qscale);
+                                 int16_t *block /*align 16*/, int n, int qscale);
     void (*dct_unquantize_inter)(struct MpegEncContext *s, // unquantizer to use (MPEG-4 can use both)
-                           int16_t *block/*align 16*/, int n, int qscale);
-    int (*dct_quantize)(struct MpegEncContext *s, int16_t *block/*align 16*/, int n, int qscale, int *overflow);
-    int (*fast_dct_quantize)(struct MpegEncContext *s, int16_t *block/*align 16*/, int n, int qscale, int *overflow);
+                                 int16_t *block /*align 16*/, int n, int qscale);
+    int (*dct_quantize)(struct MpegEncContext *s, int16_t *block /*align 16*/, int n, int qscale, int *overflow);
+    int (*fast_dct_quantize)(struct MpegEncContext *s, int16_t *block /*align 16*/, int n, int qscale, int *overflow);
     void (*denoise_dct)(struct MpegEncContext *s, int16_t *block);
-    int mpv_flags;      ///< flags set by private options
+    int mpv_flags; ///< flags set by private options
     int quantizer_noise_shaping;
     float rc_qsquish;
     float rc_qmod_amp;
-    int   rc_qmod_freq;
+    int rc_qmod_freq;
     float rc_initial_cplx;
     float rc_buffer_aggressivity;
     float border_masking;
@@ -7352,7 +7671,8 @@ typedef struct MpegEncContext {
     int intra_penalty;
 } MpegEncContext;
 
-typedef struct AVHWAccel {
+typedef struct AVHWAccel
+{
     const char *name;
     enum AVMediaType type;
     enum AVCodecID id;
@@ -7371,7 +7691,6 @@ typedef struct AVHWAccel {
     int caps_internal;
     int (*frame_params)(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx);
 } AVHWAccel;
-
 
 typedef struct AVCodecContext
 {
@@ -7459,6 +7778,8 @@ typedef struct AVCodecContext
     enum AVAudioServiceType audio_service_type;
     enum AVSampleFormat request_sample_fmt;
     int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
+        attribute_deprecated
+    int refcounted_frames;
     float qcompress; ///< amount of qscale change between easy & hard scenes (0.0-1.0)
     float qblur;     ///< amount of qscale smoothing over time (0.0-1.0)
     int qmin;
@@ -7544,7 +7865,8 @@ typedef struct AVCodecContext
     int64_t max_samples;
 } AVCodecContext;
 
-struct AVExpr {
+struct AVExpr
+{
     // enum {
     //     e_value, e_const, e_func0, e_func1, e_func2,
     //     e_squish, e_gauss, e_ld, e_isnan, e_isinf,
@@ -7557,7 +7879,8 @@ struct AVExpr {
     // } type;
     double value; // is sign in other types
     int const_index;
-    union {
+    union
+    {
         double (*func0)(double);
         double (*func1)(void *, double);
         double (*func2)(void *, double, double);
@@ -7566,21 +7889,21 @@ struct AVExpr {
     double *var;
 };
 
-
-
-
-typedef struct AVCodecHWConfig {
+typedef struct AVCodecHWConfig
+{
     enum AVPixelFormat pix_fmt;
     int methods;
     enum AVHWDeviceType device_type;
 } AVCodecHWConfig;
 
-typedef struct AVCodecHWConfigInternal {
+typedef struct AVCodecHWConfigInternal
+{
     AVCodecHWConfig public;
     const AVHWAccel *hwaccel;
 } AVCodecHWConfigInternal;
 
-typedef struct AVCodec {
+typedef struct AVCodec
+{
     const char *name;
     const char *long_name;
     enum AVMediaType type;
@@ -7590,7 +7913,7 @@ typedef struct AVCodec {
     const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
     const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
     const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
-    const uint64_t *channel_layouts;         ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
+    const uint64_t *channel_layouts;        ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
     uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
     const AVClass *priv_class;              ///< AVClass for the private context
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
@@ -7617,12 +7940,13 @@ typedef struct AVCodec {
     const struct AVCodecHWConfigInternal **hw_configs;
 } AVCodec;
 
-typedef struct AVCodecParameters {
+typedef struct AVCodecParameters
+{
     enum AVMediaType codec_type;
-    enum AVCodecID   codec_id;
-    uint32_t         codec_tag;
+    enum AVCodecID codec_id;
+    uint32_t codec_tag;
     uint8_t *extradata;
-    int      extradata_size;
+    int extradata_size;
     int format;
     int64_t bit_rate;
     int bits_per_coded_sample;
@@ -7632,18 +7956,18 @@ typedef struct AVCodecParameters {
     int width;
     int height;
     AVRational sample_aspect_ratio;
-    enum AVFieldOrder                  field_order;
-    enum AVColorRange                  color_range;
-    enum AVColorPrimaries              color_primaries;
+    enum AVFieldOrder field_order;
+    enum AVColorRange color_range;
+    enum AVColorPrimaries color_primaries;
     enum AVColorTransferCharacteristic color_trc;
-    enum AVColorSpace                  color_space;
-    enum AVChromaLocation              chroma_location;
+    enum AVColorSpace color_space;
+    enum AVChromaLocation chroma_location;
     int video_delay;
     uint64_t channel_layout;
-    int      channels;
-    int      sample_rate;
-    int      block_align;
-    int      frame_size;
+    int channels;
+    int sample_rate;
+    int block_align;
+    int frame_size;
     int initial_padding;
     int trailing_padding;
     int seek_preroll;
@@ -7651,7 +7975,8 @@ typedef struct AVCodecParameters {
 
 typedef struct AVBSFInternal AVBSFInternal;
 
-typedef struct AVBSFContext {
+typedef struct AVBSFContext
+{
     const AVClass *av_class;
     const struct AVBitStreamFilter *filter;
     AVBSFInternal *internal;
@@ -7662,7 +7987,8 @@ typedef struct AVBSFContext {
     AVRational time_base_out;
 } AVBSFContext;
 
-typedef struct AVBitStreamFilter {
+typedef struct AVBitStreamFilter
+{
     const char *name;
     const enum AVCodecID *codec_ids;
     const AVClass *priv_class;
@@ -7673,21 +7999,24 @@ typedef struct AVBitStreamFilter {
     void (*flush)(AVBSFContext *ctx);
 } AVBitStreamFilter;
 
-
-typedef struct DecodeSimpleContext {
+typedef struct DecodeSimpleContext
+{
     AVPacket *in_pkt;
 } DecodeSimpleContext;
 
-typedef struct AVPacketList {
+typedef struct AVPacketList
+{
     AVPacket pkt;
     struct AVPacketList *next;
 } AVPacketList;
 
-typedef struct EncodeSimpleContext {
+typedef struct EncodeSimpleContext
+{
     AVFrame *in_frame;
 } EncodeSimpleContext;
 
-typedef struct AVCodecInternal {
+typedef struct AVCodecInternal
+{
     int is_copy;
     int last_audio_frame;
     AVFrame *to_free;
@@ -7724,8 +8053,6 @@ typedef struct AVCodecInternal {
     uint64_t initial_channel_layout;
 } AVCodecInternal;
 
-
-
 typedef struct Decoder
 {
     AVPacket pkt;
@@ -7742,7 +8069,8 @@ typedef struct Decoder
     SDL_Thread *decoder_tid;
 } Decoder;
 
-typedef struct AVIOContext {
+typedef struct AVIOContext
+{
     const AVClass *av_class;
     unsigned char *buffer;  /**< Start of the buffer. */
     int buffer_size;        /**< Maximum buffer size */
@@ -7756,14 +8084,14 @@ typedef struct AVIOContext {
     int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
     int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
     int64_t (*seek)(void *opaque, int64_t offset, int whence);
-    int64_t pos;            /**< position in the file of the current buffer */
-    int eof_reached;        /**< true if was unable to read due to error or eof */
-    int write_flag;         /**< true if open for writing */
+    int64_t pos;     /**< position in the file of the current buffer */
+    int eof_reached; /**< true if was unable to read due to error or eof */
+    int write_flag;  /**< true if open for writing */
     int max_packet_size;
     unsigned long checksum;
     unsigned char *checksum_ptr;
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
-    int error;              /**< contains the error code or 0 if no error happened */
+    int error; /**< contains the error code or 0 if no error happened */
     int (*read_pause)(void *opaque, int pause);
     int64_t (*read_seek)(void *opaque, int stream_index,
                          int64_t timestamp, int flags);
@@ -7788,12 +8116,13 @@ typedef struct AVIOContext {
     int min_packet_size;
 } AVIOContext;
 
-typedef struct AVProgram {
-    int            id;
-    int            flags;
-    enum AVDiscard discard;        ///< selects which program to discard and which to feed to the caller
-    unsigned int   *stream_index;
-    unsigned int   nb_stream_indexes;
+typedef struct AVProgram
+{
+    int id;
+    int flags;
+    enum AVDiscard discard; ///< selects which program to discard and which to feed to the caller
+    unsigned int *stream_index;
+    unsigned int nb_stream_indexes;
     AVDictionary *metadata;
     int program_num;
     int pmt_pid;
@@ -7801,14 +8130,15 @@ typedef struct AVProgram {
     int pmt_version;
     int64_t start_time;
     int64_t end_time;
-    int64_t pts_wrap_reference;    ///< reference dts for wrap detection
-    int pts_wrap_behavior;         ///< behavior on wrap detection
+    int64_t pts_wrap_reference; ///< reference dts for wrap detection
+    int pts_wrap_behavior;      ///< behavior on wrap detection
 } AVProgram;
 
-typedef struct AVChapter {
-    int id;                 ///< unique ID to identify the chapter
-    AVRational time_base;   ///< time base in which the start/end timestamps are specified
-    int64_t start, end;     ///< chapter start/end time in time_base units
+typedef struct AVChapter
+{
+    int id;               ///< unique ID to identify the chapter
+    AVRational time_base; ///< time base in which the start/end timestamps are specified
+    int64_t start, end;   ///< chapter start/end time in time_base units
     AVDictionary *metadata;
 } AVChapter;
 
@@ -7816,44 +8146,45 @@ struct AVFormatContext;
 typedef int (*av_format_control_message)(struct AVFormatContext *s, int type,
                                          void *data, size_t data_size);
 
-typedef struct AVIOInterruptCB {
-    int (*callback)(void*);
+typedef struct AVIOInterruptCB
+{
+    int (*callback)(void *);
     void *opaque;
 } AVIOInterruptCB;
 
 typedef struct AVFormatInternal AVFormatInternal;
 
-typedef struct AVDeviceInfo {
-    char *device_name;                   /**< device name, format depends on device */
-    char *device_description;            /**< human friendly name */
+typedef struct AVDeviceInfo
+{
+    char *device_name;        /**< device name, format depends on device */
+    char *device_description; /**< human friendly name */
 } AVDeviceInfo;
 
 /**
  * List of devices.
  */
-typedef struct AVDeviceInfoList {
-    AVDeviceInfo **devices;              /**< list of autodetected devices */
-    int nb_devices;                      /**< number of autodetected devices */
-    int default_device;                  /**< index of default device or -1 if no default */
+typedef struct AVDeviceInfoList
+{
+    AVDeviceInfo **devices; /**< list of autodetected devices */
+    int nb_devices;         /**< number of autodetected devices */
+    int default_device;     /**< index of default device or -1 if no default */
 } AVDeviceInfoList;
-
-
-
 
 struct AVFormatContext;
 
 struct AVDeviceCapabilitiesQuery;
 
-typedef struct AVOutputFormat {
+typedef struct AVOutputFormat
+{
     const char *name;
     const char *long_name;
     const char *mime_type;
-    const char *extensions; /**< comma-separated filename extensions */
+    const char *extensions;        /**< comma-separated filename extensions */
     enum AVCodecID audio_codec;    /**< default audio codec */
     enum AVCodecID video_codec;    /**< default video codec */
     enum AVCodecID subtitle_codec; /**< default subtitle codec */
     int flags;
-    const struct AVCodecTag * const *codec_tag;
+    const struct AVCodecTag *const *codec_tag;
     const AVClass *priv_class; ///< AVClass for the private context
 #if FF_API_AVIOFORMAT
 #define ff_const59
@@ -7885,26 +8216,29 @@ typedef struct AVOutputFormat {
     int (*check_bitstream)(struct AVFormatContext *, const AVPacket *pkt);
 } AVOutputFormat;
 
-
 typedef float FFTSample;
 typedef float FFTDouble;
 
-typedef struct FFTComplex {
+typedef struct FFTComplex
+{
     FFTSample re, im;
 } FFTComplex;
 
-enum fft_permutation_type {
+enum fft_permutation_type
+{
     FF_FFT_PERM_DEFAULT,
     FF_FFT_PERM_SWAP_LSBS,
     FF_FFT_PERM_AVX,
 };
 
-enum mdct_permutation_type {
+enum mdct_permutation_type
+{
     FF_MDCT_PERM_NONE,
     FF_MDCT_PERM_INTERLEAVE,
 };
 
-struct FFTContext {
+struct FFTContext
+{
     int nbits;
     int inverse;
     uint16_t *revtab;
@@ -7932,7 +8266,8 @@ struct FFTContext {
     uint32_t *revtab32;
 };
 typedef struct FFTContext FFTContext;
-struct RDFTContext {
+struct RDFTContext
+{
     int nbits;
     int inverse;
     int sign_convention;
@@ -7951,59 +8286,57 @@ struct SwsContext;
 typedef struct SwrContext SwrContext;
 
 typedef struct AVFilterContext AVFilterContext;
-typedef struct AVFilterLink    AVFilterLink;
-typedef struct AVFilterPad     AVFilterPad;
+typedef struct AVFilterLink AVFilterLink;
+typedef struct AVFilterPad AVFilterPad;
 typedef struct AVFilterFormats AVFilterFormats;
 typedef struct AVFilterInternal AVFilterInternal;
 typedef struct AVFilterGraphInternal AVFilterGraphInternal;
 
-enum AVMediaType av_buffersink_get_type                (const AVFilterContext *ctx);
-AVRational       av_buffersink_get_time_base           (const AVFilterContext *ctx);
-int              av_buffersink_get_format              (const AVFilterContext *ctx);
+enum AVMediaType av_buffersink_get_type(const AVFilterContext *ctx);
+AVRational av_buffersink_get_time_base(const AVFilterContext *ctx);
+int av_buffersink_get_format(const AVFilterContext *ctx);
 
-AVRational       av_buffersink_get_frame_rate          (const AVFilterContext *ctx);
-int              av_buffersink_get_w                   (const AVFilterContext *ctx);
-int              av_buffersink_get_h                   (const AVFilterContext *ctx);
-AVRational       av_buffersink_get_sample_aspect_ratio (const AVFilterContext *ctx);
+AVRational av_buffersink_get_frame_rate(const AVFilterContext *ctx);
+int av_buffersink_get_w(const AVFilterContext *ctx);
+int av_buffersink_get_h(const AVFilterContext *ctx);
+AVRational av_buffersink_get_sample_aspect_ratio(const AVFilterContext *ctx);
 
-int              av_buffersink_get_channels            (const AVFilterContext *ctx);
-uint64_t         av_buffersink_get_channel_layout      (const AVFilterContext *ctx);
-int              av_buffersink_get_sample_rate         (const AVFilterContext *ctx);
+int av_buffersink_get_channels(const AVFilterContext *ctx);
+uint64_t av_buffersink_get_channel_layout(const AVFilterContext *ctx);
+int av_buffersink_get_sample_rate(const AVFilterContext *ctx);
 
-AVBufferRef *    av_buffersink_get_hw_frames_ctx       (const AVFilterContext *ctx);
+AVBufferRef *av_buffersink_get_hw_frames_ctx(const AVFilterContext *ctx);
 
 typedef struct SDL_CommonEvent
 {
     Uint32 type;
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
 } SDL_CommonEvent;
 
 typedef struct SDL_DisplayEvent
 {
-    Uint32 type;        /**< ::SDL_DISPLAYEVENT */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 display;     /**< The associated display index */
-    Uint8 event;        /**< ::SDL_DisplayEventID */
+    Uint32 type;      /**< ::SDL_DISPLAYEVENT */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 display;   /**< The associated display index */
+    Uint8 event;      /**< ::SDL_DisplayEventID */
     Uint8 padding1;
     Uint8 padding2;
     Uint8 padding3;
-    Sint32 data1;       /**< event dependent data */
+    Sint32 data1; /**< event dependent data */
 } SDL_DisplayEvent;
 
 typedef struct SDL_WindowEvent
 {
-    Uint32 type;        /**< ::SDL_WINDOWEVENT */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;    /**< The associated window */
-    Uint8 event;        /**< ::SDL_WindowEventID */
+    Uint32 type;      /**< ::SDL_WINDOWEVENT */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;  /**< The associated window */
+    Uint8 event;      /**< ::SDL_WindowEventID */
     Uint8 padding1;
     Uint8 padding2;
     Uint8 padding3;
-    Sint32 data1;       /**< event dependent data */
-    Sint32 data2;       /**< event dependent data */
+    Sint32 data1; /**< event dependent data */
+    Sint32 data2; /**< event dependent data */
 } SDL_WindowEvent;
-
-
 
 typedef Sint32 SDL_Keycode;
 typedef Sint32 SDL_JoystickID;
@@ -8013,22 +8346,22 @@ typedef Sint64 SDL_GestureID;
 
 typedef struct SDL_Keysym
 {
-    SDL_Scancode scancode;      /**< SDL physical key code - see ::SDL_Scancode for details */
-    SDL_Keycode sym;            /**< SDL virtual key code - see ::SDL_Keycode for details */
-    Uint16 mod;                 /**< current key modifiers */
+    SDL_Scancode scancode; /**< SDL physical key code - see ::SDL_Scancode for details */
+    SDL_Keycode sym;       /**< SDL virtual key code - see ::SDL_Keycode for details */
+    Uint16 mod;            /**< current key modifiers */
     Uint32 unused;
 } SDL_Keysym;
 
 typedef struct SDL_KeyboardEvent
 {
-    Uint32 type;        /**< ::SDL_KEYDOWN or ::SDL_KEYUP */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;    /**< The window with keyboard focus, if any */
-    Uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
-    Uint8 repeat;       /**< Non-zero if this is a key repeat */
+    Uint32 type;      /**< ::SDL_KEYDOWN or ::SDL_KEYUP */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;  /**< The window with keyboard focus, if any */
+    Uint8 state;      /**< ::SDL_PRESSED or ::SDL_RELEASED */
+    Uint8 repeat;     /**< Non-zero if this is a key repeat */
     Uint8 padding2;
     Uint8 padding3;
-    SDL_Keysym keysym;  /**< The key that was pressed or released */
+    SDL_Keysym keysym; /**< The key that was pressed or released */
 } SDL_KeyboardEvent;
 
 #define SDL_TEXTEDITINGEVENT_TEXT_SIZE (32)
@@ -8036,70 +8369,70 @@ typedef struct SDL_KeyboardEvent
 
 typedef struct SDL_TextEditingEvent
 {
-    Uint32 type;                                /**< ::SDL_TEXTEDITING */
-    Uint32 timestamp;                           /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;                            /**< The window with keyboard focus, if any */
-    char text[SDL_TEXTEDITINGEVENT_TEXT_SIZE];  /**< The editing text */
-    Sint32 start;                               /**< The start cursor of selected editing text */
-    Sint32 length;                              /**< The length of selected editing text */
+    Uint32 type;                               /**< ::SDL_TEXTEDITING */
+    Uint32 timestamp;                          /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;                           /**< The window with keyboard focus, if any */
+    char text[SDL_TEXTEDITINGEVENT_TEXT_SIZE]; /**< The editing text */
+    Sint32 start;                              /**< The start cursor of selected editing text */
+    Sint32 length;                             /**< The length of selected editing text */
 } SDL_TextEditingEvent;
 
 typedef struct SDL_TextInputEvent
 {
-    Uint32 type;                              /**< ::SDL_TEXTINPUT */
-    Uint32 timestamp;                         /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;                          /**< The window with keyboard focus, if any */
-    char text[SDL_TEXTINPUTEVENT_TEXT_SIZE];  /**< The input text */
+    Uint32 type;                             /**< ::SDL_TEXTINPUT */
+    Uint32 timestamp;                        /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;                         /**< The window with keyboard focus, if any */
+    char text[SDL_TEXTINPUTEVENT_TEXT_SIZE]; /**< The input text */
 } SDL_TextInputEvent;
 
 typedef struct SDL_MouseMotionEvent
 {
-    Uint32 type;        /**< ::SDL_MOUSEMOTION */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;    /**< The window with mouse focus, if any */
-    Uint32 which;       /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
-    Uint32 state;       /**< The current button state */
-    Sint32 x;           /**< X coordinate, relative to window */
-    Sint32 y;           /**< Y coordinate, relative to window */
-    Sint32 xrel;        /**< The relative motion in the X direction */
-    Sint32 yrel;        /**< The relative motion in the Y direction */
+    Uint32 type;      /**< ::SDL_MOUSEMOTION */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;  /**< The window with mouse focus, if any */
+    Uint32 which;     /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
+    Uint32 state;     /**< The current button state */
+    Sint32 x;         /**< X coordinate, relative to window */
+    Sint32 y;         /**< Y coordinate, relative to window */
+    Sint32 xrel;      /**< The relative motion in the X direction */
+    Sint32 yrel;      /**< The relative motion in the Y direction */
 } SDL_MouseMotionEvent;
 
 typedef struct SDL_MouseButtonEvent
 {
-    Uint32 type;        /**< ::SDL_MOUSEBUTTONDOWN or ::SDL_MOUSEBUTTONUP */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;    /**< The window with mouse focus, if any */
-    Uint32 which;       /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
-    Uint8 button;       /**< The mouse button index */
-    Uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
-    Uint8 clicks;       /**< 1 for single-click, 2 for double-click, etc. */
+    Uint32 type;      /**< ::SDL_MOUSEBUTTONDOWN or ::SDL_MOUSEBUTTONUP */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;  /**< The window with mouse focus, if any */
+    Uint32 which;     /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
+    Uint8 button;     /**< The mouse button index */
+    Uint8 state;      /**< ::SDL_PRESSED or ::SDL_RELEASED */
+    Uint8 clicks;     /**< 1 for single-click, 2 for double-click, etc. */
     Uint8 padding1;
-    Sint32 x;           /**< X coordinate, relative to window */
-    Sint32 y;           /**< Y coordinate, relative to window */
+    Sint32 x; /**< X coordinate, relative to window */
+    Sint32 y; /**< Y coordinate, relative to window */
 } SDL_MouseButtonEvent;
 
 typedef struct SDL_MouseWheelEvent
 {
-    Uint32 type;        /**< ::SDL_MOUSEWHEEL */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;    /**< The window with mouse focus, if any */
-    Uint32 which;       /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
-    Sint32 x;           /**< The amount scrolled horizontally, positive to the right and negative to the left */
-    Sint32 y;           /**< The amount scrolled vertically, positive away from the user and negative toward the user */
-    Uint32 direction;   /**< Set to one of the SDL_MOUSEWHEEL_* defines. When FLIPPED the values in X and Y will be opposite. Multiply by -1 to change them back */
+    Uint32 type;      /**< ::SDL_MOUSEWHEEL */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;  /**< The window with mouse focus, if any */
+    Uint32 which;     /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
+    Sint32 x;         /**< The amount scrolled horizontally, positive to the right and negative to the left */
+    Sint32 y;         /**< The amount scrolled vertically, positive away from the user and negative toward the user */
+    Uint32 direction; /**< Set to one of the SDL_MOUSEWHEEL_* defines. When FLIPPED the values in X and Y will be opposite. Multiply by -1 to change them back */
 } SDL_MouseWheelEvent;
 
 typedef struct SDL_JoyAxisEvent
 {
-    Uint32 type;        /**< ::SDL_JOYAXISMOTION */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;          /**< ::SDL_JOYAXISMOTION */
+    Uint32 timestamp;     /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_JoystickID which; /**< The joystick instance id */
-    Uint8 axis;         /**< The joystick axis index */
+    Uint8 axis;           /**< The joystick axis index */
     Uint8 padding1;
     Uint8 padding2;
     Uint8 padding3;
-    Sint16 value;       /**< The axis value (range: -32768 to 32767) */
+    Sint16 value; /**< The axis value (range: -32768 to 32767) */
     Uint16 padding4;
 } SDL_JoyAxisEvent;
 
@@ -8108,15 +8441,15 @@ typedef struct SDL_JoyAxisEvent
  */
 typedef struct SDL_JoyBallEvent
 {
-    Uint32 type;        /**< ::SDL_JOYBALLMOTION */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;          /**< ::SDL_JOYBALLMOTION */
+    Uint32 timestamp;     /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_JoystickID which; /**< The joystick instance id */
-    Uint8 ball;         /**< The joystick trackball index */
+    Uint8 ball;           /**< The joystick trackball index */
     Uint8 padding1;
     Uint8 padding2;
     Uint8 padding3;
-    Sint16 xrel;        /**< The relative motion in the X direction */
-    Sint16 yrel;        /**< The relative motion in the Y direction */
+    Sint16 xrel; /**< The relative motion in the X direction */
+    Sint16 yrel; /**< The relative motion in the Y direction */
 } SDL_JoyBallEvent;
 
 /**
@@ -8124,11 +8457,11 @@ typedef struct SDL_JoyBallEvent
  */
 typedef struct SDL_JoyHatEvent
 {
-    Uint32 type;        /**< ::SDL_JOYHATMOTION */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;          /**< ::SDL_JOYHATMOTION */
+    Uint32 timestamp;     /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_JoystickID which; /**< The joystick instance id */
-    Uint8 hat;          /**< The joystick hat index */
-    Uint8 value;        /**< The hat position value.
+    Uint8 hat;            /**< The joystick hat index */
+    Uint8 value;          /**< The hat position value.
                          *   \sa ::SDL_HAT_LEFTUP ::SDL_HAT_UP ::SDL_HAT_RIGHTUP
                          *   \sa ::SDL_HAT_LEFT ::SDL_HAT_CENTERED ::SDL_HAT_RIGHT
                          *   \sa ::SDL_HAT_LEFTDOWN ::SDL_HAT_DOWN ::SDL_HAT_RIGHTDOWN
@@ -8144,11 +8477,11 @@ typedef struct SDL_JoyHatEvent
  */
 typedef struct SDL_JoyButtonEvent
 {
-    Uint32 type;        /**< ::SDL_JOYBUTTONDOWN or ::SDL_JOYBUTTONUP */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;          /**< ::SDL_JOYBUTTONDOWN or ::SDL_JOYBUTTONUP */
+    Uint32 timestamp;     /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_JoystickID which; /**< The joystick instance id */
-    Uint8 button;       /**< The joystick button index */
-    Uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
+    Uint8 button;         /**< The joystick button index */
+    Uint8 state;          /**< ::SDL_PRESSED or ::SDL_RELEASED */
     Uint8 padding1;
     Uint8 padding2;
 } SDL_JoyButtonEvent;
@@ -8158,52 +8491,49 @@ typedef struct SDL_JoyButtonEvent
  */
 typedef struct SDL_JoyDeviceEvent
 {
-    Uint32 type;        /**< ::SDL_JOYDEVICEADDED or ::SDL_JOYDEVICEREMOVED */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Sint32 which;       /**< The joystick device index for the ADDED event, instance id for the REMOVED event */
+    Uint32 type;      /**< ::SDL_JOYDEVICEADDED or ::SDL_JOYDEVICEREMOVED */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Sint32 which;     /**< The joystick device index for the ADDED event, instance id for the REMOVED event */
 } SDL_JoyDeviceEvent;
-
 
 /**
  *  \brief Game controller axis motion event structure (event.caxis.*)
  */
 typedef struct SDL_ControllerAxisEvent
 {
-    Uint32 type;        /**< ::SDL_CONTROLLERAXISMOTION */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;          /**< ::SDL_CONTROLLERAXISMOTION */
+    Uint32 timestamp;     /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_JoystickID which; /**< The joystick instance id */
-    Uint8 axis;         /**< The controller axis (SDL_GameControllerAxis) */
+    Uint8 axis;           /**< The controller axis (SDL_GameControllerAxis) */
     Uint8 padding1;
     Uint8 padding2;
     Uint8 padding3;
-    Sint16 value;       /**< The axis value (range: -32768 to 32767) */
+    Sint16 value; /**< The axis value (range: -32768 to 32767) */
     Uint16 padding4;
 } SDL_ControllerAxisEvent;
-
 
 /**
  *  \brief Game controller button event structure (event.cbutton.*)
  */
 typedef struct SDL_ControllerButtonEvent
 {
-    Uint32 type;        /**< ::SDL_CONTROLLERBUTTONDOWN or ::SDL_CONTROLLERBUTTONUP */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;          /**< ::SDL_CONTROLLERBUTTONDOWN or ::SDL_CONTROLLERBUTTONUP */
+    Uint32 timestamp;     /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_JoystickID which; /**< The joystick instance id */
-    Uint8 button;       /**< The controller button (SDL_GameControllerButton) */
-    Uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
+    Uint8 button;         /**< The controller button (SDL_GameControllerButton) */
+    Uint8 state;          /**< ::SDL_PRESSED or ::SDL_RELEASED */
     Uint8 padding1;
     Uint8 padding2;
 } SDL_ControllerButtonEvent;
-
 
 /**
  *  \brief Controller device event structure (event.cdevice.*)
  */
 typedef struct SDL_ControllerDeviceEvent
 {
-    Uint32 type;        /**< ::SDL_CONTROLLERDEVICEADDED, ::SDL_CONTROLLERDEVICEREMOVED, or ::SDL_CONTROLLERDEVICEREMAPPED */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Sint32 which;       /**< The joystick device index for the ADDED event, instance id for the REMOVED or REMAPPED event */
+    Uint32 type;      /**< ::SDL_CONTROLLERDEVICEADDED, ::SDL_CONTROLLERDEVICEREMOVED, or ::SDL_CONTROLLERDEVICEREMAPPED */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Sint32 which;     /**< The joystick device index for the ADDED event, instance id for the REMOVED or REMAPPED event */
 } SDL_ControllerDeviceEvent;
 
 /**
@@ -8211,41 +8541,39 @@ typedef struct SDL_ControllerDeviceEvent
  */
 typedef struct SDL_AudioDeviceEvent
 {
-    Uint32 type;        /**< ::SDL_AUDIODEVICEADDED, or ::SDL_AUDIODEVICEREMOVED */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 which;       /**< The audio device index for the ADDED event (valid until next SDL_GetNumAudioDevices() call), SDL_AudioDeviceID for the REMOVED event */
-    Uint8 iscapture;    /**< zero if an output device, non-zero if a capture device. */
+    Uint32 type;      /**< ::SDL_AUDIODEVICEADDED, or ::SDL_AUDIODEVICEREMOVED */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 which;     /**< The audio device index for the ADDED event (valid until next SDL_GetNumAudioDevices() call), SDL_AudioDeviceID for the REMOVED event */
+    Uint8 iscapture;  /**< zero if an output device, non-zero if a capture device. */
     Uint8 padding1;
     Uint8 padding2;
     Uint8 padding3;
 } SDL_AudioDeviceEvent;
-
 
 /**
  *  \brief Touch finger event structure (event.tfinger.*)
  */
 typedef struct SDL_TouchFingerEvent
 {
-    Uint32 type;        /**< ::SDL_FINGERMOTION or ::SDL_FINGERDOWN or ::SDL_FINGERUP */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;         /**< ::SDL_FINGERMOTION or ::SDL_FINGERDOWN or ::SDL_FINGERUP */
+    Uint32 timestamp;    /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_TouchID touchId; /**< The touch device id */
     SDL_FingerID fingerId;
-    float x;            /**< Normalized in the range 0...1 */
-    float y;            /**< Normalized in the range 0...1 */
-    float dx;           /**< Normalized in the range -1...1 */
-    float dy;           /**< Normalized in the range -1...1 */
-    float pressure;     /**< Normalized in the range 0...1 */
-    Uint32 windowID;    /**< The window underneath the finger, if any */
+    float x;         /**< Normalized in the range 0...1 */
+    float y;         /**< Normalized in the range 0...1 */
+    float dx;        /**< Normalized in the range -1...1 */
+    float dy;        /**< Normalized in the range -1...1 */
+    float pressure;  /**< Normalized in the range 0...1 */
+    Uint32 windowID; /**< The window underneath the finger, if any */
 } SDL_TouchFingerEvent;
-
 
 /**
  *  \brief Multiple Finger Gesture Event (event.mgesture.*)
  */
 typedef struct SDL_MultiGestureEvent
 {
-    Uint32 type;        /**< ::SDL_MULTIGESTURE */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;         /**< ::SDL_MULTIGESTURE */
+    Uint32 timestamp;    /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_TouchID touchId; /**< The touch device id */
     float dTheta;
     float dDist;
@@ -8255,22 +8583,20 @@ typedef struct SDL_MultiGestureEvent
     Uint16 padding;
 } SDL_MultiGestureEvent;
 
-
 /**
  * \brief Dollar Gesture Event (event.dgesture.*)
  */
 typedef struct SDL_DollarGestureEvent
 {
-    Uint32 type;        /**< ::SDL_DOLLARGESTURE or ::SDL_DOLLARRECORD */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;         /**< ::SDL_DOLLARGESTURE or ::SDL_DOLLARRECORD */
+    Uint32 timestamp;    /**< In milliseconds, populated using SDL_GetTicks() */
     SDL_TouchID touchId; /**< The touch device id */
     SDL_GestureID gestureId;
     Uint32 numFingers;
     float error;
-    float x;            /**< Normalized center of gesture */
-    float y;            /**< Normalized center of gesture */
+    float x; /**< Normalized center of gesture */
+    float y; /**< Normalized center of gesture */
 } SDL_DollarGestureEvent;
-
 
 /**
  *  \brief An event used to request a file open by the system (event.drop.*)
@@ -8279,22 +8605,21 @@ typedef struct SDL_DollarGestureEvent
  */
 typedef struct SDL_DropEvent
 {
-    Uint32 type;        /**< ::SDL_DROPBEGIN or ::SDL_DROPFILE or ::SDL_DROPTEXT or ::SDL_DROPCOMPLETE */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    char *file;         /**< The file name, which should be freed with SDL_free(), is NULL on begin/complete */
-    Uint32 windowID;    /**< The window that was dropped on, if any */
+    Uint32 type;      /**< ::SDL_DROPBEGIN or ::SDL_DROPFILE or ::SDL_DROPTEXT or ::SDL_DROPCOMPLETE */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    char *file;       /**< The file name, which should be freed with SDL_free(), is NULL on begin/complete */
+    Uint32 windowID;  /**< The window that was dropped on, if any */
 } SDL_DropEvent;
-
 
 /**
  *  \brief Sensor event structure (event.sensor.*)
  */
 typedef struct SDL_SensorEvent
 {
-    Uint32 type;        /**< ::SDL_SENSORUPDATE */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Sint32 which;       /**< The instance ID of the sensor */
-    float data[6];      /**< Up to 6 values from the sensor - additional values can be queried using SDL_SensorGetData() */
+    Uint32 type;      /**< ::SDL_SENSORUPDATE */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Sint32 which;     /**< The instance ID of the sensor */
+    float data[6];    /**< Up to 6 values from the sensor - additional values can be queried using SDL_SensorGetData() */
 } SDL_SensorEvent;
 
 /**
@@ -8302,65 +8627,65 @@ typedef struct SDL_SensorEvent
  */
 typedef struct SDL_QuitEvent
 {
-    Uint32 type;        /**< ::SDL_QUIT */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 type;      /**< ::SDL_QUIT */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
 } SDL_QuitEvent;
 
 typedef struct SDL_UserEvent
 {
-    Uint32 type;        /**< ::SDL_USEREVENT through ::SDL_LASTEVENT-1 */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    Uint32 windowID;    /**< The associated window if any */
-    Sint32 code;        /**< User defined event code */
-    void *data1;        /**< User defined data pointer */
-    void *data2;        /**< User defined data pointer */
+    Uint32 type;      /**< ::SDL_USEREVENT through ::SDL_LASTEVENT-1 */
+    Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+    Uint32 windowID;  /**< The associated window if any */
+    Sint32 code;      /**< User defined event code */
+    void *data1;      /**< User defined data pointer */
+    void *data2;      /**< User defined data pointer */
 } SDL_UserEvent;
-
 
 struct SDL_SysWMmsg;
 typedef struct SDL_SysWMmsg SDL_SysWMmsg;
 
 typedef struct SDL_SysWMEvent
 {
-    Uint32 type;        /**< ::SDL_SYSWMEVENT */
-    Uint32 timestamp;   /**< In milliseconds, populated using SDL_GetTicks() */
-    SDL_SysWMmsg *msg;  /**< driver dependent data, defined in SDL_syswm.h */
+    Uint32 type;       /**< ::SDL_SYSWMEVENT */
+    Uint32 timestamp;  /**< In milliseconds, populated using SDL_GetTicks() */
+    SDL_SysWMmsg *msg; /**< driver dependent data, defined in SDL_syswm.h */
 } SDL_SysWMEvent;
 
 typedef union SDL_Event
 {
-    Uint32 type;                    /**< Event type, shared with all events */
-    SDL_CommonEvent common;         /**< Common event data */
-    SDL_DisplayEvent display;       /**< Display event data */
-    SDL_WindowEvent window;         /**< Window event data */
-    SDL_KeyboardEvent key;          /**< Keyboard event data */
-    SDL_TextEditingEvent edit;      /**< Text editing event data */
-    SDL_TextInputEvent text;        /**< Text input event data */
-    SDL_MouseMotionEvent motion;    /**< Mouse motion event data */
-    SDL_MouseButtonEvent button;    /**< Mouse button event data */
-    SDL_MouseWheelEvent wheel;      /**< Mouse wheel event data */
-    SDL_JoyAxisEvent jaxis;         /**< Joystick axis event data */
-    SDL_JoyBallEvent jball;         /**< Joystick ball event data */
-    SDL_JoyHatEvent jhat;           /**< Joystick hat event data */
-    SDL_JoyButtonEvent jbutton;     /**< Joystick button event data */
-    SDL_JoyDeviceEvent jdevice;     /**< Joystick device change event data */
-    SDL_ControllerAxisEvent caxis;      /**< Game Controller axis event data */
-    SDL_ControllerButtonEvent cbutton;  /**< Game Controller button event data */
-    SDL_ControllerDeviceEvent cdevice;  /**< Game Controller device event data */
-    SDL_AudioDeviceEvent adevice;   /**< Audio device event data */
-    SDL_SensorEvent sensor;         /**< Sensor event data */
-    SDL_QuitEvent quit;             /**< Quit request event data */
-    SDL_UserEvent user;             /**< Custom event data */
-    SDL_SysWMEvent syswm;           /**< System dependent window event data */
-    SDL_TouchFingerEvent tfinger;   /**< Touch finger event data */
-    SDL_MultiGestureEvent mgesture; /**< Gesture event data */
-    SDL_DollarGestureEvent dgesture; /**< Gesture event data */
-    SDL_DropEvent drop;             /**< Drag and drop event data */
+    Uint32 type;                       /**< Event type, shared with all events */
+    SDL_CommonEvent common;            /**< Common event data */
+    SDL_DisplayEvent display;          /**< Display event data */
+    SDL_WindowEvent window;            /**< Window event data */
+    SDL_KeyboardEvent key;             /**< Keyboard event data */
+    SDL_TextEditingEvent edit;         /**< Text editing event data */
+    SDL_TextInputEvent text;           /**< Text input event data */
+    SDL_MouseMotionEvent motion;       /**< Mouse motion event data */
+    SDL_MouseButtonEvent button;       /**< Mouse button event data */
+    SDL_MouseWheelEvent wheel;         /**< Mouse wheel event data */
+    SDL_JoyAxisEvent jaxis;            /**< Joystick axis event data */
+    SDL_JoyBallEvent jball;            /**< Joystick ball event data */
+    SDL_JoyHatEvent jhat;              /**< Joystick hat event data */
+    SDL_JoyButtonEvent jbutton;        /**< Joystick button event data */
+    SDL_JoyDeviceEvent jdevice;        /**< Joystick device change event data */
+    SDL_ControllerAxisEvent caxis;     /**< Game Controller axis event data */
+    SDL_ControllerButtonEvent cbutton; /**< Game Controller button event data */
+    SDL_ControllerDeviceEvent cdevice; /**< Game Controller device event data */
+    SDL_AudioDeviceEvent adevice;      /**< Audio device event data */
+    SDL_SensorEvent sensor;            /**< Sensor event data */
+    SDL_QuitEvent quit;                /**< Quit request event data */
+    SDL_UserEvent user;                /**< Custom event data */
+    SDL_SysWMEvent syswm;              /**< System dependent window event data */
+    SDL_TouchFingerEvent tfinger;      /**< Touch finger event data */
+    SDL_MultiGestureEvent mgesture;    /**< Gesture event data */
+    SDL_DollarGestureEvent dgesture;   /**< Gesture event data */
+    SDL_DropEvent drop;                /**< Drag and drop event data */
 
     Uint8 padding[56];
 } SDL_Event;
 
-typedef struct AVFilterInOut {
+typedef struct AVFilterInOut
+{
     /** unique name for this input/output in the list */
     char *name;
 
@@ -8374,7 +8699,8 @@ typedef struct AVFilterInOut {
     struct AVFilterInOut *next;
 } AVFilterInOut;
 
-typedef struct AVFilter {
+typedef struct AVFilter
+{
     const char *name;
     const char *description;
     const AVFilterPad *inputs;
@@ -8394,25 +8720,26 @@ typedef struct AVFilter {
     int (*activate)(AVFilterContext *ctx);
 } AVFilter;
 
-struct AVFilterContext {
-    const AVClass *av_class;        ///< needed for av_log() and filters common options
-    const AVFilter *filter;         ///< the AVFilter of which this is an instance
-    char *name;                     ///< name of this filter instance
-    AVFilterPad   *input_pads;      ///< array of input pads
-    AVFilterLink **inputs;          ///< array of pointers to input links
-    unsigned    nb_inputs;          ///< number of input pads
-    AVFilterPad   *output_pads;     ///< array of output pads
-    AVFilterLink **outputs;         ///< array of pointers to output links
-    unsigned    nb_outputs;         ///< number of output pads
-    void *priv;                     ///< private data for use by the filter
-    struct AVFilterGraph *graph;    ///< filtergraph this filter belongs to
+struct AVFilterContext
+{
+    const AVClass *av_class;     ///< needed for av_log() and filters common options
+    const AVFilter *filter;      ///< the AVFilter of which this is an instance
+    char *name;                  ///< name of this filter instance
+    AVFilterPad *input_pads;     ///< array of input pads
+    AVFilterLink **inputs;       ///< array of pointers to input links
+    unsigned nb_inputs;          ///< number of input pads
+    AVFilterPad *output_pads;    ///< array of output pads
+    AVFilterLink **outputs;      ///< array of pointers to output links
+    unsigned nb_outputs;         ///< number of output pads
+    void *priv;                  ///< private data for use by the filter
+    struct AVFilterGraph *graph; ///< filtergraph this filter belongs to
     int thread_type;
     AVFilterInternal *internal;
     struct AVFilterCommand *command_queue;
-    char *enable_str;               ///< enable expression string
-    void *enable;                   ///< parsed expression (AVExpr*)
-    double *var_values;             ///< variable values for the enable expression
-    int is_disabled;                ///< the enabled state from the last expression evaluation
+    char *enable_str;   ///< enable expression string
+    void *enable;       ///< parsed expression (AVExpr*)
+    double *var_values; ///< variable values for the enable expression
+    int is_disabled;    ///< the enabled state from the last expression evaluation
 
     AVBufferRef *hw_device_ctx;
     int nb_threads;
@@ -8420,15 +8747,13 @@ struct AVFilterContext {
     int extra_hw_frames;
 };
 
+typedef int(avfilter_action_func)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
+typedef int(avfilter_execute_func)(AVFilterContext *ctx, avfilter_action_func *func,
+                                   void *arg, int *ret, int nb_jobs);
 
-typedef int (avfilter_action_func)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
-
-
-typedef int (avfilter_execute_func)(AVFilterContext *ctx, avfilter_action_func *func,
-                                    void *arg, int *ret, int nb_jobs);
-
-typedef struct AVFilterGraph {
+typedef struct AVFilterGraph
+{
     const AVClass *av_class;
     AVFilterContext **filters;
     unsigned nb_filters;
@@ -8444,37 +8769,42 @@ typedef struct AVFilterGraph {
     unsigned disable_auto_convert;
 } AVFilterGraph;
 
-typedef struct AVProbeData {
+typedef struct AVProbeData
+{
     const char *filename;
-    unsigned char *buf; /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
-    int buf_size;       /**< Size of buf except extra allocated bytes */
+    unsigned char *buf;    /**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. */
+    int buf_size;          /**< Size of buf except extra allocated bytes */
     const char *mime_type; /**< mime_type, when known. */
 } AVProbeData;
 
-typedef struct AVIndexEntry {
+typedef struct AVIndexEntry
+{
     int64_t pos;
-    int64_t timestamp;        
+    int64_t timestamp;
 #define AVINDEX_KEYFRAME 0x0001
-#define AVINDEX_DISCARD_FRAME  0x0002    
-    int flags:2;
-    int size:30; //Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
-    int min_distance;         /**< Minimum distance between this and the previous keyframe, used to avoid unneeded searching. */
+#define AVINDEX_DISCARD_FRAME 0x0002
+    int flags : 2;
+    int size : 30;    //Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
+    int min_distance; /**< Minimum distance between this and the previous keyframe, used to avoid unneeded searching. */
 } AVIndexEntry;
 
-typedef struct FFFrac {
+typedef struct FFFrac
+{
     int64_t val, num, den;
 } FFFrac;
 
-struct AVStreamInternal {
+struct AVStreamInternal
+{
     int reorder;
     AVBSFContext *bsfc;
     int bitstream_checked;
     AVCodecContext *avctx;
     int avctx_inited;
     enum AVCodecID orig_codec_id;
-    struct {
+    struct
+    {
         AVBSFContext *bsf;
-        AVPacket     *pkt;
+        AVPacket *pkt;
         int inited;
     } extract_extradata;
     int need_context_update;
@@ -8484,27 +8814,29 @@ struct AVStreamInternal {
 
 typedef struct AVStreamInternal AVStreamInternal;
 
-typedef struct AVStream {
-    int index;    /**< stream index in AVFormatContext */
+typedef struct AVStream
+{
+    int index; /**< stream index in AVFormatContext */
     int id;
     void *priv_data;
     AVRational time_base;
     int64_t start_time;
     int64_t duration;
-    int64_t nb_frames;                 ///< number of frames in this stream if known or 0
-    int disposition; /**< AV_DISPOSITION_* bit field */
+    int64_t nb_frames;      ///< number of frames in this stream if known or 0
+    int disposition;        /**< AV_DISPOSITION_* bit field */
     enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
     AVRational sample_aspect_ratio;
     AVDictionary *metadata;
     AVRational avg_frame_rate;
     AVPacket attached_pic;
     AVPacketSideData *side_data;
-    int            nb_side_data;
+    int nb_side_data;
     int event_flags;
 
     AVRational r_frame_rate;
     AVCodecParameters *codecpar;
-    struct {
+    struct
+    {
         int64_t last_dts;
         int64_t duration_gcd;
         int duration_count;
@@ -8516,10 +8848,10 @@ typedef struct AVStream {
         int found_decoder;
         int64_t last_duration;
         int64_t fps_first_dts;
-        int     fps_first_dts_idx;
+        int fps_first_dts_idx;
         int64_t fps_last_dts;
-        int     fps_last_dts_idx;
-    } *info;
+        int fps_last_dts_idx;
+    } * info;
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
     int64_t first_dts;
     int64_t cur_dts;
@@ -8531,7 +8863,7 @@ typedef struct AVStream {
     struct AVCodecParserContext *parser;
     struct AVPacketList *last_in_packet_buffer;
     AVProbeData probe_data;
-    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+    int64_t pts_buffer[MAX_REORDER_DELAY + 1];
     AVIndexEntry *index_entries; /**< Only used if the format does not
                                     support seeking natively. */
     int nb_index_entries;
@@ -8553,8 +8885,8 @@ typedef struct AVStream {
     int64_t pts_wrap_reference;
     int pts_wrap_behavior;
     int update_initial_durations_done;
-    int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
-    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
+    int64_t pts_reorder_error[MAX_REORDER_DELAY + 1];
+    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY + 1];
     int64_t last_dts_for_order_check;
     uint8_t dts_ordered;
     uint8_t dts_misordered;
@@ -8563,7 +8895,8 @@ typedef struct AVStream {
     AVStreamInternal *internal;
 } AVStream;
 
-typedef struct AVFormatContext {
+typedef struct AVFormatContext
+{
     const AVClass *av_class;
     const struct AVInputFormat *iformat;
     const struct AVOutputFormat *oformat;
@@ -8631,7 +8964,7 @@ typedef struct AVFormatContext {
     uint8_t *dump_separator;
     enum AVCodecID data_codec_id;
     char *protocol_whitelist;
-    int (*io_open)(struct AVFormatContext *s, AVIOContext **pb, const char *url,int flags, AVDictionary **options);
+    int (*io_open)(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags, AVDictionary **options);
     void (*io_close)(struct AVFormatContext *s, AVIOContext *pb);
     char *protocol_blacklist;
     int max_streams;
@@ -8639,8 +8972,8 @@ typedef struct AVFormatContext {
     int max_probe_packets;
 } AVFormatContext;
 
-
-typedef struct AVDeviceCapabilitiesQuery {
+typedef struct AVDeviceCapabilitiesQuery
+{
     const AVClass *av_class;
     AVFormatContext *device_context;
     enum AVCodecID codec;
@@ -8656,12 +8989,13 @@ typedef struct AVDeviceCapabilitiesQuery {
     AVRational fps;
 } AVDeviceCapabilitiesQuery;
 
-typedef struct AVInputFormat {
+typedef struct AVInputFormat
+{
     const char *name;
     const char *long_name;
     int flags;
     const char *extensions;
-    const struct AVCodecTag * const *codec_tag;
+    const struct AVCodecTag *const *codec_tag;
     const AVClass *priv_class; ///< AVClass for the private context
     const char *mime_type;
     const struct AVInputFormat *next;
@@ -8771,6 +9105,85 @@ typedef struct VideoState
     SDL_cond *continue_read_thread;
 } VideoState;
 
+// typedef struct pthread_t
+// {
+//     void *handle;
+//     void *(*func)(void *arg);
+//     void *arg;
+//     void *ret;
+// } pthread_t;
+
+// typedef SRWLOCK pthread_mutex_t;
+// typedef CONDITION_VARIABLE pthread_cond_t;
+
+typedef struct PerThreadContext
+{
+    struct FrameThreadContext *parent;
+
+    pthread_t thread;
+    int thread_init;
+    pthread_cond_t input_cond;    ///< Used to wait for a new packet from the main thread.
+    pthread_cond_t progress_cond; ///< Used by child threads to wait for progress to change.
+    pthread_cond_t output_cond;   ///< Used by the main thread to wait for frames to finish.
+
+    pthread_mutex_t mutex;          ///< Mutex used to protect the contents of the PerThreadContext.
+    pthread_mutex_t progress_mutex; ///< Mutex used to protect frame progress values and progress_cond.
+
+    AVCodecContext *avctx; ///< Context used to decode packets passed to this thread.
+
+    AVPacket avpkt; ///< Input packet (for decoding) or output (for encoding).
+
+    AVFrame *frame; ///< Output frame (for decoding) or input (for encoding).
+    int got_frame;  ///< The output of got_picture_ptr from the last avcodec_decode_video() call.
+    int result;     ///< The result of the last codec decode/encode() call.
+
+    atomic_int state;
+
+    /**
+     * Array of frames passed to ff_thread_release_buffer().
+     * Frames are released after all threads referencing them are finished.
+     */
+    AVFrame **released_buffers;
+    int num_released_buffers;
+    int released_buffers_allocated;
+
+    AVFrame *requested_frame; ///< AVFrame the codec passed to get_buffer()
+    int requested_flags;      ///< flags passed to get_buffer() for requested_frame
+
+    const enum AVPixelFormat *available_formats; ///< Format array for get_format()
+    enum AVPixelFormat result_format;            ///< get_format() result
+
+    int die; ///< Set when the thread should exit.
+
+    int hwaccel_serializing;
+    int async_serializing;
+
+    atomic_int debug_threads; ///< Set if the FF_DEBUG_THREADS option is set.
+} PerThreadContext;
+
+typedef struct FrameThreadContext
+{
+    PerThreadContext *threads;     ///< The contexts for each thread.
+    PerThreadContext *prev_thread; ///< The last thread submit_packet() was called on.
+
+    pthread_mutex_t buffer_mutex; ///< Mutex used to protect get/release_buffer().
+    /**
+     * This lock is used for ensuring threads run in serial when hwaccel
+     * is used.
+     */
+    pthread_mutex_t hwaccel_mutex;
+    pthread_mutex_t async_mutex;
+    pthread_cond_t async_cond;
+    int async_lock;
+
+    int next_decoding; ///< The next context to submit a packet to.
+    int next_finished; ///< The next context to return output from.
+
+    int delaying; /**<
+                                    * Set for the first N packets, where N is the number of threads.
+                                    * While it is set, ff_thread_en/decode_frame won't return any results.
+                                    */
+} FrameThreadContext;
 
 typedef struct SDL_Window SDL_Window;
 struct SDL_Renderer;
@@ -8828,6 +9241,20 @@ static AVPacket flush_pkt;
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 
+static av_always_inline av_const int av_clip_c(int a, int amin, int amax)
+{
+#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+    if (amin > amax)
+        abort();
+#endif
+    if (a < amin)
+        return amin;
+    else if (a > amax)
+        return amax;
+    else
+        return a;
+}
+
 typedef struct SDL_RendererInfo
 {
     const char *name;           /**< The name of the renderer */
@@ -8837,7 +9264,6 @@ typedef struct SDL_RendererInfo
     int max_texture_width;      /**< The maximum texture width */
     int max_texture_height;     /**< The maximum texture height */
 } SDL_RendererInfo;
-
 
 static SDL_RendererInfo renderer_info = {0};
 
@@ -8874,3599 +9300,4254 @@ static const struct TextureFormatEntry sdl_texture_format_map[] = {
     {AV_PIX_FMT_NONE, SDL_PIXELFORMAT_UNKNOWN},
 };
 
-typedef struct SampleFmtInfo {
+typedef struct SampleFmtInfo
+{
     char name[8];
     int bits;
     int planar;
     enum AVSampleFormat altform; ///< planar<->packed alternative form
 } SampleFmtInfo;
 
+typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t *src[],
+                       int srcStride[], int srcSliceY, int srcSliceH,
+                       uint8_t *dst[], int dstStride[]);
+
+typedef void (*yuv2planar1_fn)(const int16_t *src, uint8_t *dest, int dstW,
+                               const uint8_t *dither, int offset);
+
+typedef void (*yuv2planarX_fn)(const int16_t *filter, int filterSize,
+                               const int16_t **src, uint8_t *dest, int dstW,
+                               const uint8_t *dither, int offset);
+
+typedef void (*yuv2interleavedX_fn)(enum AVPixelFormat dstFormat,
+                                    const uint8_t *chrDither,
+                                    const int16_t *chrFilter,
+                                    int chrFilterSize,
+                                    const int16_t **chrUSrc,
+                                    const int16_t **chrVSrc,
+                                    uint8_t *dest, int dstW);
+
+typedef void (*yuv2packed1_fn)(struct SwsContext *c, const int16_t *lumSrc,
+                               const int16_t *chrUSrc[2],
+                               const int16_t *chrVSrc[2],
+                               const int16_t *alpSrc, uint8_t *dest,
+                               int dstW, int uvalpha, int y);  
+
+typedef void (*yuv2packed2_fn)(struct SwsContext *c, const int16_t *lumSrc[2],
+                               const int16_t *chrUSrc[2],
+                               const int16_t *chrVSrc[2],
+                               const int16_t *alpSrc[2],
+                               uint8_t *dest,
+                               int dstW, int yalpha, int uvalpha, int y);                                  
+
+typedef void (*yuv2packedX_fn)(struct SwsContext *c, const int16_t *lumFilter,
+                               const int16_t **lumSrc, int lumFilterSize,
+                               const int16_t *chrFilter,
+                               const int16_t **chrUSrc,
+                               const int16_t **chrVSrc, int chrFilterSize,
+                               const int16_t **alpSrc, uint8_t *dest,
+                               int dstW, int y);
+
+typedef void (*yuv2anyX_fn)(struct SwsContext *c, const int16_t *lumFilter,
+                            const int16_t **lumSrc, int lumFilterSize,
+                            const int16_t *chrFilter,
+                            const int16_t **chrUSrc,
+                            const int16_t **chrVSrc, int chrFilterSize,
+                            const int16_t **alpSrc, uint8_t **dest,
+                            int dstW, int y);                            
+
+typedef struct SwsContext {
+    const AVClass *av_class;
+    SwsFunc swscale;
+    int srcW;                     ///< Width  of source      luma/alpha planes.
+    int srcH;                     ///< Height of source      luma/alpha planes.
+    int dstH;                     ///< Height of destination luma/alpha planes.
+    int chrSrcW;                  ///< Width  of source      chroma     planes.
+    int chrSrcH;                  ///< Height of source      chroma     planes.
+    int chrDstW;                  ///< Width  of destination chroma     planes.
+    int chrDstH;                  ///< Height of destination chroma     planes.
+    int lumXInc, chrXInc;
+    int lumYInc, chrYInc;
+    enum AVPixelFormat dstFormat; ///< Destination pixel format.
+    enum AVPixelFormat srcFormat; ///< Source      pixel format.
+    int dstFormatBpp;             ///< Number of bits per pixel of the destination pixel format.
+    int srcFormatBpp;             ///< Number of bits per pixel of the source      pixel format.
+    int dstBpc, srcBpc;
+    int chrSrcHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in source      image.
+    int chrSrcVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in source      image.
+    int chrDstHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in destination image.
+    int chrDstVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in destination image.
+    int vChrDrop;                 ///< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
+    int sliceDir;                 ///< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
+    double param[2];              ///< Input parameters for scaling algorithms that need them.
+
+    struct SwsContext *cascaded_context[3];
+    int cascaded_tmpStride[4];
+    uint8_t *cascaded_tmp[4];
+    int cascaded1_tmpStride[4];
+    uint8_t *cascaded1_tmp[4];
+    int cascaded_mainindex;
+    double gamma_value;
+    int gamma_flag;
+    int is_internal_gamma;
+    uint16_t *gamma;
+    uint16_t *inv_gamma;
+    int numDesc;
+    int descIndex[2];
+    int numSlice;
+    struct SwsSlice *slice;
+    struct SwsFilterDescriptor *desc;
+    uint32_t pal_yuv[256];
+    uint32_t pal_rgb[256];
+    float uint2float_lut[256];
+    int lastInLumBuf;             ///< Last scaled horizontal luma/alpha line from source in the ring buffer.
+    int lastInChrBuf;             ///< Last scaled horizontal chroma     line from source in the ring buffer.
+    //@}
+    uint8_t *formatConvBuffer;
+    int needAlpha;
+    int16_t *hLumFilter;          ///< Array of horizontal filter coefficients for luma/alpha planes.
+    int16_t *hChrFilter;          ///< Array of horizontal filter coefficients for chroma     planes.
+    int16_t *vLumFilter;          ///< Array of vertical   filter coefficients for luma/alpha planes.
+    int16_t *vChrFilter;          ///< Array of vertical   filter coefficients for chroma     planes.
+    int32_t *hLumFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for luma/alpha planes.
+    int32_t *hChrFilterPos;       ///< Array of horizontal filter starting positions for each dst[i] for chroma     planes.
+    int32_t *vLumFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for luma/alpha planes.
+    int32_t *vChrFilterPos;       ///< Array of vertical   filter starting positions for each dst[i] for chroma     planes.
+    int hLumFilterSize;           ///< Horizontal filter size for luma/alpha pixels.
+    int hChrFilterSize;           ///< Horizontal filter size for chroma     pixels.
+    int vLumFilterSize;           ///< Vertical   filter size for luma/alpha pixels.
+    int vChrFilterSize;           ///< Vertical   filter size for chroma     pixels.
+    //@}
+    int lumMmxextFilterCodeSize;  ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for luma/alpha planes.
+    int chrMmxextFilterCodeSize;  ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for chroma planes.
+    uint8_t *lumMmxextFilterCode; ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for luma/alpha planes.
+    uint8_t *chrMmxextFilterCode; ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for chroma planes.
+    int canMMXEXTBeUsed;
+    int warned_unuseable_bilinear;
+    int dstY;                     ///< Last destination vertical line output from last slice.
+    int flags;                    ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
+    void *yuvTable;             // pointer to the yuv->rgb table start so it can be freed()
+    // alignment ensures the offset can be added in a single
+    // instruction on e.g. ARM
+    DECLARE_ALIGNED(16, int, table_gV)[256 + 2*YUVRGB_TABLE_HEADROOM];
+    uint8_t *table_rV[256 + 2*YUVRGB_TABLE_HEADROOM];
+    uint8_t *table_gU[256 + 2*YUVRGB_TABLE_HEADROOM];
+    uint8_t *table_bU[256 + 2*YUVRGB_TABLE_HEADROOM];
+    DECLARE_ALIGNED(16, int32_t, input_rgb2yuv_table)[16+40*4]; // This table can contain both C and SIMD formatted values, the C vales are always at the XY_IDX points
+    int *dither_error[4];
+    int contrast, brightness, saturation;    // for sws_getColorspaceDetails
+    int srcColorspaceTable[4];
+    int dstColorspaceTable[4];
+    int srcRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
+    int dstRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
+    int src0Alpha;
+    int dst0Alpha;
+    int srcXYZ;
+    int dstXYZ;
+    int src_h_chr_pos;
+    int dst_h_chr_pos;
+    int src_v_chr_pos;
+    int dst_v_chr_pos;
+    int yuv2rgb_y_offset;
+    int yuv2rgb_y_coeff;
+    int yuv2rgb_v2r_coeff;
+    int yuv2rgb_v2g_coeff;
+    int yuv2rgb_u2g_coeff;
+    int yuv2rgb_u2b_coeff;
+
+    DECLARE_ALIGNED(8, uint64_t, redDither);
+    DECLARE_ALIGNED(8, uint64_t, greenDither);
+    DECLARE_ALIGNED(8, uint64_t, blueDither);
+
+    DECLARE_ALIGNED(8, uint64_t, yCoeff);
+    DECLARE_ALIGNED(8, uint64_t, vrCoeff);
+    DECLARE_ALIGNED(8, uint64_t, ubCoeff);
+    DECLARE_ALIGNED(8, uint64_t, vgCoeff);
+    DECLARE_ALIGNED(8, uint64_t, ugCoeff);
+    DECLARE_ALIGNED(8, uint64_t, yOffset);
+    DECLARE_ALIGNED(8, uint64_t, uOffset);
+    DECLARE_ALIGNED(8, uint64_t, vOffset);
+    int32_t lumMmxFilter[4 * MAX_FILTER_SIZE];
+    int32_t chrMmxFilter[4 * MAX_FILTER_SIZE];
+    int dstW;                     ///< Width  of destination luma/alpha planes.
+    DECLARE_ALIGNED(8, uint64_t, esp);
+    DECLARE_ALIGNED(8, uint64_t, vRounder);
+    DECLARE_ALIGNED(8, uint64_t, u_temp);
+    DECLARE_ALIGNED(8, uint64_t, v_temp);
+    DECLARE_ALIGNED(8, uint64_t, y_temp);
+    int32_t alpMmxFilter[4 * MAX_FILTER_SIZE];
+    // alignment of these values is not necessary, but merely here
+    // to maintain the same offset across x8632 and x86-64. Once we
+    // use proper offset macros in the asm, they can be removed.
+    DECLARE_ALIGNED(8, ptrdiff_t, uv_off); ///< offset (in pixels) between u and v planes
+    DECLARE_ALIGNED(8, ptrdiff_t, uv_offx2); ///< offset (in bytes) between u and v planes
+    DECLARE_ALIGNED(8, uint16_t, dither16)[8];
+    DECLARE_ALIGNED(8, uint32_t, dither32)[8];
+
+    const uint8_t *chrDither8, *lumDither8;
+
+#if HAVE_ALTIVEC
+    vector signed short   CY;
+    vector signed short   CRV;
+    vector signed short   CBU;
+    vector signed short   CGU;
+    vector signed short   CGV;
+    vector signed short   OY;
+    vector unsigned short CSHIFT;
+    vector signed short  *vYCoeffsBank, *vCCoeffsBank;
+#endif
+
+    int use_mmx_vfilter;
+
+/* pre defined color-spaces gamma */
+
+    int16_t *xyzgamma;
+    int16_t *rgbgamma;
+    int16_t *xyzgammainv;
+    int16_t *rgbgammainv;
+    int16_t xyz2rgb_matrix[3][4];
+    int16_t rgb2xyz_matrix[3][4];
+    yuv2planar1_fn yuv2plane1;
+    yuv2planarX_fn yuv2planeX;
+    yuv2interleavedX_fn yuv2nv12cX;
+    yuv2packed1_fn yuv2packed1;
+    yuv2packed2_fn yuv2packed2;
+    yuv2packedX_fn yuv2packedX;
+    yuv2anyX_fn yuv2anyX;
+
+    void (*lumToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
+                      int width, uint32_t *pal);
+    void (*alpToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
+                      int width, uint32_t *pal);
+    void (*chrToYV12)(uint8_t *dstU, uint8_t *dstV,
+                      const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
+                      int width, uint32_t *pal);
+
+    void (*readLumPlanar)(uint8_t *dst, const uint8_t *src[4], int width, int32_t *rgb2yuv);
+    void (*readChrPlanar)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src[4],
+                          int width, int32_t *rgb2yuv);
+    void (*readAlpPlanar)(uint8_t *dst, const uint8_t *src[4], int width, int32_t *rgb2yuv);
+    void (*hyscale_fast)(struct SwsContext *c,
+                         int16_t *dst, int dstWidth,
+                         const uint8_t *src, int srcW, int xInc);
+    void (*hcscale_fast)(struct SwsContext *c,
+                         int16_t *dst1, int16_t *dst2, int dstWidth,
+                         const uint8_t *src1, const uint8_t *src2,
+                         int srcW, int xInc);
+    void (*hyScale)(struct SwsContext *c, int16_t *dst, int dstW,
+                    const uint8_t *src, const int16_t *filter,
+                    const int32_t *filterPos, int filterSize);
+    void (*hcScale)(struct SwsContext *c, int16_t *dst, int dstW,
+                    const uint8_t *src, const int16_t *filter,
+                    const int32_t *filterPos, int filterSize);
+    void (*lumConvertRange)(int16_t *dst, int width);
+    void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width);
+    int needs_hcscale; ///< Set if there are chroma planes to be converted.
+    SwsDither dither;
+
+    SwsAlphaBlend alphablend;
+} SwsContext;
+
+typedef struct SwsVector {
+    double *coeff;              ///< pointer to the list of coefficients
+    int length;                 ///< number of coefficients in the vector
+} SwsVector;
+
+typedef struct SwsFilter {
+    SwsVector *lumH;
+    SwsVector *lumV;
+    SwsVector *chrH;
+    SwsVector *chrV;
+} SwsFilter;
+
 static const SampleFmtInfo sample_fmt_info[AV_SAMPLE_FMT_NB] = {
-    [AV_SAMPLE_FMT_U8]   = { .name =   "u8", .bits =  8, .planar = 0, .altform = AV_SAMPLE_FMT_U8P  },
-    [AV_SAMPLE_FMT_S16]  = { .name =  "s16", .bits = 16, .planar = 0, .altform = AV_SAMPLE_FMT_S16P },
-    [AV_SAMPLE_FMT_S32]  = { .name =  "s32", .bits = 32, .planar = 0, .altform = AV_SAMPLE_FMT_S32P },
-    [AV_SAMPLE_FMT_S64]  = { .name =  "s64", .bits = 64, .planar = 0, .altform = AV_SAMPLE_FMT_S64P },
-    [AV_SAMPLE_FMT_FLT]  = { .name =  "flt", .bits = 32, .planar = 0, .altform = AV_SAMPLE_FMT_FLTP },
-    [AV_SAMPLE_FMT_DBL]  = { .name =  "dbl", .bits = 64, .planar = 0, .altform = AV_SAMPLE_FMT_DBLP },
-    [AV_SAMPLE_FMT_U8P]  = { .name =  "u8p", .bits =  8, .planar = 1, .altform = AV_SAMPLE_FMT_U8   },
-    [AV_SAMPLE_FMT_S16P] = { .name = "s16p", .bits = 16, .planar = 1, .altform = AV_SAMPLE_FMT_S16  },
-    [AV_SAMPLE_FMT_S32P] = { .name = "s32p", .bits = 32, .planar = 1, .altform = AV_SAMPLE_FMT_S32  },
-    [AV_SAMPLE_FMT_S64P] = { .name = "s64p", .bits = 64, .planar = 1, .altform = AV_SAMPLE_FMT_S64  },
-    [AV_SAMPLE_FMT_FLTP] = { .name = "fltp", .bits = 32, .planar = 1, .altform = AV_SAMPLE_FMT_FLT  },
-    [AV_SAMPLE_FMT_DBLP] = { .name = "dblp", .bits = 64, .planar = 1, .altform = AV_SAMPLE_FMT_DBL  },
+    [AV_SAMPLE_FMT_U8] = {.name = "u8", .bits = 8, .planar = 0, .altform = AV_SAMPLE_FMT_U8P},
+    [AV_SAMPLE_FMT_S16] = {.name = "s16", .bits = 16, .planar = 0, .altform = AV_SAMPLE_FMT_S16P},
+    [AV_SAMPLE_FMT_S32] = {.name = "s32", .bits = 32, .planar = 0, .altform = AV_SAMPLE_FMT_S32P},
+    [AV_SAMPLE_FMT_S64] = {.name = "s64", .bits = 64, .planar = 0, .altform = AV_SAMPLE_FMT_S64P},
+    [AV_SAMPLE_FMT_FLT] = {.name = "flt", .bits = 32, .planar = 0, .altform = AV_SAMPLE_FMT_FLTP},
+    [AV_SAMPLE_FMT_DBL] = {.name = "dbl", .bits = 64, .planar = 0, .altform = AV_SAMPLE_FMT_DBLP},
+    [AV_SAMPLE_FMT_U8P] = {.name = "u8p", .bits = 8, .planar = 1, .altform = AV_SAMPLE_FMT_U8},
+    [AV_SAMPLE_FMT_S16P] = {.name = "s16p", .bits = 16, .planar = 1, .altform = AV_SAMPLE_FMT_S16},
+    [AV_SAMPLE_FMT_S32P] = {.name = "s32p", .bits = 32, .planar = 1, .altform = AV_SAMPLE_FMT_S32},
+    [AV_SAMPLE_FMT_S64P] = {.name = "s64p", .bits = 64, .planar = 1, .altform = AV_SAMPLE_FMT_S64},
+    [AV_SAMPLE_FMT_FLTP] = {.name = "fltp", .bits = 32, .planar = 1, .altform = AV_SAMPLE_FMT_FLT},
+    [AV_SAMPLE_FMT_DBLP] = {.name = "dblp", .bits = 64, .planar = 1, .altform = AV_SAMPLE_FMT_DBL},
 };
 
 #if CONFIG_SMALL
-#   define NULL_IF_CONFIG_SMALL(x) NULL
+#define NULL_IF_CONFIG_SMALL(x) NULL
 #else
-#   define NULL_IF_CONFIG_SMALL(x) x
+#define NULL_IF_CONFIG_SMALL(x) x
 #endif
 
-#define MT(...) (const char *const[]){ __VA_ARGS__, NULL }
+#define MT(...) \
+    (const char *const[]) { __VA_ARGS__, NULL }
+
+#define FFABS(a) ((a) >= 0 ? (a) : (-(a)))
+#define FFSIGN(a) ((a) > 0 ? 1 : -1)
+
+static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
+    [AV_LOG_PANIC / 8] = 12,
+    [AV_LOG_FATAL / 8] = 12,
+    [AV_LOG_ERROR / 8] = 12,
+    [AV_LOG_WARNING / 8] = 14,
+    [AV_LOG_INFO / 8] = 7,
+    [AV_LOG_VERBOSE / 8] = 10,
+    [AV_LOG_DEBUG / 8] = 10,
+    [AV_LOG_TRACE / 8] = 8,
+    [16 +
+        AV_CLASS_CATEGORY_NA] = 7,
+    [16 +
+        AV_CLASS_CATEGORY_INPUT] = 13,
+    [16 +
+        AV_CLASS_CATEGORY_OUTPUT] = 5,
+    [16 +
+        AV_CLASS_CATEGORY_MUXER] = 13,
+    [16 +
+        AV_CLASS_CATEGORY_DEMUXER] = 5,
+    [16 +
+        AV_CLASS_CATEGORY_ENCODER] = 11,
+    [16 +
+        AV_CLASS_CATEGORY_DECODER] = 3,
+    [16 +
+        AV_CLASS_CATEGORY_FILTER] = 10,
+    [16 +
+        AV_CLASS_CATEGORY_BITSTREAM_FILTER] = 9,
+    [16 +
+        AV_CLASS_CATEGORY_SWSCALER] = 7,
+    [16 +
+        AV_CLASS_CATEGORY_SWRESAMPLER] = 7,
+    [16 +
+        AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT] = 13,
+    [16 +
+        AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT] = 5,
+    [16 +
+        AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT] = 13,
+    [16 +
+        AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT] = 5,
+    [16 +
+        AV_CLASS_CATEGORY_DEVICE_OUTPUT] = 13,
+    [16 +
+        AV_CLASS_CATEGORY_DEVICE_INPUT] = 5,
+};
 
 const AVProfile ff_aac_profiles[] = {
-    { FF_PROFILE_AAC_LOW,   "LC"       },
-    { FF_PROFILE_AAC_HE,    "HE-AAC"   },
-    { FF_PROFILE_AAC_HE_V2, "HE-AACv2" },
-    { FF_PROFILE_AAC_LD,    "LD"       },
-    { FF_PROFILE_AAC_ELD,   "ELD"      },
-    { FF_PROFILE_AAC_MAIN,  "Main" },
-    { FF_PROFILE_AAC_SSR,   "SSR"  },
-    { FF_PROFILE_AAC_LTP,   "LTP"  },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_AAC_LOW, "LC"},
+    {FF_PROFILE_AAC_HE, "HE-AAC"},
+    {FF_PROFILE_AAC_HE_V2, "HE-AACv2"},
+    {FF_PROFILE_AAC_LD, "LD"},
+    {FF_PROFILE_AAC_ELD, "ELD"},
+    {FF_PROFILE_AAC_MAIN, "Main"},
+    {FF_PROFILE_AAC_SSR, "SSR"},
+    {FF_PROFILE_AAC_LTP, "LTP"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_dca_profiles[] = {
-    { FF_PROFILE_DTS,         "DTS"         },
-    { FF_PROFILE_DTS_ES,      "DTS-ES"      },
-    { FF_PROFILE_DTS_96_24,   "DTS 96/24"   },
-    { FF_PROFILE_DTS_HD_HRA,  "DTS-HD HRA"  },
-    { FF_PROFILE_DTS_HD_MA,   "DTS-HD MA"   },
-    { FF_PROFILE_DTS_EXPRESS, "DTS Express" },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_DTS, "DTS"},
+    {FF_PROFILE_DTS_ES, "DTS-ES"},
+    {FF_PROFILE_DTS_96_24, "DTS 96/24"},
+    {FF_PROFILE_DTS_HD_HRA, "DTS-HD HRA"},
+    {FF_PROFILE_DTS_HD_MA, "DTS-HD MA"},
+    {FF_PROFILE_DTS_EXPRESS, "DTS Express"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_dnxhd_profiles[] = {
-  { FF_PROFILE_DNXHD,      "DNXHD"},
-  { FF_PROFILE_DNXHR_LB,   "DNXHR LB"},
-  { FF_PROFILE_DNXHR_SQ,   "DNXHR SQ"},
-  { FF_PROFILE_DNXHR_HQ,   "DNXHR HQ" },
-  { FF_PROFILE_DNXHR_HQX,  "DNXHR HQX"},
-  { FF_PROFILE_DNXHR_444,  "DNXHR 444"},
-  { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_DNXHD, "DNXHD"},
+    {FF_PROFILE_DNXHR_LB, "DNXHR LB"},
+    {FF_PROFILE_DNXHR_SQ, "DNXHR SQ"},
+    {FF_PROFILE_DNXHR_HQ, "DNXHR HQ"},
+    {FF_PROFILE_DNXHR_HQX, "DNXHR HQX"},
+    {FF_PROFILE_DNXHR_444, "DNXHR 444"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_h264_profiles[] = {
-    { FF_PROFILE_H264_BASELINE,             "Baseline"              },
-    { FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"  },
-    { FF_PROFILE_H264_MAIN,                 "Main"                  },
-    { FF_PROFILE_H264_EXTENDED,             "Extended"              },
-    { FF_PROFILE_H264_HIGH,                 "High"                  },
-    { FF_PROFILE_H264_HIGH_10,              "High 10"               },
-    { FF_PROFILE_H264_HIGH_10_INTRA,        "High 10 Intra"         },
-    { FF_PROFILE_H264_HIGH_422,             "High 4:2:2"            },
-    { FF_PROFILE_H264_HIGH_422_INTRA,       "High 4:2:2 Intra"      },
-    { FF_PROFILE_H264_HIGH_444,             "High 4:4:4"            },
-    { FF_PROFILE_H264_HIGH_444_PREDICTIVE,  "High 4:4:4 Predictive" },
-    { FF_PROFILE_H264_HIGH_444_INTRA,       "High 4:4:4 Intra"      },
-    { FF_PROFILE_H264_CAVLC_444,            "CAVLC 4:4:4"           },
-    { FF_PROFILE_H264_MULTIVIEW_HIGH,       "Multiview High"        },
-    { FF_PROFILE_H264_STEREO_HIGH,          "Stereo High"           },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_H264_BASELINE, "Baseline"},
+    {FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"},
+    {FF_PROFILE_H264_MAIN, "Main"},
+    {FF_PROFILE_H264_EXTENDED, "Extended"},
+    {FF_PROFILE_H264_HIGH, "High"},
+    {FF_PROFILE_H264_HIGH_10, "High 10"},
+    {FF_PROFILE_H264_HIGH_10_INTRA, "High 10 Intra"},
+    {FF_PROFILE_H264_HIGH_422, "High 4:2:2"},
+    {FF_PROFILE_H264_HIGH_422_INTRA, "High 4:2:2 Intra"},
+    {FF_PROFILE_H264_HIGH_444, "High 4:4:4"},
+    {FF_PROFILE_H264_HIGH_444_PREDICTIVE, "High 4:4:4 Predictive"},
+    {FF_PROFILE_H264_HIGH_444_INTRA, "High 4:4:4 Intra"},
+    {FF_PROFILE_H264_CAVLC_444, "CAVLC 4:4:4"},
+    {FF_PROFILE_H264_MULTIVIEW_HIGH, "Multiview High"},
+    {FF_PROFILE_H264_STEREO_HIGH, "Stereo High"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_hevc_profiles[] = {
-    { FF_PROFILE_HEVC_MAIN,                 "Main"                },
-    { FF_PROFILE_HEVC_MAIN_10,              "Main 10"             },
-    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "Main Still Picture"  },
-    { FF_PROFILE_HEVC_REXT,                 "Rext"                },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_HEVC_MAIN, "Main"},
+    {FF_PROFILE_HEVC_MAIN_10, "Main 10"},
+    {FF_PROFILE_HEVC_MAIN_STILL_PICTURE, "Main Still Picture"},
+    {FF_PROFILE_HEVC_REXT, "Rext"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_jpeg2000_profiles[] = {
-    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_0,  "JPEG 2000 codestream restriction 0"   },
-    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_1,  "JPEG 2000 codestream restriction 1"   },
-    { FF_PROFILE_JPEG2000_CSTREAM_NO_RESTRICTION, "JPEG 2000 no codestream restrictions" },
-    { FF_PROFILE_JPEG2000_DCINEMA_2K,             "JPEG 2000 digital cinema 2K"          },
-    { FF_PROFILE_JPEG2000_DCINEMA_4K,             "JPEG 2000 digital cinema 4K"          },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_0, "JPEG 2000 codestream restriction 0"},
+    {FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_1, "JPEG 2000 codestream restriction 1"},
+    {FF_PROFILE_JPEG2000_CSTREAM_NO_RESTRICTION, "JPEG 2000 no codestream restrictions"},
+    {FF_PROFILE_JPEG2000_DCINEMA_2K, "JPEG 2000 digital cinema 2K"},
+    {FF_PROFILE_JPEG2000_DCINEMA_4K, "JPEG 2000 digital cinema 4K"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_mpeg2_video_profiles[] = {
-    { FF_PROFILE_MPEG2_422,          "4:2:2"              },
-    { FF_PROFILE_MPEG2_HIGH,         "High"               },
-    { FF_PROFILE_MPEG2_SS,           "Spatially Scalable" },
-    { FF_PROFILE_MPEG2_SNR_SCALABLE, "SNR Scalable"       },
-    { FF_PROFILE_MPEG2_MAIN,         "Main"               },
-    { FF_PROFILE_MPEG2_SIMPLE,       "Simple"             },
-    { FF_PROFILE_RESERVED,           "Reserved"           },
-    { FF_PROFILE_UNKNOWN                                  },
+    {FF_PROFILE_MPEG2_422, "4:2:2"},
+    {FF_PROFILE_MPEG2_HIGH, "High"},
+    {FF_PROFILE_MPEG2_SS, "Spatially Scalable"},
+    {FF_PROFILE_MPEG2_SNR_SCALABLE, "SNR Scalable"},
+    {FF_PROFILE_MPEG2_MAIN, "Main"},
+    {FF_PROFILE_MPEG2_SIMPLE, "Simple"},
+    {FF_PROFILE_RESERVED, "Reserved"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_mpeg4_video_profiles[] = {
-    { FF_PROFILE_MPEG4_SIMPLE,                    "Simple Profile" },
-    { FF_PROFILE_MPEG4_SIMPLE_SCALABLE,           "Simple Scalable Profile" },
-    { FF_PROFILE_MPEG4_CORE,                      "Core Profile" },
-    { FF_PROFILE_MPEG4_MAIN,                      "Main Profile" },
-    { FF_PROFILE_MPEG4_N_BIT,                     "N-bit Profile" },
-    { FF_PROFILE_MPEG4_SCALABLE_TEXTURE,          "Scalable Texture Profile" },
-    { FF_PROFILE_MPEG4_SIMPLE_FACE_ANIMATION,     "Simple Face Animation Profile" },
-    { FF_PROFILE_MPEG4_BASIC_ANIMATED_TEXTURE,    "Basic Animated Texture Profile" },
-    { FF_PROFILE_MPEG4_HYBRID,                    "Hybrid Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_REAL_TIME,        "Advanced Real Time Simple Profile" },
-    { FF_PROFILE_MPEG4_CORE_SCALABLE,             "Code Scalable Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_CODING,           "Advanced Coding Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_CORE,             "Advanced Core Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE, "Advanced Scalable Texture Profile" },
-    { FF_PROFILE_MPEG4_SIMPLE_STUDIO,             "Simple Studio Profile" },
-    { FF_PROFILE_MPEG4_ADVANCED_SIMPLE,           "Advanced Simple Profile" },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_MPEG4_SIMPLE, "Simple Profile"},
+    {FF_PROFILE_MPEG4_SIMPLE_SCALABLE, "Simple Scalable Profile"},
+    {FF_PROFILE_MPEG4_CORE, "Core Profile"},
+    {FF_PROFILE_MPEG4_MAIN, "Main Profile"},
+    {FF_PROFILE_MPEG4_N_BIT, "N-bit Profile"},
+    {FF_PROFILE_MPEG4_SCALABLE_TEXTURE, "Scalable Texture Profile"},
+    {FF_PROFILE_MPEG4_SIMPLE_FACE_ANIMATION, "Simple Face Animation Profile"},
+    {FF_PROFILE_MPEG4_BASIC_ANIMATED_TEXTURE, "Basic Animated Texture Profile"},
+    {FF_PROFILE_MPEG4_HYBRID, "Hybrid Profile"},
+    {FF_PROFILE_MPEG4_ADVANCED_REAL_TIME, "Advanced Real Time Simple Profile"},
+    {FF_PROFILE_MPEG4_CORE_SCALABLE, "Code Scalable Profile"},
+    {FF_PROFILE_MPEG4_ADVANCED_CODING, "Advanced Coding Profile"},
+    {FF_PROFILE_MPEG4_ADVANCED_CORE, "Advanced Core Profile"},
+    {FF_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE, "Advanced Scalable Texture Profile"},
+    {FF_PROFILE_MPEG4_SIMPLE_STUDIO, "Simple Studio Profile"},
+    {FF_PROFILE_MPEG4_ADVANCED_SIMPLE, "Advanced Simple Profile"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_vc1_profiles[] = {
-    { FF_PROFILE_VC1_SIMPLE,   "Simple"   },
-    { FF_PROFILE_VC1_MAIN,     "Main"     },
-    { FF_PROFILE_VC1_COMPLEX,  "Complex"  },
-    { FF_PROFILE_VC1_ADVANCED, "Advanced" },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_VC1_SIMPLE, "Simple"},
+    {FF_PROFILE_VC1_MAIN, "Main"},
+    {FF_PROFILE_VC1_COMPLEX, "Complex"},
+    {FF_PROFILE_VC1_ADVANCED, "Advanced"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_vp9_profiles[] = {
-    { FF_PROFILE_VP9_0, "Profile 0" },
-    { FF_PROFILE_VP9_1, "Profile 1" },
-    { FF_PROFILE_VP9_2, "Profile 2" },
-    { FF_PROFILE_VP9_3, "Profile 3" },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_VP9_0, "Profile 0"},
+    {FF_PROFILE_VP9_1, "Profile 1"},
+    {FF_PROFILE_VP9_2, "Profile 2"},
+    {FF_PROFILE_VP9_3, "Profile 3"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_av1_profiles[] = {
-    { FF_PROFILE_AV1_MAIN,         "Main" },
-    { FF_PROFILE_AV1_HIGH,         "High" },
-    { FF_PROFILE_AV1_PROFESSIONAL, "Professional" },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_AV1_MAIN, "Main"},
+    {FF_PROFILE_AV1_HIGH, "High"},
+    {FF_PROFILE_AV1_PROFESSIONAL, "Professional"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_sbc_profiles[] = {
-    { FF_PROFILE_SBC_MSBC, "mSBC" },
-    { FF_PROFILE_UNKNOWN },
+    {FF_PROFILE_SBC_MSBC, "mSBC"},
+    {FF_PROFILE_UNKNOWN},
 };
 
 const AVProfile ff_prores_profiles[] = {
-    { FF_PROFILE_PRORES_PROXY,    "Proxy"    },
-    { FF_PROFILE_PRORES_LT,       "LT"       },
-    { FF_PROFILE_PRORES_STANDARD, "Standard" },
-    { FF_PROFILE_PRORES_HQ,       "HQ"       },
-    { FF_PROFILE_PRORES_4444,     "4444"     },
-    { FF_PROFILE_PRORES_XQ,       "XQ"       },
-    { FF_PROFILE_UNKNOWN }
-};
+    {FF_PROFILE_PRORES_PROXY, "Proxy"},
+    {FF_PROFILE_PRORES_LT, "LT"},
+    {FF_PROFILE_PRORES_STANDARD, "Standard"},
+    {FF_PROFILE_PRORES_HQ, "HQ"},
+    {FF_PROFILE_PRORES_4444, "4444"},
+    {FF_PROFILE_PRORES_XQ, "XQ"},
+    {FF_PROFILE_UNKNOWN}};
 
 const AVProfile ff_mjpeg_profiles[] = {
-    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,            "Baseline"    },
-    { FF_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT, "Sequential"  },
-    { FF_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT,         "Progressive" },
-    { FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS,                "Lossless"    },
-    { FF_PROFILE_MJPEG_JPEG_LS,                         "JPEG LS"     },
-    { FF_PROFILE_UNKNOWN }
-};
+    {FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT, "Baseline"},
+    {FF_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT, "Sequential"},
+    {FF_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT, "Progressive"},
+    {FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS, "Lossless"},
+    {FF_PROFILE_MJPEG_JPEG_LS, "JPEG LS"},
+    {FF_PROFILE_UNKNOWN}};
 
 const AVProfile ff_arib_caption_profiles[] = {
-    { FF_PROFILE_ARIB_PROFILE_A, "Profile A" },
-    { FF_PROFILE_ARIB_PROFILE_C, "Profile C" },
-    { FF_PROFILE_UNKNOWN }
-};
+    {FF_PROFILE_ARIB_PROFILE_A, "Profile A"},
+    {FF_PROFILE_ARIB_PROFILE_C, "Profile C"},
+    {FF_PROFILE_UNKNOWN}};
 
 static const AVCodecDescriptor codec_descriptors[] = {
     /* video codecs */
     {
-        .id        = AV_CODEC_ID_MPEG1VIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mpeg1video",
+        .id = AV_CODEC_ID_MPEG1VIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mpeg1video",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_MPEG2VIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mpeg2video",
+        .id = AV_CODEC_ID_MPEG2VIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mpeg2video",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
     },
     {
-        .id        = AV_CODEC_ID_H261,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "h261",
+        .id = AV_CODEC_ID_H261,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "h261",
         .long_name = NULL_IF_CONFIG_SMALL("H.261"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_H263,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "h263",
+        .id = AV_CODEC_ID_H263,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "h263",
         .long_name = NULL_IF_CONFIG_SMALL("H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_RV10,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rv10",
+        .id = AV_CODEC_ID_RV10,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rv10",
         .long_name = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_RV20,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rv20",
+        .id = AV_CODEC_ID_RV20,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rv20",
         .long_name = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_MJPEG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mjpeg",
+        .id = AV_CODEC_ID_MJPEG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mjpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Motion JPEG"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
-        .mime_types= MT("image/jpeg"),
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .mime_types = MT("image/jpeg"),
+        .profiles = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
     },
     {
-        .id        = AV_CODEC_ID_MJPEGB,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mjpegb",
+        .id = AV_CODEC_ID_MJPEGB,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mjpegb",
         .long_name = NULL_IF_CONFIG_SMALL("Apple MJPEG-B"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_LJPEG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ljpeg",
+        .id = AV_CODEC_ID_LJPEG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ljpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SP5X,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sp5x",
+        .id = AV_CODEC_ID_SP5X,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "sp5x",
         .long_name = NULL_IF_CONFIG_SMALL("Sunplus JPEG (SP5X)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_JPEGLS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "jpegls",
+        .id = AV_CODEC_ID_JPEGLS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "jpegls",
         .long_name = NULL_IF_CONFIG_SMALL("JPEG-LS"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
-                     AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                 AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MPEG4,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mpeg4",
+        .id = AV_CODEC_ID_MPEG4,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mpeg4",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     },
     {
-        .id        = AV_CODEC_ID_RAWVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rawvideo",
+        .id = AV_CODEC_ID_RAWVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rawvideo",
         .long_name = NULL_IF_CONFIG_SMALL("raw video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MSMPEG4V1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "msmpeg4v1",
+        .id = AV_CODEC_ID_MSMPEG4V1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "msmpeg4v1",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 1"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MSMPEG4V2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "msmpeg4v2",
+        .id = AV_CODEC_ID_MSMPEG4V2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "msmpeg4v2",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 2"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MSMPEG4V3,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "msmpeg4v3",
+        .id = AV_CODEC_ID_MSMPEG4V3,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "msmpeg4v3",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 Microsoft variant version 3"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMV1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "wmv1",
+        .id = AV_CODEC_ID_WMV1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "wmv1",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 7"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMV2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "wmv2",
+        .id = AV_CODEC_ID_WMV2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "wmv2",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_H263P,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "h263p",
+        .id = AV_CODEC_ID_H263P,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "h263p",
         .long_name = NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_H263I,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "h263i",
+        .id = AV_CODEC_ID_H263I,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "h263i",
         .long_name = NULL_IF_CONFIG_SMALL("Intel H.263"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_FLV1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "flv1",
+        .id = AV_CODEC_ID_FLV1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "flv1",
         .long_name = NULL_IF_CONFIG_SMALL("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SVQ1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "svq1",
+        .id = AV_CODEC_ID_SVQ1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "svq1",
         .long_name = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 1 / Sorenson Video 1 / SVQ1"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SVQ3,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "svq3",
+        .id = AV_CODEC_ID_SVQ3,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "svq3",
         .long_name = NULL_IF_CONFIG_SMALL("Sorenson Vector Quantizer 3 / Sorenson Video 3 / SVQ3"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_DVVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dvvideo",
+        .id = AV_CODEC_ID_DVVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dvvideo",
         .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HUFFYUV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "huffyuv",
+        .id = AV_CODEC_ID_HUFFYUV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "huffyuv",
         .long_name = NULL_IF_CONFIG_SMALL("HuffYUV"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_CYUV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cyuv",
+        .id = AV_CODEC_ID_CYUV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cyuv",
         .long_name = NULL_IF_CONFIG_SMALL("Creative YUV (CYUV)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_H264,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "h264",
+        .id = AV_CODEC_ID_H264,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "h264",
         .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_REORDER,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_REORDER,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     },
     {
-        .id        = AV_CODEC_ID_INDEO3,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "indeo3",
+        .id = AV_CODEC_ID_INDEO3,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "indeo3",
         .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VP3,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp3",
+        .id = AV_CODEC_ID_VP3,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp3",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP3"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_THEORA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "theora",
+        .id = AV_CODEC_ID_THEORA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "theora",
         .long_name = NULL_IF_CONFIG_SMALL("Theora"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ASV1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "asv1",
+        .id = AV_CODEC_ID_ASV1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "asv1",
         .long_name = NULL_IF_CONFIG_SMALL("ASUS V1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ASV2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "asv2",
+        .id = AV_CODEC_ID_ASV2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "asv2",
         .long_name = NULL_IF_CONFIG_SMALL("ASUS V2"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FFV1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ffv1",
+        .id = AV_CODEC_ID_FFV1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ffv1",
         .long_name = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_4XM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "4xm",
+        .id = AV_CODEC_ID_4XM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "4xm",
         .long_name = NULL_IF_CONFIG_SMALL("4X Movie"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VCR1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vcr1",
+        .id = AV_CODEC_ID_VCR1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vcr1",
         .long_name = NULL_IF_CONFIG_SMALL("ATI VCR1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CLJR,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cljr",
+        .id = AV_CODEC_ID_CLJR,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cljr",
         .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MDEC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mdec",
+        .id = AV_CODEC_ID_MDEC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mdec",
         .long_name = NULL_IF_CONFIG_SMALL("Sony PlayStation MDEC (Motion DECoder)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ROQ,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "roq",
+        .id = AV_CODEC_ID_ROQ,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "roq",
         .long_name = NULL_IF_CONFIG_SMALL("id RoQ video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_INTERPLAY_VIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "interplayvideo",
+        .id = AV_CODEC_ID_INTERPLAY_VIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "interplayvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Interplay MVE video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_XAN_WC3,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "xan_wc3",
+        .id = AV_CODEC_ID_XAN_WC3,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "xan_wc3",
         .long_name = NULL_IF_CONFIG_SMALL("Wing Commander III / Xan"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_XAN_WC4,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "xan_wc4",
+        .id = AV_CODEC_ID_XAN_WC4,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "xan_wc4",
         .long_name = NULL_IF_CONFIG_SMALL("Wing Commander IV / Xxan"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_RPZA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rpza",
+        .id = AV_CODEC_ID_RPZA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rpza",
         .long_name = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CINEPAK,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cinepak",
+        .id = AV_CODEC_ID_CINEPAK,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cinepak",
         .long_name = NULL_IF_CONFIG_SMALL("Cinepak"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WS_VQA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ws_vqa",
+        .id = AV_CODEC_ID_WS_VQA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ws_vqa",
         .long_name = NULL_IF_CONFIG_SMALL("Westwood Studios VQA (Vector Quantized Animation) video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MSRLE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "msrle",
+        .id = AV_CODEC_ID_MSRLE,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "msrle",
         .long_name = NULL_IF_CONFIG_SMALL("Microsoft RLE"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MSVIDEO1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "msvideo1",
+        .id = AV_CODEC_ID_MSVIDEO1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "msvideo1",
         .long_name = NULL_IF_CONFIG_SMALL("Microsoft Video 1"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_IDCIN,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "idcin",
+        .id = AV_CODEC_ID_IDCIN,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "idcin",
         .long_name = NULL_IF_CONFIG_SMALL("id Quake II CIN video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_8BPS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "8bps",
+        .id = AV_CODEC_ID_8BPS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "8bps",
         .long_name = NULL_IF_CONFIG_SMALL("QuickTime 8BPS video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SMC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "smc",
+        .id = AV_CODEC_ID_SMC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "smc",
         .long_name = NULL_IF_CONFIG_SMALL("QuickTime Graphics (SMC)"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FLIC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "flic",
+        .id = AV_CODEC_ID_FLIC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "flic",
         .long_name = NULL_IF_CONFIG_SMALL("Autodesk Animator Flic video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_TRUEMOTION1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "truemotion1",
+        .id = AV_CODEC_ID_TRUEMOTION1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "truemotion1",
         .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 1.0"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VMDVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vmdvideo",
+        .id = AV_CODEC_ID_VMDVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vmdvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MSZH,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mszh",
+        .id = AV_CODEC_ID_MSZH,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mszh",
         .long_name = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) MSZH"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ZLIB,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "zlib",
+        .id = AV_CODEC_ID_ZLIB,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "zlib",
         .long_name = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_QTRLE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "qtrle",
+        .id = AV_CODEC_ID_QTRLE,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "qtrle",
         .long_name = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_TSCC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tscc",
+        .id = AV_CODEC_ID_TSCC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tscc",
         .long_name = NULL_IF_CONFIG_SMALL("TechSmith Screen Capture Codec"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ULTI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ulti",
+        .id = AV_CODEC_ID_ULTI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ulti",
         .long_name = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_QDRAW,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "qdraw",
+        .id = AV_CODEC_ID_QDRAW,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "qdraw",
         .long_name = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_VIXL,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vixl",
+        .id = AV_CODEC_ID_VIXL,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vixl",
         .long_name = NULL_IF_CONFIG_SMALL("Miro VideoXL"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_QPEG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "qpeg",
+        .id = AV_CODEC_ID_QPEG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "qpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Q-team QPEG"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PNG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "png",
+        .id = AV_CODEC_ID_PNG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "png",
         .long_name = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/png"),
+        .props = AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/png"),
     },
     {
-        .id        = AV_CODEC_ID_PPM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ppm",
+        .id = AV_CODEC_ID_PPM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ppm",
         .long_name = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PBM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pbm",
+        .id = AV_CODEC_ID_PBM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pbm",
         .long_name = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PGM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pgm",
+        .id = AV_CODEC_ID_PGM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pgm",
         .long_name = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PGMYUV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pgmyuv",
+        .id = AV_CODEC_ID_PGMYUV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pgmyuv",
         .long_name = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PAM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pam",
+        .id = AV_CODEC_ID_PAM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pam",
         .long_name = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/x-portable-pixmap"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/x-portable-pixmap"),
     },
     {
-        .id        = AV_CODEC_ID_FFVHUFF,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ffvhuff",
+        .id = AV_CODEC_ID_FFVHUFF,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ffvhuff",
         .long_name = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_RV30,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rv30",
+        .id = AV_CODEC_ID_RV30,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rv30",
         .long_name = NULL_IF_CONFIG_SMALL("RealVideo 3.0"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_RV40,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rv40",
+        .id = AV_CODEC_ID_RV40,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rv40",
         .long_name = NULL_IF_CONFIG_SMALL("RealVideo 4.0"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_VC1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vc1",
+        .id = AV_CODEC_ID_VC1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vc1",
         .long_name = NULL_IF_CONFIG_SMALL("SMPTE VC-1"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
     },
     {
-        .id        = AV_CODEC_ID_WMV3,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "wmv3",
+        .id = AV_CODEC_ID_WMV3,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "wmv3",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_vc1_profiles),
     },
     {
-        .id        = AV_CODEC_ID_LOCO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "loco",
+        .id = AV_CODEC_ID_LOCO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "loco",
         .long_name = NULL_IF_CONFIG_SMALL("LOCO"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_WNV1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "wnv1",
+        .id = AV_CODEC_ID_WNV1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "wnv1",
         .long_name = NULL_IF_CONFIG_SMALL("Winnov WNV1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AASC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "aasc",
+        .id = AV_CODEC_ID_AASC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "aasc",
         .long_name = NULL_IF_CONFIG_SMALL("Autodesk RLE"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_INDEO2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "indeo2",
+        .id = AV_CODEC_ID_INDEO2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "indeo2",
         .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo 2"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FRAPS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "fraps",
+        .id = AV_CODEC_ID_FRAPS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "fraps",
         .long_name = NULL_IF_CONFIG_SMALL("Fraps"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_TRUEMOTION2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "truemotion2",
+        .id = AV_CODEC_ID_TRUEMOTION2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "truemotion2",
         .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_BMP,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "bmp",
+        .id = AV_CODEC_ID_BMP,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "bmp",
         .long_name = NULL_IF_CONFIG_SMALL("BMP (Windows and OS/2 bitmap)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/x-ms-bmp"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/x-ms-bmp"),
     },
     {
-        .id        = AV_CODEC_ID_CSCD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cscd",
+        .id = AV_CODEC_ID_CSCD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cscd",
         .long_name = NULL_IF_CONFIG_SMALL("CamStudio"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MMVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mmvideo",
+        .id = AV_CODEC_ID_MMVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mmvideo",
         .long_name = NULL_IF_CONFIG_SMALL("American Laser Games MM Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ZMBV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "zmbv",
+        .id = AV_CODEC_ID_ZMBV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "zmbv",
         .long_name = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_AVS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "avs",
+        .id = AV_CODEC_ID_AVS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "avs",
         .long_name = NULL_IF_CONFIG_SMALL("AVS (Audio Video Standard) video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SMACKVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "smackvideo",
+        .id = AV_CODEC_ID_SMACKVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "smackvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Smacker video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_NUV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "nuv",
+        .id = AV_CODEC_ID_NUV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "nuv",
         .long_name = NULL_IF_CONFIG_SMALL("NuppelVideo/RTJPEG"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_KMVC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "kmvc",
+        .id = AV_CODEC_ID_KMVC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "kmvc",
         .long_name = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FLASHSV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "flashsv",
+        .id = AV_CODEC_ID_FLASHSV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "flashsv",
         .long_name = NULL_IF_CONFIG_SMALL("Flash Screen Video v1"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_CAVS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cavs",
+        .id = AV_CODEC_ID_CAVS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cavs",
         .long_name = NULL_IF_CONFIG_SMALL("Chinese AVS (Audio Video Standard) (AVS1-P2, JiZhun profile)"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_JPEG2000,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "jpeg2000",
+        .id = AV_CODEC_ID_JPEG2000,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "jpeg2000",
         .long_name = NULL_IF_CONFIG_SMALL("JPEG 2000"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
-                     AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/jp2"),
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                 AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/jp2"),
+        .profiles = NULL_IF_CONFIG_SMALL(ff_jpeg2000_profiles),
     },
     {
-        .id        = AV_CODEC_ID_VMNC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vmnc",
+        .id = AV_CODEC_ID_VMNC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vmnc",
         .long_name = NULL_IF_CONFIG_SMALL("VMware Screen Codec / VMware Video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_VP5,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp5",
+        .id = AV_CODEC_ID_VP5,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp5",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP5"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VP6,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp6",
+        .id = AV_CODEC_ID_VP6,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp6",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP6"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VP6F,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp6f",
+        .id = AV_CODEC_ID_VP6F,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp6f",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version)"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TARGA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "targa",
+        .id = AV_CODEC_ID_TARGA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "targa",
         .long_name = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/x-targa", "image/x-tga"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/x-targa", "image/x-tga"),
     },
     {
-        .id        = AV_CODEC_ID_DSICINVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dsicinvideo",
+        .id = AV_CODEC_ID_DSICINVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dsicinvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Delphine Software International CIN video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TIERTEXSEQVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tiertexseqvideo",
+        .id = AV_CODEC_ID_TIERTEXSEQVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tiertexseqvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TIFF,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tiff",
+        .id = AV_CODEC_ID_TIFF,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tiff",
         .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/tiff"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/tiff"),
     },
     {
-        .id        = AV_CODEC_ID_GIF,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "gif",
+        .id = AV_CODEC_ID_GIF,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "gif",
         .long_name = NULL_IF_CONFIG_SMALL("CompuServe GIF (Graphics Interchange Format)"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/gif"),
+        .props = AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/gif"),
     },
     {
-        .id        = AV_CODEC_ID_DXA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dxa",
+        .id = AV_CODEC_ID_DXA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dxa",
         .long_name = NULL_IF_CONFIG_SMALL("Feeble Files/ScummVM DXA"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_DNXHD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dnxhd",
+        .id = AV_CODEC_ID_DNXHD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dnxhd",
         .long_name = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
     },
     {
-        .id        = AV_CODEC_ID_THP,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "thp",
+        .id = AV_CODEC_ID_THP,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "thp",
         .long_name = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SGI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sgi",
+        .id = AV_CODEC_ID_SGI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "sgi",
         .long_name = NULL_IF_CONFIG_SMALL("SGI image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_C93,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "c93",
+        .id = AV_CODEC_ID_C93,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "c93",
         .long_name = NULL_IF_CONFIG_SMALL("Interplay C93"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_BETHSOFTVID,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "bethsoftvid",
+        .id = AV_CODEC_ID_BETHSOFTVID,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "bethsoftvid",
         .long_name = NULL_IF_CONFIG_SMALL("Bethesda VID video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PTX,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ptx",
+        .id = AV_CODEC_ID_PTX,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ptx",
         .long_name = NULL_IF_CONFIG_SMALL("V.Flash PTX image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TXD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "txd",
+        .id = AV_CODEC_ID_TXD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "txd",
         .long_name = NULL_IF_CONFIG_SMALL("Renderware TXD (TeXture Dictionary) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VP6A,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp6a",
+        .id = AV_CODEC_ID_VP6A,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp6a",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP6 (Flash version, with alpha channel)"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AMV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "amv",
+        .id = AV_CODEC_ID_AMV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "amv",
         .long_name = NULL_IF_CONFIG_SMALL("AMV Video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VB,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vb",
+        .id = AV_CODEC_ID_VB,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vb",
         .long_name = NULL_IF_CONFIG_SMALL("Beam Software VB"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PCX,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pcx",
+        .id = AV_CODEC_ID_PCX,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pcx",
         .long_name = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/x-pcx"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/x-pcx"),
     },
     {
-        .id        = AV_CODEC_ID_SUNRAST,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sunrast",
+        .id = AV_CODEC_ID_SUNRAST,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "sunrast",
         .long_name = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_INDEO4,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "indeo4",
+        .id = AV_CODEC_ID_INDEO4,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "indeo4",
         .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 4"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_INDEO5,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "indeo5",
+        .id = AV_CODEC_ID_INDEO5,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "indeo5",
         .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 5"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MIMIC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mimic",
+        .id = AV_CODEC_ID_MIMIC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mimic",
         .long_name = NULL_IF_CONFIG_SMALL("Mimic"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_RL2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rl2",
+        .id = AV_CODEC_ID_RL2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rl2",
         .long_name = NULL_IF_CONFIG_SMALL("RL2 video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ESCAPE124,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "escape124",
+        .id = AV_CODEC_ID_ESCAPE124,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "escape124",
         .long_name = NULL_IF_CONFIG_SMALL("Escape 124"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DIRAC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dirac",
+        .id = AV_CODEC_ID_DIRAC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dirac",
         .long_name = NULL_IF_CONFIG_SMALL("Dirac"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_REORDER,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_REORDER,
     },
     {
-        .id        = AV_CODEC_ID_BFI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "bfi",
+        .id = AV_CODEC_ID_BFI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "bfi",
         .long_name = NULL_IF_CONFIG_SMALL("Brute Force & Ignorance"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CMV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cmv",
+        .id = AV_CODEC_ID_CMV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cmv",
         .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts CMV video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MOTIONPIXELS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "motionpixels",
+        .id = AV_CODEC_ID_MOTIONPIXELS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "motionpixels",
         .long_name = NULL_IF_CONFIG_SMALL("Motion Pixels video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TGV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tgv",
+        .id = AV_CODEC_ID_TGV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tgv",
         .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TGV video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TGQ,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tgq",
+        .id = AV_CODEC_ID_TGQ,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tgq",
         .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TGQ video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TQI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tqi",
+        .id = AV_CODEC_ID_TQI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tqi",
         .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TQI video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AURA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "aura",
+        .id = AV_CODEC_ID_AURA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "aura",
         .long_name = NULL_IF_CONFIG_SMALL("Auravision AURA"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AURA2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "aura2",
+        .id = AV_CODEC_ID_AURA2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "aura2",
         .long_name = NULL_IF_CONFIG_SMALL("Auravision Aura 2"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_V210X,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "v210x",
+        .id = AV_CODEC_ID_V210X,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "v210x",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_TMV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tmv",
+        .id = AV_CODEC_ID_TMV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tmv",
         .long_name = NULL_IF_CONFIG_SMALL("8088flex TMV"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_V210,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "v210",
+        .id = AV_CODEC_ID_V210,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "v210",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_DPX,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dpx",
+        .id = AV_CODEC_ID_DPX,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dpx",
         .long_name = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MAD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mad",
+        .id = AV_CODEC_ID_MAD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mad",
         .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts Madcow Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FRWU,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "frwu",
+        .id = AV_CODEC_ID_FRWU,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "frwu",
         .long_name = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_FLASHSV2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "flashsv2",
+        .id = AV_CODEC_ID_FLASHSV2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "flashsv2",
         .long_name = NULL_IF_CONFIG_SMALL("Flash Screen Video v2"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CDGRAPHICS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cdgraphics",
+        .id = AV_CODEC_ID_CDGRAPHICS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cdgraphics",
         .long_name = NULL_IF_CONFIG_SMALL("CD Graphics video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_R210,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "r210",
+        .id = AV_CODEC_ID_R210,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "r210",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ANM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "anm",
+        .id = AV_CODEC_ID_ANM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "anm",
         .long_name = NULL_IF_CONFIG_SMALL("Deluxe Paint Animation"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_BINKVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "binkvideo",
+        .id = AV_CODEC_ID_BINKVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "binkvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Bink video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_IFF_ILBM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "iff_ilbm",
+        .id = AV_CODEC_ID_IFF_ILBM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "iff_ilbm",
         .long_name = NULL_IF_CONFIG_SMALL("IFF ACBM/ANIM/DEEP/ILBM/PBM/RGB8/RGBN"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_KGV1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "kgv1",
+        .id = AV_CODEC_ID_KGV1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "kgv1",
         .long_name = NULL_IF_CONFIG_SMALL("Kega Game Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_YOP,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "yop",
+        .id = AV_CODEC_ID_YOP,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "yop",
         .long_name = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VP8,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp8",
+        .id = AV_CODEC_ID_VP8,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp8",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP8"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PICTOR,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pictor",
+        .id = AV_CODEC_ID_PICTOR,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pictor",
         .long_name = NULL_IF_CONFIG_SMALL("Pictor/PC Paint"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ANSI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ansi",
+        .id = AV_CODEC_ID_ANSI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ansi",
         .long_name = NULL_IF_CONFIG_SMALL("ASCII/ANSI art"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_A64_MULTI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "a64_multi",
+        .id = AV_CODEC_ID_A64_MULTI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "a64_multi",
         .long_name = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_A64_MULTI5,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "a64_multi5",
+        .id = AV_CODEC_ID_A64_MULTI5,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "a64_multi5",
         .long_name = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64, extended with 5th color (colram)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_R10K,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "r10k",
+        .id = AV_CODEC_ID_R10K,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "r10k",
         .long_name = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MXPEG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mxpeg",
+        .id = AV_CODEC_ID_MXPEG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mxpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Mobotix MxPEG video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_LAGARITH,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "lagarith",
+        .id = AV_CODEC_ID_LAGARITH,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "lagarith",
         .long_name = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PRORES,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "prores",
+        .id = AV_CODEC_ID_PRORES,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "prores",
         .long_name = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
     },
     {
-        .id        = AV_CODEC_ID_JV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "jv",
+        .id = AV_CODEC_ID_JV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "jv",
         .long_name = NULL_IF_CONFIG_SMALL("Bitmap Brothers JV video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DFA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dfa",
+        .id = AV_CODEC_ID_DFA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dfa",
         .long_name = NULL_IF_CONFIG_SMALL("Chronomaster DFA"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMV3IMAGE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "wmv3image",
+        .id = AV_CODEC_ID_WMV3IMAGE,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "wmv3image",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9 Image"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VC1IMAGE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vc1image",
+        .id = AV_CODEC_ID_VC1IMAGE,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vc1image",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 9 Image v2"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_UTVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "utvideo",
+        .id = AV_CODEC_ID_UTVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "utvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Ut Video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_BMV_VIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "bmv_video",
+        .id = AV_CODEC_ID_BMV_VIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "bmv_video",
         .long_name = NULL_IF_CONFIG_SMALL("Discworld II BMV video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_VBLE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vble",
+        .id = AV_CODEC_ID_VBLE,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vble",
         .long_name = NULL_IF_CONFIG_SMALL("VBLE Lossless Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_DXTORY,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dxtory",
+        .id = AV_CODEC_ID_DXTORY,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dxtory",
         .long_name = NULL_IF_CONFIG_SMALL("Dxtory"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_V410,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "v410",
+        .id = AV_CODEC_ID_V410,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "v410",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:4:4 10-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_XWD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "xwd",
+        .id = AV_CODEC_ID_XWD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "xwd",
         .long_name = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/x-xwindowdump"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/x-xwindowdump"),
     },
     {
-        .id        = AV_CODEC_ID_CDXL,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cdxl",
+        .id = AV_CODEC_ID_CDXL,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cdxl",
         .long_name = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_XBM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "xbm",
+        .id = AV_CODEC_ID_XBM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "xbm",
         .long_name = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/x-xbitmap"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/x-xbitmap"),
     },
     {
-        .id        = AV_CODEC_ID_ZEROCODEC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "zerocodec",
+        .id = AV_CODEC_ID_ZEROCODEC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "zerocodec",
         .long_name = NULL_IF_CONFIG_SMALL("ZeroCodec Lossless Video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MSS1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mss1",
+        .id = AV_CODEC_ID_MSS1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mss1",
         .long_name = NULL_IF_CONFIG_SMALL("MS Screen 1"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MSA1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "msa1",
+        .id = AV_CODEC_ID_MSA1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "msa1",
         .long_name = NULL_IF_CONFIG_SMALL("MS ATC Screen"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TSCC2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tscc2",
+        .id = AV_CODEC_ID_TSCC2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tscc2",
         .long_name = NULL_IF_CONFIG_SMALL("TechSmith Screen Codec 2"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MTS2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mts2",
+        .id = AV_CODEC_ID_MTS2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mts2",
         .long_name = NULL_IF_CONFIG_SMALL("MS Expression Encoder Screen"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CLLC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cllc",
+        .id = AV_CODEC_ID_CLLC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cllc",
         .long_name = NULL_IF_CONFIG_SMALL("Canopus Lossless Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MSS2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mss2",
+        .id = AV_CODEC_ID_MSS2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mss2",
         .long_name = NULL_IF_CONFIG_SMALL("MS Windows Media Video V9 Screen"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VP9,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp9",
+        .id = AV_CODEC_ID_VP9,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp9",
         .long_name = NULL_IF_CONFIG_SMALL("Google VP9"),
-        .props     = AV_CODEC_PROP_LOSSY,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
+        .props = AV_CODEC_PROP_LOSSY,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
     },
     {
-        .id        = AV_CODEC_ID_AIC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "aic",
+        .id = AV_CODEC_ID_AIC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "aic",
         .long_name = NULL_IF_CONFIG_SMALL("Apple Intermediate Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ESCAPE130,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "escape130",
+        .id = AV_CODEC_ID_ESCAPE130,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "escape130",
         .long_name = NULL_IF_CONFIG_SMALL("Escape 130"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_G2M,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "g2m",
+        .id = AV_CODEC_ID_G2M,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "g2m",
         .long_name = NULL_IF_CONFIG_SMALL("Go2Meeting"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WEBP,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "webp",
+        .id = AV_CODEC_ID_WEBP,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "webp",
         .long_name = NULL_IF_CONFIG_SMALL("WebP"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
-                     AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/webp"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                 AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/webp"),
     },
     {
-        .id        = AV_CODEC_ID_HNM4_VIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "hnm4video",
+        .id = AV_CODEC_ID_HNM4_VIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "hnm4video",
         .long_name = NULL_IF_CONFIG_SMALL("HNM 4 video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HEVC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "hevc",
+        .id = AV_CODEC_ID_HEVC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "hevc",
         .long_name = NULL_IF_CONFIG_SMALL("H.265 / HEVC (High Efficiency Video Coding)"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
     },
     {
-        .id        = AV_CODEC_ID_FIC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "fic",
+        .id = AV_CODEC_ID_FIC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "fic",
         .long_name = NULL_IF_CONFIG_SMALL("Mirillis FIC"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ALIAS_PIX,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "alias_pix",
+        .id = AV_CODEC_ID_ALIAS_PIX,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "alias_pix",
         .long_name = NULL_IF_CONFIG_SMALL("Alias/Wavefront PIX image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_BRENDER_PIX,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "brender_pix",
+        .id = AV_CODEC_ID_BRENDER_PIX,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "brender_pix",
         .long_name = NULL_IF_CONFIG_SMALL("BRender PIX image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PAF_VIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "paf_video",
+        .id = AV_CODEC_ID_PAF_VIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "paf_video",
         .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_EXR,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "exr",
+        .id = AV_CODEC_ID_EXR,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "exr",
         .long_name = NULL_IF_CONFIG_SMALL("OpenEXR image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
-                     AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                 AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_VP7,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp7",
+        .id = AV_CODEC_ID_VP7,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp7",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP7"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SANM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sanm",
+        .id = AV_CODEC_ID_SANM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "sanm",
         .long_name = NULL_IF_CONFIG_SMALL("LucasArts SANM/SMUSH video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SGIRLE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sgirle",
+        .id = AV_CODEC_ID_SGIRLE,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "sgirle",
         .long_name = NULL_IF_CONFIG_SMALL("SGI RLE 8-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MVC1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mvc1",
+        .id = AV_CODEC_ID_MVC1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mvc1",
         .long_name = NULL_IF_CONFIG_SMALL("Silicon Graphics Motion Video Compressor 1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MVC2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mvc2",
+        .id = AV_CODEC_ID_MVC2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mvc2",
         .long_name = NULL_IF_CONFIG_SMALL("Silicon Graphics Motion Video Compressor 2"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HQX,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "hqx",
+        .id = AV_CODEC_ID_HQX,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "hqx",
         .long_name = NULL_IF_CONFIG_SMALL("Canopus HQX"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TDSC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "tdsc",
+        .id = AV_CODEC_ID_TDSC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "tdsc",
         .long_name = NULL_IF_CONFIG_SMALL("TDSC"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HQ_HQA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "hq_hqa",
+        .id = AV_CODEC_ID_HQ_HQA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "hq_hqa",
         .long_name = NULL_IF_CONFIG_SMALL("Canopus HQ/HQA"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HAP,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "hap",
+        .id = AV_CODEC_ID_HAP,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "hap",
         .long_name = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DDS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dds",
+        .id = AV_CODEC_ID_DDS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dds",
         .long_name = NULL_IF_CONFIG_SMALL("DirectDraw Surface image decoder"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
-                     AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
+                 AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_DXV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "dxv",
+        .id = AV_CODEC_ID_DXV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "dxv",
         .long_name = NULL_IF_CONFIG_SMALL("Resolume DXV"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SCREENPRESSO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "screenpresso",
+        .id = AV_CODEC_ID_SCREENPRESSO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "screenpresso",
         .long_name = NULL_IF_CONFIG_SMALL("Screenpresso"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_RSCC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rscc",
+        .id = AV_CODEC_ID_RSCC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rscc",
         .long_name = NULL_IF_CONFIG_SMALL("innoHeim/Rsupport Screen Capture Codec"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_AVS2,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "avs2",
+        .id = AV_CODEC_ID_AVS2,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "avs2",
         .long_name = NULL_IF_CONFIG_SMALL("AVS2-P2/IEEE1857.4"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PGX,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pgx",
+        .id = AV_CODEC_ID_PGX,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pgx",
         .long_name = NULL_IF_CONFIG_SMALL("PGX (JPEG2000 Test Format)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_AVS3,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "avs3",
+        .id = AV_CODEC_ID_AVS3,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "avs3",
         .long_name = NULL_IF_CONFIG_SMALL("AVS3-P2/IEEE1857.10"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_Y41P,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "y41p",
+        .id = AV_CODEC_ID_Y41P,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "y41p",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed YUV 4:1:1 12-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_AVRP,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "avrp",
+        .id = AV_CODEC_ID_AVRP,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "avrp",
         .long_name = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_012V,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "012v",
+        .id = AV_CODEC_ID_012V,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "012v",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_AVUI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "avui",
+        .id = AV_CODEC_ID_AVUI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "avui",
         .long_name = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_AYUV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ayuv",
+        .id = AV_CODEC_ID_AYUV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ayuv",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_TARGA_Y216,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "targa_y216",
+        .id = AV_CODEC_ID_TARGA_Y216,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "targa_y216",
         .long_name = NULL_IF_CONFIG_SMALL("Pinnacle TARGA CineWave YUV16"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_V308,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "v308",
+        .id = AV_CODEC_ID_V308,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "v308",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_V408,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "v408",
+        .id = AV_CODEC_ID_V408,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "v408",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_YUV4,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "yuv4",
+        .id = AV_CODEC_ID_YUV4,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "yuv4",
         .long_name = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:2:0"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_AVRN,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "avrn",
+        .id = AV_CODEC_ID_AVRN,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "avrn",
         .long_name = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
     },
     {
-        .id        = AV_CODEC_ID_CPIA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cpia",
+        .id = AV_CODEC_ID_CPIA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cpia",
         .long_name = NULL_IF_CONFIG_SMALL("CPiA video format"),
     },
     {
-        .id        = AV_CODEC_ID_XFACE,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "xface",
+        .id = AV_CODEC_ID_XFACE,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "xface",
         .long_name = NULL_IF_CONFIG_SMALL("X-face image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SNOW,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "snow",
+        .id = AV_CODEC_ID_SNOW,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "snow",
         .long_name = NULL_IF_CONFIG_SMALL("Snow"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SMVJPEG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "smvjpeg",
+        .id = AV_CODEC_ID_SMVJPEG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "smvjpeg",
         .long_name = NULL_IF_CONFIG_SMALL("Sigmatel Motion Video"),
     },
     {
-        .id        = AV_CODEC_ID_APNG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "apng",
+        .id = AV_CODEC_ID_APNG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "apng",
         .long_name = NULL_IF_CONFIG_SMALL("APNG (Animated Portable Network Graphics) image"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/png"),
+        .props = AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/png"),
     },
     {
-        .id        = AV_CODEC_ID_DAALA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "daala",
+        .id = AV_CODEC_ID_DAALA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "daala",
         .long_name = NULL_IF_CONFIG_SMALL("Daala"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_CFHD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cfhd",
+        .id = AV_CODEC_ID_CFHD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cfhd",
         .long_name = NULL_IF_CONFIG_SMALL("GoPro CineForm HD"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TRUEMOTION2RT,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "truemotion2rt",
+        .id = AV_CODEC_ID_TRUEMOTION2RT,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "truemotion2rt",
         .long_name = NULL_IF_CONFIG_SMALL("Duck TrueMotion 2.0 Real Time"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_M101,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "m101",
+        .id = AV_CODEC_ID_M101,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "m101",
         .long_name = NULL_IF_CONFIG_SMALL("Matrox Uncompressed SD"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MAGICYUV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "magicyuv",
+        .id = AV_CODEC_ID_MAGICYUV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "magicyuv",
         .long_name = NULL_IF_CONFIG_SMALL("MagicYUV video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SHEERVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "sheervideo",
+        .id = AV_CODEC_ID_SHEERVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "sheervideo",
         .long_name = NULL_IF_CONFIG_SMALL("BitJazz SheerVideo"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_YLC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ylc",
+        .id = AV_CODEC_ID_YLC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ylc",
         .long_name = NULL_IF_CONFIG_SMALL("YUY2 Lossless Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PSD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "psd",
+        .id = AV_CODEC_ID_PSD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "psd",
         .long_name = NULL_IF_CONFIG_SMALL("Photoshop PSD file"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PIXLET,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pixlet",
+        .id = AV_CODEC_ID_PIXLET,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pixlet",
         .long_name = NULL_IF_CONFIG_SMALL("Apple Pixlet"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SPEEDHQ,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "speedhq",
+        .id = AV_CODEC_ID_SPEEDHQ,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "speedhq",
         .long_name = NULL_IF_CONFIG_SMALL("NewTek SpeedHQ"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FMVC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "fmvc",
+        .id = AV_CODEC_ID_FMVC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "fmvc",
         .long_name = NULL_IF_CONFIG_SMALL("FM Screen Capture Codec"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SCPR,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "scpr",
+        .id = AV_CODEC_ID_SCPR,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "scpr",
         .long_name = NULL_IF_CONFIG_SMALL("ScreenPressor"),
-        .props     = AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSLESS | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CLEARVIDEO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "clearvideo",
+        .id = AV_CODEC_ID_CLEARVIDEO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "clearvideo",
         .long_name = NULL_IF_CONFIG_SMALL("Iterated Systems ClearVideo"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_XPM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "xpm",
+        .id = AV_CODEC_ID_XPM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "xpm",
         .long_name = NULL_IF_CONFIG_SMALL("XPM (X PixMap) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/x-xpixmap"),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/x-xpixmap"),
     },
     {
-        .id        = AV_CODEC_ID_AV1,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "av1",
+        .id = AV_CODEC_ID_AV1,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "av1",
         .long_name = NULL_IF_CONFIG_SMALL("Alliance for Open Media AV1"),
-        .props     = AV_CODEC_PROP_LOSSY,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
+        .props = AV_CODEC_PROP_LOSSY,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     },
     {
-        .id        = AV_CODEC_ID_BITPACKED,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "bitpacked",
+        .id = AV_CODEC_ID_BITPACKED,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "bitpacked",
         .long_name = NULL_IF_CONFIG_SMALL("Bitpacked"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MSCC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mscc",
+        .id = AV_CODEC_ID_MSCC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mscc",
         .long_name = NULL_IF_CONFIG_SMALL("Mandsoft Screen Capture Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SRGC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "srgc",
+        .id = AV_CODEC_ID_SRGC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "srgc",
         .long_name = NULL_IF_CONFIG_SMALL("Screen Recorder Gold Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SVG,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "svg",
+        .id = AV_CODEC_ID_SVG,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "svg",
         .long_name = NULL_IF_CONFIG_SMALL("Scalable Vector Graphics"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
-        .mime_types= MT("image/svg+xml"),
+        .props = AV_CODEC_PROP_LOSSLESS,
+        .mime_types = MT("image/svg+xml"),
     },
     {
-        .id        = AV_CODEC_ID_GDV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "gdv",
+        .id = AV_CODEC_ID_GDV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "gdv",
         .long_name = NULL_IF_CONFIG_SMALL("Gremlin Digital Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FITS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "fits",
+        .id = AV_CODEC_ID_FITS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "fits",
         .long_name = NULL_IF_CONFIG_SMALL("FITS (Flexible Image Transport System)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_IMM4,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "imm4",
+        .id = AV_CODEC_ID_IMM4,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "imm4",
         .long_name = NULL_IF_CONFIG_SMALL("Infinity IMM4"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PROSUMER,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "prosumer",
+        .id = AV_CODEC_ID_PROSUMER,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "prosumer",
         .long_name = NULL_IF_CONFIG_SMALL("Brooktree ProSumer Video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MWSC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mwsc",
+        .id = AV_CODEC_ID_MWSC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mwsc",
         .long_name = NULL_IF_CONFIG_SMALL("MatchWare Screen Capture Codec"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_WCMV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "wcmv",
+        .id = AV_CODEC_ID_WCMV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "wcmv",
         .long_name = NULL_IF_CONFIG_SMALL("WinCAM Motion Video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_RASC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "rasc",
+        .id = AV_CODEC_ID_RASC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "rasc",
         .long_name = NULL_IF_CONFIG_SMALL("RemotelyAnywhere Screen Capture"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HYMT,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "hymt",
+        .id = AV_CODEC_ID_HYMT,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "hymt",
         .long_name = NULL_IF_CONFIG_SMALL("HuffYUV MT"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ARBC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "arbc",
+        .id = AV_CODEC_ID_ARBC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "arbc",
         .long_name = NULL_IF_CONFIG_SMALL("Gryphon's Anim Compressor"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AGM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "agm",
+        .id = AV_CODEC_ID_AGM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "agm",
         .long_name = NULL_IF_CONFIG_SMALL("Amuse Graphics Movie"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_LSCR,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "lscr",
+        .id = AV_CODEC_ID_LSCR,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "lscr",
         .long_name = NULL_IF_CONFIG_SMALL("LEAD Screen Capture"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VP4,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "vp4",
+        .id = AV_CODEC_ID_VP4,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "vp4",
         .long_name = NULL_IF_CONFIG_SMALL("On2 VP4"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_IMM5,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "imm5",
+        .id = AV_CODEC_ID_IMM5,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "imm5",
         .long_name = NULL_IF_CONFIG_SMALL("Infinity IMM5"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MVDV,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mvdv",
+        .id = AV_CODEC_ID_MVDV,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mvdv",
         .long_name = NULL_IF_CONFIG_SMALL("MidiVid VQ"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MVHA,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mvha",
+        .id = AV_CODEC_ID_MVHA,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mvha",
         .long_name = NULL_IF_CONFIG_SMALL("MidiVid Archive Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CDTOONS,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cdtoons",
+        .id = AV_CODEC_ID_CDTOONS,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cdtoons",
         .long_name = NULL_IF_CONFIG_SMALL("CDToons video"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MV30,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mv30",
+        .id = AV_CODEC_ID_MV30,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mv30",
         .long_name = NULL_IF_CONFIG_SMALL("MidiVid 3.0"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_NOTCHLC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "notchlc",
+        .id = AV_CODEC_ID_NOTCHLC,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "notchlc",
         .long_name = NULL_IF_CONFIG_SMALL("NotchLC"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PFM,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "pfm",
+        .id = AV_CODEC_ID_PFM,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "pfm",
         .long_name = NULL_IF_CONFIG_SMALL("PFM (Portable FloatMap) image"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MOBICLIP,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "mobiclip",
+        .id = AV_CODEC_ID_MOBICLIP,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "mobiclip",
         .long_name = NULL_IF_CONFIG_SMALL("MobiClip Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PHOTOCD,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "photocd",
+        .id = AV_CODEC_ID_PHOTOCD,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "photocd",
         .long_name = NULL_IF_CONFIG_SMALL("Kodak Photo CD"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_IPU,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "ipu",
+        .id = AV_CODEC_ID_IPU,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "ipu",
         .long_name = NULL_IF_CONFIG_SMALL("IPU Video"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ARGO,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "argo",
+        .id = AV_CODEC_ID_ARGO,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "argo",
         .long_name = NULL_IF_CONFIG_SMALL("Argonaut Games Video"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CRI,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "cri",
+        .id = AV_CODEC_ID_CRI,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "cri",
         .long_name = NULL_IF_CONFIG_SMALL("Cintel RAW"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
     },
 
     /* various PCM "codecs" */
     {
-        .id        = AV_CODEC_ID_PCM_S16LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s16le",
+        .id = AV_CODEC_ID_PCM_S16LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s16le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16-bit little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S16BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s16be",
+        .id = AV_CODEC_ID_PCM_S16BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s16be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_U16LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_u16le",
+        .id = AV_CODEC_ID_PCM_U16LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_u16le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM unsigned 16-bit little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_U16BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_u16be",
+        .id = AV_CODEC_ID_PCM_U16BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_u16be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM unsigned 16-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S8,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s8",
+        .id = AV_CODEC_ID_PCM_S8,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s8",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 8-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_U8,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_u8",
+        .id = AV_CODEC_ID_PCM_U8,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_u8",
         .long_name = NULL_IF_CONFIG_SMALL("PCM unsigned 8-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_MULAW,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_mulaw",
+        .id = AV_CODEC_ID_PCM_MULAW,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_mulaw",
         .long_name = NULL_IF_CONFIG_SMALL("PCM mu-law / G.711 mu-law"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PCM_ALAW,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_alaw",
+        .id = AV_CODEC_ID_PCM_ALAW,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_alaw",
         .long_name = NULL_IF_CONFIG_SMALL("PCM A-law / G.711 A-law"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S32LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s32le",
+        .id = AV_CODEC_ID_PCM_S32LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s32le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 32-bit little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S32BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s32be",
+        .id = AV_CODEC_ID_PCM_S32BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s32be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 32-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_U32LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_u32le",
+        .id = AV_CODEC_ID_PCM_U32LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_u32le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM unsigned 32-bit little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_U32BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_u32be",
+        .id = AV_CODEC_ID_PCM_U32BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_u32be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM unsigned 32-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S24LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s24le",
+        .id = AV_CODEC_ID_PCM_S24LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s24le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 24-bit little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S24BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s24be",
+        .id = AV_CODEC_ID_PCM_S24BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s24be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 24-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_U24LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_u24le",
+        .id = AV_CODEC_ID_PCM_U24LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_u24le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM unsigned 24-bit little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_U24BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_u24be",
+        .id = AV_CODEC_ID_PCM_U24BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_u24be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM unsigned 24-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S24DAUD,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s24daud",
+        .id = AV_CODEC_ID_PCM_S24DAUD,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s24daud",
         .long_name = NULL_IF_CONFIG_SMALL("PCM D-Cinema audio signed 24-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S16LE_PLANAR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s16le_planar",
+        .id = AV_CODEC_ID_PCM_S16LE_PLANAR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s16le_planar",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16-bit little-endian planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_DVD,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_dvd",
+        .id = AV_CODEC_ID_PCM_DVD,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_dvd",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 20|24-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_F32BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_f32be",
+        .id = AV_CODEC_ID_PCM_F32BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_f32be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM 32-bit floating point big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_F32LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_f32le",
+        .id = AV_CODEC_ID_PCM_F32LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_f32le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM 32-bit floating point little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_F64BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_f64be",
+        .id = AV_CODEC_ID_PCM_F64BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_f64be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM 64-bit floating point big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_F64LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_f64le",
+        .id = AV_CODEC_ID_PCM_F64LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_f64le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM 64-bit floating point little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_BLURAY,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_bluray",
+        .id = AV_CODEC_ID_PCM_BLURAY,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_bluray",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16|20|24-bit big-endian for Blu-ray media"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_LXF,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_lxf",
+        .id = AV_CODEC_ID_PCM_LXF,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_lxf",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 20-bit little-endian planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_S302M,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "s302m",
+        .id = AV_CODEC_ID_S302M,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "s302m",
         .long_name = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S8_PLANAR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s8_planar",
+        .id = AV_CODEC_ID_PCM_S8_PLANAR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s8_planar",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S24LE_PLANAR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s24le_planar",
+        .id = AV_CODEC_ID_PCM_S24LE_PLANAR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s24le_planar",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 24-bit little-endian planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S32LE_PLANAR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s32le_planar",
+        .id = AV_CODEC_ID_PCM_S32LE_PLANAR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s32le_planar",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 32-bit little-endian planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S16BE_PLANAR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s16be_planar",
+        .id = AV_CODEC_ID_PCM_S16BE_PLANAR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s16be_planar",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 16-bit big-endian planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S64LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s64le",
+        .id = AV_CODEC_ID_PCM_S64LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s64le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 64-bit little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_S64BE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_s64be",
+        .id = AV_CODEC_ID_PCM_S64BE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_s64be",
         .long_name = NULL_IF_CONFIG_SMALL("PCM signed 64-bit big-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_F16LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_f16le",
+        .id = AV_CODEC_ID_PCM_F16LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_f16le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM 16.8 floating point little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_F24LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_f24le",
+        .id = AV_CODEC_ID_PCM_F24LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_f24le",
         .long_name = NULL_IF_CONFIG_SMALL("PCM 24.0 floating point little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_PCM_VIDC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "pcm_vidc",
+        .id = AV_CODEC_ID_PCM_VIDC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "pcm_vidc",
         .long_name = NULL_IF_CONFIG_SMALL("PCM Archimedes VIDC"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
 
     /* various ADPCM codecs */
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_QT,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_qt",
+        .id = AV_CODEC_ID_ADPCM_IMA_QT,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_qt",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA QuickTime"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_WAV,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_wav",
+        .id = AV_CODEC_ID_ADPCM_IMA_WAV,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_wav",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA WAV"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_DK3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_dk3",
+        .id = AV_CODEC_ID_ADPCM_IMA_DK3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_dk3",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Duck DK3"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_DK4,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_dk4",
+        .id = AV_CODEC_ID_ADPCM_IMA_DK4,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_dk4",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Duck DK4"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_WS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_ws",
+        .id = AV_CODEC_ID_ADPCM_IMA_WS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_ws",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Westwood"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_SMJPEG,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_smjpeg",
+        .id = AV_CODEC_ID_ADPCM_IMA_SMJPEG,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_smjpeg",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Loki SDL MJPEG"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_MS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ms",
+        .id = AV_CODEC_ID_ADPCM_MS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ms",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Microsoft"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_4XM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_4xm",
+        .id = AV_CODEC_ID_ADPCM_4XM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_4xm",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM 4X Movie"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_XA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_xa",
+        .id = AV_CODEC_ID_ADPCM_XA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_xa",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM CDROM XA"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_ADX,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_adx",
+        .id = AV_CODEC_ID_ADPCM_ADX,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_adx",
         .long_name = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_EA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ea",
+        .id = AV_CODEC_ID_ADPCM_EA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ea",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Electronic Arts"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_G726,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_g726",
+        .id = AV_CODEC_ID_ADPCM_G726,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_g726",
         .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_CT,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ct",
+        .id = AV_CODEC_ID_ADPCM_CT,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ct",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Creative Technology"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_SWF,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_swf",
+        .id = AV_CODEC_ID_ADPCM_SWF,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_swf",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Shockwave Flash"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_YAMAHA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_yamaha",
+        .id = AV_CODEC_ID_ADPCM_YAMAHA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_yamaha",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Yamaha"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_SBPRO_4,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_sbpro_4",
+        .id = AV_CODEC_ID_ADPCM_SBPRO_4,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_sbpro_4",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Sound Blaster Pro 4-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_SBPRO_3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_sbpro_3",
+        .id = AV_CODEC_ID_ADPCM_SBPRO_3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_sbpro_3",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Sound Blaster Pro 2.6-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_SBPRO_2,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_sbpro_2",
+        .id = AV_CODEC_ID_ADPCM_SBPRO_2,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_sbpro_2",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Sound Blaster Pro 2-bit"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_THP,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_thp",
+        .id = AV_CODEC_ID_ADPCM_THP,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_thp",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo THP"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_AMV,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_amv",
+        .id = AV_CODEC_ID_ADPCM_IMA_AMV,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_amv",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA AMV"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_EA_R1,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ea_r1",
+        .id = AV_CODEC_ID_ADPCM_EA_R1,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ea_r1",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Electronic Arts R1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_EA_R3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ea_r3",
+        .id = AV_CODEC_ID_ADPCM_EA_R3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ea_r3",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Electronic Arts R3"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_EA_R2,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ea_r2",
+        .id = AV_CODEC_ID_ADPCM_EA_R2,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ea_r2",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Electronic Arts R2"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_EA_SEAD,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_ea_sead",
+        .id = AV_CODEC_ID_ADPCM_IMA_EA_SEAD,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_ea_sead",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Electronic Arts SEAD"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_EA_EACS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_ea_eacs",
+        .id = AV_CODEC_ID_ADPCM_IMA_EA_EACS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_ea_eacs",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Electronic Arts EACS"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_EA_XAS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ea_xas",
+        .id = AV_CODEC_ID_ADPCM_EA_XAS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ea_xas",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Electronic Arts XAS"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_EA_MAXIS_XA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ea_maxis_xa",
+        .id = AV_CODEC_ID_ADPCM_EA_MAXIS_XA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ea_maxis_xa",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Electronic Arts Maxis CDROM XA"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_ISS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_iss",
+        .id = AV_CODEC_ID_ADPCM_IMA_ISS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_iss",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Funcom ISS"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_G722,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_g722",
+        .id = AV_CODEC_ID_ADPCM_G722,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_g722",
         .long_name = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_APC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_apc",
+        .id = AV_CODEC_ID_ADPCM_IMA_APC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_apc",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA CRYO APC"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_VIMA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_vima",
+        .id = AV_CODEC_ID_ADPCM_VIMA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_vima",
         .long_name = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_AFC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_afc",
+        .id = AV_CODEC_ID_ADPCM_AFC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_afc",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo Gamecube AFC"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_OKI,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_oki",
+        .id = AV_CODEC_ID_ADPCM_IMA_OKI,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_oki",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Dialogic OKI"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_DTK,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_dtk",
+        .id = AV_CODEC_ID_ADPCM_DTK,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_dtk",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo Gamecube DTK"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_RAD,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_rad",
+        .id = AV_CODEC_ID_ADPCM_IMA_RAD,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_rad",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Radical"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_G726LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_g726le",
+        .id = AV_CODEC_ID_ADPCM_G726LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_g726le",
         .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM little-endian"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_THP_LE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_thp_le",
+        .id = AV_CODEC_ID_ADPCM_THP_LE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_thp_le",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Nintendo THP (Little-Endian)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_PSX,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_psx",
+        .id = AV_CODEC_ID_ADPCM_PSX,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_psx",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Playstation"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_AICA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_aica",
+        .id = AV_CODEC_ID_ADPCM_AICA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_aica",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Yamaha AICA"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_DAT4,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_dat4",
+        .id = AV_CODEC_ID_ADPCM_IMA_DAT4,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_dat4",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Eurocom DAT4"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_MTAF,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_mtaf",
+        .id = AV_CODEC_ID_ADPCM_MTAF,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_mtaf",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM MTAF"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_AGM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_agm",
+        .id = AV_CODEC_ID_ADPCM_AGM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_agm",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM AmuseGraphics Movie AGM"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_ARGO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_argo",
+        .id = AV_CODEC_ID_ADPCM_ARGO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_argo",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Argonaut Games"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_SSI,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_ssi",
+        .id = AV_CODEC_ID_ADPCM_IMA_SSI,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_ssi",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Simon & Schuster Interactive"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_ZORK,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_zork",
+        .id = AV_CODEC_ID_ADPCM_ZORK,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_zork",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM Zork"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_APM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_apm",
+        .id = AV_CODEC_ID_ADPCM_IMA_APM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_apm",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Ubisoft APM"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_ALP,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_alp",
+        .id = AV_CODEC_ID_ADPCM_IMA_ALP,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_alp",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA High Voltage Software ALP"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_MTF,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_mtf",
+        .id = AV_CODEC_ID_ADPCM_IMA_MTF,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_mtf",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Capcom's MT Framework"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_CUNNING,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_cunning",
+        .id = AV_CODEC_ID_ADPCM_IMA_CUNNING,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_cunning",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA Cunning Developments"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ADPCM_IMA_MOFLEX,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "adpcm_ima_moflex",
+        .id = AV_CODEC_ID_ADPCM_IMA_MOFLEX,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "adpcm_ima_moflex",
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA MobiClip MOFLEX"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
 
     /* AMR */
     {
-        .id        = AV_CODEC_ID_AMR_NB,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "amr_nb",
+        .id = AV_CODEC_ID_AMR_NB,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "amr_nb",
         .long_name = NULL_IF_CONFIG_SMALL("AMR-NB (Adaptive Multi-Rate NarrowBand)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AMR_WB,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "amr_wb",
+        .id = AV_CODEC_ID_AMR_WB,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "amr_wb",
         .long_name = NULL_IF_CONFIG_SMALL("AMR-WB (Adaptive Multi-Rate WideBand)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
 
     /* RealAudio codecs*/
     {
-        .id        = AV_CODEC_ID_RA_144,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "ra_144",
+        .id = AV_CODEC_ID_RA_144,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "ra_144",
         .long_name = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_RA_288,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "ra_288",
+        .id = AV_CODEC_ID_RA_288,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "ra_288",
         .long_name = NULL_IF_CONFIG_SMALL("RealAudio 2.0 (28.8K)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
 
     /* various DPCM codecs */
     {
-        .id        = AV_CODEC_ID_ROQ_DPCM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "roq_dpcm",
+        .id = AV_CODEC_ID_ROQ_DPCM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "roq_dpcm",
         .long_name = NULL_IF_CONFIG_SMALL("DPCM id RoQ"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_INTERPLAY_DPCM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "interplay_dpcm",
+        .id = AV_CODEC_ID_INTERPLAY_DPCM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "interplay_dpcm",
         .long_name = NULL_IF_CONFIG_SMALL("DPCM Interplay"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_XAN_DPCM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "xan_dpcm",
+        .id = AV_CODEC_ID_XAN_DPCM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "xan_dpcm",
         .long_name = NULL_IF_CONFIG_SMALL("DPCM Xan"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SOL_DPCM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "sol_dpcm",
+        .id = AV_CODEC_ID_SOL_DPCM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "sol_dpcm",
         .long_name = NULL_IF_CONFIG_SMALL("DPCM Sol"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SDX2_DPCM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "sdx2_dpcm",
+        .id = AV_CODEC_ID_SDX2_DPCM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "sdx2_dpcm",
         .long_name = NULL_IF_CONFIG_SMALL("DPCM Squareroot-Delta-Exact"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_GREMLIN_DPCM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "gremlin_dpcm",
+        .id = AV_CODEC_ID_GREMLIN_DPCM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "gremlin_dpcm",
         .long_name = NULL_IF_CONFIG_SMALL("DPCM Gremlin"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DERF_DPCM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "derf_dpcm",
+        .id = AV_CODEC_ID_DERF_DPCM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "derf_dpcm",
         .long_name = NULL_IF_CONFIG_SMALL("DPCM Xilam DERF"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
 
     /* audio codecs */
     {
-        .id        = AV_CODEC_ID_MP2,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mp2",
+        .id = AV_CODEC_ID_MP2,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mp2",
         .long_name = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MP3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mp3",
+        .id = AV_CODEC_ID_MP3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mp3",
         .long_name = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AAC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "aac",
+        .id = AV_CODEC_ID_AAC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "aac",
         .long_name = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     },
     {
-        .id        = AV_CODEC_ID_AC3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "ac3",
+        .id = AV_CODEC_ID_AC3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "ac3",
         .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DTS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dts",
+        .id = AV_CODEC_ID_DTS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dts",
         .long_name = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_dca_profiles),
     },
     {
-        .id        = AV_CODEC_ID_VORBIS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "vorbis",
+        .id = AV_CODEC_ID_VORBIS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "vorbis",
         .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DVAUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dvaudio",
+        .id = AV_CODEC_ID_DVAUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dvaudio",
         .long_name = NULL_IF_CONFIG_SMALL("DV audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMAV1,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "wmav1",
+        .id = AV_CODEC_ID_WMAV1,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "wmav1",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMAV2,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "wmav2",
+        .id = AV_CODEC_ID_WMAV2,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "wmav2",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MACE3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mace3",
+        .id = AV_CODEC_ID_MACE3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mace3",
         .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 3:1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MACE6,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mace6",
+        .id = AV_CODEC_ID_MACE6,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mace6",
         .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 6:1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_VMDAUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "vmdaudio",
+        .id = AV_CODEC_ID_VMDAUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "vmdaudio",
         .long_name = NULL_IF_CONFIG_SMALL("Sierra VMD audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FLAC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "flac",
+        .id = AV_CODEC_ID_FLAC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "flac",
         .long_name = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MP3ADU,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mp3adu",
+        .id = AV_CODEC_ID_MP3ADU,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mp3adu",
         .long_name = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MP3ON4,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mp3on4",
+        .id = AV_CODEC_ID_MP3ON4,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mp3on4",
         .long_name = NULL_IF_CONFIG_SMALL("MP3onMP4"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SHORTEN,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "shorten",
+        .id = AV_CODEC_ID_SHORTEN,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "shorten",
         .long_name = NULL_IF_CONFIG_SMALL("Shorten"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ALAC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "alac",
+        .id = AV_CODEC_ID_ALAC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "alac",
         .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_WESTWOOD_SND1,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "westwood_snd1",
+        .id = AV_CODEC_ID_WESTWOOD_SND1,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "westwood_snd1",
         .long_name = NULL_IF_CONFIG_SMALL("Westwood Audio (SND1)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_GSM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "gsm",
+        .id = AV_CODEC_ID_GSM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "gsm",
         .long_name = NULL_IF_CONFIG_SMALL("GSM"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_QDM2,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "qdm2",
+        .id = AV_CODEC_ID_QDM2,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "qdm2",
         .long_name = NULL_IF_CONFIG_SMALL("QDesign Music Codec 2"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_COOK,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "cook",
+        .id = AV_CODEC_ID_COOK,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "cook",
         .long_name = NULL_IF_CONFIG_SMALL("Cook / Cooker / Gecko (RealAudio G2)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TRUESPEECH,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "truespeech",
+        .id = AV_CODEC_ID_TRUESPEECH,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "truespeech",
         .long_name = NULL_IF_CONFIG_SMALL("DSP Group TrueSpeech"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TTA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "tta",
+        .id = AV_CODEC_ID_TTA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "tta",
         .long_name = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_SMACKAUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "smackaudio",
+        .id = AV_CODEC_ID_SMACKAUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "smackaudio",
         .long_name = NULL_IF_CONFIG_SMALL("Smacker audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_QCELP,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "qcelp",
+        .id = AV_CODEC_ID_QCELP,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "qcelp",
         .long_name = NULL_IF_CONFIG_SMALL("QCELP / PureVoice"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WAVPACK,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "wavpack",
+        .id = AV_CODEC_ID_WAVPACK,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "wavpack",
         .long_name = NULL_IF_CONFIG_SMALL("WavPack"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY |
-                     AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY |
+                 AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_DSICINAUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dsicinaudio",
+        .id = AV_CODEC_ID_DSICINAUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dsicinaudio",
         .long_name = NULL_IF_CONFIG_SMALL("Delphine Software International CIN audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_IMC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "imc",
+        .id = AV_CODEC_ID_IMC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "imc",
         .long_name = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MUSEPACK7,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "musepack7",
+        .id = AV_CODEC_ID_MUSEPACK7,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "musepack7",
         .long_name = NULL_IF_CONFIG_SMALL("Musepack SV7"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MLP,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mlp",
+        .id = AV_CODEC_ID_MLP,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mlp",
         .long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_GSM_MS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "gsm_ms",
+        .id = AV_CODEC_ID_GSM_MS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "gsm_ms",
         .long_name = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ATRAC3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "atrac3",
+        .id = AV_CODEC_ID_ATRAC3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "atrac3",
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC3 (Adaptive TRansform Acoustic Coding 3)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_APE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "ape",
+        .id = AV_CODEC_ID_APE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "ape",
         .long_name = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_NELLYMOSER,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "nellymoser",
+        .id = AV_CODEC_ID_NELLYMOSER,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "nellymoser",
         .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MUSEPACK8,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "musepack8",
+        .id = AV_CODEC_ID_MUSEPACK8,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "musepack8",
         .long_name = NULL_IF_CONFIG_SMALL("Musepack SV8"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SPEEX,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "speex",
+        .id = AV_CODEC_ID_SPEEX,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "speex",
         .long_name = NULL_IF_CONFIG_SMALL("Speex"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMAVOICE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "wmavoice",
+        .id = AV_CODEC_ID_WMAVOICE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "wmavoice",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio Voice"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMAPRO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "wmapro",
+        .id = AV_CODEC_ID_WMAPRO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "wmapro",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_WMALOSSLESS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "wmalossless",
+        .id = AV_CODEC_ID_WMALOSSLESS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "wmalossless",
         .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio Lossless"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ATRAC3P,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "atrac3p",
+        .id = AV_CODEC_ID_ATRAC3P,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "atrac3p",
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_EAC3,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "eac3",
+        .id = AV_CODEC_ID_EAC3,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "eac3",
         .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SIPR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "sipr",
+        .id = AV_CODEC_ID_SIPR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "sipr",
         .long_name = NULL_IF_CONFIG_SMALL("RealAudio SIPR / ACELP.NET"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MP1,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mp1",
+        .id = AV_CODEC_ID_MP1,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mp1",
         .long_name = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TWINVQ,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "twinvq",
+        .id = AV_CODEC_ID_TWINVQ,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "twinvq",
         .long_name = NULL_IF_CONFIG_SMALL("VQF TwinVQ"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TRUEHD,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "truehd",
+        .id = AV_CODEC_ID_TRUEHD,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "truehd",
         .long_name = NULL_IF_CONFIG_SMALL("TrueHD"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_MP4ALS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mp4als",
+        .id = AV_CODEC_ID_MP4ALS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mp4als",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-4 Audio Lossless Coding (ALS)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ATRAC1,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "atrac1",
+        .id = AV_CODEC_ID_ATRAC1,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "atrac1",
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC1 (Adaptive TRansform Acoustic Coding)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_BINKAUDIO_RDFT,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "binkaudio_rdft",
+        .id = AV_CODEC_ID_BINKAUDIO_RDFT,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "binkaudio_rdft",
         .long_name = NULL_IF_CONFIG_SMALL("Bink Audio (RDFT)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_BINKAUDIO_DCT,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "binkaudio_dct",
+        .id = AV_CODEC_ID_BINKAUDIO_DCT,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "binkaudio_dct",
         .long_name = NULL_IF_CONFIG_SMALL("Bink Audio (DCT)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_AAC_LATM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "aac_latm",
+        .id = AV_CODEC_ID_AAC_LATM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "aac_latm",
         .long_name = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Coding LATM syntax)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     },
     {
-        .id        = AV_CODEC_ID_QDMC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "qdmc",
+        .id = AV_CODEC_ID_QDMC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "qdmc",
         .long_name = NULL_IF_CONFIG_SMALL("QDesign Music"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CELT,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "celt",
+        .id = AV_CODEC_ID_CELT,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "celt",
         .long_name = NULL_IF_CONFIG_SMALL("Constrained Energy Lapped Transform (CELT)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_G723_1,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "g723_1",
+        .id = AV_CODEC_ID_G723_1,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "g723_1",
         .long_name = NULL_IF_CONFIG_SMALL("G.723.1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_G729,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "g729",
+        .id = AV_CODEC_ID_G729,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "g729",
         .long_name = NULL_IF_CONFIG_SMALL("G.729"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_8SVX_EXP,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "8svx_exp",
+        .id = AV_CODEC_ID_8SVX_EXP,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "8svx_exp",
         .long_name = NULL_IF_CONFIG_SMALL("8SVX exponential"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_8SVX_FIB,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "8svx_fib",
+        .id = AV_CODEC_ID_8SVX_FIB,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "8svx_fib",
         .long_name = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_BMV_AUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "bmv_audio",
+        .id = AV_CODEC_ID_BMV_AUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "bmv_audio",
         .long_name = NULL_IF_CONFIG_SMALL("Discworld II BMV audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_RALF,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "ralf",
+        .id = AV_CODEC_ID_RALF,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "ralf",
         .long_name = NULL_IF_CONFIG_SMALL("RealAudio Lossless"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_IAC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "iac",
+        .id = AV_CODEC_ID_IAC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "iac",
         .long_name = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ILBC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "ilbc",
+        .id = AV_CODEC_ID_ILBC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "ilbc",
         .long_name = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_OPUS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "opus",
+        .id = AV_CODEC_ID_OPUS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "opus",
         .long_name = NULL_IF_CONFIG_SMALL("Opus (Opus Interactive Audio Codec)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_COMFORT_NOISE,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "comfortnoise",
+        .id = AV_CODEC_ID_COMFORT_NOISE,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "comfortnoise",
         .long_name = NULL_IF_CONFIG_SMALL("RFC 3389 Comfort Noise"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_TAK,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "tak",
+        .id = AV_CODEC_ID_TAK,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "tak",
         .long_name = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor)"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_METASOUND,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "metasound",
+        .id = AV_CODEC_ID_METASOUND,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "metasound",
         .long_name = NULL_IF_CONFIG_SMALL("Voxware MetaSound"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_PAF_AUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "paf_audio",
+        .id = AV_CODEC_ID_PAF_AUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "paf_audio",
         .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ON2AVC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "avc",
+        .id = AV_CODEC_ID_ON2AVC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "avc",
         .long_name = NULL_IF_CONFIG_SMALL("On2 Audio for Video Codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DSS_SP,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dss_sp",
+        .id = AV_CODEC_ID_DSS_SP,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dss_sp",
         .long_name = NULL_IF_CONFIG_SMALL("Digital Speech Standard - Standard Play mode (DSS SP)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_CODEC2,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "codec2",
+        .id = AV_CODEC_ID_CODEC2,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "codec2",
         .long_name = NULL_IF_CONFIG_SMALL("codec2 (very low bitrate speech codec)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FFWAVESYNTH,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "wavesynth",
+        .id = AV_CODEC_ID_FFWAVESYNTH,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "wavesynth",
         .long_name = NULL_IF_CONFIG_SMALL("Wave synthesis pseudo-codec"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY,
+        .props = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
-        .id        = AV_CODEC_ID_SONIC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "sonic",
+        .id = AV_CODEC_ID_SONIC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "sonic",
         .long_name = NULL_IF_CONFIG_SMALL("Sonic"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY,
+        .props = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
-        .id        = AV_CODEC_ID_SONIC_LS,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "sonicls",
+        .id = AV_CODEC_ID_SONIC_LS,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "sonicls",
         .long_name = NULL_IF_CONFIG_SMALL("Sonic lossless"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY,
+        .props = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
-        .id        = AV_CODEC_ID_EVRC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "evrc",
+        .id = AV_CODEC_ID_EVRC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "evrc",
         .long_name = NULL_IF_CONFIG_SMALL("EVRC (Enhanced Variable Rate Codec)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SMV,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "smv",
+        .id = AV_CODEC_ID_SMV,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "smv",
         .long_name = NULL_IF_CONFIG_SMALL("SMV (Selectable Mode Vocoder)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DSD_LSBF,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dsd_lsbf",
+        .id = AV_CODEC_ID_DSD_LSBF,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dsd_lsbf",
         .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), least significant bit first"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DSD_MSBF,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dsd_msbf",
+        .id = AV_CODEC_ID_DSD_MSBF,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dsd_msbf",
         .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), most significant bit first"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DSD_LSBF_PLANAR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dsd_lsbf_planar",
+        .id = AV_CODEC_ID_DSD_LSBF_PLANAR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dsd_lsbf_planar",
         .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), least significant bit first, planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DSD_MSBF_PLANAR,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dsd_msbf_planar",
+        .id = AV_CODEC_ID_DSD_MSBF_PLANAR,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dsd_msbf_planar",
         .long_name = NULL_IF_CONFIG_SMALL("DSD (Direct Stream Digital), most significant bit first, planar"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_4GV,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "4gv",
+        .id = AV_CODEC_ID_4GV,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "4gv",
         .long_name = NULL_IF_CONFIG_SMALL("4GV (Fourth Generation Vocoder)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_INTERPLAY_ACM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "interplayacm",
+        .id = AV_CODEC_ID_INTERPLAY_ACM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "interplayacm",
         .long_name = NULL_IF_CONFIG_SMALL("Interplay ACM"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_XMA1,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "xma1",
+        .id = AV_CODEC_ID_XMA1,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "xma1",
         .long_name = NULL_IF_CONFIG_SMALL("Xbox Media Audio 1"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_XMA2,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "xma2",
+        .id = AV_CODEC_ID_XMA2,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "xma2",
         .long_name = NULL_IF_CONFIG_SMALL("Xbox Media Audio 2"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_DST,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dst",
+        .id = AV_CODEC_ID_DST,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dst",
         .long_name = NULL_IF_CONFIG_SMALL("DST (Direct Stream Transfer)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ATRAC3AL,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "atrac3al",
+        .id = AV_CODEC_ID_ATRAC3AL,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "atrac3al",
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC3 AL (Adaptive TRansform Acoustic Coding 3 Advanced Lossless)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_ATRAC3PAL,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "atrac3pal",
+        .id = AV_CODEC_ID_ATRAC3PAL,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "atrac3pal",
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_DOLBY_E,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "dolby_e",
+        .id = AV_CODEC_ID_DOLBY_E,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "dolby_e",
         .long_name = NULL_IF_CONFIG_SMALL("Dolby E"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_APTX,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "aptx",
+        .id = AV_CODEC_ID_APTX,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "aptx",
         .long_name = NULL_IF_CONFIG_SMALL("aptX (Audio Processing Technology for Bluetooth)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_APTX_HD,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "aptx_hd",
+        .id = AV_CODEC_ID_APTX_HD,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "aptx_hd",
         .long_name = NULL_IF_CONFIG_SMALL("aptX HD (Audio Processing Technology for Bluetooth)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SBC,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "sbc",
+        .id = AV_CODEC_ID_SBC,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "sbc",
         .long_name = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ATRAC9,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "atrac9",
+        .id = AV_CODEC_ID_ATRAC9,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "atrac9",
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC9 (Adaptive TRansform Acoustic Coding 9)"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HCOM,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "hcom",
+        .id = AV_CODEC_ID_HCOM,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "hcom",
         .long_name = NULL_IF_CONFIG_SMALL("HCOM Audio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_ACELP_KELVIN,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "acelp.kelvin",
+        .id = AV_CODEC_ID_ACELP_KELVIN,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "acelp.kelvin",
         .long_name = NULL_IF_CONFIG_SMALL("Sipro ACELP.KELVIN"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_MPEGH_3D_AUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "mpegh_3d_audio",
+        .id = AV_CODEC_ID_MPEGH_3D_AUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "mpegh_3d_audio",
         .long_name = NULL_IF_CONFIG_SMALL("MPEG-H 3D Audio"),
-        .props     = AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_SIREN,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "siren",
+        .id = AV_CODEC_ID_SIREN,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "siren",
         .long_name = NULL_IF_CONFIG_SMALL("Siren"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_HCA,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "hca",
+        .id = AV_CODEC_ID_HCA,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "hca",
         .long_name = NULL_IF_CONFIG_SMALL("CRI HCA"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
     {
-        .id        = AV_CODEC_ID_FASTAUDIO,
-        .type      = AVMEDIA_TYPE_AUDIO,
-        .name      = "fastaudio",
+        .id = AV_CODEC_ID_FASTAUDIO,
+        .type = AVMEDIA_TYPE_AUDIO,
+        .name = "fastaudio",
         .long_name = NULL_IF_CONFIG_SMALL("MobiClip FastAudio"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+        .props = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
 
     /* subtitle codecs */
     {
-        .id        = AV_CODEC_ID_DVD_SUBTITLE,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "dvd_subtitle",
+        .id = AV_CODEC_ID_DVD_SUBTITLE,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "dvd_subtitle",
         .long_name = NULL_IF_CONFIG_SMALL("DVD subtitles"),
-        .props     = AV_CODEC_PROP_BITMAP_SUB,
+        .props = AV_CODEC_PROP_BITMAP_SUB,
     },
     {
-        .id        = AV_CODEC_ID_DVB_SUBTITLE,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "dvb_subtitle",
+        .id = AV_CODEC_ID_DVB_SUBTITLE,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "dvb_subtitle",
         .long_name = NULL_IF_CONFIG_SMALL("DVB subtitles"),
-        .props     = AV_CODEC_PROP_BITMAP_SUB,
+        .props = AV_CODEC_PROP_BITMAP_SUB,
     },
     {
-        .id        = AV_CODEC_ID_TEXT,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "text",
+        .id = AV_CODEC_ID_TEXT,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "text",
         .long_name = NULL_IF_CONFIG_SMALL("raw UTF-8 text"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_XSUB,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "xsub",
+        .id = AV_CODEC_ID_XSUB,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "xsub",
         .long_name = NULL_IF_CONFIG_SMALL("XSUB"),
-        .props     = AV_CODEC_PROP_BITMAP_SUB,
+        .props = AV_CODEC_PROP_BITMAP_SUB,
     },
     {
-        .id        = AV_CODEC_ID_SSA,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "ssa",
+        .id = AV_CODEC_ID_SSA,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "ssa",
         .long_name = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_MOV_TEXT,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "mov_text",
+        .id = AV_CODEC_ID_MOV_TEXT,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "mov_text",
         .long_name = NULL_IF_CONFIG_SMALL("MOV text"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_HDMV_PGS_SUBTITLE,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "hdmv_pgs_subtitle",
+        .id = AV_CODEC_ID_HDMV_PGS_SUBTITLE,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "hdmv_pgs_subtitle",
         .long_name = NULL_IF_CONFIG_SMALL("HDMV Presentation Graphic Stream subtitles"),
-        .props     = AV_CODEC_PROP_BITMAP_SUB,
+        .props = AV_CODEC_PROP_BITMAP_SUB,
     },
     {
-        .id        = AV_CODEC_ID_DVB_TELETEXT,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "dvb_teletext",
+        .id = AV_CODEC_ID_DVB_TELETEXT,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "dvb_teletext",
         .long_name = NULL_IF_CONFIG_SMALL("DVB teletext"),
     },
     {
-        .id        = AV_CODEC_ID_SRT,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "srt",
+        .id = AV_CODEC_ID_SRT,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "srt",
         .long_name = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_MICRODVD,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "microdvd",
+        .id = AV_CODEC_ID_MICRODVD,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "microdvd",
         .long_name = NULL_IF_CONFIG_SMALL("MicroDVD subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_EIA_608,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "eia_608",
+        .id = AV_CODEC_ID_EIA_608,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "eia_608",
         .long_name = NULL_IF_CONFIG_SMALL("EIA-608 closed captions"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_JACOSUB,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "jacosub",
+        .id = AV_CODEC_ID_JACOSUB,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "jacosub",
         .long_name = NULL_IF_CONFIG_SMALL("JACOsub subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_SAMI,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "sami",
+        .id = AV_CODEC_ID_SAMI,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "sami",
         .long_name = NULL_IF_CONFIG_SMALL("SAMI subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_REALTEXT,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "realtext",
+        .id = AV_CODEC_ID_REALTEXT,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "realtext",
         .long_name = NULL_IF_CONFIG_SMALL("RealText subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_STL,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "stl",
+        .id = AV_CODEC_ID_STL,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "stl",
         .long_name = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_SUBVIEWER1,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "subviewer1",
+        .id = AV_CODEC_ID_SUBVIEWER1,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "subviewer1",
         .long_name = NULL_IF_CONFIG_SMALL("SubViewer v1 subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_SUBVIEWER,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "subviewer",
+        .id = AV_CODEC_ID_SUBVIEWER,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "subviewer",
         .long_name = NULL_IF_CONFIG_SMALL("SubViewer subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_SUBRIP,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "subrip",
+        .id = AV_CODEC_ID_SUBRIP,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "subrip",
         .long_name = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_WEBVTT,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "webvtt",
+        .id = AV_CODEC_ID_WEBVTT,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "webvtt",
         .long_name = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_MPL2,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "mpl2",
+        .id = AV_CODEC_ID_MPL2,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "mpl2",
         .long_name = NULL_IF_CONFIG_SMALL("MPL2 subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_VPLAYER,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "vplayer",
+        .id = AV_CODEC_ID_VPLAYER,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "vplayer",
         .long_name = NULL_IF_CONFIG_SMALL("VPlayer subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_PJS,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "pjs",
+        .id = AV_CODEC_ID_PJS,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "pjs",
         .long_name = NULL_IF_CONFIG_SMALL("PJS (Phoenix Japanimation Society) subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_ASS,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "ass",
+        .id = AV_CODEC_ID_ASS,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "ass",
         .long_name = NULL_IF_CONFIG_SMALL("ASS (Advanced SSA) subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_HDMV_TEXT_SUBTITLE,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "hdmv_text_subtitle",
+        .id = AV_CODEC_ID_HDMV_TEXT_SUBTITLE,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "hdmv_text_subtitle",
         .long_name = NULL_IF_CONFIG_SMALL("HDMV Text subtitle"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_TTML,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "ttml",
+        .id = AV_CODEC_ID_TTML,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "ttml",
         .long_name = NULL_IF_CONFIG_SMALL("Timed Text Markup Language"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
+        .props = AV_CODEC_PROP_TEXT_SUB,
     },
     {
-        .id        = AV_CODEC_ID_ARIB_CAPTION,
-        .type      = AVMEDIA_TYPE_SUBTITLE,
-        .name      = "arib_caption",
+        .id = AV_CODEC_ID_ARIB_CAPTION,
+        .type = AVMEDIA_TYPE_SUBTITLE,
+        .name = "arib_caption",
         .long_name = NULL_IF_CONFIG_SMALL("ARIB STD-B24 caption"),
-        .props     = AV_CODEC_PROP_TEXT_SUB,
-        .profiles  = NULL_IF_CONFIG_SMALL(ff_arib_caption_profiles),
+        .props = AV_CODEC_PROP_TEXT_SUB,
+        .profiles = NULL_IF_CONFIG_SMALL(ff_arib_caption_profiles),
     },
 
     /* other kind of codecs and pseudo-codecs */
     {
-        .id        = AV_CODEC_ID_TTF,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "ttf",
+        .id = AV_CODEC_ID_TTF,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "ttf",
         .long_name = NULL_IF_CONFIG_SMALL("TrueType font"),
-        .mime_types= MT("application/x-truetype-font", "application/x-font"),
+        .mime_types = MT("application/x-truetype-font", "application/x-font"),
     },
     {
-        .id        = AV_CODEC_ID_SCTE_35,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "scte_35",
+        .id = AV_CODEC_ID_SCTE_35,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "scte_35",
         .long_name = NULL_IF_CONFIG_SMALL("SCTE 35 Message Queue"),
     },
     {
-        .id        = AV_CODEC_ID_EPG,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "epg",
+        .id = AV_CODEC_ID_EPG,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "epg",
         .long_name = NULL_IF_CONFIG_SMALL("Electronic Program Guide"),
     },
     {
-        .id        = AV_CODEC_ID_BINTEXT,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "bintext",
+        .id = AV_CODEC_ID_BINTEXT,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "bintext",
         .long_name = NULL_IF_CONFIG_SMALL("Binary text"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY,
+        .props = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
-        .id        = AV_CODEC_ID_XBIN,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "xbin",
+        .id = AV_CODEC_ID_XBIN,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "xbin",
         .long_name = NULL_IF_CONFIG_SMALL("eXtended BINary text"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY,
+        .props = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
-        .id        = AV_CODEC_ID_IDF,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "idf",
+        .id = AV_CODEC_ID_IDF,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "idf",
         .long_name = NULL_IF_CONFIG_SMALL("iCEDraw text"),
-        .props     = AV_CODEC_PROP_INTRA_ONLY,
+        .props = AV_CODEC_PROP_INTRA_ONLY,
     },
     {
-        .id        = AV_CODEC_ID_OTF,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "otf",
+        .id = AV_CODEC_ID_OTF,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "otf",
         .long_name = NULL_IF_CONFIG_SMALL("OpenType font"),
-        .mime_types= MT("application/vnd.ms-opentype"),
+        .mime_types = MT("application/vnd.ms-opentype"),
     },
     {
-        .id        = AV_CODEC_ID_SMPTE_KLV,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "klv",
+        .id = AV_CODEC_ID_SMPTE_KLV,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "klv",
         .long_name = NULL_IF_CONFIG_SMALL("SMPTE 336M Key-Length-Value (KLV) metadata"),
     },
     {
-        .id        = AV_CODEC_ID_DVD_NAV,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "dvd_nav_packet",
+        .id = AV_CODEC_ID_DVD_NAV,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "dvd_nav_packet",
         .long_name = NULL_IF_CONFIG_SMALL("DVD Nav packet"),
     },
     {
-        .id        = AV_CODEC_ID_TIMED_ID3,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "timed_id3",
+        .id = AV_CODEC_ID_TIMED_ID3,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "timed_id3",
         .long_name = NULL_IF_CONFIG_SMALL("timed ID3 metadata"),
     },
     {
-        .id        = AV_CODEC_ID_BIN_DATA,
-        .type      = AVMEDIA_TYPE_DATA,
-        .name      = "bin_data",
+        .id = AV_CODEC_ID_BIN_DATA,
+        .type = AVMEDIA_TYPE_DATA,
+        .name = "bin_data",
         .long_name = NULL_IF_CONFIG_SMALL("binary data"),
-        .mime_types= MT("application/octet-stream"),
+        .mime_types = MT("application/octet-stream"),
     },
     {
-        .id        = AV_CODEC_ID_WRAPPED_AVFRAME,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "wrapped_avframe",
+        .id = AV_CODEC_ID_WRAPPED_AVFRAME,
+        .type = AVMEDIA_TYPE_VIDEO,
+        .name = "wrapped_avframe",
         .long_name = NULL_IF_CONFIG_SMALL("AVFrame to AVPacket passthrough"),
-        .props     = AV_CODEC_PROP_LOSSLESS,
+        .props = AV_CODEC_PROP_LOSSLESS,
     },
 };
+
+
+
+#define MAX_PCE_SIZE 320
+typedef struct ADTSContext {
+    AVClass *class;
+    int write_adts;
+    int objecttype;
+    int sample_rate_index;
+    int channel_conf;
+    int pce_size;
+    int apetag;
+    int id3v2tag;
+    int mpeg_id;
+    uint8_t pce_data[MAX_PCE_SIZE];
+} ADTSContext;
+
+typedef struct MPEG4AudioConfig {
+    int object_type;
+    int sampling_index;
+    int sample_rate;
+    int chan_config;
+    int sbr; ///< -1 implicit, 1 presence
+    int ext_object_type;
+    int ext_sampling_index;
+    int ext_sample_rate;
+    int ext_chan_config;
+    int channels;
+    int ps;  ///< -1 implicit, 1 presence
+    int frame_length_short;
+} MPEG4AudioConfig;
+
+static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const uint8_t *buf, int size)
+{
+    GetBitContext gb;
+    PutBitContext pb;
+    MPEG4AudioConfig m4ac;
+    int off;
+
+    init_get_bits(&gb, buf, size * 8);
+    off = avpriv_mpeg4audio_get_config2(&m4ac, buf, size, 1, s);
+    if (off < 0)
+        return off;
+    skip_bits_long(&gb, off);
+    adts->objecttype        = m4ac.object_type - 1;
+    adts->sample_rate_index = m4ac.sampling_index;
+    adts->channel_conf      = m4ac.chan_config;
+
+    if (adts->objecttype > 3U) {
+        av_log(s, AV_LOG_ERROR, "MPEG-4 AOT %d is not allowed in ADTS\n", adts->objecttype+1);
+        return AVERROR_INVALIDDATA;
+    }
+    if (adts->sample_rate_index == 15) {
+        av_log(s, AV_LOG_ERROR, "Escape sample rate index illegal in ADTS\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (get_bits(&gb, 1)) {
+        av_log(s, AV_LOG_ERROR, "960/120 MDCT window is not allowed in ADTS\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (get_bits(&gb, 1)) {
+        av_log(s, AV_LOG_ERROR, "Scalable configurations are not allowed in ADTS\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (get_bits(&gb, 1)) {
+        av_log(s, AV_LOG_ERROR, "Extension flag is not allowed in ADTS\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (!adts->channel_conf) {
+        init_put_bits(&pb, adts->pce_data, MAX_PCE_SIZE);
+
+        put_bits(&pb, 3, 5); //ID_PCE
+        adts->pce_size = (ff_copy_pce_data(&pb, &gb) + 3) / 8;
+        flush_put_bits(&pb);
+    }
+
+    adts->write_adts = 1;
+
+    return 0;
+}
+
+
+static int adts_init(AVFormatContext *s)
+{
+    ADTSContext *adts = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+
+    if (par->codec_id != AV_CODEC_ID_AAC) {
+        av_log(s, AV_LOG_ERROR, "Only AAC streams can be muxed by the ADTS muxer\n");
+        return AVERROR(EINVAL);
+    }
+    if (par->extradata_size > 0)
+        return adts_decode_extradata(s, adts, par->extradata,
+                                     par->extradata_size);
+
+    return 0;
+}
+
+#define ID3v2_HEADER_SIZE 10
+#define ID3v2_DEFAULT_MAGIC "ID3"
+#define ID3v2_FLAG_DATALEN     0x0001
+#define ID3v2_FLAG_UNSYNCH     0x0002
+#define ID3v2_FLAG_ENCRYPTION  0x0004
+#define ID3v2_FLAG_COMPRESSION 0x0008
+
+static int adts_write_header(AVFormatContext *s)
+{
+    ADTSContext *adts = s->priv_data;
+
+    if (adts->id3v2tag)
+        ff_id3v2_write_simple(s, 4, ID3v2_DEFAULT_MAGIC);
+
+    return 0;
+}
+
+
+#define ID3v2_PRIV_METADATA_PREFIX "id3v2_priv."
+
+#define ADTS_HEADER_SIZE 7
+
+#define AV_ONCE_INIT PTHREAD_ONCE_INIT
+
+#define AVOnce pthread_once_t
+
+static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    ADTSContext *adts = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    AVIOContext *pb = s->pb;
+    uint8_t buf[ADTS_HEADER_SIZE];
+
+    if (!pkt->size)
+        return 0;
+    if (!par->extradata_size) {
+        uint8_t *side_data;
+        int side_data_size, ret;
+
+        side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                            &side_data_size);
+        if (side_data_size) {
+            ret = adts_decode_extradata(s, adts, side_data, side_data_size);
+            if (ret < 0)
+                return ret;
+            ret = ff_alloc_extradata(par, side_data_size);
+            if (ret < 0)
+                return ret;
+            memcpy(par->extradata, side_data, side_data_size);
+        }
+    }
+    if (adts->write_adts) {
+        int err = adts_write_frame_header(adts, buf, pkt->size,
+                                             adts->pce_size);
+        if (err < 0)
+            return err;
+        avio_write(pb, buf, ADTS_HEADER_SIZE);
+        if (adts->pce_size) {
+            avio_write(pb, adts->pce_data, adts->pce_size);
+            adts->pce_size = 0;
+        }
+    }
+    avio_write(pb, pkt->data, pkt->size);
+
+    return 0;
+}
+
+static int adts_write_trailer(AVFormatContext *s)
+{
+    ADTSContext *adts = s->priv_data;
+
+    if (adts->apetag)
+        ff_ape_write_tag(s);
+
+    return 0;
+}
+
+const char *av_default_item_name(void *ptr)
+{
+    return (*(AVClass **) ptr)->class_name;
+}
+
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
+
+#define OFFSET(obj) offsetof(ADTSContext, obj)
+
+static const AVOption avoptions[] = {
+    { "write_id3v2",  "Enable ID3v2 tag writing", OFFSET(id3v2tag), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, ENC},
+    { "write_apetag", "Enable APE tag writing",   OFFSET(apetag),   AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, ENC},
+    { "write_mpeg2",  "Use MPE2 ID when writing", OFFSET(mpeg_id),  AV_OPT_TYPE_BOOL,  {.i64 = 0}, 0, 1, ENC, "mpeg_id"},
+    { NULL },
+};
+
+
+#define AVIO_SEEKABLE_NORMAL (1 << 0)
+
+#define AA_MAGIC 1469084982 /* this identifies an audible .aa file */
+#define MAX_CODEC_SECOND_SIZE 3982
+#define MAX_TOC_ENTRIES 16
+#define MAX_DICTIONARY_ENTRIES 128
+#define TEA_BLOCK_SIZE 8
+#define CHAPTER_HEADER_SIZE 8
+#define TIMEPREC 1000
+#define MP3_FRAME_SIZE 104
+
+typedef struct AADemuxContext {
+    AVClass *class;
+    uint8_t *aa_fixed_key;
+    int aa_fixed_key_len;
+    int codec_second_size;
+    int current_codec_second_size;
+    int chapter_idx;
+    struct AVTEA *tea_ctx;
+    uint8_t file_key[16];
+    int64_t current_chapter_size;
+    int64_t content_start;
+    int64_t content_end;
+    int seek_offset;
+} AADemuxContext;
+
+
+#define OFFSET(x) offsetof(AADemuxContext, x)
+static const AVOption aa_options[] = {
+    { "aa_fixed_key", // extracted from libAAX_SDK.so and AAXSDKWin.dll files!
+        "Fixed key used for handling Audible AA files", OFFSET(aa_fixed_key),
+        AV_OPT_TYPE_BINARY, {.str="77214d4b196a87cd520045fd2a51d673"},
+        .flags = AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+
+
+#define ADTS_HEADER_SIZE 7
+
+
+typedef struct ID3v2ExtraMetaGEOB {
+    uint32_t datasize;
+    uint8_t *mime_type;
+    uint8_t *file_name;
+    uint8_t *description;
+    uint8_t *data;
+} ID3v2ExtraMetaGEOB;
+
+typedef struct ID3v2ExtraMetaAPIC {
+    AVBufferRef *buf;
+    const char  *type;
+    uint8_t     *description;
+    enum AVCodecID id;
+} ID3v2ExtraMetaAPIC;
+
+typedef struct ID3v2ExtraMetaPRIV {
+    uint8_t *owner;
+    uint8_t *data;
+    uint32_t datasize;
+} ID3v2ExtraMetaPRIV;
+
+typedef struct ID3v2ExtraMetaCHAP {
+    uint8_t *element_id;
+    uint32_t start, end;
+    AVDictionary *meta;
+} ID3v2ExtraMetaCHAP;
+
+typedef struct ID3v2ExtraMeta {
+    const char *tag;
+    struct ID3v2ExtraMeta *next;
+    union {
+        ID3v2ExtraMetaAPIC apic;
+        ID3v2ExtraMetaCHAP chap;
+        ID3v2ExtraMetaGEOB geob;
+        ID3v2ExtraMetaPRIV priv;
+    } data;
+} ID3v2ExtraMeta;
+
+
+typedef struct AAXColumn {
+    uint8_t flag;
+    uint8_t type;
+    const char *name;
+    uint32_t offset;
+    int size;
+} AAXColumn;
+
+typedef struct AAXSegment {
+    int64_t start;
+    int64_t end;
+} AAXSegment;
+
+typedef struct AAXContext {
+    int64_t table_size;
+    uint16_t version;
+    int64_t rows_offset;
+    int64_t strings_offset;
+    int64_t data_offset;
+    int64_t name_offset;
+    uint16_t columns;
+    uint16_t row_width;
+    uint32_t nb_segments;
+    int64_t schema_offset;
+    int64_t strings_size;
+    char *string_table;
+
+    uint32_t current_segment;
+
+    AAXColumn *xcolumns;
+    AAXSegment *segments;
+} AAXContext;
+
+static int aax_probe(const AVProbeData *p)
+{
+    if (AV_RB32(p->buf) != MKBETAG('@','U','T','F'))
+        return 0;
+    if (AV_RB32(p->buf + 4) == 0)
+        return 0;
+    if (AV_RB16(p->buf + 8) > 1)
+        return 0;
+    if (AV_RB32(p->buf + 28) < 1)
+        return 0;
+
+    return AVPROBE_SCORE_MAX;
+}
+
+enum ColumnFlag {
+    COLUMN_FLAG_NAME            = 0x1,
+    COLUMN_FLAG_DEFAULT         = 0x2,
+    COLUMN_FLAG_ROW             = 0x4,
+    COLUMN_FLAG_UNDEFINED       = 0x8 /* shouldn't exist */
+};
+
+enum ColumnType {
+    COLUMN_TYPE_UINT8           = 0x00,
+    COLUMN_TYPE_SINT8           = 0x01,
+    COLUMN_TYPE_UINT16          = 0x02,
+    COLUMN_TYPE_SINT16          = 0x03,
+    COLUMN_TYPE_UINT32          = 0x04,
+    COLUMN_TYPE_SINT32          = 0x05,
+    COLUMN_TYPE_UINT64          = 0x06,
+    COLUMN_TYPE_SINT64          = 0x07,
+    COLUMN_TYPE_FLOAT           = 0x08,
+    COLUMN_TYPE_DOUBLE          = 0x09,
+    COLUMN_TYPE_STRING          = 0x0a,
+    COLUMN_TYPE_VLDATA          = 0x0b,
+    COLUMN_TYPE_UINT128         = 0x0c, /* for GUIDs */
+    COLUMN_TYPE_UNDEFINED       = -1
+};
+
+static int64_t get_pts(AVFormatContext *s, int64_t pos, int size)
+{
+    AAXContext *a = s->priv_data;
+    int64_t pts = 0;
+
+    for (int seg = 0; seg < a->current_segment; seg++)
+        pts += (a->segments[seg].end - a->segments[seg].start) / size;
+
+    pts += ((pos - a->segments[a->current_segment].start) / size);
+
+    return pts;
+}
+
