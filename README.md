@@ -6,8 +6,8 @@ An attempt to build a ffplay in pure Nim with IPFS protocol.
 
 * WIP: make ffplay compile dependent on SDL2 only
 
- /c/msys64/mingw64/bin/gcc ffplay.c  -Ic:/FFmpeg -IC:/msys64/mingw64/include/SDL2 -LC:/msys64/mingw64/lib -lSDL2 -o ffplay.exe -Wfatal-errors
+  /c/msys64/mingw64/bin/gcc ffplay.c  -Ic:/FFmpeg -IC:/msys64/mingw64/include/SDL2 -LC:/msys64/mingw64/lib -lSDL2 -o ffplay.exe -Wfatal-errors
 
  * Future:
 
- nim c ffplay.nim
+   nim c ffplay.nim
