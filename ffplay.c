@@ -21937,27 +21937,6 @@ static void fft4(FFTComplex *z)
     BF(z[2].im, z[0].im, t2, t5);
 }
 
-#define BUTTERFLIES(a0,a1,a2,a3) {\
-    BF(t3, t5, t5, t1);\
-    BF(a2.re, a0.re, a0.re, t5);\
-    BF(a3.im, a1.im, a1.im, t3);\
-    BF(t4, t6, t2, t6);\
-    BF(a3.re, a1.re, a1.re, t4);\
-    BF(a2.im, a0.im, a0.im, t6);\
-}
-#define TRANSFORM(a0,a1,a2,a3,wre,wim) {\
-    CMUL(t1, t2, a2.re, a2.im, wre, -wim);\
-    CMUL(t5, t6, a3.re, a3.im, wre,  wim);\
-    BUTTERFLIES(a0,a1,a2,a3)\
-}
-
-#define TRANSFORM_ZERO(a0,a1,a2,a3) {\
-    t1 = a2.re;\
-    t2 = a2.im;\
-    t5 = a3.re;\
-    t6 = a3.im;\
-    BUTTERFLIES(a0,a1,a2,a3)\
-}
 static void fft8(FFTComplex *z)
 {
     FFTSample t1, t2, t3, t4, t5, t6;
@@ -22042,6 +22021,33 @@ static void fft16(FFTComplex *z)
     TRANSFORM(z[3],z[7],z[11],z[15],cos_16_3,cos_16_1);
 }
 
+DECL_FFT(32,16,8)
+DECL_FFT(64,32,16)
+DECL_FFT(128,64,32)
+DECL_FFT(256,128,64)
+DECL_FFT(512,256,128)
+#define pass pass_big
+DECL_FFT(1024,512,256)
+DECL_FFT(2048,1024,512)
+DECL_FFT(4096,2048,1024)
+DECL_FFT(8192,4096,2048)
+DECL_FFT(16384,8192,4096)
+DECL_FFT(32768,16384,8192)
+DECL_FFT(65536,32768,16384)
+DECL_FFT(131072,65536,32768)
+
+static void (* const fft_dispatch[])(FFTComplex*) = {
+    NULL, fft2, fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512,
+    fft1024, fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
+};
+
+
+static void fft_calc_c(FFTContext *s, FFTComplex *z)
+{
+    fft_dispatch[s->nbits-2](z);
+}
+
+
 #define DECL_COMP_FFT(N)                                                       \
 static void compound_fft_##N##xM(AVTXContext *s, void *_out,                   \
                                  void *_in, ptrdiff_t stride)                  \
@@ -22104,16 +22110,6 @@ static void compound_imdct_##N##xM(AVTXContext *s, void *_dst, void *_src,     \
     }                                                                          \
 }
 
-static void (* const fft_dispatch[])(FFTComplex*) = {
-    NULL, fft2, fft4, fft8, fft16, fft32, fft64, fft128, fft256, fft512,
-    fft1024, fft2048, fft4096, fft8192, fft16384, fft32768, fft65536, fft131072
-};
-
-
-static void fft_calc_c(FFTContext *s, FFTComplex *z)
-{
-    fft_dispatch[s->nbits-2](z);
-}
 
 
 
@@ -36677,10 +36673,6 @@ static  void skip_bits(GetBitContext *s, int n)
 #endif
 }
 
-
-
-
-
 static  void skip_bits_long(GetBitContext *s, int n)
 {
 #if CACHED_BITSTREAM_READER
@@ -36693,7 +36685,6 @@ static  void skip_bits_long(GetBitContext *s, int n)
 #endif
 #endif
 }
-
 
 static  unsigned int get_bits(GetBitContext *s, int n)
 {
@@ -36728,5 +36719,3 @@ static  unsigned int get_bits(GetBitContext *s, int n)
     av_assert2(tmp < UINT64_C(1) << n);
     return tmp;
 }
-
-static const int BUF_BITS = 8 * sizeof(BitBuf);

@@ -7229,44 +7229,49 @@ static inline void fft3(FFTComplex *out, FFTComplex *in,
 #endif
 }
 
-// #define DECL_FFT5(NAME, D0, D1, D2, D3, D4)                                                       \
-// static inline void NAME(FFTComplex *out, FFTComplex *in,                                \
-//                                   ptrdiff_t stride)                                               \
-// {                                                                                                 \
-//     FFTComplex z0[4], t[6];                                                                       \
-//                                                                                                   \
-//     BF(t[1].im, t[0].re, in[1].re, in[4].re);                                                     \
-//     BF(t[1].re, t[0].im, in[1].im, in[4].im);                                                     \
-//     BF(t[3].im, t[2].re, in[2].re, in[3].re);                                                     \
-//     BF(t[3].re, t[2].im, in[2].im, in[3].im);                                                     \
-//                                                                                                   \
-//     out[D0*stride].re = in[0].re + t[0].re + t[2].re;                                             \
-//     out[D0*stride].im = in[0].im + t[0].im + t[2].im;                                             \
-//                                                                                                   \
-//     SMUL(t[4].re, t[0].re, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].re, t[0].re); \
-//     SMUL(t[4].im, t[0].im, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].im, t[0].im); \
-//     CMUL(t[5].re, t[1].re, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].re, t[1].re); \
-//     CMUL(t[5].im, t[1].im, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].im, t[1].im); \
-//                                                                                                   \
-//     BF(z0[0].re, z0[3].re, t[0].re, t[1].re);                                                     \
-//     BF(z0[0].im, z0[3].im, t[0].im, t[1].im);                                                     \
-//     BF(z0[2].re, z0[1].re, t[4].re, t[5].re);                                                     \
-//     BF(z0[2].im, z0[1].im, t[4].im, t[5].im);                                                     \
-//                                                                                                   \
-//     out[D1*stride].re = in[0].re + z0[3].re;                                                      \
-//     out[D1*stride].im = in[0].im + z0[0].im;                                                      \
-//     out[D2*stride].re = in[0].re + z0[2].re;                                                      \
-//     out[D2*stride].im = in[0].im + z0[1].im;                                                      \
-//     out[D3*stride].re = in[0].re + z0[1].re;                                                      \
-//     out[D3*stride].im = in[0].im + z0[2].im;                                                      \
-//     out[D4*stride].re = in[0].re + z0[0].re;                                                      \
-//     out[D4*stride].im = in[0].im + z0[3].im;                                                      \
-// }
+#define SMUL(dre, dim, are, aim, bre, bim) do {                                \
+        (dre) = (are) * (bre) - (aim) * (bim);                                 \
+        (dim) = (are) * (bim) - (aim) * (bre);                                 \
+    } while (0)
 
-// DECL_FFT5(fft5,     0,  1,  2,  3,  4)
-// DECL_FFT5(fft5_m1,  0,  6, 12,  3,  9)
-// DECL_FFT5(fft5_m2, 10,  1,  7, 13,  4)
-// DECL_FFT5(fft5_m3,  5, 11,  2,  8, 14)
+#define DECL_FFT5(NAME, D0, D1, D2, D3, D4)                                                       \
+static inline void NAME(FFTComplex *out, FFTComplex *in,                                \
+                                  ptrdiff_t stride)                                               \
+{                                                                                                 \
+    FFTComplex z0[4], t[6];                                                                       \
+                                                                                                  \
+    BF(t[1].im, t[0].re, in[1].re, in[4].re);                                                     \
+    BF(t[1].re, t[0].im, in[1].im, in[4].im);                                                     \
+    BF(t[3].im, t[2].re, in[2].re, in[3].re);                                                     \
+    BF(t[3].re, t[2].im, in[2].im, in[3].im);                                                     \
+                                                                                                  \
+    out[D0*stride].re = in[0].re + t[0].re + t[2].re;                                             \
+    out[D0*stride].im = in[0].im + t[0].im + t[2].im;                                             \
+                                                                                                  \
+    SMUL(t[4].re, t[0].re, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].re, t[0].re); \
+    SMUL(t[4].im, t[0].im, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].im, t[0].im); \
+    CMUL(t[5].re, t[1].re, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].re, t[1].re); \
+    CMUL(t[5].im, t[1].im, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].im, t[1].im); \
+                                                                                                  \
+    BF(z0[0].re, z0[3].re, t[0].re, t[1].re);                                                     \
+    BF(z0[0].im, z0[3].im, t[0].im, t[1].im);                                                     \
+    BF(z0[2].re, z0[1].re, t[4].re, t[5].re);                                                     \
+    BF(z0[2].im, z0[1].im, t[4].im, t[5].im);                                                     \
+                                                                                                  \
+    out[D1*stride].re = in[0].re + z0[3].re;                                                      \
+    out[D1*stride].im = in[0].im + z0[0].im;                                                      \
+    out[D2*stride].re = in[0].re + z0[2].re;                                                      \
+    out[D2*stride].im = in[0].im + z0[1].im;                                                      \
+    out[D3*stride].re = in[0].re + z0[1].re;                                                      \
+    out[D3*stride].im = in[0].im + z0[2].im;                                                      \
+    out[D4*stride].re = in[0].re + z0[0].re;                                                      \
+    out[D4*stride].im = in[0].im + z0[3].im;                                                      \
+}
+
+DECL_FFT5(fft5,     0,  1,  2,  3,  4)
+DECL_FFT5(fft5_m1,  0,  6, 12,  3,  9)
+DECL_FFT5(fft5_m2, 10,  1,  7, 13,  4)
+DECL_FFT5(fft5_m3,  5, 11,  2,  8, 14)
 
 static inline void fft15(FFTComplex *out, FFTComplex *in,
                                    ptrdiff_t stride)
@@ -7281,96 +7286,78 @@ static inline void fft15(FFTComplex *out, FFTComplex *in,
     // fft5_m3(out, tmp + 10, stride);
 }
 
-// #define BUTTERFLIES(a0,a1,a2,a3) {\
-//     BF(t3, t5, t5, t1);\
-//     BF(a2.re, a0.re, a0.re, t5);\
-//     BF(a3.im, a1.im, a1.im, t3);\
-//     BF(t4, t6, t2, t6);\
-//     BF(a3.re, a1.re, a1.re, t4);\
-//     BF(a2.im, a0.im, a0.im, t6);\
-// }
+#define BUTTERFLIES(a0,a1,a2,a3) {\
+    BF(t3, t5, t5, t1);\
+    BF(a2.re, a0.re, a0.re, t5);\
+    BF(a3.im, a1.im, a1.im, t3);\
+    BF(t4, t6, t2, t6);\
+    BF(a3.re, a1.re, a1.re, t4);\
+    BF(a2.im, a0.im, a0.im, t6);\
+}
 
-// force loading all the inputs before storing any.
-// this is slightly slower for small data, but avoids store->load aliasing
-// for addresses separated by large powers of 2.
-// #define BUTTERFLIES_BIG(a0,a1,a2,a3) {\
-//     FFTSample r0=a0.re, i0=a0.im, r1=a1.re, i1=a1.im;\
-//     BF(t3, t5, t5, t1);\
-//     BF(a2.re, a0.re, r0, t5);\
-//     BF(a3.im, a1.im, i1, t3);\
-//     BF(t4, t6, t2, t6);\
-//     BF(a3.re, a1.re, r1, t4);\
-//     BF(a2.im, a0.im, i0, t6);\
-// }
 
-// #define TRANSFORM(a0,a1,a2,a3,wre,wim) {\
-//     CMUL(t1, t2, a2.re, a2.im, wre, -wim);\
-//     CMUL(t5, t6, a3.re, a3.im, wre,  wim);\
-//     BUTTERFLIES(a0,a1,a2,a3)\
-// }
+#define BUTTERFLIES_BIG(a0,a1,a2,a3) {\
+    FFTSample r0=a0.re, i0=a0.im, r1=a1.re, i1=a1.im;\
+    BF(t3, t5, t5, t1);\
+    BF(a2.re, a0.re, r0, t5);\
+    BF(a3.im, a1.im, i1, t3);\
+    BF(t4, t6, t2, t6);\
+    BF(a3.re, a1.re, r1, t4);\
+    BF(a2.im, a0.im, i0, t6);\
+}
 
-// #define TRANSFORM_ZERO(a0,a1,a2,a3) {\
-//     t1 = a2.re;\
-//     t2 = a2.im;\
-//     t5 = a3.re;\
-//     t6 = a3.im;\
-//     BUTTERFLIES(a0,a1,a2,a3)\
-// }
+#define TRANSFORM(a0,a1,a2,a3,wre,wim) {\
+    CMUL(t1, t2, a2.re, a2.im, wre, -wim);\
+    CMUL(t5, t6, a3.re, a3.im, wre,  wim);\
+    BUTTERFLIES(a0,a1,a2,a3)\
+}
+
+#define TRANSFORM_ZERO(a0,a1,a2,a3) {\
+    t1 = a2.re;\
+    t2 = a2.im;\
+    t5 = a3.re;\
+    t6 = a3.im;\
+    BUTTERFLIES(a0,a1,a2,a3)\
+}
 
 /* z[0...8n-1], w[1...2n-1] */
-// #define PASS(name)\
-// static void name(FFTComplex *z, const FFTSample *wre, unsigned int n)\
-// {\
-//     FFTSample t1, t2, t3, t4, t5, t6;\
-//     int o1 = 2*n;\
-//     int o2 = 4*n;\
-//     int o3 = 6*n;\
-//     const FFTSample *wim = wre+o1;\
-//     n--;\
-// \
-//     TRANSFORM_ZERO(z[0],z[o1],z[o2],z[o3]);\
-//     TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
-//     do {\
-//         z += 2;\
-//         wre += 2;\
-//         wim -= 2;\
-//         TRANSFORM(z[0],z[o1],z[o2],z[o3],wre[0],wim[0]);\
-//         TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
-//     } while(--n);\
-// }
+#define PASS(name)\
+static void name(FFTComplex *z, const FFTSample *wre, unsigned int n)\
+{\
+    FFTSample t1, t2, t3, t4, t5, t6;\
+    int o1 = 2*n;\
+    int o2 = 4*n;\
+    int o3 = 6*n;\
+    const FFTSample *wim = wre+o1;\
+    n--;\
+\
+    TRANSFORM_ZERO(z[0],z[o1],z[o2],z[o3]);\
+    TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
+    do {\
+        z += 2;\
+        wre += 2;\
+        wim -= 2;\
+        TRANSFORM(z[0],z[o1],z[o2],z[o3],wre[0],wim[0]);\
+        TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
+    } while(--n);\
+}
 
 
+PASS(pass)
+#undef BUTTERFLIES
+#define BUTTERFLIES BUTTERFLIES_BIG
+PASS(pass_big)
+
+#define DECL_FFT(n,n2,n4)\
+static void fft##n(FFTComplex *z)\
+{\
+    fft##n2(z);\
+    fft##n4(z+n4*2);\
+    fft##n4(z+n4*3);\
+    pass(z,TX_NAME(ff_cos_##n),n4/2);\
+}
 
 
-// PASS(pass)
-// #undef BUTTERFLIES
-// #define BUTTERFLIES BUTTERFLIES_BIG
-// PASS(pass_big)
-
-// #define DECL_FFT(n,n2,n4)\
-// static void fft##n(FFTComplex *z)\
-// {\
-//     fft##n2(z);\
-//     fft##n4(z+n4*2);\
-//     fft##n4(z+n4*3);\
-//     pass(z,TX_NAME(ff_cos_##n),n4/2);\
-// }
-
-
-// DECL_FFT(32,16,8)
-// DECL_FFT(64,32,16)
-// DECL_FFT(128,64,32)
-// DECL_FFT(256,128,64)
-// DECL_FFT(512,256,128)
-// #define pass pass_big
-// DECL_FFT(1024,512,256)
-// DECL_FFT(2048,1024,512)
-// DECL_FFT(4096,2048,1024)
-// DECL_FFT(8192,4096,2048)
-// DECL_FFT(16384,8192,4096)
-// DECL_FFT(32768,16384,8192)
-// DECL_FFT(65536,32768,16384)
-// DECL_FFT(131072,65536,32768)
 
 // DECL_COMP_FFT(3)
 // DECL_COMP_FFT(5)
@@ -8296,6 +8283,7 @@ typedef struct Picture
 } Picture;
 
 typedef uint64_t BitBuf;
+static const int BUF_BITS = 8 * sizeof(BitBuf);
 
 typedef struct PutBitContext
 {
