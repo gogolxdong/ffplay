@@ -14,6 +14,129 @@
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
+enum AVPacketSideDataType {
+
+    AV_PKT_DATA_PALETTE,
+
+    AV_PKT_DATA_NEW_EXTRADATA,
+
+    AV_PKT_DATA_PARAM_CHANGE,
+
+    AV_PKT_DATA_H263_MB_INFO,
+
+    AV_PKT_DATA_REPLAYGAIN,
+
+    AV_PKT_DATA_DISPLAYMATRIX,
+
+    AV_PKT_DATA_STEREO3D,
+
+    AV_PKT_DATA_AUDIO_SERVICE_TYPE,
+
+    AV_PKT_DATA_QUALITY_STATS,
+
+    AV_PKT_DATA_FALLBACK_TRACK,
+
+    AV_PKT_DATA_CPB_PROPERTIES,
+
+    AV_PKT_DATA_SKIP_SAMPLES,
+
+    AV_PKT_DATA_JP_DUALMONO,
+
+    AV_PKT_DATA_STRINGS_METADATA,
+
+    AV_PKT_DATA_SUBTITLE_POSITION,
+
+    AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+
+    AV_PKT_DATA_WEBVTT_IDENTIFIER,
+
+    AV_PKT_DATA_WEBVTT_SETTINGS,
+
+    AV_PKT_DATA_METADATA_UPDATE,
+
+    AV_PKT_DATA_MPEGTS_STREAM_ID,
+
+    AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+
+    AV_PKT_DATA_SPHERICAL,
+
+    AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
+
+    AV_PKT_DATA_A53_CC,
+
+    AV_PKT_DATA_ENCRYPTION_INIT_INFO,
+
+    AV_PKT_DATA_ENCRYPTION_INFO,
+
+    AV_PKT_DATA_AFD,
+
+    AV_PKT_DATA_PRFT,
+
+    AV_PKT_DATA_ICC_PROFILE,
+
+    AV_PKT_DATA_DOVI_CONF,
+
+    AV_PKT_DATA_S12M_TIMECODE,
+
+    AV_PKT_DATA_NB
+};
+
+enum AVSideDataParamChangeFlags {
+    AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,
+    AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT = 0x0002,
+    AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE    = 0x0004,
+    AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS     = 0x0008,
+};
+
+enum AudioObjectType {
+    AOT_NULL,
+                               // Support?                Name
+    AOT_AAC_MAIN,              ///< Y                       Main
+    AOT_AAC_LC,                ///< Y                       Low Complexity
+    AOT_AAC_SSR,               ///< N (code in SoC repo)    Scalable Sample Rate
+    AOT_AAC_LTP,               ///< Y                       Long Term Prediction
+    AOT_SBR,                   ///< Y                       Spectral Band Replication
+    AOT_AAC_SCALABLE,          ///< N                       Scalable
+    AOT_TWINVQ,                ///< N                       Twin Vector Quantizer
+    AOT_CELP,                  ///< N                       Code Excited Linear Prediction
+    AOT_HVXC,                  ///< N                       Harmonic Vector eXcitation Coding
+    AOT_TTSI             = 12, ///< N                       Text-To-Speech Interface
+    AOT_MAINSYNTH,             ///< N                       Main Synthesis
+    AOT_WAVESYNTH,             ///< N                       Wavetable Synthesis
+    AOT_MIDI,                  ///< N                       General MIDI
+    AOT_SAFX,                  ///< N                       Algorithmic Synthesis and Audio Effects
+    AOT_ER_AAC_LC,             ///< N                       Error Resilient Low Complexity
+    AOT_ER_AAC_LTP       = 19, ///< N                       Error Resilient Long Term Prediction
+    AOT_ER_AAC_SCALABLE,       ///< N                       Error Resilient Scalable
+    AOT_ER_TWINVQ,             ///< N                       Error Resilient Twin Vector Quantizer
+    AOT_ER_BSAC,               ///< N                       Error Resilient Bit-Sliced Arithmetic Coding
+    AOT_ER_AAC_LD,             ///< N                       Error Resilient Low Delay
+    AOT_ER_CELP,               ///< N                       Error Resilient Code Excited Linear Prediction
+    AOT_ER_HVXC,               ///< N                       Error Resilient Harmonic Vector eXcitation Coding
+    AOT_ER_HILN,               ///< N                       Error Resilient Harmonic and Individual Lines plus Noise
+    AOT_ER_PARAM,              ///< N                       Error Resilient Parametric
+    AOT_SSC,                   ///< N                       SinuSoidal Coding
+    AOT_PS,                    ///< N                       Parametric Stereo
+
+    AOT_SURROUND,              ///< N                       MPEG Surround
+    AOT_ESCAPE,                ///< Y                       Escape Value
+    AOT_L1,                    ///< Y                       Layer 1
+    AOT_L2,                    ///< Y                       Layer 2
+    AOT_L3,                    ///< Y                       Layer 3
+    AOT_DST,                   ///< N                       Direct Stream Transfer
+    AOT_ALS,                   ///< Y                       Audio LosslesS
+    AOT_SLS,                   ///< N                       Scalable LosslesS
+    AOT_SLS_NON_CORE,          ///< N                       Scalable LosslesS (non core)
+    AOT_ER_AAC_ELD,            ///< N                       Error Resilient Enhanced Low Delay
+    AOT_SMR_SIMPLE,            ///< N                       Symbolic Music Representation Simple
+    AOT_SMR_MAIN,              ///< N                       Symbolic Music Representation Main
+    AOT_USAC_NOSBR,            ///< N                       Unified Speech and Audio Coding (no SBR)
+    AOT_SAOC,                  ///< N                       Spatial Audio Object Coding
+    AOT_LD_SURROUND,           ///< N                       Low Delay MPEG Surround
+    AOT_USAC,                  ///< N                       Unified Speech and Audio Coding
+};
+
+
 enum BenchAction {
     ACTION_START,
     ACTION_STOP,
@@ -244,6 +367,17 @@ enum AVFrameSideDataType
     AV_FRAME_DATA_SPHERICAL,
     AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
     AV_FRAME_DATA_ICC_PROFILE,
+    #if FF_API_FRAME_QP
+    AV_FRAME_DATA_QP_TABLE_PROPERTIES,
+    AV_FRAME_DATA_QP_TABLE_DATA,
+#endif
+    AV_FRAME_DATA_S12M_TIMECODE,
+AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
+    AV_FRAME_DATA_REGIONS_OF_INTEREST,
+
+    AV_FRAME_DATA_VIDEO_ENC_PARAMS,
+
+    AV_FRAME_DATA_SEI_UNREGISTERED,
 };
 
 enum AVPictureType
@@ -266,36 +400,7 @@ enum RDFTransformType
     DFT_C2R,
 };
 
-enum AVPacketSideDataType
-{
-    AV_PKT_DATA_PALETTE,
-    AV_PKT_DATA_NEW_EXTRADATA,
-    AV_PKT_DATA_PARAM_CHANGE,
-    AV_PKT_DATA_H263_MB_INFO,
-    AV_PKT_DATA_REPLAYGAIN,
-    AV_PKT_DATA_DISPLAYMATRIX,
-    AV_PKT_DATA_STEREO3D,
-    AV_PKT_DATA_AUDIO_SERVICE_TYPE,
-    AV_PKT_DATA_QUALITY_STATS,
-    AV_PKT_DATA_FALLBACK_TRACK,
-    AV_PKT_DATA_CPB_PROPERTIES,
-    AV_PKT_DATA_SKIP_SAMPLES,
-    AV_PKT_DATA_JP_DUALMONO,
-    AV_PKT_DATA_SUBTITLE_POSITION,
-    AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
-    AV_PKT_DATA_WEBVTT_IDENTIFIER,
-    AV_PKT_DATA_WEBVTT_SETTINGS,
-    AV_PKT_DATA_METADATA_UPDATE,
-    AV_PKT_DATA_MPEGTS_STREAM_ID,
-    AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
-    AV_PKT_DATA_SPHERICAL,
-    AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
-    AV_PKT_DATA_A53_CC,
-    AV_PKT_DATA_ENCRYPTION_INIT_INFO,
-    AV_PKT_DATA_ENCRYPTION_INFO,
-    AV_PKT_DATA_AFD,
-    AV_PKT_DATA_NB
-};
+
 
 enum AVSubtitleType
 {
@@ -1253,6 +1358,12 @@ enum {
     AV_BUFFERSRC_FLAG_KEEP_REF = 8,
 };
 
+enum {
+    AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX = 0x01,
+    AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX = 0x02,
+    AV_CODEC_HW_CONFIG_METHOD_INTERNAL      = 0x04,
+    AV_CODEC_HW_CONFIG_METHOD_AD_HOC        = 0x08,
+};
 
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(__INTEL_COMPILER)
 #    define av_uninit(x) x=x
@@ -1260,16 +1371,7 @@ enum {
 #    define av_uninit(x) x
 #endif
 
-
-#if defined _MSC_VER && !defined _CRT_USE_BUILTIN_OFFSETOF
-    #ifdef __cplusplus
-        #define offsetof(s,m) ((::size_t)&reinterpret_cast<char const volatile&>((((s*)0)->m)))
-    #else
-        #define offsetof(s,m) ((size_t)&(((s*)0)->m))
-    #endif
-#else
-    #define offsetof(s,m) __builtin_offsetof(s,m)
-#endif
+// #define offsetof(s,m) __builtin_offsetof(s,m)
 
 #ifdef __GNUC__
 #define AV_GCC_VERSION_AT_LEAST(x, y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
@@ -1279,28 +1381,24 @@ enum {
 #define AV_GCC_VERSION_AT_MOST(x, y) 0
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3, 1)
-#define attribute_deprecated __attribute__((deprecated))
-#elif defined(_MSC_VER)
-#define attribute_deprecated __declspec(deprecated)
-#else
-#define attribute_deprecated
-#endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define av_unused __attribute__((unused))
+#    define av_unused __attribute__((unused))
 #else
-#define av_unused
+#    define av_unused
 #endif
 
-#ifndef av_always_inline
-#if AV_GCC_VERSION_AT_LEAST(3, 1)
-#define av_always_inline __attribute__((always_inline)) inline
-#elif defined(_MSC_VER)
-#define av_always_inline __forceinline
+#if HAVE_XMM_CLOBBERS
+#    define XMM_CLOBBERS(...)        __VA_ARGS__
+#    define XMM_CLOBBERS_ONLY(...) : __VA_ARGS__
 #else
-#define av_always_inline inline
+#    define XMM_CLOBBERS(...)
+#    define XMM_CLOBBERS_ONLY(...)
 #endif
+#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
+#    define av_used __attribute__((used))
+#else
+#    define av_used
 #endif
 
 #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
@@ -1337,14 +1435,27 @@ enum {
 
 #define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
 
-static av_always_inline av_const int av_popcount_c(uint32_t x)
-{
-    x -= (x >> 1) & 0x55555555;
-    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-    x = (x + (x >> 4)) & 0x0F0F0F0F;
-    x += x >> 8;
-    return (x + (x >> 16)) & 0x3F;
+
+
+#if !HAVE_BIGENDIAN
+#define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
+static void shuffle_bytes_##name (const uint8_t *src,                   \
+                                        uint8_t *dst, int src_size)     \
+{                                                                       \
+    int i;                                                              \
+                                                                        \
+    for (i = 0; i < src_size; i += 4) {                                 \
+        dst[i + 0] = src[i + a];                                        \
+        dst[i + 1] = src[i + b];                                        \
+        dst[i + 2] = src[i + c];                                        \
+        dst[i + 3] = src[i + d];                                        \
+    }                                                                   \
 }
+
+DEFINE_SHUFFLE_BYTES(1230_c, 1, 2, 3, 0)
+DEFINE_SHUFFLE_BYTES(3012_c, 3, 0, 1, 2)
+DEFINE_SHUFFLE_BYTES(3210_c, 3, 2, 1, 0)
+#endif
 
 #if _INTEGRAL_MAX_BITS >= 128
 // minimum signed 128 bit value
@@ -1727,11 +1838,11 @@ static av_always_inline av_const int av_popcount_c(uint32_t x)
 #define HAVE_GETTIMEOFDAY 1
 #define HAVE_GLOB 0
 #define HAVE_GLXGETPROCADDRESS 0
-#define HAVE_GMTIME_R 1
+#define HAVE_GMTIME_R 0
 #define HAVE_INET_ATON 0
 #define HAVE_ISATTY 1
 #define HAVE_KBHIT 1
-#define HAVE_LOCALTIME_R 1
+#define HAVE_LOCALTIME_R 0
 #define HAVE_LSTAT 0
 #define HAVE_LZO1X_999_COMPRESS 0
 #define HAVE_MACH_ABSOLUTE_TIME 0
@@ -1915,7 +2026,7 @@ static av_always_inline av_const int av_popcount_c(uint32_t x)
 #define CONFIG_LIBSHINE 1
 #define CONFIG_LIBSMBCLIENT 0
 #define CONFIG_LIBSNAPPY 1
-#define CONFIG_LIBSOXR 1
+#define CONFIG_LIBSOXR 0
 #define CONFIG_LIBSPEEX 1
 #define CONFIG_LIBSRT 1
 #define CONFIG_LIBSSH 1
@@ -1945,7 +2056,7 @@ static av_always_inline av_const int av_popcount_c(uint32_t x)
 #define CONFIG_AVFOUNDATION 0
 #define CONFIG_BZLIB 1
 #define CONFIG_COREIMAGE 0
-#define CONFIG_ICONV 1
+#define CONFIG_ICONV 0
 #define CONFIG_LIBXCB 0
 #define CONFIG_LIBXCB_SHM 0
 #define CONFIG_LIBXCB_SHAPE 0
@@ -4591,9 +4702,8 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define AV_OPT_FLAG_BSF_PARAM (1 << 8)        ///< a generic parameter which can be set by the user for bit stream filtering
 #define AV_OPT_FLAG_RUNTIME_PARAM (1 << 15)   ///< a generic parameter which can be set by the user at runtime
 #define AV_OPT_FLAG_FILTERING_PARAM (1 << 16) ///< a generic parameter which can be set by the user for filtering
-#define AV_OPT_FLAG_DEPRECATED (1 << 17)      ///< set if option is deprecated, users should refer to AVOption.help text for more information
+#define AV_OPT_FLAG_DEPRECATED (1 << 17)      ///< set if option is deprecated, users should refer to .help text for more information
 #define AV_OPT_FLAG_CHILD_CONSTS (1 << 18)    ///< set if option constants can also reside in child objects
-
 
 
 #define HAS_ARG 0x0001
@@ -4785,8 +4895,7 @@ int hide_banner = 0;
 
 #define AV_NOPTS_VALUE ((int64_t)UINT64_C(0x8000000000000000))
 #define AV_TIME_BASE 1000000
-#define AV_TIME_BASE_Q \
-    (AVRational) { 1, AV_TIME_BASE }
+#define AV_TIME_BASE_Q (AVRational) { 1, AV_TIME_BASE }
 
 #define AV_HAVE_BIGENDIAN 0
 #define AV_HAVE_FAST_UNALIGNED 1
@@ -4910,37 +5019,33 @@ typedef int intptr_t;
 
 #define CLOSE_READER(name, gb) (gb)->index = name##_index
 
-#ifdef LONG_BITSTREAM_READER
+static av_const uint32_t av_bswap32(uint32_t x)
+{
+    return x << 16| x >> 16;
+}
 
-#define UPDATE_CACHE_LE(name, gb) name##_cache = \
-                                      AV_RL64((gb)->buffer + (name##_index >> 3)) >> (name##_index & 7)
+#define AV_RN(s, p) (*((const __unaligned uint##s##_t*)(p)))
+#define AV_WN(s, p, v) (*((__unaligned uint##s##_t*)(p)) = (v))
 
-#define UPDATE_CACHE_BE(name, gb) name##_cache = \
-                                      AV_RB64((gb)->buffer + (name##_index >> 3)) >> (32 - (name##_index & 7))
+#define AV_RN64(p) AV_RN(64, p)
+#define AV_RN32(p) AV_RN(32, p)
+#define AV_RN16(p) AV_RN(16, p)
+#define AV_RN8(p) AV_RN(8, p)
 
-#else
+#   if    defined(AV_RN24) && !defined(AV_RL24)
+#       define AV_RL24(p) AV_RN24(p)
+#   elif !defined(AV_RN24) &&  defined(AV_RL24)
+#       define AV_RN24(p) AV_RL24(p)
+#   endif
 
-#define UPDATE_CACHE_LE(name, gb) name##_cache = \
-                                      AV_RL32((gb)->buffer + (name##_index >> 3)) >> (name##_index & 7)
+#define AV_RN32(p) AV_RN(32, p)
+#define AV_RB(s, p)    av_bswap##s(AV_RN##s(p))
+#define AV_RB32(p)    AV_RB(32, p)
+# define UPDATE_CACHE_BE(name, gb) name ## _cache = \
+      AV_RB32((gb)->buffer + (name ## _index >> 3)) << (name ## _index & 7)
+# define UPDATE_CACHE(name, gb) UPDATE_CACHE_BE(name, gb)
 
-#define UPDATE_CACHE_BE(name, gb) name##_cache = \
-                                      AV_RB32((gb)->buffer + (name##_index >> 3)) << (name##_index & 7)
-
-#endif
-
-#ifdef BITSTREAM_READER_LE
-
-#define UPDATE_CACHE(name, gb) UPDATE_CACHE_LE(name, gb)
-
-#define SKIP_CACHE(name, gb, num) name##_cache >>= (num)
-
-#else
-
-#define UPDATE_CACHE(name, gb) UPDATE_CACHE_BE(name, gb)
-
-#define SKIP_CACHE(name, gb, num) name##_cache <<= (num)
-
-#endif
+# define SKIP_CACHE(name, gb, num) name ## _cache <<= (num)
 
 #if UNCHECKED_BITSTREAM_READER
 #define SKIP_COUNTER(name, gb, num) name##_index += (num)
@@ -4963,22 +5068,32 @@ typedef int intptr_t;
 #define SHOW_UBITS_LE(name, gb, num) zero_extend(name##_cache, num)
 #define SHOW_SBITS_LE(name, gb, num) sign_extend(name##_cache, num)
 
-#define SHOW_UBITS_BE(name, gb, num) NEG_USR32(name##_cache, num)
 #define SHOW_SBITS_BE(name, gb, num) NEG_SSR32(name##_cache, num)
 
+#define NEG_USR32 NEG_USR32
+static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
+    __asm__ ("shrl %1, %0\n\t"
+         : "+r" (a)
+         : "ic" ((uint8_t)(-s))
+    );
+    return a;
+}
+
+#define SHOW_UBITS_BE(name, gb, num) NEG_USR32(name ## _cache, num)
+
+
 #ifdef BITSTREAM_READER_LE
-#define SHOW_UBITS(name, gb, num) SHOW_UBITS_LE(name, gb, num)
-#define SHOW_SBITS(name, gb, num) SHOW_SBITS_LE(name, gb, num)
+#   define SHOW_UBITS(name, gb, num) SHOW_UBITS_LE(name, gb, num)
+#   define SHOW_SBITS(name, gb, num) SHOW_SBITS_LE(name, gb, num)
 #else
-#define SHOW_UBITS(name, gb, num) SHOW_UBITS_BE(name, gb, num)
-#define SHOW_SBITS(name, gb, num) SHOW_SBITS_BE(name, gb, num)
+#   define SHOW_UBITS(name, gb, num) SHOW_UBITS_BE(name, gb, num)
+#   define SHOW_SBITS(name, gb, num) SHOW_SBITS_BE(name, gb, num)
 #endif
 
 #define GET_CACHE(name, gb) ((uint32_t)name##_cache)
 
 #endif
 
-#define OFFSET(x) offsetof(AADemuxContext, x)
 #define ADTS_HEADER_SIZE 7
 
 #define ID3v2_HEADER_SIZE 10
@@ -5067,9 +5182,7 @@ typedef int intptr_t;
 #define AV_CH_BOTTOM_FRONT_LEFT 0x0000008000000000ULL
 #define AV_CH_BOTTOM_FRONT_RIGHT 0x0000010000000000ULL
 
-/** Channel mask value used for AVCodecContext.request_channel_layout
-    to indicate that the user requests the channel order of the decoder output
-    to be the native codec channel order. */
+
 #define AV_CH_LAYOUT_NATIVE 0x8000000000000000ULL
 #define AV_CH_LAYOUT_MONO (AV_CH_FRONT_CENTER)
 #define AV_CH_LAYOUT_STEREO (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)
@@ -5162,7 +5275,6 @@ typedef int intptr_t;
 #define ff_mutex_lock pthread_mutex_lock
 #define ff_mutex_unlock pthread_mutex_unlock
 #define ff_mutex_destroy pthread_mutex_destroy
-#define pthread_mutex_lock strict_pthread_mutex_lock
 
 #define BUFFER_FLAG_REALLOCATABLE (1 << 0)
 #define ALIGN (HAVE_AVX512 ? 64 : (HAVE_AVX ? 32 : 16))
@@ -5349,14 +5461,7 @@ FF_PAD_STRUCTURE(AVBPrint, 1024,
 #define AV_BPRINT_SIZE_AUTOMATIC 1
 #define AV_BPRINT_SIZE_COUNT_ONLY 0
 
-#define FFSWAP(type, a, b) \
-    do                     \
-    {                      \
-        type SWAP_tmp = b; \
-        b = a;             \
-        a = SWAP_tmp;      \
-    } while (0)
-#define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
+
 
 #define AV_OPT_SEARCH_CHILDREN (1 << 0) /**< Search in possible children of the given object first. */
 #define AV_OPT_SEARCH_FAKE_OBJ (1 << 1)
@@ -5389,7 +5494,6 @@ typedef Uint16 SDL_AudioFormat;
 #define AVOnce pthread_once_t
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 
-// #define OFFSET(obj) offsetof(ADTSContext, obj)
 
 #define AVIO_SEEKABLE_NORMAL (1 << 0)
 
@@ -5418,17 +5522,13 @@ typedef Uint16 SDL_AudioFormat;
 #define AC3_CRITICAL_BANDS 50
 #define AC3_MAX_CPL_BANDS  18
 
-#define CONV_FP(x) ((double) (x)) / (1 << 16)
-
-// double to fixed point
-#define CONV_DB(x) (int32_t) ((x) * (1 << 16))
 
 #define AVSEEK_SIZE 0x10000
 
 #define AVSEEK_FORCE 0x20000
 
 #define FETCH_MODIFY(opname, op)                                            \
-static inline intptr_t atomic_fetch_ ## opname(intptr_t *object, intptr_t operand) \
+static intptr_t atomic_fetch_ ## opname(intptr_t *object, intptr_t operand) \
 {                                                                    \
     intptr_t ret;                                                    \
     ret = *object;                                                   \
@@ -5445,6 +5545,17 @@ FETCH_MODIFY(and, &)
 
 #define atomic_fetch_add_explicit(object, operand, order) \
     atomic_fetch_add(object, operand)
+
+
+#    define av_builtin_constant_p(x) 0
+#    define av_printf_format(fmtpos, attrpos)
+
+
+#ifdef __has_builtin
+#    define AV_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#    define AV_HAS_BUILTIN(x) 0
+#endif
 
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
@@ -5473,6 +5584,327 @@ FETCH_MODIFY(and, &)
 #define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
+#ifndef av_log2
+av_const int av_log2(unsigned v);
+#endif
+
+#ifndef av_log2_16bit
+av_const int av_log2_16bit(unsigned v);
+#endif
+
+
+static inline av_const int av_clip_c(int a, int amin, int amax)
+{
+#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+    if (amin > amax) abort();
+#endif
+    if      (a < amin) return amin;
+    else if (a > amax) return amax;
+    else               return a;
+}
+
+
+static inline av_const int64_t av_clip64_c(int64_t a, int64_t amin, int64_t amax)
+{
+#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+    if (amin > amax) abort();
+#endif
+    if      (a < amin) return amin;
+    else if (a > amax) return amax;
+    else               return a;
+}
+
+
+static inline av_const uint8_t av_clip_uint8_c(int a)
+{
+    if (a&(~0xFF)) return (~a)>>31;
+    else           return a;
+}
+
+
+static inline av_const int8_t av_clip_int8_c(int a)
+{
+    if ((a+0x80U) & ~0xFF) return (a>>31) ^ 0x7F;
+    else                  return a;
+}
+
+
+static inline av_const uint16_t av_clip_uint16_c(int a)
+{
+    if (a&(~0xFFFF)) return (~a)>>31;
+    else             return a;
+}
+
+static inline av_const int16_t av_clip_int16_c(int a)
+{
+    if ((a+0x8000U) & ~0xFFFF) return (a>>31) ^ 0x7FFF;
+    else                      return a;
+}
+
+
+static inline av_const int32_t av_clipl_int32_c(int64_t a)
+{
+    if ((a+0x80000000u) & ~UINT64_C(0xFFFFFFFF)) return (int32_t)((a>>63) ^ 0x7FFFFFFF);
+    else                                         return (int32_t)a;
+}
+
+
+static inline av_const int av_clip_intp2_c(int a, int p)
+{
+    if (((unsigned)a + (1 << p)) & ~((2 << p) - 1))
+        return (a >> 31) ^ ((1 << p) - 1);
+    else
+        return a;
+}
+
+
+static inline av_const unsigned av_clip_uintp2_c(int a, int p)
+{
+    if (a & ~((1<<p) - 1)) return (~a) >> 31 & ((1<<p) - 1);
+    else                   return  a;
+}
+
+
+static inline av_const unsigned av_mod_uintp2_c(unsigned a, unsigned p)
+{
+    return a & ((1U << p) - 1);
+}
+
+static inline int av_sat_add32_c(int a, int b)
+{
+    return av_clipl_int32((int64_t)a + b);
+}
+
+static inline int av_sat_dadd32_c(int a, int b)
+{
+    return av_sat_add32(a, av_sat_add32(b, b));
+}
+
+
+static inline int av_sat_sub32_c(int a, int b)
+{
+    return av_clipl_int32((int64_t)a - b);
+}
+
+static inline int av_sat_dsub32_c(int a, int b)
+{
+    return av_sat_sub32(a, av_sat_add32(b, b));
+}
+
+
+static inline int64_t av_sat_add64_c(int64_t a, int64_t b) {
+#if (!defined(__INTEL_COMPILER) && AV_GCC_VERSION_AT_LEAST(5,1)) || AV_HAS_BUILTIN(__builtin_add_overflow)
+    int64_t tmp;
+    return !__builtin_add_overflow(a, b, &tmp) ? tmp : (tmp < 0 ? INT64_MAX : INT64_MIN);
+#else
+    if (b >= 0 && a >= INT64_MAX - b)
+        return INT64_MAX;
+    if (b <= 0 && a <= INT64_MIN - b)
+        return INT64_MIN;
+    return a + b;
+#endif
+}
+
+static inline int64_t av_sat_sub64_c(int64_t a, int64_t b) {
+#if (!defined(__INTEL_COMPILER) && AV_GCC_VERSION_AT_LEAST(5,1)) || AV_HAS_BUILTIN(__builtin_sub_overflow)
+    int64_t tmp;
+    return !__builtin_sub_overflow(a, b, &tmp) ? tmp : (tmp < 0 ? INT64_MAX : INT64_MIN);
+#else
+    if (b <= 0 && a >= INT64_MAX + b)
+        return INT64_MAX;
+    if (b >= 0 && a <= INT64_MIN + b)
+        return INT64_MIN;
+    return a - b;
+#endif
+}
+
+static inline av_const float av_clipf_c(float a, float amin, float amax)
+{
+#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+    if (amin > amax) abort();
+#endif
+    if      (a < amin) return amin;
+    else if (a > amax) return amax;
+    else               return a;
+}
+
+
+static inline av_const double av_clipd_c(double a, double amin, double amax)
+{
+#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+    if (amin > amax) abort();
+#endif
+    if      (a < amin) return amin;
+    else if (a > amax) return amax;
+    else               return a;
+}
+
+
+static inline av_const int av_ceil_log2_c(int x)
+{
+    return av_log2((x - 1U) << 1);
+}
+
+
+static inline av_const int av_popcount_c(uint32_t x)
+{
+    x -= (x >> 1) & 0x55555555;
+    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+    x = (x + (x >> 4)) & 0x0F0F0F0F;
+    x += x >> 8;
+    return (x + (x >> 16)) & 0x3F;
+}
+
+
+static inline av_const int av_popcount64_c(uint64_t x)
+{
+    return av_popcount((uint32_t)x) + av_popcount((uint32_t)(x >> 32));
+}
+
+static inline av_const int av_parity_c(uint32_t v)
+{
+    return av_popcount(v) & 1;
+}
+
+#define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
+#define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
+
+#define GET_UTF8(val, GET_BYTE, ERROR)\
+    val= (GET_BYTE);\
+    {\
+        uint32_t top = (val & 128) >> 1;\
+        if ((val & 0xc0) == 0x80 || val >= 0xFE)\
+            {ERROR}\
+        while (val & top) {\
+            unsigned int tmp = (GET_BYTE) - 128;\
+            if(tmp>>6)\
+                {ERROR}\
+            val= (val<<6) + tmp;\
+            top <<= 5;\
+        }\
+        val &= (top << 1) - 1;\
+    }
+
+#define GET_UTF16(val, GET_16BIT, ERROR)\
+    val = (GET_16BIT);\
+    {\
+        unsigned int hi = val - 0xD800;\
+        if (hi < 0x800) {\
+            val = (GET_16BIT) - 0xDC00;\
+            if (val > 0x3FFU || hi > 0x3FFU)\
+                {ERROR}\
+            val += (hi<<10) + 0x10000;\
+        }\
+    }\
+
+
+#define PUT_UTF8(val, tmp, PUT_BYTE)\
+    {\
+        int bytes, shift;\
+        uint32_t in = val;\
+        if (in < 0x80) {\
+            tmp = in;\
+            PUT_BYTE\
+        } else {\
+            bytes = (av_log2(in) + 4) / 5;\
+            shift = (bytes - 1) * 6;\
+            tmp = (256 - (256 >> bytes)) | (in >> shift);\
+            PUT_BYTE\
+            while (shift >= 6) {\
+                shift -= 6;\
+                tmp = 0x80 | ((in >> shift) & 0x3f);\
+                PUT_BYTE\
+            }\
+        }\
+    }
+
+#define PUT_UTF16(val, tmp, PUT_16BIT)\
+    {\
+        uint32_t in = val;\
+        if (in < 0x10000) {\
+            tmp = in;\
+            PUT_16BIT\
+        } else {\
+            tmp = 0xD800 | ((in - 0x10000) >> 10);\
+            PUT_16BIT\
+            tmp = 0xDC00 | ((in - 0x10000) & 0x3FF);\
+            PUT_16BIT\
+        }\
+    }\
+
+
+/*
+ * The following definitions are outside the multiple inclusion guard
+ * to ensure they are immediately available in intmath.h.
+ */
+
+#ifndef av_ceil_log2
+#   define av_ceil_log2     av_ceil_log2_c
+#endif
+#ifndef av_clip
+#   define av_clip          av_clip_c
+#endif
+#ifndef av_clip64
+#   define av_clip64        av_clip64_c
+#endif
+#ifndef av_clip_uint8
+#   define av_clip_uint8    av_clip_uint8_c
+#endif
+#ifndef av_clip_int8
+#   define av_clip_int8     av_clip_int8_c
+#endif
+#ifndef av_clip_uint16
+#   define av_clip_uint16   av_clip_uint16_c
+#endif
+#ifndef av_clip_int16
+#   define av_clip_int16    av_clip_int16_c
+#endif
+#ifndef av_clipl_int32
+#   define av_clipl_int32   av_clipl_int32_c
+#endif
+#ifndef av_clip_intp2
+#   define av_clip_intp2    av_clip_intp2_c
+#endif
+#ifndef av_clip_uintp2
+#   define av_clip_uintp2   av_clip_uintp2_c
+#endif
+#ifndef av_mod_uintp2
+#   define av_mod_uintp2    av_mod_uintp2_c
+#endif
+#ifndef av_sat_add32
+#   define av_sat_add32     av_sat_add32_c
+#endif
+#ifndef av_sat_dadd32
+#   define av_sat_dadd32    av_sat_dadd32_c
+#endif
+#ifndef av_sat_sub32
+#   define av_sat_sub32     av_sat_sub32_c
+#endif
+#ifndef av_sat_dsub32
+#   define av_sat_dsub32    av_sat_dsub32_c
+#endif
+#ifndef av_sat_add64
+#   define av_sat_add64     av_sat_add64_c
+#endif
+#ifndef av_sat_sub64
+#   define av_sat_sub64     av_sat_sub64_c
+#endif
+#ifndef av_clipf
+#   define av_clipf         av_clipf_c
+#endif
+#ifndef av_clipd
+#   define av_clipd         av_clipd_c
+#endif
+#ifndef av_popcount
+#   define av_popcount      av_popcount_c
+#endif
+#ifndef av_popcount64
+#   define av_popcount64    av_popcount64_c
+#endif
+#ifndef av_parity
+#   define av_parity        av_parity_c
+#endif
+
 #if AV_GCC_VERSION_AT_LEAST(4,3) || defined(__clang__)
 #    define av_cold __attribute__((cold))
 #else
@@ -5484,7 +5916,7 @@ FETCH_MODIFY(and, &)
 #       define ff_ctzll(v) _tzcnt_u64(v)
 #   else
 #       define ff_ctzll ff_ctzll_x86
-static av_always_inline av_const int ff_ctzll_x86(long long v)
+static  av_const int ff_ctzll_x86(long long v)
 {
     return ((uint32_t)v == 0) ? _tzcnt_u32((uint32_t)(v >> 32)) + 32 : _tzcnt_u32((uint32_t)v);
 }
@@ -5684,26 +6116,1612 @@ do {                                                               \
 
 #define RETCODE_USE_CASCADE -12345
 
-#define AVFILTER_DEFINE_CLASS(fname)            \
-    static const AVClass fname##_class = {      \
-        .class_name = #fname,                   \
-        .item_name  = av_default_item_name,     \
-        .option     = fname##_options,          \
-        .version    = LIBAVUTIL_VERSION_INT,    \
-        .category   = AV_CLASS_CATEGORY_FILTER, \
-    }
 
-#define DEFINE_OPTIONS(filt_name, FLAGS)                                                                                \
-static const AVOption filt_name##_options[] = {                                                                         \
-    { "action", "set action", OFFSET(action), AV_OPT_TYPE_INT, {.i64=ACTION_START}, 0, NB_ACTION-1, FLAGS, "action" },  \
-        { "start", "start timer",  0, AV_OPT_TYPE_CONST, {.i64=ACTION_START}, INT_MIN, INT_MAX, FLAGS, "action" },      \
-        { "stop",  "stop timer",   0, AV_OPT_TYPE_CONST, {.i64=ACTION_STOP},  INT_MIN, INT_MAX, FLAGS, "action" },      \
-    { NULL }                                                                                                            \
-}
+#define SWR_CH_MAX 64
+
+#define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */
+
+#define NS_TAPS 20
+
+#define FLT_MAX 3.40282346638528859812e+38F
+
+#undef  FLT_MIN
+#define FLT_MIN 1.17549435082228750797e-38F
+
+#undef  DBL_MAX
+#define DBL_MAX ((double)1.79769313486231570815e+308L)
+
+#undef  DBL_MIN
+#define DBL_MIN ((double)2.22507385850720138309e-308L)
+
+
 #define AVFILTER_THREAD_SLICE (1 << 0)
 
 #define AV_BUFFERSINK_FLAG_PEEK 1
 #define AV_BUFFERSINK_FLAG_NO_REQUEST 2
+
+#ifndef M_E
+#define M_E            2.7182818284590452354   /* e */
+#endif
+#ifndef M_LN2
+#define M_LN2          0.69314718055994530942  /* log_e 2 */
+#endif
+#ifndef M_LN10
+#define M_LN10         2.30258509299404568402  /* log_e 10 */
+#endif
+#ifndef M_LOG2_10
+#define M_LOG2_10      3.32192809488736234787  /* log_2 10 */
+#endif
+#ifndef M_PHI
+#define M_PHI          1.61803398874989484820   /* phi / golden ratio */
+#endif
+#ifndef M_PI
+#define M_PI           3.14159265358979323846  /* pi */
+#endif
+#ifndef M_PI_2
+#define M_PI_2         1.57079632679489661923  /* pi/2 */
+#endif
+#ifndef M_SQRT1_2
+#define M_SQRT1_2      0.70710678118654752440  /* 1/sqrt(2) */
+#endif
+#ifndef M_SQRT2
+#define M_SQRT2        1.41421356237309504880  /* sqrt(2) */
+#endif
+#define  C30DB  M_SQRT2
+#define  C15DB  1.189207115
+#define C__0DB  1.0
+#define C_15DB  0.840896415
+#define C_30DB  M_SQRT1_2
+#define C_45DB  0.594603558
+#define C_60DB  0.5
+
+#define SWR_FLAG_RESAMPLE 1
+
+#define AV_CODEC_ID_IFF_BYTERUN1 AV_CODEC_ID_IFF_ILBM
+#define AV_CODEC_ID_H265 AV_CODEC_ID_HEVC
+
+#define AV_CPU_FLAG_FORCE    0x80000000 /* force usage of selected flags (OR) */
+
+    /* lower 16 bits - CPU features */
+#define AV_CPU_FLAG_MMX          0x0001 ///< standard MMX
+#define AV_CPU_FLAG_MMXEXT       0x0002 ///< SSE integer functions or AMD MMX ext
+#define AV_CPU_FLAG_MMX2         0x0002 ///< SSE integer functions or AMD MMX ext
+#define AV_CPU_FLAG_3DNOW        0x0004 ///< AMD 3DNOW
+#define AV_CPU_FLAG_SSE          0x0008 ///< SSE functions
+#define AV_CPU_FLAG_SSE2         0x0010 ///< PIV SSE2 functions
+#define AV_CPU_FLAG_SSE2SLOW 0x40000000 ///< SSE2 supported, but usually not faster
+                                        ///< than regular MMX/SSE (e.g. Core1)
+#define AV_CPU_FLAG_3DNOWEXT     0x0020 ///< AMD 3DNowExt
+#define AV_CPU_FLAG_SSE3         0x0040 ///< Prescott SSE3 functions
+#define AV_CPU_FLAG_SSE3SLOW 0x20000000 ///< SSE3 supported, but usually not faster
+                                        ///< than regular MMX/SSE (e.g. Core1)
+#define AV_CPU_FLAG_SSSE3        0x0080 ///< Conroe SSSE3 functions
+#define AV_CPU_FLAG_SSSE3SLOW 0x4000000 ///< SSSE3 supported, but usually not faster
+#define AV_CPU_FLAG_ATOM     0x10000000 ///< Atom processor, some SSSE3 instructions are slower
+#define AV_CPU_FLAG_SSE4         0x0100 ///< Penryn SSE4.1 functions
+#define AV_CPU_FLAG_SSE42        0x0200 ///< Nehalem SSE4.2 functions
+#define AV_CPU_FLAG_AESNI       0x80000 ///< Advanced Encryption Standard functions
+#define AV_CPU_FLAG_AVX          0x4000 ///< AVX functions: requires OS support even if YMM registers aren't used
+#define AV_CPU_FLAG_AVXSLOW   0x8000000 ///< AVX supported, but slow when using YMM registers (e.g. Bulldozer)
+#define AV_CPU_FLAG_XOP          0x0400 ///< Bulldozer XOP functions
+#define AV_CPU_FLAG_FMA4         0x0800 ///< Bulldozer FMA4 functions
+#define AV_CPU_FLAG_CMOV         0x1000 ///< supports cmov instruction
+#define AV_CPU_FLAG_AVX2         0x8000 ///< AVX2 functions: requires OS support even if YMM registers aren't used
+#define AV_CPU_FLAG_FMA3        0x10000 ///< Haswell FMA3 functions
+#define AV_CPU_FLAG_BMI1        0x20000 ///< Bit Manipulation Instruction Set 1
+#define AV_CPU_FLAG_BMI2        0x40000 ///< Bit Manipulation Instruction Set 2
+#define AV_CPU_FLAG_AVX512     0x100000 ///< AVX-512 functions: requires OS support even if YMM/ZMM registers aren't used
+
+#define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
+#define AV_CPU_FLAG_VSX          0x0002 ///< ISA 2.06
+#define AV_CPU_FLAG_POWER8       0x0004 ///< ISA 2.07
+
+#define AV_CPU_FLAG_ARMV5TE      (1 << 0)
+#define AV_CPU_FLAG_ARMV6        (1 << 1)
+#define AV_CPU_FLAG_ARMV6T2      (1 << 2)
+#define AV_CPU_FLAG_VFP          (1 << 3)
+#define AV_CPU_FLAG_VFPV3        (1 << 4)
+#define AV_CPU_FLAG_NEON         (1 << 5)
+#define AV_CPU_FLAG_ARMV8        (1 << 6)
+#define AV_CPU_FLAG_VFP_VM       (1 << 7) ///< VFPv2 vector mode, deprecated in ARMv7-A and unavailable in various CPUs implementations
+#define AV_CPU_FLAG_SETEND       (1 <<16)
+
+#define AV_CPU_FLAG_MMI          (1 << 0)
+#define AV_CPU_FLAG_MSA          (1 << 1)
+
+#define FF_MPV_OPT_CMP_FUNC \
+{ "sad",    "Sum of absolute differences, fast", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "sse",    "Sum of squared errors", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "satd",   "Sum of absolute Hadamard transformed differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SATD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "dct",    "Sum of absolute DCT transformed differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCT }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "psnr",   "Sum of squared quantization errors, low quality", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_PSNR }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "bit",    "Number of bits needed for the block", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_BIT }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "rd",     "Rate distortion optimal, slow", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_RD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "zero",   "Zero", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_ZERO }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "vsad",   "Sum of absolute vertical differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_VSAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "vsse",   "Sum of squared vertical differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_VSSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "nsse",   "Noise preserving sum of squared differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_NSSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "dct264", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCT264 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "dctmax", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "chroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_CHROMA }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{ "msad",   "Sum of absolute differences, median predicted", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_MEDIAN_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }
+
+#define FF_MPV_COMMON_OPTS \
+FF_MPV_OPT_CMP_FUNC, \
+{ "mpv_flags",      "Flags common for all mpegvideo-based encoders.", FF_MPV_OFFSET(mpv_flags), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "skip_rd",        "RD optimal MB level residual skipping", 0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_SKIP_RD },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "strict_gop",     "Strictly enforce gop size",             0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_STRICT_GOP }, 0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "qp_rd",          "Use rate distortion optimization for qp selection", 0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_QP_RD },  0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "cbp_rd",         "use rate distortion optimization for CBP",          0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_CBP_RD }, 0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "naq",            "normalize adaptive quantization",                   0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_NAQ },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "mv0",            "always try a mb with mv=<0,0>",                     0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_MV0 },    0, 0, FF_MPV_OPT_FLAGS, "mpv_flags" },\
+{ "luma_elim_threshold",   "single coefficient elimination threshold for luminance (negative values also consider dc coefficient)",\
+                                                                      FF_MPV_OFFSET(luma_elim_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
+{ "chroma_elim_threshold", "single coefficient elimination threshold for chrominance (negative values also consider dc coefficient)",\
+                                                                      FF_MPV_OFFSET(chroma_elim_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
+{ "quantizer_noise_shaping", NULL,                                  FF_MPV_OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
+{ "error_rate", "Simulate errors in the bitstream to test error concealment.",                                                                                                  \
+                                                                    FF_MPV_OFFSET(error_rate),              AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
+{"qsquish", "how to keep quantizer between qmin and qmax (0 = clip, 1 = use differentiable function)",                                                                          \
+                                                                    FF_MPV_OFFSET(rc_qsquish), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, 99, FF_MPV_OPT_FLAGS},                        \
+{"rc_qmod_amp", "experimental quantizer modulation",                FF_MPV_OFFSET(rc_qmod_amp), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},           \
+{"rc_qmod_freq", "experimental quantizer modulation",               FF_MPV_OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS},             \
+{"rc_eq", "Set rate control equation. When computing the expression, besides the standard functions "                                                                           \
+          "defined in the section 'Expression Evaluation', the following functions are available: "                                                                             \
+          "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "                                                                           \
+          "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",                                                                         \
+                                                                    FF_MPV_OFFSET(rc_eq), AV_OPT_TYPE_STRING,                           .flags = FF_MPV_OPT_FLAGS },            \
+{"rc_init_cplx", "initial complexity for 1-pass encoding",          FF_MPV_OFFSET(rc_initial_cplx), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},       \
+{"rc_buf_aggressivity", "currently useless",                        FF_MPV_OFFSET(rc_buffer_aggressivity), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS}, \
+{"border_mask", "increase the quantizer for macroblocks close to borders", FF_MPV_OFFSET(border_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},    \
+{"lmin", "minimum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmin), AV_OPT_TYPE_INT, {.i64 =  2*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
+{"lmax", "maximum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 = 31*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
+{"ibias", "intra quant bias",                                       FF_MPV_OFFSET(intra_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
+{"pbias", "inter quant bias",                                       FF_MPV_OFFSET(inter_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
+{"rc_strategy", "ratecontrol method",                               FF_MPV_OFFSET(rc_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" },   \
+    { "ffmpeg", "deprecated, does nothing", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" }, \
+    { "xvid",   "deprecated, does nothing", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" }, \
+{"motion_est", "motion estimation algorithm",                       FF_MPV_OFFSET(motion_est), AV_OPT_TYPE_INT, {.i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, FF_MPV_OPT_FLAGS, "motion_est" },   \
+{ "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
+{ "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
+{ "xone", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_XONE }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
+{ "force_duplicated_matrix", "Always write luma and chroma matrix for mjpeg, useful for rtp streaming.", FF_MPV_OFFSET(force_duplicated_matrix), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS },   \
+{"b_strategy", "Strategy to choose between I/P/B-frames",           FF_MPV_OFFSET(b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, FF_MPV_OPT_FLAGS }, \
+{"b_sensitivity", "Adjust sensitivity of b_frame_strategy 1",       FF_MPV_OFFSET(b_sensitivity), AV_OPT_TYPE_INT, {.i64 = 40 }, 1, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"brd_scale", "Downscale frames for dynamic B-frame decision",      FF_MPV_OFFSET(brd_scale), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 3, FF_MPV_OPT_FLAGS }, \
+{"skip_threshold", "Frame skip threshold",                          FF_MPV_OFFSET(frame_skip_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"skip_factor", "Frame skip factor",                                FF_MPV_OFFSET(frame_skip_factor), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"skip_exp", "Frame skip exponent",                                 FF_MPV_OFFSET(frame_skip_exp), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"skip_cmp", "Frame skip compare function",                         FF_MPV_OFFSET(frame_skip_cmp), AV_OPT_TYPE_INT, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
+{"sc_threshold", "Scene change threshold",                          FF_MPV_OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"noise_reduction", "Noise reduction",                              FF_MPV_OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"mpeg_quant", "Use MPEG quantizers instead of H.263",              FF_MPV_OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS }, \
+{"ps", "RTP payload size in bytes",                             FF_MPV_OFFSET(rtp_payload_size), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"mepc", "Motion estimation bitrate penalty compensation (1.0 = 256)", FF_MPV_OFFSET(me_penalty_compensation), AV_OPT_TYPE_INT, {.i64 = 256 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"mepre", "pre motion estimation", FF_MPV_OFFSET(me_pre), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"intra_penalty", "Penalty for intra blocks in block decision", FF_MPV_OFFSET(intra_penalty), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX/2, FF_MPV_OPT_FLAGS }, \
+{"a53cc", "Use A53 Closed Captions (if available)", FF_MPV_OFFSET(a53_cc), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FF_MPV_OPT_FLAGS }, \
+
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+
+#define V AV_OPT_FLAG_VIDEO_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM
+#define S AV_OPT_FLAG_SUBTITLE_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define CC AV_OPT_FLAG_CHILD_CONSTS
+
+#define AV_CODEC_DEFAULT_BITRATE 200*1000
+
+#define AV_CODEC_EXPORT_DATA_MVS         (1 << 0)
+#define AV_CODEC_EXPORT_DATA_PRFT        (1 << 1)
+#define AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS (1 << 2)
+
+#define FF_LAMBDA_SHIFT 7
+#define FF_LAMBDA_SCALE (1<<FF_LAMBDA_SHIFT)
+#define FF_QP2LAMBDA 118 ///< factor to convert from H.263 QP to lambda
+#define FF_LAMBDA_MAX (256*128-1)
+
+#define AV_HWACCEL_CODEC_CAP_EXPERIMENTAL 0x0200
+#define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
+#define AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH (1 << 1)
+#define AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH (1 << 2)
+
+#define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
+
+#define FF_DEFAULT_QUANT_BIAS 999999
+
+#define FF_QSCALE_TYPE_MPEG1 0
+#define FF_QSCALE_TYPE_MPEG2 1
+#define FF_QSCALE_TYPE_H264  2
+#define FF_QSCALE_TYPE_VP56  3
+
+#define FF_SANE_NB_CHANNELS 512U
+
+#define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
+
+#define FFERRTAG(a, b, c, d) (-(int)MKTAG(a, b, c, d))
+
+#define AVERROR_BUG2               FFERRTAG( 'B','U','G',' ')
+#define AVERROR_UNKNOWN            FFERRTAG( 'U','N','K','N') ///< Unknown error, typically from an external library
+#define AVERROR_EXPERIMENTAL       (-0x2bb2afa8) ///< Requested feature is flagged experimental. Set strict_std_compliance if you really want to use it.
+#define AVERROR_INPUT_CHANGED      (-0x636e6701) ///< Input changed between calls. Reconfiguration is required. (can be OR-ed with AVERROR_OUTPUT_CHANGED)
+#define AVERROR_OUTPUT_CHANGED     (-0x636e6702) ///< Output changed between calls. Reconfiguration is required. (can be OR-ed with AVERROR_INPUT_CHANGED)
+/* HTTP & RTSP errors */
+#define AVERROR_HTTP_BAD_REQUEST   FFERRTAG(0xF8,'4','0','0')
+#define AVERROR_HTTP_UNAUTHORIZED  FFERRTAG(0xF8,'4','0','1')
+#define AVERROR_HTTP_FORBIDDEN     FFERRTAG(0xF8,'4','0','3')
+#define AVERROR_HTTP_NOT_FOUND     FFERRTAG(0xF8,'4','0','4')
+#define AVERROR_HTTP_OTHER_4XX     FFERRTAG(0xF8,'4','X','X')
+#define AVERROR_HTTP_SERVER_ERROR  FFERRTAG(0xF8,'5','X','X')
+
+#define AV_ERROR_MAX_STRING_SIZE 64
+
+#define FF_CODEC_CAP_INIT_THREADSAFE        (1 << 0)
+#define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
+#define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
+#define FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM  (1 << 3)
+#define FF_CODEC_CAP_EXPORTS_CROPPING       (1 << 4)
+#define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
+#define FF_CODEC_CAP_ALLOCATE_PROGRESS      (1 << 6)
+
+#define FF_CODEC_TAGS_END -1
+
+#define BUFFER_CAPACITY         (4 * 1024 * 1024)
+#define READ_BACK_CAPACITY      (4 * 1024 * 1024)
+#define SHORT_SEEK_THRESHOLD    (256 * 1024)
+
+#define URL_SCHEME_CHARS                        \
+    "abcdefghijklmnopqrstuvwxyz"                \
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"                \
+    "0123456789+-."
+
+#define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
+#define URL_PROTOCOL_FLAG_NETWORK       2 /*< The protocol uses network */
+
+#define AVIO_FLAG_READ  1                                      /**< read-only */
+#define AVIO_FLAG_WRITE 2                                      /**< write-only */
+#define AVIO_FLAG_READ_WRITE (AVIO_FLAG_READ|AVIO_FLAG_WRITE)  /**< read-write pseudo flag */
+
+#define AVIO_FLAG_NONBLOCK 8
+
+#define AVIO_FLAG_DIRECT 0x8000
+
+#define MAX_URL_SIZE 4096
+
+#define PROBE_BUF_MIN 2048
+#define PROBE_BUF_MAX (1 << 20)
+
+enum {
+    CHILD_CLASS_ITER_AVIO = 0,
+    CHILD_CLASS_ITER_MUX,
+    CHILD_CLASS_ITER_DEMUX,
+    CHILD_CLASS_ITER_DONE,
+
+};
+
+#define ITER_STATE_SHIFT 16
+
+#define AVFMTCTX_NOHEADER      0x0001 
+#define AVFMTCTX_UNSEEKABLE    0x0002 
+
+#define RELATIVE_TS_BASE (INT64_MAX - (1LL<<48))
+
+#define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe
+#define AV_PKT_FLAG_CORRUPT 0x0002 ///< The packet content is corrupted
+
+#define AV_PKT_FLAG_DISCARD   0x0004
+
+#define AV_PKT_FLAG_TRUSTED   0x0008
+
+#define AV_PKT_FLAG_DISPOSABLE 0x0010
+
+#if !HAVE_GMTIME_R && !defined(gmtime_r)
+static  struct tm *ff_gmtime_r(const time_t* clock, struct tm *result)
+{
+    struct tm *ptr = gmtime(clock);
+    if (!ptr)
+        return NULL;
+    *result = *ptr;
+    return result;
+}
+#define gmtime_r ff_gmtime_r
+#endif
+
+#if !HAVE_LOCALTIME_R && !defined(localtime_r)
+static  struct tm *ff_localtime_r(const time_t* clock, struct tm *result)
+{
+    struct tm *ptr = localtime(clock);
+    if (!ptr)
+        return NULL;
+    *result = *ptr;
+    return result;
+}
+#define localtime_r ff_localtime_r
+#endif
+
+#define IO_BUFFER_SIZE 32768
+// #define SHORT_SEEK_THRESHOLD 4096
+
+static av_const uint16_t av_bswap16(uint16_t x)
+{
+    x= (x>>8) | (x<<8);
+    return x;
+}
+static inline uint64_t av_const av_bswap64(uint64_t x)
+{
+    return (uint64_t)av_bswap32(x) << 32 | av_bswap32(x >> 32);
+}
+
+#define AV_RNA(s, p)    (((const av_alias##s*)(p))->u##s)
+#define AV_WNA(s, p, v) (((av_alias##s*)(p))->u##s = (v))
+#   define AV_RB(s, p)    av_bswap##s(AV_RN##s(p))
+#   define AV_WB(s, p, v) AV_WN##s(p, av_bswap##s(v))
+#   define AV_RL(s, p)    AV_RN##s(p)
+#   define AV_WL(s, p, v) AV_WN##s(p, v)
+
+#   define AV_WN64A(p, v) AV_WNA(64, p, v)
+#   define AV_RN64A(p) AV_RNA(64, p)
+#define AV_WN64(p, v) AV_WN(64, p, v)
+#define AV_WN32(p, v) AV_WN(32, p, v)
+#define AV_WN8(p, v) AV_WN(8, p, v)
+#   define AV_WN16(p, v) AV_WN(16, p, v)
+
+#define AV_WB(s, p, v) AV_WN##s(p, av_bswap##s(v))
+#define AV_WB64(p, v) AV_WB(64, p, v)
+#define AV_WBBUF AV_WB64
+#define AV_WLBUF AV_WL64
+
+
+#   define AV_WB16(p, v) AV_WB(16, p, v)
+#   define AV_WB32(p, v) AV_WB(32, p, v)
+#   define ff_ctz(v) _tzcnt_u32(v)
+
+
+#   define AV_RB16(p)    AV_RB(16, p)
+
+#define DEF(type, name, bytes, read, write)                                  \
+static type bytestream_get_ ## name(const uint8_t **b)        \
+{                                                                              \
+    (*b) += bytes;                                                             \
+    return read(*b - bytes);                                                   \
+}  
+
+#   define AV_WL32(p, v) AV_WL(32, p, v)
+#   define AV_WL8(p, v) AV_WL(8, p, v)
+
+#define AV_RL8(x)     AV_RB8(x)
+#   define AV_RL16(p)    AV_RL(16, p)
+#   define AV_RL32(p)    AV_RL(32, p)
+#   define AV_RL64(p)    AV_RL(64, p)
+
+#   define AV_WL16(p, v) AV_WL(16, p, v)
+
+DEF(unsigned int, le32, 4, AV_RL32, AV_WL32)
+
+
+#   define AV_WL64(p, v) AV_WL(64, p, v)
+DEF(uint64_t,     le64, 8, AV_RL64, AV_WL64)
+
+
+#define av_parse_ratio_quiet(rate, str, max) \
+    av_parse_ratio(rate, str, max, AV_LOG_MAX_OFFSET, NULL)
+
+#define av_builtin_constant_p(x) 0
+#define FFALIGN(x, a) (((x)+(a)-1)&~((a)-1))
+
+#define CHECK_CHANNELS_CONSISTENCY(frame) \
+    av_assert2(!(frame)->channel_layout || \
+               (frame)->channels == \
+               av_get_channel_layout_nb_channels((frame)->channel_layout))
+
+#if HAVE_SIMD_ALIGN_64
+#   define STRIDE_ALIGN 64 /* AVX-512 */
+#elif HAVE_SIMD_ALIGN_32
+#   define STRIDE_ALIGN 32
+#elif HAVE_SIMD_ALIGN_16
+#   define STRIDE_ALIGN 16
+#else
+#   define STRIDE_ALIGN 8
+#endif
+#define ff_mutex_init    pthread_mutex_init
+#define FF_MEMORY_POISON 0x2a
+
+#define MAKE_ACCESSORS(str, name, type, field) \
+    type av_##name##_get_##field(const str *s) { return s->field; } \
+    void av_##name##_set_##field(str *s, type v) { s->field = v; }
+
+
+#define E1(x) x
+#define RET 0xC3 // near return opcode for x86
+
+#define AV_CHECK_OFFSET(s, m, o) struct check_##o {    \
+        int x_##o[offsetof(s, m) == o? 1: -1];         \
+    }
+
+#define LOCAL_ALIGNED_A(a, t, v, s, o, ...)             \
+    uint8_t la_##v[sizeof(t s o) + (a)];                \
+    t (*v) o = (void *)FFALIGN((uintptr_t)la_##v, a)
+
+#define LOCAL_ALIGNED_D(a, t, v, s, o, ...)             \
+    DECLARE_ALIGNED(a, t, la_##v) s o;                  \
+    t (*v) o = la_##v
+
+#define LOCAL_ALIGNED(a, t, v, ...) LOCAL_ALIGNED_##a(t, v, __VA_ARGS__)
+
+#if HAVE_LOCAL_ALIGNED
+#   define LOCAL_ALIGNED_4(t, v, ...) E1(LOCAL_ALIGNED_D(4, t, v, __VA_ARGS__,,))
+#else
+#   define LOCAL_ALIGNED_4(t, v, ...) E1(LOCAL_ALIGNED_A(4, t, v, __VA_ARGS__,,))
+#endif
+
+#if HAVE_LOCAL_ALIGNED
+#   define LOCAL_ALIGNED_8(t, v, ...) E1(LOCAL_ALIGNED_D(8, t, v, __VA_ARGS__,,))
+#else
+#   define LOCAL_ALIGNED_8(t, v, ...) E1(LOCAL_ALIGNED_A(8, t, v, __VA_ARGS__,,))
+#endif
+
+#if HAVE_LOCAL_ALIGNED
+#   define LOCAL_ALIGNED_16(t, v, ...) E1(LOCAL_ALIGNED_D(16, t, v, __VA_ARGS__,,))
+#else
+#   define LOCAL_ALIGNED_16(t, v, ...) E1(LOCAL_ALIGNED_A(16, t, v, __VA_ARGS__,,))
+#endif
+
+#if HAVE_LOCAL_ALIGNED
+#   define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_D(32, t, v, __VA_ARGS__,,))
+#else
+#   define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_A(32, t, v, __VA_ARGS__,,))
+#endif
+
+#define FF_ALLOC_TYPED_ARRAY(p, nelem)  (p = av_malloc_array(nelem, sizeof(*p)))
+#define FF_ALLOCZ_TYPED_ARRAY(p, nelem) (p = av_mallocz_array(nelem, sizeof(*p)))
+
+#define AV_RB8(x)     (((const uint8_t*)(x))[0])
+#define AV_WB8(p, d)  do { ((uint8_t*)(p))[0] = (d); } while(0)
+
+
+
+#define BUFFER_SIZE (2*MAX_THREADS)
+
+#define ALPHA_SEP '@'
+
+#define MAX_LINES_AHEAD 4
+
+#ifndef TEST
+#define TEST 0
+#endif
+
+#define av_log2       ff_log2
+#define av_log2_16bit ff_log2_16bit
+
+static inline av_const int ff_log2_x86(unsigned int v)
+{
+    unsigned long n;
+    _BitScanReverse(&n, v|1);
+    return n;
+}
+#if HAVE_FAST_CLZ
+#if (defined(__INTEL_COMPILER) && (__INTEL_COMPILER>=1216)) || defined(_MSC_VER)
+#   if defined(__INTEL_COMPILER)
+#       define ff_log2(x) (_bit_scan_reverse((x)|1))
+#   else
+#       define ff_log2 ff_log2_x86
+
+#   endif
+#   define ff_log2_16bit av_log2
+
+#if defined(__INTEL_COMPILER) || (defined(_MSC_VER) && (_MSC_VER >= 1700) && \
+                                  (defined(__BMI__) || !defined(__clang__)))
+#   define ff_ctz(v) _tzcnt_u32(v)
+
+#   if ARCH_X86_64
+#       define ff_ctzll(v) _tzcnt_u64(v)
+#   else
+#       define ff_ctzll ff_ctzll_x86
+static inline av_const int ff_ctzll_x86(long long v)
+{
+    return ((uint32_t)v == 0) ? _tzcnt_u32((uint32_t)(v >> 32)) + 32 : _tzcnt_u32((uint32_t)v);
+}
+#   endif
+#endif /* _MSC_VER */
+
+#endif /* __INTEL_COMPILER */
+
+#endif 
+
+#define CPUEXT_SUFFIX_FAST2(flags, suffix, cpuext, slow_cpuext)         \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
+     !((flags) & AV_CPU_FLAG_ ## slow_cpuext ## SLOW))
+
+#define PPC_ALTIVEC(flags) CPUEXT(flags, ALTIVEC)
+#define PPC_VSX(flags) CPUEXT(flags, VSX)
+#define PPC_POWER8(flags) CPUEXT(flags, POWER8)
+
+#define AV_CPU_FLAG_AMD3DNOW    AV_CPU_FLAG_3DNOW
+#define AV_CPU_FLAG_AMD3DNOWEXT AV_CPU_FLAG_3DNOWEXT
+
+#define X86_AMD3DNOW(flags)         CPUEXT(flags, AMD3DNOW)
+#define X86_AMD3DNOWEXT(flags)      CPUEXT(flags, AMD3DNOWEXT)
+#define X86_MMX(flags)              CPUEXT(flags, MMX)
+#define X86_MMXEXT(flags)           CPUEXT(flags, MMXEXT)
+#define X86_SSE(flags)              CPUEXT(flags, SSE)
+#define X86_SSE2(flags)             CPUEXT(flags, SSE2)
+#define X86_SSE2_FAST(flags)        CPUEXT_FAST(flags, SSE2)
+#define X86_SSE2_SLOW(flags)        CPUEXT_SLOW(flags, SSE2)
+#define X86_SSE3(flags)             CPUEXT(flags, SSE3)
+#define X86_SSE3_FAST(flags)        CPUEXT_FAST(flags, SSE3)
+#define X86_SSE3_SLOW(flags)        CPUEXT_SLOW(flags, SSE3)
+#define X86_SSSE3(flags)            CPUEXT(flags, SSSE3)
+#define X86_SSSE3_FAST(flags)       CPUEXT_FAST(flags, SSSE3)
+#define X86_SSSE3_SLOW(flags)       CPUEXT_SLOW(flags, SSSE3)
+#define X86_SSE4(flags)             CPUEXT(flags, SSE4)
+#define X86_SSE42(flags)            CPUEXT(flags, SSE42)
+#define X86_AVX(flags)              CPUEXT(flags, AVX)
+#define X86_AVX_FAST(flags)         CPUEXT_FAST(flags, AVX)
+#define X86_AVX_SLOW(flags)         CPUEXT_SLOW(flags, AVX)
+#define X86_XOP(flags)              CPUEXT(flags, XOP)
+#define X86_FMA3(flags)             CPUEXT(flags, FMA3)
+#define X86_FMA4(flags)             CPUEXT(flags, FMA4)
+#define X86_AVX2(flags)             CPUEXT(flags, AVX2)
+#define X86_AESNI(flags)            CPUEXT(flags, AESNI)
+#define X86_AVX512(flags)           CPUEXT(flags, AVX512)
+
+#define EXTERNAL_AMD3DNOW(flags)    CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOW)
+#define EXTERNAL_AMD3DNOWEXT(flags) CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOWEXT)
+#define EXTERNAL_MMX(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, MMX)
+#define EXTERNAL_MMXEXT(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, MMXEXT)
+#define EXTERNAL_SSE(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, SSE)
+#define EXTERNAL_SSE2(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, SSE2)
+#define EXTERNAL_SSE2_FAST(flags)   CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, SSE2)
+#define EXTERNAL_SSE2_SLOW(flags)   CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, SSE2)
+#define EXTERNAL_SSE3(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, SSE3)
+#define EXTERNAL_SSE3_FAST(flags)   CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, SSE3)
+#define EXTERNAL_SSE3_SLOW(flags)   CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, SSE3)
+#define EXTERNAL_SSSE3(flags)       CPUEXT_SUFFIX(flags, _EXTERNAL, SSSE3)
+#define EXTERNAL_SSSE3_FAST(flags)  CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, SSSE3)
+#define EXTERNAL_SSSE3_SLOW(flags)  CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, SSSE3)
+#define EXTERNAL_SSE4(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, SSE4)
+#define EXTERNAL_SSE42(flags)       CPUEXT_SUFFIX(flags, _EXTERNAL, SSE42)
+#define EXTERNAL_AVX(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, AVX)
+#define EXTERNAL_AVX_FAST(flags)    CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, AVX)
+#define EXTERNAL_AVX_SLOW(flags)    CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, AVX)
+#define EXTERNAL_XOP(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, XOP)
+#define EXTERNAL_FMA3(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, FMA3)
+#define EXTERNAL_FMA3_FAST(flags)   CPUEXT_SUFFIX_FAST2(flags, _EXTERNAL, FMA3, AVX)
+#define EXTERNAL_FMA3_SLOW(flags)   CPUEXT_SUFFIX_SLOW2(flags, _EXTERNAL, FMA3, AVX)
+#define EXTERNAL_FMA4(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, FMA4)
+#define EXTERNAL_AVX2(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, AVX2)
+#define EXTERNAL_AVX2_FAST(flags)   CPUEXT_SUFFIX_FAST2(flags, _EXTERNAL, AVX2, AVX)
+#define EXTERNAL_AVX2_SLOW(flags)   CPUEXT_SUFFIX_SLOW2(flags, _EXTERNAL, AVX2, AVX)
+#define EXTERNAL_AESNI(flags)       CPUEXT_SUFFIX(flags, _EXTERNAL, AESNI)
+#define EXTERNAL_AVX512(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, AVX512)
+
+#define INLINE_AMD3DNOW(flags)      CPUEXT_SUFFIX(flags, _INLINE, AMD3DNOW)
+#define INLINE_AMD3DNOWEXT(flags)   CPUEXT_SUFFIX(flags, _INLINE, AMD3DNOWEXT)
+#define INLINE_MMX(flags)           CPUEXT_SUFFIX(flags, _INLINE, MMX)
+#define INLINE_MMXEXT(flags)        CPUEXT_SUFFIX(flags, _INLINE, MMXEXT)
+#define INLINE_SSE(flags)           CPUEXT_SUFFIX(flags, _INLINE, SSE)
+#define INLINE_SSE2(flags)          CPUEXT_SUFFIX(flags, _INLINE, SSE2)
+#define INLINE_SSE2_FAST(flags)     CPUEXT_SUFFIX_FAST(flags, _INLINE, SSE2)
+#define INLINE_SSE2_SLOW(flags)     CPUEXT_SUFFIX_SLOW(flags, _INLINE, SSE2)
+#define INLINE_SSE3(flags)          CPUEXT_SUFFIX(flags, _INLINE, SSE3)
+#define INLINE_SSE3_FAST(flags)     CPUEXT_SUFFIX_FAST(flags, _INLINE, SSE3)
+#define INLINE_SSE3_SLOW(flags)     CPUEXT_SUFFIX_SLOW(flags, _INLINE, SSE3)
+#define INLINE_SSSE3(flags)         CPUEXT_SUFFIX(flags, _INLINE, SSSE3)
+#define INLINE_SSSE3_FAST(flags)    CPUEXT_SUFFIX_FAST(flags, _INLINE, SSSE3)
+#define INLINE_SSSE3_SLOW(flags)    CPUEXT_SUFFIX_SLOW(flags, _INLINE, SSSE3)
+#define INLINE_SSE4(flags)          CPUEXT_SUFFIX(flags, _INLINE, SSE4)
+#define INLINE_SSE42(flags)         CPUEXT_SUFFIX(flags, _INLINE, SSE42)
+#define INLINE_AVX(flags)           CPUEXT_SUFFIX(flags, _INLINE, AVX)
+#define INLINE_AVX_FAST(flags)      CPUEXT_SUFFIX_FAST(flags, _INLINE, AVX)
+#define INLINE_AVX_SLOW(flags)      CPUEXT_SUFFIX_SLOW(flags, _INLINE, AVX)
+#define INLINE_XOP(flags)           CPUEXT_SUFFIX(flags, _INLINE, XOP)
+#define INLINE_FMA3(flags)          CPUEXT_SUFFIX(flags, _INLINE, FMA3)
+#define INLINE_FMA4(flags)          CPUEXT_SUFFIX(flags, _INLINE, FMA4)
+#define INLINE_AVX2(flags)          CPUEXT_SUFFIX(flags, _INLINE, AVX2)
+#define INLINE_AESNI(flags)         CPUEXT_SUFFIX(flags, _INLINE, AESNI)
+
+
+#define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
+#define blk0(i) (block[i] = AV_RB32(buffer + 4 * (i)))
+#define blk(i)  (block[i] = rol(block[(i)-3] ^ block[(i)-8] ^ block[(i)-14] ^ block[(i)-16], 1))
+#define R0(v,w,x,y,z,i) z += (((w)&((x)^(y)))^(y))       + blk0(i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
+#define R1(v,w,x,y,z,i) z += (((w)&((x)^(y)))^(y))       + blk (i) + 0x5A827999 + rol(v, 5); w = rol(w, 30);
+#define R2(v,w,x,y,z,i) z += ( (w)^(x)       ^(y))       + blk (i) + 0x6ED9EBA1 + rol(v, 5); w = rol(w, 30);
+#define R3(v,w,x,y,z,i) z += ((((w)|(x))&(y))|((w)&(x))) + blk (i) + 0x8F1BBCDC + rol(v, 5); w = rol(w, 30);
+#define R4(v,w,x,y,z,i) z += ( (w)^(x)       ^(y))       + blk (i) + 0xCA62C1D6 + rol(v, 5); w = rol(w, 30);
+
+#define Ch(x,y,z)   (((x) & ((y) ^ (z))) ^ (z))
+#define Maj(z,y,x)  ((((x) | (y)) & (z)) | ((x) & (y)))
+#define Sigma0_256(x)   (rol((x), 30) ^ rol((x), 19) ^ rol((x), 10))
+#define Sigma1_256(x)   (rol((x), 26) ^ rol((x), 21) ^ rol((x),  7))
+#define sigma0_256(x)   (rol((x), 25) ^ rol((x), 14) ^ ((x) >> 3))
+#define sigma1_256(x)   (rol((x), 15) ^ rol((x), 13) ^ ((x) >> 10))
+
+#define CPUEXT_SUFFIX(flags, suffix, cpuext)                            \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext))
+#define CPUEXT(flags, cpuext) CPUEXT_SUFFIX(flags, , cpuext)
+
+#if ARCH_X86_64
+#   define APCK_PTR2  8
+#   define APCK_COEF 16
+#   define APCK_SIZE 24
+#else
+#   define APCK_PTR2  4
+#   define APCK_COEF  8
+#   define APCK_SIZE 16
+#endif
+
+
+#define have_armv8(flags) CPUEXT(flags, ARMV8)
+#define have_neon(flags) CPUEXT(flags, NEON)
+#define have_vfp(flags)  CPUEXT(flags, VFP)
+#define INLINE_MMX(flags)           CPUEXT_SUFFIX(flags, _INLINE, MMX)
+
+#define RGB2YUV_SHIFT 15
+
+#define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
+#define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
+#define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
+#define GY ((int)( 0.504*(1<<RGB2YUV_SHIFT)+0.5))
+#define GV ((int)(-0.368*(1<<RGB2YUV_SHIFT)+0.5))
+#define GU ((int)(-0.291*(1<<RGB2YUV_SHIFT)+0.5))
+#define RY ((int)( 0.257*(1<<RGB2YUV_SHIFT)+0.5))
+#define RV ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
+#define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
+
+typedef float FFTSample;
+
+
+
+
+typedef struct AVTXContext AVTXContext;
+typedef void (*av_tx_fn)(AVTXContext *s, void *out, void *in, ptrdiff_t stride);
+
+enum AVTXType {
+
+    AV_TX_FLOAT_FFT = 0,
+
+    AV_TX_FLOAT_MDCT = 1,
+
+    AV_TX_DOUBLE_FFT = 2,
+
+    AV_TX_DOUBLE_MDCT = 3,
+
+    AV_TX_INT32_FFT = 4,
+    AV_TX_INT32_MDCT = 5,
+};
+
+
+
+static const uint32_t K256[64] = {
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+    0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+    0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+    0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+    0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+};
+
+
+#define ROUND256(a,b,c,d,e,f,g,h)   \
+    T1 += (h) + Sigma1_256(e) + Ch((e), (f), (g)) + K256[i]; \
+    (d) += T1; \
+    (h) = T1 + Sigma0_256(a) + Maj((a), (b), (c)); \
+    i++
+
+
+#define ROUND256_0_TO_15(a,b,c,d,e,f,g,h)   \
+    T1 = blk0(i); \
+    ROUND256(a,b,c,d,e,f,g,h)
+
+#define ROUND256_16_TO_63(a,b,c,d,e,f,g,h)   \
+    T1 = blk(i); \
+    ROUND256(a,b,c,d,e,f,g,h)
+
+#if COMPILE_TEMPLATE_AMD3DNOW
+#define PREFETCH  "prefetch"
+#define PAVGB     "pavgusb"
+#elif COMPILE_TEMPLATE_MMXEXT
+#define PREFETCH "prefetchnta"
+#define PAVGB     "pavgb"
+#else
+#define PREFETCH  " # nop"
+#endif
+
+#if COMPILE_TEMPLATE_AMD3DNOW
+/* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
+#define EMMS     "femms"
+#else
+#define EMMS     "emms"
+#endif
+
+#if COMPILE_TEMPLATE_MMXEXT
+#define MOVNTQ "movntq"
+#define SFENCE "sfence"
+#else
+#define MOVNTQ "movq"
+#define SFENCE " # nop"
+#endif
+
+#if ARCH_X86_64 && defined(PIC)
+#    define LOCAL_MANGLE(a) #a "(%%rip)"
+#else
+#    define LOCAL_MANGLE(a) #a
+#endif
+
+#if HAVE_INLINE_ASM_DIRECT_SYMBOL_REFS
+#   define MANGLE(a) EXTERN_PREFIX LOCAL_MANGLE(a)
+#   define NAMED_CONSTRAINTS_ADD(...)
+#   define NAMED_CONSTRAINTS(...)
+#   define NAMED_CONSTRAINTS_ARRAY_ADD(...)
+#   define NAMED_CONSTRAINTS_ARRAY(...)
+#else
+#   define MANGLE(a) "%["#a"]"
+    // Intel/MSVC does not correctly expand va-args so we need a rather ugly hack in order to get it to work
+#   define FE_0(P,X) P(X)
+#   define FE_1(P,X,X1) P(X), FE_0(P,X1)
+#   define FE_2(P,X,X1,X2) P(X), FE_1(P,X1,X2)
+#   define FE_3(P,X,X1,X2,X3) P(X), FE_2(P,X1,X2,X3)
+#   define FE_4(P,X,X1,X2,X3,X4) P(X), FE_3(P,X1,X2,X3,X4)
+#   define FE_5(P,X,X1,X2,X3,X4,X5) P(X), FE_4(P,X1,X2,X3,X4,X5)
+#   define FE_6(P,X,X1,X2,X3,X4,X5,X6) P(X), FE_5(P,X1,X2,X3,X4,X5,X6)
+#   define FE_7(P,X,X1,X2,X3,X4,X5,X6,X7) P(X), FE_6(P,X1,X2,X3,X4,X5,X6,X7)
+#   define FE_8(P,X,X1,X2,X3,X4,X5,X6,X7,X8) P(X), FE_7(P,X1,X2,X3,X4,X5,X6,X7,X8)
+#   define FE_9(P,X,X1,X2,X3,X4,X5,X6,X7,X8,X9) P(X), FE_8(P,X1,X2,X3,X4,X5,X6,X7,X8,X9)
+#   define GET_FE_IMPL(_0,_1,_2,_3,_4,_5,_6,_7,_8,_9,NAME,...) NAME
+#   define GET_FE(A) GET_FE_IMPL A
+#   define GET_FE_GLUE(x, y) x y
+#   define FOR_EACH_VA(P,...) GET_FE_GLUE(GET_FE((__VA_ARGS__,FE_9,FE_8,FE_7,FE_6,FE_5,FE_4,FE_3,FE_2,FE_1,FE_0)), (P,__VA_ARGS__))
+#   define NAME_CONSTRAINT(x) [x] "m"(x)
+    // Parameters are a list of each symbol reference required
+#   define NAMED_CONSTRAINTS_ADD(...) , FOR_EACH_VA(NAME_CONSTRAINT,__VA_ARGS__)
+    // Same but without comma for when there are no previously defined constraints
+#   define NAMED_CONSTRAINTS(...) FOR_EACH_VA(NAME_CONSTRAINT,__VA_ARGS__)
+    // Same as above NAMED_CONSTRAINTS except used for passing arrays/pointers instead of normal variables
+#   define NAME_CONSTRAINT_ARRAY(x) [x] "m"(*x)
+#   define NAMED_CONSTRAINTS_ARRAY_ADD(...) , FOR_EACH_VA(NAME_CONSTRAINT_ARRAY,__VA_ARGS__)
+#   define NAMED_CONSTRAINTS_ARRAY(...) FOR_EACH_VA(NAME_CONSTRAINT_ARRAY,__VA_ARGS__)
+#endif
+
+#if HAVE_BIGENDIAN
+#define ALT32_CORR (-1)
+#else
+#define ALT32_CORR   1
+#endif
+
+
+
+#define IS_DIFFERENT_ENDIANESS(src_fmt, dst_fmt, pix_fmt)          \
+    ((src_fmt == pix_fmt ## BE && dst_fmt == pix_fmt ## LE) ||     \
+     (src_fmt == pix_fmt ## LE && dst_fmt == pix_fmt ## BE))
+
+
+#if ARCH_X86_64
+#define YUV2NV_DECL(fmt, opt) \
+void ff_yuv2 ## fmt ## cX_ ## opt(enum AVPixelFormat format, const uint8_t *dither, \
+                                  const int16_t *filter, int filterSize, \
+                                  const int16_t **u, const int16_t **v, \
+                                  uint8_t *dst, int dstWidth)
+
+YUV2NV_DECL(nv12, avx2);
+YUV2NV_DECL(nv21, avx2);
+#endif
+
+
+// #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
+//     if (c->srcBpc == 8) { \
+//         hscalefn = c->dstBpc <= 14 ? ff_hscale8to15_ ## filtersize ## _ ## opt2 : \
+//                                      ff_hscale8to19_ ## filtersize ## _ ## opt1; \
+//     } else if (c->srcBpc == 9) { \
+//         hscalefn = c->dstBpc <= 14 ? ff_hscale9to15_ ## filtersize ## _ ## opt2 : \
+//                                      ff_hscale9to19_ ## filtersize ## _ ## opt1; \
+//     } else if (c->srcBpc == 10) { \
+//         hscalefn = c->dstBpc <= 14 ? ff_hscale10to15_ ## filtersize ## _ ## opt2 : \
+//                                      ff_hscale10to19_ ## filtersize ## _ ## opt1; \
+//     } else if (c->srcBpc == 12) { \
+//         hscalefn = c->dstBpc <= 14 ? ff_hscale12to15_ ## filtersize ## _ ## opt2 : \
+//                                      ff_hscale12to19_ ## filtersize ## _ ## opt1; \
+//     } else if (c->srcBpc == 14 || ((c->srcFormat==AV_PIX_FMT_PAL8||isAnyRGB(c->srcFormat)) && av_pix_fmt_desc_get(c->srcFormat)->comp[0].depth<16)) { \
+//         hscalefn = c->dstBpc <= 14 ? ff_hscale14to15_ ## filtersize ## _ ## opt2 : \
+//                                      ff_hscale14to19_ ## filtersize ## _ ## opt1; \
+//     } else { /* c->srcBpc == 16 */ \
+//         av_assert0(c->srcBpc == 16);\
+//         hscalefn = c->dstBpc <= 14 ? ff_hscale16to15_ ## filtersize ## _ ## opt2 : \
+//                                      ff_hscale16to19_ ## filtersize ## _ ## opt1; \
+//     } \
+// } while (0)
+// #define ASSIGN_MMX_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
+//     switch (filtersize) { \
+//     case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \
+//     case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
+//     default: ASSIGN_SCALE_FUNC2(hscalefn, X, opt1, opt2); break; \
+//     }
+// #define ASSIGN_VSCALEX_FUNC(vscalefn, opt, do_16_case, condition_8bit) \
+// switch(c->dstBpc){ \
+//     case 16:                          do_16_case;                          break; \
+//     case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
+//     case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_9_  ## opt; break; \
+//     case 8: if ((condition_8bit) && !c->use_mmx_vfilter) vscalefn = ff_yuv2planeX_8_  ## opt; break; \
+//     }
+// #define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
+//     switch(c->dstBpc){ \
+//     case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
+//     case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
+//     case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
+//     case 8:                                      vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
+//     default: av_assert0(c->dstBpc>8); \
+//     }
+// #define case_rgb(x, X, opt) \
+//         case AV_PIX_FMT_ ## X: \
+//             c->lumToYV12 = ff_ ## x ## ToY_ ## opt; \
+//             if (!c->chrSrcHSubSample) \
+//                 c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
+//             break
+
+// #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
+//     switch (filtersize) { \
+//     case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \
+//     case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
+//     default: if (filtersize & 4) ASSIGN_SCALE_FUNC2(hscalefn, X4, opt1, opt2); \
+//              else                ASSIGN_SCALE_FUNC2(hscalefn, X8, opt1, opt2); \
+//              break; \
+//     }
+
+#define case_rgb(x, X, opt) \
+        case AV_PIX_FMT_ ## X: \
+            c->lumToYV12 = ff_ ## x ## ToY_ ## opt; \
+            if (!c->chrSrcHSubSample) \
+                c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
+            break
+
+#if HAVE_X86ASM
+
+void ff_cpu_cpuid(int index, int *eax, int *ebx, int *ecx, int *edx);
+void ff_cpu_xgetbv(int op, int *eax, int *edx);
+int  ff_cpu_cpuid_test(void);
+#define cpuid(index, eax, ebx, ecx, edx)        \
+    ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
+
+#define xgetbv(index, eax, edx)                 \
+    ff_cpu_xgetbv(index, &eax, &edx)
+
+#elif HAVE_INLINE_ASM
+
+/* ebx saving is necessary for PIC. gcc seems unable to see it alone */
+#define cpuid(index, eax, ebx, ecx, edx)                        \
+    __asm__ volatile (                                          \
+        "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
+        "cpuid                       \n\t"                      \
+        "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
+        : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
+        : "0" (index), "2"(0))
+
+#define xgetbv(index, eax, edx)                                 \
+    __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
+
+#define get_eflags(x)                           \
+    __asm__ volatile ("pushfl     \n"           \
+                      "pop    %0  \n"           \
+                      : "=r"(x))
+
+#define set_eflags(x)                           \
+    __asm__ volatile ("push    %0 \n"           \
+                      "popfl      \n"           \
+                      :: "r"(x))
+
+#endif /* HAVE_INLINE_ASM */
+
+#if ARCH_X86_64
+
+#define cpuid_test() 1
+
+#elif HAVE_X86ASM
+
+#define cpuid_test ff_cpu_cpuid_test
+
+#elif HAVE_INLINE_ASM
+
+static int cpuid_test(void)
+{
+    x86_reg a, c;
+
+    /* Check if CPUID is supported by attempting to toggle the ID bit in
+     * the EFLAGS register. */
+    get_eflags(a);
+    set_eflags(a ^ 0x200000);
+    get_eflags(c);
+
+    return a != c;
+}
+#endif
+
+#   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
+static inline int MULH(int a, int b){
+    return MUL64(a, b) >> 32;
+}
+
+#ifdef CHECKED
+#define SUINT   int
+#define SUINT32 int32_t
+#else
+#define SUINT   unsigned
+#define SUINT32 uint32_t
+#endif
+#if DCT32_FLOAT
+#   define dct32 ff_dct32_float
+#   define FIXHR(x)       ((float)(x))
+#   define MULH3(x, y, s) ((s)*(y)*(x))
+#   define INTFLOAT float
+#   define SUINTFLOAT float
+#else
+#   define dct32 ff_dct32_fixed
+#   define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
+#   define MULH3(x, y, s) MULH((s)*(x), y)
+#   define INTFLOAT int
+#   define SUINTFLOAT SUINT
+#endif
+/* tab[i][j] = 1.0 / (2.0 * cos(pi*(2*k+1) / 2^(6 - j))) */
+/* cos(i*pi/64) */
+#define COS0_0  FIXHR(0.50060299823519630134/2)
+#define COS0_1  FIXHR(0.50547095989754365998/2)
+#define COS0_2  FIXHR(0.51544730992262454697/2)
+#define COS0_3  FIXHR(0.53104259108978417447/2)
+#define COS0_4  FIXHR(0.55310389603444452782/2)
+#define COS0_5  FIXHR(0.58293496820613387367/2)
+#define COS0_6  FIXHR(0.62250412303566481615/2)
+#define COS0_7  FIXHR(0.67480834145500574602/2)
+#define COS0_8  FIXHR(0.74453627100229844977/2)
+#define COS0_9  FIXHR(0.83934964541552703873/2)
+#define COS0_10 FIXHR(0.97256823786196069369/2)
+#define COS0_11 FIXHR(1.16943993343288495515/4)
+#define COS0_12 FIXHR(1.48416461631416627724/4)
+#define COS0_13 FIXHR(2.05778100995341155085/8)
+#define COS0_14 FIXHR(3.40760841846871878570/8)
+#define COS0_15 FIXHR(10.19000812354805681150/32)
+#define COS1_0 FIXHR(0.50241928618815570551/2)
+#define COS1_1 FIXHR(0.52249861493968888062/2)
+#define COS1_2 FIXHR(0.56694403481635770368/2)
+#define COS1_3 FIXHR(0.64682178335999012954/2)
+#define COS1_4 FIXHR(0.78815462345125022473/2)
+#define COS1_5 FIXHR(1.06067768599034747134/4)
+#define COS1_6 FIXHR(1.72244709823833392782/4)
+#define COS1_7 FIXHR(5.10114861868916385802/16)
+#define COS2_0 FIXHR(0.50979557910415916894/2)
+#define COS2_1 FIXHR(0.60134488693504528054/2)
+#define COS2_2 FIXHR(0.89997622313641570463/2)
+#define COS2_3 FIXHR(2.56291544774150617881/8)
+#define COS3_0 FIXHR(0.54119610014619698439/2)
+#define COS3_1 FIXHR(1.30656296487637652785/4)
+#define COS4_0 FIXHR(M_SQRT1_2/2)
+
+#define BF(x, y, a, b) do {                     \
+        x = a - b;                              \
+        y = a + b;                              \
+    } while (0)
+
+#define CMUL(dre, dim, are, aim, bre, bim) do { \
+        (dre) = (are) * (bre) - (aim) * (bim);  \
+        (dim) = (are) * (bim) + (aim) * (bre);  \
+    } while (0)
+
+
+
+#define ADD(a, b) val##a += val##b
+
+
+#if CONFIG_HARDCODED_TABLES
+#define COSTABLE_CONST const
+#else
+#define COSTABLE_CONST
+#endif
+
+#define FFT_NAME(x) x
+#define ff_fft_end  FFT_NAME(ff_fft_end)
+#define ff_imdct_calc_c FFT_NAME(ff_imdct_calc_c)
+#define ff_imdct_half_c FFT_NAME(ff_imdct_half_c)
+#define ff_mdct_calc_c  FFT_NAME(ff_mdct_calc_c)
+#define COSTABLE(size) \
+    COSTABLE_CONST DECLARE_ALIGNED(32, FFTSample, FFT_NAME(ff_cos_##size))[size/2]
+
+ COSTABLE(16);
+ COSTABLE(32);
+ COSTABLE(64);
+ COSTABLE(128);
+ COSTABLE(256);
+ COSTABLE(512);
+ COSTABLE(1024);
+ COSTABLE(2048);
+ COSTABLE(4096);
+ COSTABLE(8192);
+ COSTABLE(16384);
+ COSTABLE(32768);
+ COSTABLE(65536);
+ COSTABLE(131072);
+ COSTABLE_CONST FFTSample* const FFT_NAME(ff_cos_tabs)[18];
+
+typedef struct AVComplexFloat {
+    float re, im;
+} AVComplexFloat;
+
+#define TX_FLOAT
+#ifdef TX_FLOAT
+#define TX_NAME(x) x ## _float
+#define SCALE_TYPE float
+typedef float FFTSample;
+typedef AVComplexFloat FFTComplex;
+#elif defined(TX_DOUBLE)
+#define TX_NAME(x) x ## _double
+#define SCALE_TYPE double
+typedef double FFTSample;
+typedef AVComplexDouble FFTComplex;
+#elif defined(TX_INT32)
+#define TX_NAME(x) x ## _int32
+#define SCALE_TYPE float
+typedef int32_t FFTSample;
+typedef AVComplexInt32 FFTComplex;
+#else
+typedef void FFTComplex;
+#endif
+
+// typedef struct FFTComplex {
+//     FFTSample re, im;
+// } FFTComplex;
+
+
+
+
+
+#define RESCALE(x) (x)
+
+DECLARE_ALIGNED(32, FFTComplex, TX_NAME(ff_cos_53))[4];
+static av_cold void ff_init_53_tabs(void)
+{
+    TX_NAME(ff_cos_53)[0] = (FFTComplex){ RESCALE(cos(2 * M_PI / 12)), RESCALE(cos(2 * M_PI / 12)) };
+    TX_NAME(ff_cos_53)[1] = (FFTComplex){ RESCALE(cos(2 * M_PI /  6)), RESCALE(cos(2 * M_PI /  6)) };
+    TX_NAME(ff_cos_53)[2] = (FFTComplex){ RESCALE(cos(2 * M_PI /  5)), RESCALE(sin(2 * M_PI /  5)) };
+    TX_NAME(ff_cos_53)[3] = (FFTComplex){ RESCALE(cos(2 * M_PI / 10)), RESCALE(sin(2 * M_PI / 10)) };
+}
+
+
+static inline void fft3(FFTComplex *out, FFTComplex *in,
+                                  ptrdiff_t stride)
+{
+    FFTComplex tmp[2];
+#ifdef TX_INT32
+    int64_t mtmp[4];
+#endif
+
+    // BF(tmp[0].re, tmp[1].im, in[1].im, in[2].im);
+    // BF(tmp[0].im, tmp[1].re, in[1].re, in[2].re);
+
+    out[0*stride].re = in[0].re + tmp[1].re;
+    out[0*stride].im = in[0].im + tmp[1].im;
+
+#ifdef TX_INT32
+    mtmp[0] = (int64_t)TX_NAME(ff_cos_53)[0].re * tmp[0].re;
+    mtmp[1] = (int64_t)TX_NAME(ff_cos_53)[0].im * tmp[0].im;
+    mtmp[2] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].re;
+    mtmp[3] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].im;
+    out[1*stride].re = in[0].re - (mtmp[2] + mtmp[0] + 0x40000000 >> 31);
+    out[1*stride].im = in[0].im - (mtmp[3] - mtmp[1] + 0x40000000 >> 31);
+    out[2*stride].re = in[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
+    out[2*stride].im = in[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
+#else
+    tmp[0].re = TX_NAME(ff_cos_53)[0].re * tmp[0].re;
+    tmp[0].im = TX_NAME(ff_cos_53)[0].im * tmp[0].im;
+    tmp[1].re = TX_NAME(ff_cos_53)[1].re * tmp[1].re;
+    tmp[1].im = TX_NAME(ff_cos_53)[1].re * tmp[1].im;
+    out[1*stride].re = in[0].re - tmp[1].re + tmp[0].re;
+    out[1*stride].im = in[0].im - tmp[1].im - tmp[0].im;
+    out[2*stride].re = in[0].re - tmp[1].re - tmp[0].re;
+    out[2*stride].im = in[0].im - tmp[1].im + tmp[0].im;
+#endif
+}
+
+// #define DECL_FFT5(NAME, D0, D1, D2, D3, D4)                                                       \
+// static inline void NAME(FFTComplex *out, FFTComplex *in,                                \
+//                                   ptrdiff_t stride)                                               \
+// {                                                                                                 \
+//     FFTComplex z0[4], t[6];                                                                       \
+//                                                                                                   \
+//     BF(t[1].im, t[0].re, in[1].re, in[4].re);                                                     \
+//     BF(t[1].re, t[0].im, in[1].im, in[4].im);                                                     \
+//     BF(t[3].im, t[2].re, in[2].re, in[3].re);                                                     \
+//     BF(t[3].re, t[2].im, in[2].im, in[3].im);                                                     \
+//                                                                                                   \
+//     out[D0*stride].re = in[0].re + t[0].re + t[2].re;                                             \
+//     out[D0*stride].im = in[0].im + t[0].im + t[2].im;                                             \
+//                                                                                                   \
+//     SMUL(t[4].re, t[0].re, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].re, t[0].re); \
+//     SMUL(t[4].im, t[0].im, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].im, t[0].im); \
+//     CMUL(t[5].re, t[1].re, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].re, t[1].re); \
+//     CMUL(t[5].im, t[1].im, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].im, t[1].im); \
+//                                                                                                   \
+//     BF(z0[0].re, z0[3].re, t[0].re, t[1].re);                                                     \
+//     BF(z0[0].im, z0[3].im, t[0].im, t[1].im);                                                     \
+//     BF(z0[2].re, z0[1].re, t[4].re, t[5].re);                                                     \
+//     BF(z0[2].im, z0[1].im, t[4].im, t[5].im);                                                     \
+//                                                                                                   \
+//     out[D1*stride].re = in[0].re + z0[3].re;                                                      \
+//     out[D1*stride].im = in[0].im + z0[0].im;                                                      \
+//     out[D2*stride].re = in[0].re + z0[2].re;                                                      \
+//     out[D2*stride].im = in[0].im + z0[1].im;                                                      \
+//     out[D3*stride].re = in[0].re + z0[1].re;                                                      \
+//     out[D3*stride].im = in[0].im + z0[2].im;                                                      \
+//     out[D4*stride].re = in[0].re + z0[0].re;                                                      \
+//     out[D4*stride].im = in[0].im + z0[3].im;                                                      \
+// }
+
+// DECL_FFT5(fft5,     0,  1,  2,  3,  4)
+// DECL_FFT5(fft5_m1,  0,  6, 12,  3,  9)
+// DECL_FFT5(fft5_m2, 10,  1,  7, 13,  4)
+// DECL_FFT5(fft5_m3,  5, 11,  2,  8, 14)
+
+static inline void fft15(FFTComplex *out, FFTComplex *in,
+                                   ptrdiff_t stride)
+{
+    FFTComplex tmp[15];
+
+    for (int i = 0; i < 5; i++)
+        fft3(tmp + i, in + i*3, 5);
+
+    // fft5_m1(out, tmp +  0, stride);
+    // fft5_m2(out, tmp +  5, stride);
+    // fft5_m3(out, tmp + 10, stride);
+}
+
+// #define BUTTERFLIES(a0,a1,a2,a3) {\
+//     BF(t3, t5, t5, t1);\
+//     BF(a2.re, a0.re, a0.re, t5);\
+//     BF(a3.im, a1.im, a1.im, t3);\
+//     BF(t4, t6, t2, t6);\
+//     BF(a3.re, a1.re, a1.re, t4);\
+//     BF(a2.im, a0.im, a0.im, t6);\
+// }
+
+// force loading all the inputs before storing any.
+// this is slightly slower for small data, but avoids store->load aliasing
+// for addresses separated by large powers of 2.
+// #define BUTTERFLIES_BIG(a0,a1,a2,a3) {\
+//     FFTSample r0=a0.re, i0=a0.im, r1=a1.re, i1=a1.im;\
+//     BF(t3, t5, t5, t1);\
+//     BF(a2.re, a0.re, r0, t5);\
+//     BF(a3.im, a1.im, i1, t3);\
+//     BF(t4, t6, t2, t6);\
+//     BF(a3.re, a1.re, r1, t4);\
+//     BF(a2.im, a0.im, i0, t6);\
+// }
+
+// #define TRANSFORM(a0,a1,a2,a3,wre,wim) {\
+//     CMUL(t1, t2, a2.re, a2.im, wre, -wim);\
+//     CMUL(t5, t6, a3.re, a3.im, wre,  wim);\
+//     BUTTERFLIES(a0,a1,a2,a3)\
+// }
+
+// #define TRANSFORM_ZERO(a0,a1,a2,a3) {\
+//     t1 = a2.re;\
+//     t2 = a2.im;\
+//     t5 = a3.re;\
+//     t6 = a3.im;\
+//     BUTTERFLIES(a0,a1,a2,a3)\
+// }
+
+/* z[0...8n-1], w[1...2n-1] */
+// #define PASS(name)\
+// static void name(FFTComplex *z, const FFTSample *wre, unsigned int n)\
+// {\
+//     FFTSample t1, t2, t3, t4, t5, t6;\
+//     int o1 = 2*n;\
+//     int o2 = 4*n;\
+//     int o3 = 6*n;\
+//     const FFTSample *wim = wre+o1;\
+//     n--;\
+// \
+//     TRANSFORM_ZERO(z[0],z[o1],z[o2],z[o3]);\
+//     TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
+//     do {\
+//         z += 2;\
+//         wre += 2;\
+//         wim -= 2;\
+//         TRANSFORM(z[0],z[o1],z[o2],z[o3],wre[0],wim[0]);\
+//         TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
+//     } while(--n);\
+// }
+
+
+
+
+// PASS(pass)
+// #undef BUTTERFLIES
+// #define BUTTERFLIES BUTTERFLIES_BIG
+// PASS(pass_big)
+
+// #define DECL_FFT(n,n2,n4)\
+// static void fft##n(FFTComplex *z)\
+// {\
+//     fft##n2(z);\
+//     fft##n4(z+n4*2);\
+//     fft##n4(z+n4*3);\
+//     pass(z,TX_NAME(ff_cos_##n),n4/2);\
+// }
+
+
+// DECL_FFT(32,16,8)
+// DECL_FFT(64,32,16)
+// DECL_FFT(128,64,32)
+// DECL_FFT(256,128,64)
+// DECL_FFT(512,256,128)
+// #define pass pass_big
+// DECL_FFT(1024,512,256)
+// DECL_FFT(2048,1024,512)
+// DECL_FFT(4096,2048,1024)
+// DECL_FFT(8192,4096,2048)
+// DECL_FFT(16384,8192,4096)
+// DECL_FFT(32768,16384,8192)
+// DECL_FFT(65536,32768,16384)
+// DECL_FFT(131072,65536,32768)
+
+// DECL_COMP_FFT(3)
+// DECL_COMP_FFT(5)
+// DECL_COMP_FFT(15)
+
+
+// DECL_COMP_IMDCT(3)
+// DECL_COMP_IMDCT(5)
+// DECL_COMP_IMDCT(15)
+
+#define DECL_COMP_MDCT(N)                                                      \
+static void compound_mdct_##N##xM(AVTXContext *s, void *_dst, void *_src,      \
+                                  ptrdiff_t stride)                            \
+{                                                                              \
+    FFTSample *src = _src, *dst = _dst;                                        \
+    FFTComplex *exp = s->exptab, tmp, fft##N##in[N];                           \
+    const int m = s->m, len4 = N*m, len3 = len4 * 3, len8 = len4 >> 1;         \
+    const int *in_map = s->pfatab, *out_map = in_map + N*m;                    \
+    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];                     \
+                                                                               \
+    stride /= sizeof(*dst);                                                    \
+                                                                               \
+    for (int i = 0; i < m; i++) { /* Folding and pre-reindexing */             \
+        for (int j = 0; j < N; j++) {                                          \
+            const int k = in_map[i*N + j];                                     \
+            if (k < len4) {                                                    \
+                tmp.re = FOLD(-src[ len4 + k],  src[1*len4 - 1 - k]);          \
+                tmp.im = FOLD(-src[ len3 + k], -src[1*len3 - 1 - k]);          \
+            } else {                                                           \
+                tmp.re = FOLD(-src[ len4 + k], -src[5*len4 - 1 - k]);          \
+                tmp.im = FOLD( src[-len4 + k], -src[1*len3 - 1 - k]);          \
+            }                                                                  \
+            CMUL(fft##N##in[j].im, fft##N##in[j].re, tmp.re, tmp.im,           \
+                 exp[k >> 1].re, exp[k >> 1].im);                              \
+        }                                                                      \
+        fft##N(s->tmp + s->revtab[i], fft##N##in, m);                          \
+    }                                                                          \
+                                                                               \
+    for (int i = 0; i < N; i++)                                                \
+        fftp(s->tmp + m*i);                                                    \
+                                                                               \
+    for (int i = 0; i < len8; i++) {                                           \
+        const int i0 = len8 + i, i1 = len8 - i - 1;                            \
+        const int s0 = out_map[i0], s1 = out_map[i1];                          \
+        FFTComplex src1 = { s->tmp[s1].re, s->tmp[s1].im };                    \
+        FFTComplex src0 = { s->tmp[s0].re, s->tmp[s0].im };                    \
+                                                                               \
+        CMUL(dst[2*i1*stride + stride], dst[2*i0*stride], src0.re, src0.im,    \
+             exp[i0].im, exp[i0].re);                                          \
+        CMUL(dst[2*i0*stride + stride], dst[2*i1*stride], src1.re, src1.im,    \
+             exp[i1].im, exp[i1].re);                                          \
+    }                                                                          \
+}
+
+// DECL_COMP_MDCT(3)
+// DECL_COMP_MDCT(5)
+// DECL_COMP_MDCT(15)
+
+
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_2x2_4)[][8] = {
+{  1,   3,   1,   3,   1,   3,   1,   3, },
+{  2,   0,   2,   0,   2,   0,   2,   0, },
+{  1,   3,   1,   3,   1,   3,   1,   3, },
+};
+
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_2x2_8)[][8] = {
+{  6,   2,   6,   2,   6,   2,   6,   2, },
+{  0,   4,   0,   4,   0,   4,   0,   4, },
+{  6,   2,   6,   2,   6,   2,   6,   2, },
+};
+
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_4x4_16)[][8] = {
+{  8,   4,  11,   7,   8,   4,  11,   7, },
+{  2,  14,   1,  13,   2,  14,   1,  13, },
+{ 10,   6,   9,   5,  10,   6,   9,   5, },
+{  0,  12,   3,  15,   0,  12,   3,  15, },
+{  8,   4,  11,   7,   8,   4,  11,   7, },
+};
+
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_32)[][8] = {
+{ 17,   9,  23,  15,  16,   8,  22,  14, },
+{  5,  29,   3,  27,   4,  28,   2,  26, },
+{ 21,  13,  19,  11,  20,  12,  18,  10, },
+{  0,  24,   6,  30,   1,  25,   7,  31, },
+{ 16,   8,  22,  14,  17,   9,  23,  15, },
+{  4,  28,   2,  26,   5,  29,   3,  27, },
+{ 20,  12,  18,  10,  21,  13,  19,  11, },
+{  1,  25,   7,  31,   0,  24,   6,  30, },
+{ 17,   9,  23,  15,  16,   8,  22,  14, },
+};
+
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_73)[][8] = {
+{  0,  55,  14,  68,   3,  58,  17,  72, },
+{ 37,  18,  50,  32,  40,  22,  54,  35, },
+{  9,  64,   5,  59,  13,  67,   8,  63, },
+{ 46,  27,  41,  23,  49,  31,  44,  26, },
+{  2,  57,  16,  71,   1,  56,  15,  70, },
+{ 39,  21,  52,  34,  38,  19,  51,  33, },
+{ 11,  66,   7,  62,  10,  65,   6,  60, },
+{ 48,  30,  43,  25,  47,  29,  42,  24, },
+{  0,  55,  14,  68,   3,  58,  17,  72, },
+};
+
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_220)[][8] = {
+{117,  62, 158, 103, 113,  58, 155, 100, },
+{ 34, 199,  21, 186,  31, 196,  17, 182, },
+{144,  89, 131,  76, 141,  86, 127,  72, },
+{  0, 165,  41, 206,  10, 175,  52, 217, },
+{110,  55, 151,  96, 120,  65, 162, 107, },
+{ 28, 193,  14, 179,  38, 203,  24, 189, },
+{138,  83, 124,  69, 148,  93, 134,  79, },
+{  7, 172,  48, 213,   3, 168,  45, 210, },
+{117,  62, 158, 103, 113,  58, 155, 100, },
+};
+
+#define output_pixel(pos, val) \
+    if (big_endian) { \
+        AV_WB16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+    } else { \
+        AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+    }
+
+
+
+static inline void
+yuv2plane1_10_c_template(const int16_t *src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 15 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val);
+    }
+}
+
+static inline void
+yuv2planeX_10_c_template(const int16_t *filter, int filterSize,
+                         const int16_t **src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 11 + 16 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = 1 << (shift - 1);
+        int j;
+
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * filter[j];
+
+        output_pixel(&dest[i], val);
+    }
+}
+
+#undef output_pixel
+#define output_pixel(pos, val, bias, signedness) \
+    if (big_endian) { \
+        AV_WB16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
+    } else { \
+        AV_WL16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
+    }
+
+static inline void
+yuv2plane1_16_c_template(const int32_t *src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 3;
+
+    for (i = 0; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val, 0, uint);
+    }
+}
+
+static inline void
+yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
+                         const int32_t **src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 15;
+
+    for (i = 0; i < dstW; i++) {
+        int val = 1 << (shift - 1);
+        int j;
+
+        /* range of val is [0,0x7FFFFFFF], so 31 bits, but with lanczos/spline
+         * filters (or anything with negative coeffs, the range can be slightly
+         * wider in both directions. To account for this overflow, we subtract
+         * a constant so it always fits in the signed range (assuming a
+         * reasonable filterSize), and re-add that at the end. */
+        val -= 0x40000000;
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * (unsigned)filter[j];
+
+        output_pixel(&dest[i], val, 0x8000, int);
+    }
+}
+static inline void
+yuv2plane1_float_c_template(const int32_t *src, float *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 3;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = src[i] + (1 << (shift - 1));
+        output_pixel(&val_uint, val, 0, uint);
+        dest[i] = float_mult * (float)val_uint;
+    }
+}
+
+union av_intfloat32 {
+    uint32_t i;
+    float    f;
+};
+
+union av_intfloat64 {
+    uint64_t i;
+    double   f;
+};
+static inline uint32_t av_float2int(float f)
+{
+    union av_intfloat32 v;
+    v.f = f;
+    return v.i;
+}
+
+
+static inline void
+yuv2plane1_float_bswap_c_template(const int32_t *src, uint32_t *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 3;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = src[i] + (1 << (shift - 1));
+        output_pixel(&val_uint, val, 0, uint);
+        dest[i] = av_bswap32(av_float2int(float_mult * (float)val_uint));
+    }
+}
+
+static inline void
+yuv2planeX_float_c_template(const int16_t *filter, int filterSize, const int32_t **src,
+                            float *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 15;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, j, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = (1 << (shift - 1)) - 0x40000000;
+        for (j = 0; j < filterSize; ++j){
+            val += src[j][i] * (unsigned)filter[j];
+        }
+        output_pixel(&val_uint, val, 0x8000, int);
+        dest[i] = float_mult * (float)val_uint;
+    }
+}
+
+
+static inline void
+yuv2planeX_float_bswap_c_template(const int16_t *filter, int filterSize, const int32_t **src,
+                            uint32_t *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 15;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, j, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = (1 << (shift - 1)) - 0x40000000;
+        for (j = 0; j < filterSize; ++j){
+            val += src[j][i] * (unsigned)filter[j];
+        }
+        output_pixel(&val_uint, val, 0x8000, int);
+        dest[i] = av_bswap32(av_float2int(float_mult * (float)val_uint));
+    }
+}
+
+static void yuv2p016cX_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
+                         const int16_t *chrFilter, int chrFilterSize,
+                         const int16_t **chrUSrc, const int16_t **chrVSrc,
+                         uint8_t *dest8, int chrDstW)
+{
+    uint16_t *dest = (uint16_t*)dest8;
+    const int32_t **uSrc = (const int32_t **)chrUSrc;
+    const int32_t **vSrc = (const int32_t **)chrVSrc;
+    int shift = 15;
+    int big_endian = dstFormat == AV_PIX_FMT_P016BE;
+    int i, j;
+
+    for (i = 0; i < chrDstW; i++) {
+        int u = 1 << (shift - 1);
+        int v = 1 << (shift - 1);
+
+        /* See yuv2planeX_16_c_template for details. */
+        u -= 0x40000000;
+        v -= 0x40000000;
+        for (j = 0; j < chrFilterSize; j++) {
+            u += uSrc[j][i] * (unsigned)chrFilter[j];
+            v += vSrc[j][i] * (unsigned)chrFilter[j];
+        }
+
+        output_pixel(&dest[2*i]  , u, 0x8000, int);
+        output_pixel(&dest[2*i+1], v, 0x8000, int);
+    }
+}
+
+
+#undef output_pixel
+
+
+#define yuv2NBPS(bits, BE_LE, is_be, template_size, typeX_t) \
+static void yuv2plane1_ ## bits ## BE_LE ## _c(const int16_t *src, \
+                              uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
+{ \
+    yuv2plane1_ ## template_size ## _c_template((const typeX_t *) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
+}\
+static void yuv2planeX_ ## bits ## BE_LE ## _c(const int16_t *filter, int filterSize, \
+                              const int16_t **src, uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
+{ \
+    yuv2planeX_## template_size ## _c_template(filter, \
+                         filterSize, (const typeX_t **) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
+}
+yuv2NBPS( 9, BE, 1, 10, int16_t)
+yuv2NBPS( 9, LE, 0, 10, int16_t)
+yuv2NBPS(10, BE, 1, 10, int16_t)
+yuv2NBPS(10, LE, 0, 10, int16_t)
+yuv2NBPS(12, BE, 1, 10, int16_t)
+yuv2NBPS(12, LE, 0, 10, int16_t)
+yuv2NBPS(14, BE, 1, 10, int16_t)
+yuv2NBPS(14, LE, 0, 10, int16_t)
+yuv2NBPS(16, BE, 1, 16, int32_t)
+yuv2NBPS(16, LE, 0, 16, int32_t)
+
 
 #if CONFIG_AVDEVICE
 #define CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                       \
@@ -5744,6 +7762,9 @@ typedef struct AVComponentDescriptor
     int offset;
     int shift;
     int depth;
+         int step_minus1;
+     int depth_minus1;
+     int offset_plus1;
 } AVComponentDescriptor;
 
 typedef struct AVPixFmtDescriptor
@@ -5831,6 +7852,19 @@ typedef struct OptionParseContext
     int nb_groups;
     OptionGroup cur_group;
 } OptionParseContext;
+
+typedef struct AVBufferPool AVBufferPool;
+
+typedef struct FramePool {
+    AVBufferPool *pools[4];
+    int format;
+    int width, height;
+    int stride_align[AV_NUM_DATA_POINTERS];
+    int linesize[4];
+    int planes;
+    int channels;
+    int samples;
+} FramePool;
 
 void show_banner(int argc, char **argv, const OptionDef *options);
 
@@ -6117,8 +8151,18 @@ typedef struct AVClass
     AVClassCategory (*get_category)(void *ctx);
     int (*query_ranges)(struct AVOptionRanges **, void *obj, const char *key, int flags);
     const struct AVClass* (*child_class_iterate)(void **iter);
-
 } AVClass;
+
+const char *av_default_item_name(void *ptr);
+
+#define AVFILTER_DEFINE_CLASS(fname)            \
+    static const AVClass fname##_class = {      \
+        .class_name = #fname,                   \
+        .item_name  = av_default_item_name,     \
+        .option     = fname##_options,          \
+        .version    = LIBAVUTIL_VERSION_INT,    \
+        .category   = AV_CLASS_CATEGORY_FILTER, \
+    }
 
 typedef struct AVOption
 {
@@ -6141,10 +8185,30 @@ typedef struct AVOption
     const char *unit;
 } AVOption;
 
+typedef struct BenchContext {
+    const AVClass *class;
+    int action;
+    int64_t max, min;
+    int64_t sum;
+    int n;
+} BenchContext;
+
+#define DEFINE_OPTIONS(filt_name, FLAGS)                                                                                \
+static const AVOption filt_name##_options[] = {                                                                         \
+    { "action", "set action", offsetof(BenchContext,action), AV_OPT_TYPE_INT, {.i64=ACTION_START}, 0, NB_ACTION-1, FLAGS, "action" },  \
+        { "start", "start timer",  0, AV_OPT_TYPE_CONST, {.i64=ACTION_START}, INT_MIN, INT_MAX, FLAGS, "action" },      \
+        { "stop",  "stop timer",   0, AV_OPT_TYPE_CONST, {.i64=ACTION_STOP},  INT_MIN, INT_MAX, FLAGS, "action" },      \
+    { NULL }                                                                                                            \
+}
+
+#if CONFIG_ABENCH_FILTER
+DEFINE_OPTIONS(abench, AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_AUDIO_PARAM);
+AVFILTER_DEFINE_CLASS(abench);
+#endif
 
 
-#define AV_CODEC_ID_IFF_BYTERUN1 AV_CODEC_ID_IFF_ILBM
-#define AV_CODEC_ID_H265 AV_CODEC_ID_HEVC
+#define START_TIME_KEY "lavfi.bench.start_time"
+#define T2F(v) ((v) / 1000000.)
 
 typedef struct AVProfile
 {
@@ -6510,6 +8574,30 @@ typedef struct ScratchpadContext
     uint8_t *obmc_scratchpad;
     uint8_t *b_scratchpad; ///< scratchpad used for writing into write only buffers
 } ScratchpadContext;
+
+struct AVExpr
+{
+    enum {
+        e_value, e_const, e_func0, e_func1, e_func2,
+        e_squish, e_gauss, e_ld, e_isnan, e_isinf,
+        e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
+        e_pow, e_mul, e_div, e_add,
+        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
+        e_sqrt, e_not, e_random, e_hypot, e_gcd,
+        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2, e_lerp,
+        e_sgn,
+    } type;
+    double value; // is sign in other types
+    int const_index;
+    union
+    {
+        double (*func0)(double);
+        double (*func1)(void *, double);
+        double (*func2)(void *, double, double);
+    } a;
+    struct AVExpr *param[3];
+    double *var;
+};
 
 typedef struct AVExpr AVExpr;
 
@@ -7078,7 +9166,7 @@ typedef struct AVCodecContext
     enum AVAudioServiceType audio_service_type;
     enum AVSampleFormat request_sample_fmt;
     int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
-    attribute_deprecated int refcounted_frames;
+     int refcounted_frames;
     float qcompress; ///< amount of qscale change between easy & hard scenes (0.0-1.0)
     float qblur;     ///< amount of qscale smoothing over time (0.0-1.0)
     int qmin;
@@ -7099,6 +9187,7 @@ typedef struct AVCodecContext
     int strict_std_compliance;
     int error_concealment;
     int debug;
+    int debug_mv;
     int err_recognition;
     int64_t reordered_opaque;
     const struct AVHWAccel *hwaccel;
@@ -7162,31 +9251,9 @@ typedef struct AVCodecContext
     int extra_hw_frames;
     int discard_damaged_percentage;
     int64_t max_samples;
+    int export_side_data;
 } AVCodecContext;
 
-struct AVExpr
-{
-    // enum {
-    //     e_value, e_const, e_func0, e_func1, e_func2,
-    //     e_squish, e_gauss, e_ld, e_isnan, e_isinf,
-    //     e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
-    //     e_pow, e_mul, e_div, e_add,
-    //     e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
-    //     e_sqrt, e_not, e_random, e_hypot, e_gcd,
-    //     e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2, e_lerp,
-    //     e_sgn,
-    // } type;
-    double value; // is sign in other types
-    int const_index;
-    union
-    {
-        double (*func0)(double);
-        double (*func1)(void *, double);
-        double (*func2)(void *, double, double);
-    } a;
-    struct AVExpr *param[3];
-    double *var;
-};
 
 typedef struct AVCodecHWConfig
 {
@@ -7238,6 +9305,9 @@ typedef struct AVCodec
     const char *bsfs;
     const struct AVCodecHWConfigInternal **hw_configs;
 } AVCodec;
+
+ const AVCodec * const codec_list[];
+
 
 typedef struct AVCodecParameters
 {
@@ -7543,10 +9613,7 @@ typedef struct AVOutputFormat
 typedef float FFTSample;
 typedef float FFTDouble;
 
-typedef struct FFTComplex
-{
-    FFTSample re, im;
-} FFTComplex;
+
 
 enum fft_permutation_type
 {
@@ -7605,7 +9672,6 @@ struct RDFTContext
 
 typedef struct RDFTContext RDFTContext;
 
-struct SwsContext;
 
 typedef struct DitherDSPContext {
     /**
@@ -7663,32 +9729,22 @@ typedef struct DitherState {
     float dither_b[4];
 } DitherState;
 
-struct AudioData {
-    const AVClass *class;               /**< AVClass for logging            */
-    uint8_t *data[AVRESAMPLE_MAX_CHANNELS]; /**< data plane pointers        */
-    uint8_t *buffer;                    /**< data buffer                    */
-    unsigned int buffer_size;           /**< allocated buffer size          */
-    int allocated_samples;              /**< number of samples the buffer can hold */
-    int nb_samples;                     /**< current number of samples      */
-    enum AVSampleFormat sample_fmt;     /**< sample format                  */
-    int channels;                       /**< channel count                  */
-    int allocated_channels;             /**< allocated channel count        */
-    int is_planar;                      /**< sample format is planar        */
-    int planes;                         /**< number of data planes          */
-    int sample_size;                    /**< bytes per sample               */
-    int stride;                         /**< sample byte offset within a plane */
-    int read_only;                      /**< data is read-only              */
-    int allow_realloc;                  /**< realloc is allowed             */
-    int ptr_align;                      /**< minimum data pointer alignment */
-    int samples_align;                  /**< allocated samples alignment    */
-    const char *name;                   /**< name for debug logging         */
-};
+typedef struct AudioData{
+    uint8_t *ch[SWR_CH_MAX];    ///< samples buffer per channel
+    uint8_t *data;              ///< samples buffer
+    int ch_count;               ///< number of channels
+    int bps;                    ///< bytes per sample
+    int count;                  ///< number of samples
+    int planar;                 ///< 1 if planar audio, 0 otherwise
+    enum AVSampleFormat fmt;    ///< sample format
+} AudioData;
+
 
 typedef struct AudioData AudioData;
 
 typedef struct AVAudioResampleContext AVAudioResampleContext;
 
-enum attribute_deprecated AVResampleDitherMethod {
+enum  AVResampleDitherMethod {
     AV_RESAMPLE_DITHER_NONE,            /**< Do not use dithering */
     AV_RESAMPLE_DITHER_RECTANGULAR,     /**< Rectangular Dither */
     AV_RESAMPLE_DITHER_TRIANGULAR,      /**< Triangular Dither*/
@@ -7737,29 +9793,22 @@ struct AudioConvert {
 typedef struct AudioConvert AudioConvert;
 
 struct DitherContext {
-    DitherDSPContext  ddsp;
-    enum AVResampleDitherMethod method;
-    int apply_map;
-    ChannelMapInfo *ch_map_info;
-
-    int mute_dither_threshold;  // threshold for disabling dither
-    int mute_reset_threshold;   // threshold for resetting noise shaping
-    const float *ns_coef_b;     // noise shaping coeffs
-    const float *ns_coef_a;     // noise shaping coeffs
-
-    int channels;
-    DitherState *state;         // dither states for each channel
-
-    AudioData *flt_data;        // input data in fltp
-    AudioData *s16_data;        // dithered output in s16p
-    AudioConvert *ac_in;        // converter for input to fltp
-    AudioConvert *ac_out;       // converter for s16p to s16 (if needed)
-
-    void (*quantize)(int16_t *dst, const float *src, float *dither, int len);
-    int samples_align;
+    int method;
+    int noise_pos;
+    float scale;
+    float noise_scale;                              ///< Noise scale
+    int ns_taps;                                    ///< Noise shaping dither taps
+    float ns_scale;                                 ///< Noise shaping dither scale
+    float ns_scale_1;                               ///< Noise shaping dither scale^-1
+    int ns_pos;                                     ///< Noise shaping dither position
+    float ns_coeffs[NS_TAPS];                       ///< Noise shaping filter coefficients
+    float ns_errors[SWR_CH_MAX][2*NS_TAPS];
+    AudioData noise;                                ///< noise used for dithering
+    AudioData temp;                                 ///< temporary storage when writing into the input buffer isn't possible
+    int output_sample_bits;                         ///< the number of used output bits, needed to scale dither correctly
 };
 
-enum attribute_deprecated AVMixCoeffType {
+enum  AVMixCoeffType {
     AV_MIX_COEFF_TYPE_Q8,   /** 16-bit 8.8 fixed-point                      */
     AV_MIX_COEFF_TYPE_Q15,  /** 32-bit 17.15 fixed-point                    */
     AV_MIX_COEFF_TYPE_FLT,  /** floating-point                              */
@@ -7799,7 +9848,7 @@ struct AudioMix {
 
 typedef struct AudioMix AudioMix;
 
-enum attribute_deprecated AVResampleFilterType {
+enum  AVResampleFilterType {
     AV_RESAMPLE_FILTER_TYPE_CUBIC,              /**< Cubic */
     AV_RESAMPLE_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
     AV_RESAMPLE_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
@@ -7825,17 +9874,47 @@ struct AVAudioFifo {
 
 typedef struct AVAudioFifo AVAudioFifo;
 
-typedef struct ResampleContext {
+typedef struct AFResampleContext {
     const AVClass *class;
     AVAudioResampleContext *avr;
     AVDictionary *options;
-
     int resampling;
     int64_t next_pts;
     int64_t next_in_pts;
-
-    /* set by filter_frame() to signal an output frame to request_frame() */
     int got_output;
+} AFResampleContext;
+
+typedef struct ResampleContext {
+    const AVClass *av_class;
+    uint8_t *filter_bank;
+    int filter_length;
+    int filter_alloc;
+    int ideal_dst_incr;
+    int dst_incr;
+    int dst_incr_div;
+    int dst_incr_mod;
+    int index;
+    int frac;
+    int src_incr;
+    int compensation_distance;
+    int phase_count;
+    int linear;
+    enum SwrFilterType filter_type;
+    double kaiser_beta;
+    double factor;
+    enum AVSampleFormat format;
+    int felem_size;
+    int filter_shift;
+    int phase_count_compensation;      /* desired phase_count when compensation is enabled */
+
+    struct {
+        void (*resample_one)(void *dst, const void *src,
+                             int n, int64_t index, int64_t incr);
+        int (*resample_common)(struct ResampleContext *c, void *dst,
+                               const void *src, int n, int update_ctx);
+        int (*resample_linear)(struct ResampleContext *c, void *dst,
+                               const void *src, int n, int update_ctx);
+    } dsp;
 } ResampleContext;
 
 enum AVMatrixEncoding {
@@ -7914,6 +9993,8 @@ struct AVAudioResampleContext {
     ChannelMapInfo ch_map_info;
 };
 
+
+struct SwrContext;
 typedef struct ResampleContext * (* resample_init_func)(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
                                     double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta, double precision, int cheby, int exact_rational);
 typedef void    (* resample_free_func)(struct ResampleContext **c);
@@ -7933,6 +10014,9 @@ struct Resampler {
   invert_initial_buffer_func    invert_initial_buffer;
   get_out_samples_func          get_out_samples;
 };
+
+
+
 #if ARCH_X86_64
 typedef int64_t integer;
 #else
@@ -7943,7 +10027,7 @@ typedef void (mix_2_1_func_type)(void *out, const void *in1, const void *in2, vo
 typedef void (mix_any_func_type)(uint8_t **out, const uint8_t **in1, void *coeffp, integer len);
 #define SWR_CH_MAX 64
 struct SwrContext {
-    const AVClass *av_class;                        ///< AVClass used for AVOption and av_log()
+    const AVClass *av_class;                        ///< AVClass used
     int log_level_offset;                           ///< logging level offset
     void *log_ctx;                                  ///< parent logging context
     enum AVSampleFormat  in_sample_fmt;             ///< input sample format
@@ -8177,7 +10261,7 @@ typedef struct AVFilter
 
 struct AVFilterContext
 {
-    const AVClass *av_class;     ///< needed for av_log() and filters common options
+    const AVClass *av_class;     ///< needed for  and filters common options
     const AVFilter *filter;      ///< the AVFilter of which this is an instance
     char *name;                  ///< name of this filter instance
     AVFilterPad *input_pads;     ///< array of input pads
@@ -8623,10 +10707,7 @@ typedef struct FrameThreadContext
     PerThreadContext *prev_thread; ///< The last thread submit_packet() was called on.
 
     pthread_mutex_t buffer_mutex; ///< Mutex used to protect get/release_buffer().
-    /**
-     * This lock is used for ensuring threads run in serial when hwaccel
-     * is used.
-     */
+
     pthread_mutex_t hwaccel_mutex;
     pthread_mutex_t async_mutex;
     pthread_cond_t async_cond;
@@ -8640,6 +10721,29 @@ typedef struct FrameThreadContext
                                     * While it is set, ff_thread_en/decode_frame won't return any results.
                                     */
 } FrameThreadContext;
+
+typedef struct AVSliceThread AVSliceThread;
+
+
+typedef int (action_func)(AVCodecContext *c, void *arg);
+typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
+typedef int (main_func)(AVCodecContext *c);
+typedef struct SliceThreadContext {
+    AVSliceThread *thread;
+    action_func *func;
+    action_func2 *func2;
+    main_func *mainfunc;
+    void *args;
+    int *rets;
+    int job_size;
+
+    int *entries;
+    int entries_count;
+    int thread_count;
+    pthread_cond_t *progress_cond;
+    pthread_mutex_t *progress_mutex;
+} SliceThreadContext;
+
 
 typedef struct SDL_Window SDL_Window;
 struct SDL_Renderer;
@@ -8783,6 +10887,40 @@ typedef void (*yuv2anyX_fn)(struct SwsContext *c, const int16_t *lumFilter,
                             const int16_t **chrVSrc, int chrFilterSize,
                             const int16_t **alpSrc, uint8_t **dest,
                             int dstW, int y);
+#define MAX_SLICE_PLANES 4
+
+typedef struct SwsPlane
+{
+    int available_lines;    ///< max number of lines that can be hold by this plane
+    int sliceY;             ///< index of first line
+    int sliceH;             ///< number of lines
+    uint8_t **line;         ///< line buffer
+    uint8_t **tmp;          ///< Tmp line buffer used by mmx code
+} SwsPlane;
+
+typedef struct SwsSlice
+{
+    int width;              ///< Slice line width
+    int h_chr_sub_sample;   ///< horizontal chroma subsampling factor
+    int v_chr_sub_sample;   ///< vertical chroma subsampling factor
+    int is_ring;            ///< flag to identify if this slice is a ring buffer
+    int should_free_lines;  ///< flag to identify if there are dynamic allocated lines
+    enum AVPixelFormat fmt; ///< planes pixel format
+    SwsPlane plane[MAX_SLICE_PLANES];   ///< color planes
+} SwsSlice;
+
+
+typedef struct SwsFilterDescriptor
+{
+    SwsSlice *src;  ///< Source slice
+    SwsSlice *dst;  ///< Output slice
+
+    int alpha;      ///< Flag for processing alpha channel
+    void *instance; ///< Filter instance data
+
+    /// Function for processing input slice sliceH lines starting from line sliceY
+    int (*process)(struct SwsContext *c, struct SwsFilterDescriptor *desc, int sliceY, int sliceH);
+} SwsFilterDescriptor;
 
 typedef struct SwsContext
 {
@@ -8979,6 +11117,92 @@ typedef struct SwsContext
     SwsAlphaBlend alphablend;
 } SwsContext;
 
+#define YUV_TO_RGB_TABLE                                                                    \
+        c->yuv2rgb_v2r_coeff,                                                               \
+        c->yuv2rgb_u2g_coeff,                                                               \
+        c->yuv2rgb_v2g_coeff,                                                               \
+        c->yuv2rgb_u2b_coeff,                                                               \
+
+#define DECLARE_FF_YUVX_TO_RGBX_FUNCS(ifmt, ofmt)                                           \
+int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                              \
+                                 uint8_t *dst, int linesize,                                \
+                                 const uint8_t *srcY, int linesizeY,                        \
+                                 const uint8_t *srcU, int linesizeU,                        \
+                                 const uint8_t *srcV, int linesizeV,                        \
+                                 const int16_t *table,                                      \
+                                 int y_offset,                                              \
+                                 int y_coeff);                                              \
+                                                                                            \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
+                                           int srcStride[], int srcSliceY, int srcSliceH,   \
+                                           uint8_t *dst[], int dstStride[]) {               \
+    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
+                                                                                            \
+    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+                                        dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
+                                        src[0], srcStride[0],                               \
+                                        src[1], srcStride[1],                               \
+                                        src[2], srcStride[2],                               \
+                                        yuv2rgb_table,                                      \
+                                        c->yuv2rgb_y_offset >> 6,                           \
+                                        c->yuv2rgb_y_coeff);                                \
+}                                                                                           \
+
+#define DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuvx)                                             \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, argb)                                                   \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, rgba)                                                   \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, abgr)                                                   \
+DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, bgra)                                                   \
+
+DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuv420p)
+DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuv422p)
+
+#define DECLARE_FF_NVX_TO_RGBX_FUNCS(ifmt, ofmt)                                            \
+int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                              \
+                                 uint8_t *dst, int linesize,                                \
+                                 const uint8_t *srcY, int linesizeY,                        \
+                                 const uint8_t *srcC, int linesizeC,                        \
+                                 const int16_t *table,                                      \
+                                 int y_offset,                                              \
+                                 int y_coeff);                                              \
+                                                                                            \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
+                                           int srcStride[], int srcSliceY, int srcSliceH,   \
+                                           uint8_t *dst[], int dstStride[]) {               \
+    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
+                                                                                            \
+    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+                                        dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
+                                        src[0], srcStride[0], src[1], srcStride[1],         \
+                                        yuv2rgb_table,                                      \
+                                        c->yuv2rgb_y_offset >> 6,                           \
+                                        c->yuv2rgb_y_coeff);                                \
+}                                                                                           \
+
+#define DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nvx)                                               \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, argb)                                                     \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, rgba)                                                     \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, abgr)                                                     \
+DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, bgra)                                                     \
+
+DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv12)
+DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
+#define SET_FF_NVX_TO_RGBX_FUNC(ifmt, IFMT, ofmt, OFMT, accurate_rnd) do {                  \
+    if (c->srcFormat == AV_PIX_FMT_##IFMT                                                   \
+        && c->dstFormat == AV_PIX_FMT_##OFMT                                                \
+        && !(c->srcH & 1)                                                                   \
+        && !(c->srcW & 15)                                                                  \
+        && !accurate_rnd)                                                                   \
+        c->swscale = ifmt##_to_##ofmt##_neon_wrapper;                                       \
+} while (0)
+
+#define SET_FF_NVX_TO_ALL_RGBX_FUNC(nvx, NVX, accurate_rnd) do {                            \
+    SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, argb, ARGB, accurate_rnd);                            \
+    SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, rgba, RGBA, accurate_rnd);                            \
+    SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, abgr, ABGR, accurate_rnd);                            \
+    SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, bgra, BGRA, accurate_rnd);                            \
+} while (0)
+
 typedef struct SwsVector
 {
     double *coeff; ///< pointer to the list of coefficients
@@ -9101,7 +11325,6 @@ typedef struct AC3DSPContext {
 #define SPX_MAX_BANDS    17
 #define AC3_FRAME_BUFFER_SIZE 32768
 
-typedef int                     INTFLOAT;
 typedef int16_t                 SHORTFLOAT;
 
 typedef struct FmtConvertContext {
@@ -9393,15 +11616,8 @@ typedef struct ID3v2EncContext {
     int          len;       ///< size of the tag written so far
 } ID3v2EncContext;
 
-typedef struct BenchContext {
-    const AVClass *class;
-    int action;
-    int64_t max, min;
-    int64_t sum;
-    int n;
-} BenchContext;
 
-typedef struct AVSliceThread AVSliceThread;
+
 typedef struct WorkerContext {
     AVSliceThread   *ctx;
     pthread_mutex_t mutex;
@@ -9459,20 +11675,391 @@ typedef struct BufferSinkContext {
     AVFrame *peeked_frame;
 } BufferSinkContext;
 
+typedef struct AVHWDeviceInternal AVHWDeviceInternal;
+
+
+typedef struct AVHWDeviceContext {
+    const AVClass *av_class;
+    AVHWDeviceInternal *internal;
+    enum AVHWDeviceType type;
+    void *hwctx;
+    void (*free)(struct AVHWDeviceContext *ctx);
+    void *user_opaque;
+} AVHWDeviceContext;
+
+typedef struct AVHWFramesConstraints {
+    enum AVPixelFormat *valid_hw_formats;
+    enum AVPixelFormat *valid_sw_formats;
+    int min_width;
+    int min_height;
+    int max_width;
+    int max_height;
+} AVHWFramesConstraints;
+
+
+typedef struct BufferPoolEntry {
+    uint8_t *data;
+
+    /*
+     * Backups of the original opaque/free of the AVBuffer corresponding to
+     * data. They will be used to free the buffer when the pool is freed.
+     */
+    void *opaque;
+    void (*free)(void *opaque, uint8_t *data);
+
+    AVBufferPool *pool;
+    struct BufferPoolEntry *next;
+} BufferPoolEntry;
+
+struct AVBufferPool {
+    AVMutex mutex;
+    BufferPoolEntry *pool;
+    atomic_uint refcount;
+
+    int size;
+    void *opaque;
+    AVBufferRef* (*alloc)(int size);
+    AVBufferRef* (*alloc2)(void *opaque, int size);
+    void         (*pool_free)(void *opaque);
+};
+
+typedef struct HWContextType HWContextType;
+
+struct AVHWFramesInternal {
+    const HWContextType *hw_type;
+    void                *priv;
+    AVBufferPool *pool_internal;
+    AVBufferRef *source_frames;
+    int source_allocation_map_flags;
+};
+
+typedef struct AVHWFramesInternal AVHWFramesInternal;
+
+typedef struct AVHWFramesContext {
+    const AVClass *av_class;
+    AVHWFramesInternal *internal;
+    AVBufferRef *device_ref;
+    AVHWDeviceContext *device_ctx;
+    void *hwctx;
+    void (*free)(struct AVHWFramesContext *ctx);
+    void *user_opaque;
+    AVBufferPool *pool;
+    int initial_pool_size;
+    enum AVPixelFormat format;
+    enum AVPixelFormat sw_format;
+    int width, height;
+} AVHWFramesContext;
+
+enum AVHWFrameTransferDirection {
+    AV_HWFRAME_TRANSFER_DIRECTION_FROM,
+    AV_HWFRAME_TRANSFER_DIRECTION_TO,
+};
+typedef struct HWContextType {
+    enum AVHWDeviceType type;
+    const char         *name;
+    const enum AVPixelFormat *pix_fmts;
+    size_t             device_hwctx_size;
+    size_t             device_priv_size;
+    size_t             device_hwconfig_size;
+    size_t             frames_hwctx_size;
+    size_t             frames_priv_size;
+    int              (*device_create)(AVHWDeviceContext *ctx, const char *device,AVDictionary *opts, int flags);
+    int              (*device_derive)(AVHWDeviceContext *dst_ctx,AVHWDeviceContext *src_ctx,AVDictionary *opts, int flags);
+    int              (*device_init)(AVHWDeviceContext *ctx);
+    void             (*device_uninit)(AVHWDeviceContext *ctx);
+    int              (*frames_get_constraints)(AVHWDeviceContext *ctx,const void *hwconfig,AVHWFramesConstraints *constraints);
+    int              (*frames_init)(AVHWFramesContext *ctx);
+    void             (*frames_uninit)(AVHWFramesContext *ctx);
+    int              (*frames_get_buffer)(AVHWFramesContext *ctx, AVFrame *frame);
+    int              (*transfer_get_formats)(AVHWFramesContext *ctx,enum AVHWFrameTransferDirection dir,enum AVPixelFormat **formats);
+    int              (*transfer_data_to)(AVHWFramesContext *ctx, AVFrame *dst,const AVFrame *src);
+    int              (*transfer_data_from)(AVHWFramesContext *ctx, AVFrame *dst,const AVFrame *src);
+    int              (*map_to)(AVHWFramesContext *ctx, AVFrame *dst,const AVFrame *src, int flags);
+    int              (*map_from)(AVHWFramesContext *ctx, AVFrame *dst,const AVFrame *src, int flags);
+    int              (*frames_derive_to)(AVHWFramesContext *dst_ctx,AVHWFramesContext *src_ctx, int flags);
+    int              (*frames_derive_from)(AVHWFramesContext *dst_ctx,AVHWFramesContext *src_ctx, int flags);
+} HWContextType;
+
+struct AVHWDeviceInternal {
+    const HWContextType *hw_type;
+    void                *priv;
+    AVBufferRef *source_device;
+};
+
+typedef struct URLContext {
+    const AVClass *av_class;    /**< information for . Set by url_open(). */
+    const struct URLProtocol *prot;
+    void *priv_data;
+    char *filename;             /**< specified URL */
+    int flags;
+    int max_packet_size;        /**< if non zero, the stream is packetized with this max packet size */
+    int is_streamed;            /**< true if streamed (no seek possible), default = false */
+    int is_connected;
+    AVIOInterruptCB interrupt_callback;
+    int64_t rw_timeout;         /**< maximum time to wait for (network) read/write operation completion, in mcs */
+    const char *protocol_whitelist;
+    const char *protocol_blacklist;
+    int min_packet_size;        /**< if non zero, the stream is packetized with this min packet size */
+} URLContext;
+
+typedef struct AVIODirEntry {
+    char *name;                           /**< Filename */
+    int type;                             /**< Type of the entry */
+    int utf8;                             /**< Set to 1 when name is encoded with UTF-8, 0 otherwise.
+                                               Name can be encoded with UTF-8 even though 0 is set. */
+    int64_t size;                         /**< File size in bytes, -1 if unknown. */
+    int64_t modification_timestamp;       /**< Time of last modification in microseconds since unix
+                                               epoch, -1 if unknown. */
+    int64_t access_timestamp;             /**< Time of last access in microseconds since unix epoch,
+                                               -1 if unknown. */
+    int64_t status_change_timestamp;      /**< Time of last status change in microseconds since unix
+                                               epoch, -1 if unknown. */
+    int64_t user_id;                      /**< User ID of owner, -1 if unknown. */
+    int64_t group_id;                     /**< Group ID of owner, -1 if unknown. */
+    int64_t filemode;                     /**< Unix file mode, -1 if unknown. */
+} AVIODirEntry;
+
+typedef struct URLProtocol {
+    const char *name;
+    int     (*url_open)( URLContext *h, const char *url, int flags);
+    int     (*url_open2)(URLContext *h, const char *url, int flags, AVDictionary **options);
+    int     (*url_accept)(URLContext *s, URLContext **c);
+    int     (*url_handshake)(URLContext *c);
+    int     (*url_read)( URLContext *h, unsigned char *buf, int size);
+    int     (*url_write)(URLContext *h, const unsigned char *buf, int size);
+    int64_t (*url_seek)( URLContext *h, int64_t pos, int whence);
+    int     (*url_close)(URLContext *h);
+    int (*url_read_pause)(URLContext *h, int pause);
+    int64_t (*url_read_seek)(URLContext *h, int stream_index,
+                             int64_t timestamp, int flags);
+    int (*url_get_file_handle)(URLContext *h);
+    int (*url_get_multi_file_handle)(URLContext *h, int **handles,
+                                     int *numhandles);
+    int (*url_get_short_seek)(URLContext *h);
+    int (*url_shutdown)(URLContext *h, int flags);
+    int priv_data_size;
+    const AVClass *priv_data_class;
+    int flags;
+    int (*url_check)(URLContext *h, int mask);
+    int (*url_open_dir)(URLContext *h);
+    int (*url_read_dir)(URLContext *h, AVIODirEntry **next);
+    int (*url_close_dir)(URLContext *h);
+    int (*url_delete)(URLContext *h);
+    int (*url_move)(URLContext *h_src, URLContext *h_dst);
+    const char *default_whitelist;
+} URLProtocol;
+
+typedef struct RingBuffer
+{
+    AVFifoBuffer *fifo;
+    int           read_back_capacity;
+
+    int           read_pos;
+} RingBuffer;
+typedef struct Context {
+    AVClass        *class;
+    URLContext     *inner;
+    int             seek_request;
+    int64_t         seek_pos;
+    int             seek_whence;
+    int             seek_completed;
+    int64_t         seek_ret;
+    int             inner_io_error;
+    int             io_error;
+    int             io_eof_reached;
+    int64_t         logical_pos;
+    int64_t         logical_size;
+    RingBuffer      ring;
+    pthread_cond_t  cond_wakeup_main;
+    pthread_cond_t  cond_wakeup_background;
+    pthread_mutex_t mutex;
+    pthread_t       async_buffer_thread;
+    int             abort_request;
+    AVIOInterruptCB interrupt_callback;
+} Context;
+
+enum AVPictureStructure {
+    AV_PICTURE_STRUCTURE_UNKNOWN,      //< unknown
+    AV_PICTURE_STRUCTURE_TOP_FIELD,    //< coded as top field
+    AV_PICTURE_STRUCTURE_BOTTOM_FIELD, //< coded as bottom field
+    AV_PICTURE_STRUCTURE_FRAME,        //< coded as frame
+};
+
+typedef struct AVCodecParserContext {
+    void *priv_data;
+    struct AVCodecParser *parser;
+    int64_t frame_offset; /* offset of the current frame */
+    int64_t cur_offset; /* current offset
+                           (incremented by each av_parser_parse()) */
+    int64_t next_frame_offset; /* offset of the next frame */
+    /* video info */
+    int pict_type; /* XXX: Put it back in AVCodecContext. */
+    /**
+     * This field is used for proper frame duration computation in lavf.
+     * It signals, how much longer the frame duration of the current frame
+     * is compared to normal frame duration.
+     *
+     * frame_duration = (1 + repeat_pict) * time_base
+     *
+     * It is used by codecs like H.264 to display telecined material.
+     */
+    int repeat_pict; /* XXX: Put it back in AVCodecContext. */
+    int64_t pts;     /* pts of the current frame */
+    int64_t dts;     /* dts of the current frame */
+
+    /* private data */
+    int64_t last_pts;
+    int64_t last_dts;
+    int fetch_timestamp;
+
+#define AV_PARSER_PTS_NB 4
+    int cur_frame_start_index;
+    int64_t cur_frame_offset[AV_PARSER_PTS_NB];
+    int64_t cur_frame_pts[AV_PARSER_PTS_NB];
+    int64_t cur_frame_dts[AV_PARSER_PTS_NB];
+
+    int flags;
+#define PARSER_FLAG_COMPLETE_FRAMES           0x0001
+#define PARSER_FLAG_ONCE                      0x0002
+/// Set if the parser has a valid file offset
+#define PARSER_FLAG_FETCHED_OFFSET            0x0004
+#define PARSER_FLAG_USE_CODEC_TS              0x1000
+
+    int64_t offset;      ///< byte offset from starting packet start
+    int64_t cur_frame_end[AV_PARSER_PTS_NB];
+
+    /**
+     * Set by parser to 1 for key frames and 0 for non-key frames.
+     * It is initialized to -1, so if the parser doesn't set this flag,
+     * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
+     * will be used.
+     */
+    int key_frame;
+
+#if FF_API_CONVERGENCE_DURATION
+    /**
+     * @deprecated unused
+     */
+    
+    int64_t convergence_duration;
+#endif
+    int dts_sync_point;
+    int dts_ref_dts_delta;
+    int pts_dts_delta;
+    int64_t cur_frame_pos[AV_PARSER_PTS_NB];
+    int64_t pos;
+    int64_t last_pos;
+    int duration;
+    enum AVFieldOrder field_order;
+    enum AVPictureStructure picture_structure;
+    int output_picture_number;
+    int width;
+    int height;
+    int coded_width;
+    int coded_height;
+    int format;
+} AVCodecParserContext;
+
+typedef struct AVCodecParser {
+    int codec_ids[5]; /* several codec IDs are permitted */
+    int priv_data_size;
+    int (*parser_init)(AVCodecParserContext *s);
+ 
+    int (*parser_parse)(AVCodecParserContext *s,
+                        AVCodecContext *avctx,
+                        const uint8_t **poutbuf, int *poutbuf_size,
+                        const uint8_t *buf, int buf_size);
+    void (*parser_close)(AVCodecParserContext *s);
+    int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
+    struct AVCodecParser *next;
+} AVCodecParser;
+
+typedef struct ColorEntry {
+    const char *name;         ///< a string representing the name of the color
+    uint32_t    rgb_color;    ///< RGB values for the color
+} ColorEntry;
+
+typedef struct HWMapDescriptor {
+    AVFrame *source;
+    AVBufferRef *hw_frames_ctx;
+    void (*unmap)(AVHWFramesContext *ctx, struct HWMapDescriptor *hwmap);
+    void          *priv;
+} HWMapDescriptor;
+
+typedef struct AVSHA {
+    uint8_t  digest_len;  ///< digest length in 32-bit words
+    uint64_t count;       ///< number of bytes in buffer
+    uint8_t  buffer[64];  ///< 512-bit buffer of input values used in hash updating
+    uint32_t state[8];    ///< current hash value
+    /** function used to update hash for 512-bit input block */
+    void     (*transform)(uint32_t *state, const uint8_t buffer[64]);
+} AVSHA;
+
+typedef struct Parser {
+    const AVClass *class;
+    int stack_index;
+    char *s;
+    const double *const_values;
+    const char * const *const_names;          // NULL terminated
+    double (* const *funcs1)(void *, double a);           // NULL terminated
+    const char * const *func1_names;          // NULL terminated
+    double (* const *funcs2)(void *, double a, double b); // NULL terminated
+    const char * const *func2_names;          // NULL terminated
+    void *opaque;
+    int log_offset;
+    void *log_ctx;
+#define VARS 10
+    double *var;
+} Parser;
+
+typedef struct VScalerContext
+{
+    uint16_t *filter[2];
+    int32_t  *filter_pos;
+    int filter_size;
+    int isMMX;
+    union {
+        yuv2planar1_fn      yuv2planar1;
+        yuv2planarX_fn      yuv2planarX;
+        yuv2interleavedX_fn yuv2interleavedX;
+        yuv2packed1_fn      yuv2packed1;
+        yuv2packed2_fn      yuv2packed2;
+        yuv2anyX_fn         yuv2anyX;
+    } pfn;
+    yuv2packedX_fn yuv2packedX;
+} VScalerContext;
+
+#if AV_GCC_VERSION_AT_LEAST(3,3) || defined(__clang__)
+#   define av_alias __attribute__((may_alias))
+#else
+#   define av_alias
+#endif
+typedef union {
+    uint64_t u64;
+    uint32_t u32[2];
+    uint16_t u16[4];
+    uint8_t  u8 [8];
+    double   f64;
+    float    f32[2];
+} av_alias av_alias64;
+
+typedef union {
+    uint32_t u32;
+    uint16_t u16[2];
+    uint8_t  u8 [4];
+    float    f32;
+} av_alias av_alias32;
+
+typedef union {
+    uint16_t u16;
+    uint8_t  u8 [2];
+} av_alias av_alias16;
+
+
 static const SampleFmtInfo sample_fmt_info[AV_SAMPLE_FMT_NB];
 
-const char *av_default_item_name(void *ptr);
 static const AVClass ac3_decoder_class;
 AVCodec ff_ac3_fixed_decoder;
-static int adts_write_packet(AVFormatContext *s, AVPacket *pkt);
-static int adts_write_trailer(AVFormatContext *s);
-static int adts_write_header(AVFormatContext *s);
-static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const uint8_t *buf, int size);
-
-int avio_get_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
-static int url_open_dyn_buf_internal(AVIOContext **s, int max_packet_size);
-int avio_open_dyn_buf(AVIOContext **s);
-void avpriv_align_put_bits(PutBitContext *s);
 
 const AVProfile ff_aac_profiles[];
 const AVProfile ff_dca_profiles[];
@@ -14383,6 +16970,33 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                      const uint8_t *src, int width, int height,
                      int lumStride, int chromStride, int srcStride);
 
+void rgb64tobgr48_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
+void   rgb64tobgr48_bswap(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb48tobgr48_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
+void   rgb48tobgr48_bswap(const uint8_t *src, uint8_t *dst, int src_size);
+void    rgb64to48_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
+void      rgb64to48_bswap(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb48tobgr64_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
+void   rgb48tobgr64_bswap(const uint8_t *src, uint8_t *dst, int src_size);
+void    rgb48to64_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
+void      rgb48to64_bswap(const uint8_t *src, uint8_t *dst, int src_size);
+void    rgb24to32(const uint8_t *src, uint8_t *dst, int src_size);
+void    rgb32to24(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb16tobgr32(const uint8_t *src, uint8_t *dst, int src_size);
+void    rgb16to24(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb16tobgr16(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb16tobgr15(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb15tobgr32(const uint8_t *src, uint8_t *dst, int src_size);
+void    rgb15to24(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb15tobgr16(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb15tobgr15(const uint8_t *src, uint8_t *dst, int src_size);
+void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size);
+void    rgb12to15(const uint8_t *src, uint8_t *dst, int src_size);
+
+void ff_rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
+                      uint8_t *vdst, int width, int height, int lumStride,
+                      int chromStride, int srcStride, int32_t *rgb2yuv);
+
 static int get_second_size(char *codec_name);
 static int aa_read_header(AVFormatContext *s);
 static int aa_read_packet(AVFormatContext *s, AVPacket *pkt);
@@ -14421,309 +17035,9 @@ static int force_one_stream(AVFormatContext *s);
 
 int ff_standardize_creation_time(AVFormatContext *s);
 
-static inline int init_get_bits_xe(GetBitContext *s, const uint8_t *buffer,int bit_size, int is_le)
-{
-    int buffer_size;
-    int ret = 0;
-
-    if (bit_size >= INT_MAX - FFMAX(7, AV_INPUT_BUFFER_PADDING_SIZE * 8) || bit_size < 0 || !buffer)
-    {
-        bit_size = 0;
-        buffer = NULL;
-        ret = AVERROR_INVALIDDATA;
-    }
-
-    buffer_size = (bit_size + 7) >> 3;
-
-    s->buffer = buffer;
-    s->size_in_bits = bit_size;
-    s->size_in_bits_plus8 = bit_size + 8;
-    s->buffer_end = buffer + buffer_size;
-    s->index = 0;
-
-#if CACHED_BITSTREAM_READER
-    s->cache = 0;
-    s->bits_left = 0;
-    refill_64(s, is_le);
-#endif
-
-    return ret;
-}
-
-static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
-                                int bit_size)
-{
-#ifdef BITSTREAM_READER_LE
-    return init_get_bits_xe(s, buffer, bit_size, 1);
-#else
-    return init_get_bits_xe(s, buffer, bit_size, 0);
-#endif
-}
-
-static inline void skip_bits(GetBitContext *s, int n)
-{
-#if CACHED_BITSTREAM_READER
-    if (n < s->bits_left)
-        skip_remaining(s, n);
-    else
-    {
-        n -= s->bits_left;
-        s->cache = 0;
-        s->bits_left = 0;
-
-        if (n >= 64)
-        {
-            unsigned skip = (n / 8) * 8;
-
-            n -= skip;
-            s->index += skip;
-        }
-#ifdef BITSTREAM_READER_LE
-        refill_64(s, 1);
-#else
-        refill_64(s, 0);
-#endif
-        if (n)
-            skip_remaining(s, n);
-    }
-#else
-    OPEN_READER(re, s);
-    LAST_SKIP_BITS(re, s, n);
-    CLOSE_READER(re, s);
-#endif
-}
-
-static inline void skip_bits_long(GetBitContext *s, int n)
-{
-#if CACHED_BITSTREAM_READER
-    skip_bits(s, n);
-#else
-#if UNCHECKED_BITSTREAM_READER
-    s->index += n;
-#else
-    s->index += av_clip(n, -s->index, s->size_in_bits_plus8 - s->index);
-#endif
-#endif
-}
-
-static av_always_inline av_const int av_clip_c(int a, int amin, int amax)
-{
-#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
-    if (amin > amax)
-        abort();
-#endif
-    if (a < amin)
-        return amin;
-    else if (a > amax)
-        return amax;
-    else
-        return a;
-}
-
-#ifndef av_clip
-#define av_clip av_clip_c
-#endif
-
-static inline unsigned int get_bits(GetBitContext *s, int n)
-{
-    register unsigned int tmp;
-#if CACHED_BITSTREAM_READER
-
-    av_assert2(n > 0 && n <= 32);
-    if (n > s->bits_left)
-    {
-#ifdef BITSTREAM_READER_LE
-        refill_32(s, 1);
-#else
-        refill_32(s, 0);
-#endif
-        if (s->bits_left < 32)
-            s->bits_left = n;
-    }
-
-#ifdef BITSTREAM_READER_LE
-    tmp = get_val(s, n, 1);
-#else
-    tmp = get_val(s, n, 0);
-#endif
-#else
-    OPEN_READER(re, s);
-    av_assert2(n > 0 && n <= 25);
-    UPDATE_CACHE(re, s);
-    tmp = SHOW_UBITS(re, s, n);
-    LAST_SKIP_BITS(re, s, n);
-    CLOSE_READER(re, s);
-#endif
-    av_assert2(tmp < UINT64_C(1) << n);
-    return tmp;
-}
-
-static const int BUF_BITS = 8 * sizeof(BitBuf);
 
 
-static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
-                                 int buffer_size)
-{
-    if (buffer_size < 0)
-    {
-        buffer_size = 0;
-        buffer = NULL;
-    }
 
-    s->size_in_bits = 8 * buffer_size;
-    s->buf = buffer;
-    s->buf_end = s->buf + buffer_size;
-    s->buf_ptr = s->buf;
-    s->bit_left = BUF_BITS;
-    s->bit_buf = 0;
-}
-
-static inline void put_bits_no_assert(PutBitContext *s, int n, BitBuf value)
-{
-    BitBuf bit_buf;
-    int bit_left;
-
-    bit_buf = s->bit_buf;
-    bit_left = s->bit_left;
-
-    /* XXX: optimize */
-#ifdef BITSTREAM_WRITER_LE
-    bit_buf |= value << (BUF_BITS - bit_left);
-    if (n >= bit_left)
-    {
-        if (s->buf_end - s->buf_ptr >= sizeof(BitBuf))
-        {
-            AV_WLBUF(s->buf_ptr, bit_buf);
-            s->buf_ptr += sizeof(BitBuf);
-        }
-        else
-        {
-            av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
-            av_assert2(0);
-        }
-        bit_buf = value >> bit_left;
-        bit_left += BUF_BITS;
-    }
-    bit_left -= n;
-#else
-    if (n < bit_left)
-    {
-        bit_buf = (bit_buf << n) | value;
-        bit_left -= n;
-    }
-    else
-    {
-        bit_buf <<= bit_left;
-        bit_buf |= value >> (n - bit_left);
-        if (s->buf_end - s->buf_ptr >= sizeof(BitBuf))
-        {
-            AV_WBBUF(s->buf_ptr, bit_buf);
-            s->buf_ptr += sizeof(BitBuf);
-        }
-        else
-        {
-            av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
-            av_assert2(0);
-        }
-        bit_left += BUF_BITS - n;
-        bit_buf = value;
-    }
-#endif
-
-    s->bit_buf = bit_buf;
-    s->bit_left = bit_left;
-}
-
-static inline void put_bits(PutBitContext *s, int n, BitBuf value)
-{
-    av_assert2(n <= 31 && value < (1UL << n));
-    put_bits_no_assert(s, n, value);
-}
-
-static inline int put_bits_count(PutBitContext *s)
-{
-    return (s->buf_ptr - s->buf) * 8 + BUF_BITS - s->bit_left;
-}
-
-static av_always_inline unsigned int ff_pce_copy_bits(PutBitContext *pb,
-                                                      GetBitContext *gb,
-                                                      int bits)
-{
-    unsigned int el = get_bits(gb, bits);
-    put_bits(pb, bits, el);
-    return el;
-}
-
-
-static inline int get_bits_count(const GetBitContext *s)
-{
-#if CACHED_BITSTREAM_READER
-    return s->index - s->bits_left;
-#else
-    return s->index;
-#endif
-}
-
-static inline const uint8_t *align_get_bits(GetBitContext *s)
-{
-    int n = -get_bits_count(s) & 7;
-    if (n)
-        skip_bits(s, n);
-    return s->buffer + (s->index >> 3);
-}
-
-static inline int ff_copy_pce_data(PutBitContext *pb, GetBitContext *gb)
-{
-    int five_bit_ch, four_bit_ch, comment_size, bits;
-    int offset = put_bits_count(pb);
-
-    ff_pce_copy_bits(pb, gb, 10);               // Tag, Object Type, Frequency
-    five_bit_ch = ff_pce_copy_bits(pb, gb, 4);  // Front
-    five_bit_ch += ff_pce_copy_bits(pb, gb, 4); // Side
-    five_bit_ch += ff_pce_copy_bits(pb, gb, 4); // Back
-    four_bit_ch = ff_pce_copy_bits(pb, gb, 2);  // LFE
-    four_bit_ch += ff_pce_copy_bits(pb, gb, 3); // Data
-    five_bit_ch += ff_pce_copy_bits(pb, gb, 4); // Coupling
-    if (ff_pce_copy_bits(pb, gb, 1))            // Mono Mixdown
-        ff_pce_copy_bits(pb, gb, 4);
-    if (ff_pce_copy_bits(pb, gb, 1)) // Stereo Mixdown
-        ff_pce_copy_bits(pb, gb, 4);
-    if (ff_pce_copy_bits(pb, gb, 1)) // Matrix Mixdown
-        ff_pce_copy_bits(pb, gb, 3);
-    for (bits = five_bit_ch * 5 + four_bit_ch * 4; bits > 16; bits -= 16)
-        ff_pce_copy_bits(pb, gb, 16);
-    if (bits)
-        ff_pce_copy_bits(pb, gb, bits);
-    avpriv_align_put_bits(pb);
-    align_get_bits(gb);
-    comment_size = ff_pce_copy_bits(pb, gb, 8);
-    for (; comment_size > 0; comment_size--)
-        ff_pce_copy_bits(pb, gb, 8);
-
-    return put_bits_count(pb) - offset;
-}
-
-static inline void flush_put_bits(PutBitContext *s)
-{
-#ifndef BITSTREAM_WRITER_LE
-    if (s->bit_left < BUF_BITS)
-        s->bit_buf <<= s->bit_left;
-#endif
-    while (s->bit_left < BUF_BITS)
-    {
-        av_assert0(s->buf_ptr < s->buf_end);
-#ifdef BITSTREAM_WRITER_LE
-        *s->buf_ptr++ = s->bit_buf;
-        s->bit_buf >>= 8;
-#else
-        *s->buf_ptr++ = s->bit_buf >> (BUF_BITS - 8);
-        s->bit_buf <<= 8;
-#endif
-        s->bit_left += 8;
-    }
-    s->bit_left = BUF_BITS;
-    s->bit_buf = 0;
-}
 
 
 
