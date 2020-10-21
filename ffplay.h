@@ -6177,15 +6177,7 @@ static inline av_const int av_parity_c(uint32_t v)
 #endif
 
 
-#   if ARCH_X86_64
-#       define ff_ctzll(v) _tzcnt_u64(v)
-#   else
-#       define ff_ctzll ff_ctzll_x86
-static  av_const int ff_ctzll_x86(long long v)
-{
-    return ((uint32_t)v == 0) ? _tzcnt_u32((uint32_t)(v >> 32)) + 32 : _tzcnt_u32((uint32_t)v);
-}
-#   endif
+
 
 int av_opt_set_bin(void *obj, const char *name, const uint8_t *val, int len, int search_flags);
 #define av_opt_set_int_list(obj, name, val, term, flags) \
@@ -6763,7 +6755,6 @@ static inline uint64_t av_const av_bswap64(uint64_t x)
 
 #   define AV_WB16(p, v) AV_WB(16, p, v)
 #   define AV_WB32(p, v) AV_WB(32, p, v)
-#   define ff_ctz(v) _tzcnt_u32(v)
 
 
 #   define AV_RB16(p)    AV_RB(16, p)
@@ -6900,17 +6891,8 @@ static inline av_const int ff_log2_x86(unsigned int v)
 
 #if defined(__INTEL_COMPILER) || (defined(_MSC_VER) && (_MSC_VER >= 1700) && \
                                   (defined(__BMI__) || !defined(__clang__)))
-#   define ff_ctz(v) _tzcnt_u32(v)
 
-#   if ARCH_X86_64
-#       define ff_ctzll(v) _tzcnt_u64(v)
-#   else
-#       define ff_ctzll ff_ctzll_x86
-static inline av_const int ff_ctzll_x86(long long v)
-{
-    return ((uint32_t)v == 0) ? _tzcnt_u32((uint32_t)(v >> 32)) + 32 : _tzcnt_u32((uint32_t)v);
-}
-#   endif
+
 #endif /* _MSC_VER */
 
 #endif /* __INTEL_COMPILER */
@@ -13622,1417 +13604,652 @@ static const SampleFmtInfo sample_fmt_info[AV_SAMPLE_FMT_NB];
 static const AVClass ac3_decoder_class;
 AVCodec ff_ac3_fixed_decoder;
 
-extern const AVProfile ff_aac_profiles[];
-extern const AVProfile ff_dca_profiles[];
-extern const AVProfile ff_dnxhd_profiles[];
-extern const AVProfile ff_h264_profiles[];
-extern const AVProfile ff_hevc_profiles[];
-extern const AVProfile ff_jpeg2000_profiles[];
-extern const AVProfile ff_mpeg2_video_profiles[];
-extern const AVProfile ff_mpeg4_video_profiles[];
-extern const AVProfile ff_vc1_profiles[];
-extern const AVProfile ff_vp9_profiles[];
-extern const AVProfile ff_av1_profiles[];
-extern const AVProfile ff_sbc_profiles[];
-extern const AVProfile ff_prores_profiles[];
-extern const AVProfile ff_mjpeg_profiles[];
-extern const AVProfile ff_arib_caption_profiles[];
-
-extern AVInputFormat ff_aa_demuxer;
-extern AVInputFormat ff_aac_demuxer;
-extern AVInputFormat ff_aax_demuxer;
-extern AVInputFormat ff_ac3_demuxer;
-extern AVInputFormat ff_acm_demuxer;
-extern AVInputFormat ff_act_demuxer;
-extern AVInputFormat ff_adf_demuxer;
-extern AVInputFormat ff_adp_demuxer;
-extern AVInputFormat ff_ads_demuxer;
-extern AVInputFormat ff_adx_demuxer;
-extern AVInputFormat ff_aea_demuxer;
-extern AVInputFormat ff_afc_demuxer;
-extern AVInputFormat ff_aiff_demuxer;
-extern AVInputFormat ff_aix_demuxer;
-extern AVInputFormat ff_alp_demuxer;
-extern AVInputFormat ff_amr_demuxer;
-extern AVInputFormat ff_amrnb_demuxer;
-extern AVInputFormat ff_amrwb_demuxer;
-extern AVInputFormat ff_anm_demuxer;
-extern AVInputFormat ff_apc_demuxer;
-extern AVInputFormat ff_ape_demuxer;
-extern AVInputFormat ff_apm_demuxer;
-extern AVInputFormat ff_apng_demuxer;
-extern AVInputFormat ff_aptx_demuxer;
-extern AVInputFormat ff_aptx_hd_demuxer;
-extern AVInputFormat ff_aqtitle_demuxer;
-extern AVInputFormat ff_argo_asf_demuxer;
-extern AVInputFormat ff_argo_brp_demuxer;
-extern AVInputFormat ff_asf_demuxer;
-extern AVInputFormat ff_asf_o_demuxer;
-extern AVInputFormat ff_ass_demuxer;
-extern AVInputFormat ff_ast_demuxer;
-extern AVInputFormat ff_au_demuxer;
-extern AVInputFormat ff_av1_demuxer;
-extern AVInputFormat ff_avi_demuxer;
-extern AVInputFormat ff_avr_demuxer;
-extern AVInputFormat ff_avs_demuxer;
-extern AVInputFormat ff_avs2_demuxer;
-extern AVInputFormat ff_bethsoftvid_demuxer;
-extern AVInputFormat ff_bfi_demuxer;
-extern AVInputFormat ff_bintext_demuxer;
-extern AVInputFormat ff_bink_demuxer;
-extern AVInputFormat ff_bit_demuxer;
-extern AVInputFormat ff_bmv_demuxer;
-extern AVInputFormat ff_bfstm_demuxer;
-extern AVInputFormat ff_brstm_demuxer;
-extern AVInputFormat ff_boa_demuxer;
-extern AVInputFormat ff_c93_demuxer;
-extern AVInputFormat ff_caf_demuxer;
-extern AVInputFormat ff_cavsvideo_demuxer;
-extern AVInputFormat ff_cdg_demuxer;
-extern AVInputFormat ff_cdxl_demuxer;
-extern AVInputFormat ff_cine_demuxer;
-extern AVInputFormat ff_codec2_demuxer;
-extern AVInputFormat ff_codec2raw_demuxer;
-extern AVInputFormat ff_concat_demuxer;
-extern AVInputFormat ff_dash_demuxer;
-extern AVInputFormat ff_data_demuxer;
-extern AVInputFormat ff_daud_demuxer;
-extern AVInputFormat ff_dcstr_demuxer;
-extern AVInputFormat ff_derf_demuxer;
-extern AVInputFormat ff_dfa_demuxer;
-extern AVInputFormat ff_dhav_demuxer;
-extern AVInputFormat ff_dirac_demuxer;
-extern AVInputFormat ff_dnxhd_demuxer;
-extern AVInputFormat ff_dsf_demuxer;
-extern AVInputFormat ff_dsicin_demuxer;
-extern AVInputFormat ff_dss_demuxer;
-extern AVInputFormat ff_dts_demuxer;
-extern AVInputFormat ff_dtshd_demuxer;
-extern AVInputFormat ff_dv_demuxer;
-extern AVInputFormat ff_dvbsub_demuxer;
-extern AVInputFormat ff_dvbtxt_demuxer;
-extern AVInputFormat ff_dxa_demuxer;
-extern AVInputFormat ff_ea_demuxer;
-extern AVInputFormat ff_ea_cdata_demuxer;
-extern AVInputFormat ff_eac3_demuxer;
-extern AVInputFormat ff_epaf_demuxer;
-extern AVInputFormat ff_ffmetadata_demuxer;
-extern AVInputFormat ff_filmstrip_demuxer;
-extern AVInputFormat ff_fits_demuxer;
-extern AVInputFormat ff_flac_demuxer;
-extern AVInputFormat ff_flic_demuxer;
-extern AVInputFormat ff_flv_demuxer;
-extern AVInputFormat ff_live_flv_demuxer;
-extern AVInputFormat ff_fourxm_demuxer;
-extern AVInputFormat ff_frm_demuxer;
-extern AVInputFormat ff_fsb_demuxer;
-extern AVInputFormat ff_fwse_demuxer;
-extern AVInputFormat ff_g722_demuxer;
-extern AVInputFormat ff_g723_1_demuxer;
-extern AVInputFormat ff_g726_demuxer;
-extern AVInputFormat ff_g726le_demuxer;
-extern AVInputFormat ff_g729_demuxer;
-extern AVInputFormat ff_gdv_demuxer;
-extern AVInputFormat ff_genh_demuxer;
-extern AVInputFormat ff_gif_demuxer;
-extern AVInputFormat ff_gsm_demuxer;
-extern AVInputFormat ff_gxf_demuxer;
-extern AVInputFormat ff_h261_demuxer;
-extern AVInputFormat ff_h263_demuxer;
-extern AVInputFormat ff_h264_demuxer;
-extern AVInputFormat ff_hca_demuxer;
-extern AVInputFormat ff_hcom_demuxer;
-extern AVInputFormat ff_hevc_demuxer;
-extern AVInputFormat ff_hls_demuxer;
-extern AVInputFormat ff_hnm_demuxer;
-extern AVInputFormat ff_ico_demuxer;
-extern AVInputFormat ff_idcin_demuxer;
-extern AVInputFormat ff_idf_demuxer;
-extern AVInputFormat ff_iff_demuxer;
-extern AVInputFormat ff_ifv_demuxer;
-extern AVInputFormat ff_ilbc_demuxer;
-extern AVInputFormat ff_image2_demuxer;
-extern AVInputFormat ff_image2pipe_demuxer;
-extern AVInputFormat ff_image2_alias_pix_demuxer;
-extern AVInputFormat ff_image2_brender_pix_demuxer;
-extern AVInputFormat ff_ingenient_demuxer;
-extern AVInputFormat ff_ipmovie_demuxer;
-extern AVInputFormat ff_ipu_demuxer;
-extern AVInputFormat ff_ircam_demuxer;
-extern AVInputFormat ff_iss_demuxer;
-extern AVInputFormat ff_iv8_demuxer;
-extern AVInputFormat ff_ivf_demuxer;
-extern AVInputFormat ff_ivr_demuxer;
-extern AVInputFormat ff_jacosub_demuxer;
-extern AVInputFormat ff_jv_demuxer;
-extern AVInputFormat ff_kux_demuxer;
-extern AVInputFormat ff_kvag_demuxer;
-extern AVInputFormat ff_lmlm4_demuxer;
-extern AVInputFormat ff_loas_demuxer;
-extern AVInputFormat ff_luodat_demuxer;
-extern AVInputFormat ff_lrc_demuxer;
-extern AVInputFormat ff_lvf_demuxer;
-extern AVInputFormat ff_lxf_demuxer;
-extern AVInputFormat ff_m4v_demuxer;
-extern AVInputFormat ff_mca_demuxer;
-extern AVInputFormat ff_mcc_demuxer;
-extern AVInputFormat ff_matroska_demuxer;
-extern AVInputFormat ff_mgsts_demuxer;
-extern AVInputFormat ff_microdvd_demuxer;
-extern AVInputFormat ff_mjpeg_demuxer;
-extern AVInputFormat ff_mjpeg_2000_demuxer;
-extern AVInputFormat ff_mlp_demuxer;
-extern AVInputFormat ff_mlv_demuxer;
-extern AVInputFormat ff_mm_demuxer;
-extern AVInputFormat ff_mmf_demuxer;
-extern AVInputFormat ff_mods_demuxer;
-extern AVInputFormat ff_moflex_demuxer;
-extern AVInputFormat ff_mov_demuxer;
-extern AVInputFormat ff_mp3_demuxer;
-extern AVInputFormat ff_mpc_demuxer;
-extern AVInputFormat ff_mpc8_demuxer;
-extern AVInputFormat ff_mpegps_demuxer;
-extern AVInputFormat ff_mpegts_demuxer;
-extern AVInputFormat ff_mpegtsraw_demuxer;
-extern AVInputFormat ff_mpegvideo_demuxer;
-extern AVInputFormat ff_mpjpeg_demuxer;
-extern AVInputFormat ff_mpl2_demuxer;
-extern AVInputFormat ff_mpsub_demuxer;
-extern AVInputFormat ff_msf_demuxer;
-extern AVInputFormat ff_msnwc_tcp_demuxer;
-extern AVInputFormat ff_mtaf_demuxer;
-extern AVInputFormat ff_mtv_demuxer;
-extern AVInputFormat ff_musx_demuxer;
-extern AVInputFormat ff_mv_demuxer;
-extern AVInputFormat ff_mvi_demuxer;
-extern AVInputFormat ff_mxf_demuxer;
-extern AVInputFormat ff_mxg_demuxer;
-extern AVInputFormat ff_nc_demuxer;
-extern AVInputFormat ff_nistsphere_demuxer;
-extern AVInputFormat ff_nsp_demuxer;
-extern AVInputFormat ff_nsv_demuxer;
-extern AVInputFormat ff_nut_demuxer;
-extern AVInputFormat ff_nuv_demuxer;
-extern AVInputFormat ff_obu_demuxer;
-extern AVInputFormat ff_ogg_demuxer;
-extern AVInputFormat ff_oma_demuxer;
-extern AVInputFormat ff_paf_demuxer;
-extern AVInputFormat ff_pcm_alaw_demuxer;
-extern AVInputFormat ff_pcm_mulaw_demuxer;
-extern AVInputFormat ff_pcm_vidc_demuxer;
-extern AVInputFormat ff_pcm_f64be_demuxer;
-extern AVInputFormat ff_pcm_f64le_demuxer;
-extern AVInputFormat ff_pcm_f32be_demuxer;
-extern AVInputFormat ff_pcm_f32le_demuxer;
-extern AVInputFormat ff_pcm_s32be_demuxer;
-extern AVInputFormat ff_pcm_s32le_demuxer;
-extern AVInputFormat ff_pcm_s24be_demuxer;
-extern AVInputFormat ff_pcm_s24le_demuxer;
-extern AVInputFormat ff_pcm_s16be_demuxer;
-extern AVInputFormat ff_pcm_s16le_demuxer;
-extern AVInputFormat ff_pcm_s8_demuxer;
-extern AVInputFormat ff_pcm_u32be_demuxer;
-extern AVInputFormat ff_pcm_u32le_demuxer;
-extern AVInputFormat ff_pcm_u24be_demuxer;
-extern AVInputFormat ff_pcm_u24le_demuxer;
-extern AVInputFormat ff_pcm_u16be_demuxer;
-extern AVInputFormat ff_pcm_u16le_demuxer;
-extern AVInputFormat ff_pcm_u8_demuxer;
-extern AVInputFormat ff_pjs_demuxer;
-extern AVInputFormat ff_pmp_demuxer;
-extern AVInputFormat ff_pp_bnk_demuxer;
-extern AVInputFormat ff_pva_demuxer;
-extern AVInputFormat ff_pvf_demuxer;
-extern AVInputFormat ff_qcp_demuxer;
-extern AVInputFormat ff_r3d_demuxer;
-extern AVInputFormat ff_rawvideo_demuxer;
-extern AVInputFormat ff_realtext_demuxer;
-extern AVInputFormat ff_redspark_demuxer;
-extern AVInputFormat ff_rl2_demuxer;
-extern AVInputFormat ff_rm_demuxer;
-extern AVInputFormat ff_roq_demuxer;
-extern AVInputFormat ff_rpl_demuxer;
-extern AVInputFormat ff_rsd_demuxer;
-extern AVInputFormat ff_rso_demuxer;
-extern AVInputFormat ff_rtp_demuxer;
-extern AVInputFormat ff_rtsp_demuxer;
-extern AVInputFormat ff_s337m_demuxer;
-extern AVInputFormat ff_sami_demuxer;
-extern AVInputFormat ff_sap_demuxer;
-extern AVInputFormat ff_sbc_demuxer;
-extern AVInputFormat ff_sbg_demuxer;
-extern AVInputFormat ff_scc_demuxer;
-extern AVInputFormat ff_sdp_demuxer;
-extern AVInputFormat ff_sdr2_demuxer;
-extern AVInputFormat ff_sds_demuxer;
-extern AVInputFormat ff_sdx_demuxer;
-extern AVInputFormat ff_segafilm_demuxer;
-extern AVInputFormat ff_ser_demuxer;
-extern AVInputFormat ff_shorten_demuxer;
-extern AVInputFormat ff_siff_demuxer;
-extern AVInputFormat ff_sln_demuxer;
-extern AVInputFormat ff_smacker_demuxer;
-extern AVInputFormat ff_smjpeg_demuxer;
-extern AVInputFormat ff_smush_demuxer;
-extern AVInputFormat ff_sol_demuxer;
-extern AVInputFormat ff_sox_demuxer;
-extern AVInputFormat ff_spdif_demuxer;
-extern AVInputFormat ff_srt_demuxer;
-extern AVInputFormat ff_str_demuxer;
-extern AVInputFormat ff_stl_demuxer;
-extern AVInputFormat ff_subviewer1_demuxer;
-extern AVInputFormat ff_subviewer_demuxer;
-extern AVInputFormat ff_sup_demuxer;
-extern AVInputFormat ff_svag_demuxer;
-extern AVInputFormat ff_svs_demuxer;
-extern AVInputFormat ff_swf_demuxer;
-extern AVInputFormat ff_tak_demuxer;
-extern AVInputFormat ff_tedcaptions_demuxer;
-extern AVInputFormat ff_thp_demuxer;
-extern AVInputFormat ff_threedostr_demuxer;
-extern AVInputFormat ff_tiertexseq_demuxer;
-extern AVInputFormat ff_tmv_demuxer;
-extern AVInputFormat ff_truehd_demuxer;
-extern AVInputFormat ff_tta_demuxer;
-extern AVInputFormat ff_txd_demuxer;
-extern AVInputFormat ff_tty_demuxer;
-extern AVInputFormat ff_ty_demuxer;
-extern AVInputFormat ff_v210_demuxer;
-extern AVInputFormat ff_v210x_demuxer;
-extern AVInputFormat ff_vag_demuxer;
-extern AVInputFormat ff_vc1_demuxer;
-extern AVInputFormat ff_vc1t_demuxer;
-extern AVInputFormat ff_vividas_demuxer;
-extern AVInputFormat ff_vivo_demuxer;
-extern AVInputFormat ff_vmd_demuxer;
-extern AVInputFormat ff_vobsub_demuxer;
-extern AVInputFormat ff_voc_demuxer;
-extern AVInputFormat ff_vpk_demuxer;
-extern AVInputFormat ff_vplayer_demuxer;
-extern AVInputFormat ff_vqf_demuxer;
-extern AVInputFormat ff_w64_demuxer;
-extern AVInputFormat ff_wav_demuxer;
-extern AVInputFormat ff_wc3_demuxer;
-extern AVInputFormat ff_webm_dash_manifest_demuxer;
-extern AVInputFormat ff_webvtt_demuxer;
-extern AVInputFormat ff_wsaud_demuxer;
-extern AVInputFormat ff_wsd_demuxer;
-extern AVInputFormat ff_wsvqa_demuxer;
-extern AVInputFormat ff_wtv_demuxer;
-extern AVInputFormat ff_wve_demuxer;
-extern AVInputFormat ff_wv_demuxer;
-extern AVInputFormat ff_xa_demuxer;
-extern AVInputFormat ff_xbin_demuxer;
-extern AVInputFormat ff_xmv_demuxer;
-extern AVInputFormat ff_xvag_demuxer;
-extern AVInputFormat ff_xwma_demuxer;
-extern AVInputFormat ff_yop_demuxer;
-extern AVInputFormat ff_yuv4mpegpipe_demuxer;
-extern AVInputFormat ff_image_bmp_pipe_demuxer;
-extern AVInputFormat ff_image_dds_pipe_demuxer;
-extern AVInputFormat ff_image_dpx_pipe_demuxer;
-extern AVInputFormat ff_image_exr_pipe_demuxer;
-extern AVInputFormat ff_image_gif_pipe_demuxer;
-extern AVInputFormat ff_image_j2k_pipe_demuxer;
-extern AVInputFormat ff_image_jpeg_pipe_demuxer;
-extern AVInputFormat ff_image_jpegls_pipe_demuxer;
-extern AVInputFormat ff_image_pam_pipe_demuxer;
-extern AVInputFormat ff_image_pbm_pipe_demuxer;
-extern AVInputFormat ff_image_pcx_pipe_demuxer;
-extern AVInputFormat ff_image_pgmyuv_pipe_demuxer;
-extern AVInputFormat ff_image_pgm_pipe_demuxer;
-extern AVInputFormat ff_image_pgx_pipe_demuxer;
-extern AVInputFormat ff_image_photocd_pipe_demuxer;
-extern AVInputFormat ff_image_pictor_pipe_demuxer;
-extern AVInputFormat ff_image_png_pipe_demuxer;
-extern AVInputFormat ff_image_ppm_pipe_demuxer;
-extern AVInputFormat ff_image_psd_pipe_demuxer;
-extern AVInputFormat ff_image_qdraw_pipe_demuxer;
-extern AVInputFormat ff_image_sgi_pipe_demuxer;
-extern AVInputFormat ff_image_svg_pipe_demuxer;
-extern AVInputFormat ff_image_sunrast_pipe_demuxer;
-extern AVInputFormat ff_image_tiff_pipe_demuxer;
-extern AVInputFormat ff_image_webp_pipe_demuxer;
-extern AVInputFormat ff_image_xpm_pipe_demuxer;
-extern AVInputFormat ff_image_xwd_pipe_demuxer;
-extern AVInputFormat ff_libgme_demuxer;
-extern AVInputFormat ff_libmodplug_demuxer;
-extern AVOutputFormat ff_a64_muxer;
-extern AVOutputFormat ff_ac3_muxer;
-extern AVOutputFormat ff_adts_muxer;
-extern AVOutputFormat ff_adx_muxer;
-extern AVOutputFormat ff_aiff_muxer;
-extern AVOutputFormat ff_amr_muxer;
-extern AVOutputFormat ff_apm_muxer;
-extern AVOutputFormat ff_apng_muxer;
-extern AVOutputFormat ff_aptx_muxer;
-extern AVOutputFormat ff_aptx_hd_muxer;
-extern AVOutputFormat ff_argo_asf_muxer;
-extern AVOutputFormat ff_asf_muxer;
-extern AVOutputFormat ff_ass_muxer;
-extern AVOutputFormat ff_ast_muxer;
-extern AVOutputFormat ff_asf_stream_muxer;
-extern AVOutputFormat ff_au_muxer;
-extern AVOutputFormat ff_avi_muxer;
-extern AVOutputFormat ff_avm2_muxer;
-extern AVOutputFormat ff_avs2_muxer;
-extern AVOutputFormat ff_bit_muxer;
-extern AVOutputFormat ff_caf_muxer;
-extern AVOutputFormat ff_cavsvideo_muxer;
-extern AVOutputFormat ff_codec2_muxer;
-extern AVOutputFormat ff_codec2raw_muxer;
-extern AVOutputFormat ff_crc_muxer;
-extern AVOutputFormat ff_dash_muxer;
-extern AVOutputFormat ff_data_muxer;
-extern AVOutputFormat ff_daud_muxer;
-extern AVOutputFormat ff_dirac_muxer;
-extern AVOutputFormat ff_dnxhd_muxer;
-extern AVOutputFormat ff_dts_muxer;
-extern AVOutputFormat ff_dv_muxer;
-extern AVOutputFormat ff_eac3_muxer;
-extern AVOutputFormat ff_f4v_muxer;
-extern AVOutputFormat ff_ffmetadata_muxer;
-extern AVOutputFormat ff_fifo_muxer;
-extern AVOutputFormat ff_fifo_test_muxer;
-extern AVOutputFormat ff_filmstrip_muxer;
-extern AVOutputFormat ff_fits_muxer;
-extern AVOutputFormat ff_flac_muxer;
-extern AVOutputFormat ff_flv_muxer;
-extern AVOutputFormat ff_framecrc_muxer;
-extern AVOutputFormat ff_framehash_muxer;
-extern AVOutputFormat ff_framemd5_muxer;
-extern AVOutputFormat ff_g722_muxer;
-extern AVOutputFormat ff_g723_1_muxer;
-extern AVOutputFormat ff_g726_muxer;
-extern AVOutputFormat ff_g726le_muxer;
-extern AVOutputFormat ff_gif_muxer;
-extern AVOutputFormat ff_gsm_muxer;
-extern AVOutputFormat ff_gxf_muxer;
-extern AVOutputFormat ff_h261_muxer;
-extern AVOutputFormat ff_h263_muxer;
-extern AVOutputFormat ff_h264_muxer;
-extern AVOutputFormat ff_hash_muxer;
-extern AVOutputFormat ff_hds_muxer;
-extern AVOutputFormat ff_hevc_muxer;
-extern AVOutputFormat ff_hls_muxer;
-extern AVOutputFormat ff_ico_muxer;
-extern AVOutputFormat ff_ilbc_muxer;
-extern AVOutputFormat ff_image2_muxer;
-extern AVOutputFormat ff_image2pipe_muxer;
-extern AVOutputFormat ff_ipod_muxer;
-extern AVOutputFormat ff_ircam_muxer;
-extern AVOutputFormat ff_ismv_muxer;
-extern AVOutputFormat ff_ivf_muxer;
-extern AVOutputFormat ff_jacosub_muxer;
-extern AVOutputFormat ff_kvag_muxer;
-extern AVOutputFormat ff_latm_muxer;
-extern AVOutputFormat ff_lrc_muxer;
-extern AVOutputFormat ff_m4v_muxer;
-extern AVOutputFormat ff_md5_muxer;
-extern AVOutputFormat ff_matroska_muxer;
-extern AVOutputFormat ff_matroska_audio_muxer;
-extern AVOutputFormat ff_microdvd_muxer;
-extern AVOutputFormat ff_mjpeg_muxer;
-extern AVOutputFormat ff_mlp_muxer;
-extern AVOutputFormat ff_mmf_muxer;
-extern AVOutputFormat ff_mov_muxer;
-extern AVOutputFormat ff_mp2_muxer;
-extern AVOutputFormat ff_mp3_muxer;
-extern AVOutputFormat ff_mp4_muxer;
-extern AVOutputFormat ff_mpeg1system_muxer;
-extern AVOutputFormat ff_mpeg1vcd_muxer;
-extern AVOutputFormat ff_mpeg1video_muxer;
-extern AVOutputFormat ff_mpeg2dvd_muxer;
-extern AVOutputFormat ff_mpeg2svcd_muxer;
-extern AVOutputFormat ff_mpeg2video_muxer;
-extern AVOutputFormat ff_mpeg2vob_muxer;
-extern AVOutputFormat ff_mpegts_muxer;
-extern AVOutputFormat ff_mpjpeg_muxer;
-extern AVOutputFormat ff_mxf_muxer;
-extern AVOutputFormat ff_mxf_d10_muxer;
-extern AVOutputFormat ff_mxf_opatom_muxer;
-extern AVOutputFormat ff_null_muxer;
-extern AVOutputFormat ff_nut_muxer;
-extern AVOutputFormat ff_oga_muxer;
-extern AVOutputFormat ff_ogg_muxer;
-extern AVOutputFormat ff_ogv_muxer;
-extern AVOutputFormat ff_oma_muxer;
-extern AVOutputFormat ff_opus_muxer;
-extern AVOutputFormat ff_pcm_alaw_muxer;
-extern AVOutputFormat ff_pcm_mulaw_muxer;
-extern AVOutputFormat ff_pcm_vidc_muxer;
-extern AVOutputFormat ff_pcm_f64be_muxer;
-extern AVOutputFormat ff_pcm_f64le_muxer;
-extern AVOutputFormat ff_pcm_f32be_muxer;
-extern AVOutputFormat ff_pcm_f32le_muxer;
-extern AVOutputFormat ff_pcm_s32be_muxer;
-extern AVOutputFormat ff_pcm_s32le_muxer;
-extern AVOutputFormat ff_pcm_s24be_muxer;
-extern AVOutputFormat ff_pcm_s24le_muxer;
-extern AVOutputFormat ff_pcm_s16be_muxer;
-extern AVOutputFormat ff_pcm_s16le_muxer;
-extern AVOutputFormat ff_pcm_s8_muxer;
-extern AVOutputFormat ff_pcm_u32be_muxer;
-extern AVOutputFormat ff_pcm_u32le_muxer;
-extern AVOutputFormat ff_pcm_u24be_muxer;
-extern AVOutputFormat ff_pcm_u24le_muxer;
-extern AVOutputFormat ff_pcm_u16be_muxer;
-extern AVOutputFormat ff_pcm_u16le_muxer;
-extern AVOutputFormat ff_pcm_u8_muxer;
-extern AVOutputFormat ff_psp_muxer;
-extern AVOutputFormat ff_rawvideo_muxer;
-extern AVOutputFormat ff_rm_muxer;
-extern AVOutputFormat ff_roq_muxer;
-extern AVOutputFormat ff_rso_muxer;
-extern AVOutputFormat ff_rtp_muxer;
-extern AVOutputFormat ff_rtp_mpegts_muxer;
-extern AVOutputFormat ff_rtsp_muxer;
-extern AVOutputFormat ff_sap_muxer;
-extern AVOutputFormat ff_sbc_muxer;
-extern AVOutputFormat ff_scc_muxer;
-extern AVOutputFormat ff_segafilm_muxer;
-extern AVOutputFormat ff_segment_muxer;
-extern AVOutputFormat ff_stream_segment_muxer;
-extern AVOutputFormat ff_singlejpeg_muxer;
-extern AVOutputFormat ff_smjpeg_muxer;
-extern AVOutputFormat ff_smoothstreaming_muxer;
-extern AVOutputFormat ff_sox_muxer;
-extern AVOutputFormat ff_spx_muxer;
-extern AVOutputFormat ff_spdif_muxer;
-extern AVOutputFormat ff_srt_muxer;
-extern AVOutputFormat ff_streamhash_muxer;
-extern AVOutputFormat ff_sup_muxer;
-extern AVOutputFormat ff_swf_muxer;
-extern AVOutputFormat ff_tee_muxer;
-extern AVOutputFormat ff_tg2_muxer;
-extern AVOutputFormat ff_tgp_muxer;
-extern AVOutputFormat ff_mkvtimestamp_v2_muxer;
-extern AVOutputFormat ff_truehd_muxer;
-extern AVOutputFormat ff_tta_muxer;
-extern AVOutputFormat ff_uncodedframecrc_muxer;
-extern AVOutputFormat ff_vc1_muxer;
-extern AVOutputFormat ff_vc1t_muxer;
-extern AVOutputFormat ff_voc_muxer;
-extern AVOutputFormat ff_w64_muxer;
-extern AVOutputFormat ff_wav_muxer;
-extern AVOutputFormat ff_webm_muxer;
-extern AVOutputFormat ff_webm_dash_manifest_muxer;
-extern AVOutputFormat ff_webm_chunk_muxer;
-extern AVOutputFormat ff_webp_muxer;
-extern AVOutputFormat ff_webvtt_muxer;
-extern AVOutputFormat ff_wtv_muxer;
-extern AVOutputFormat ff_wv_muxer;
-extern AVOutputFormat ff_yuv4mpegpipe_muxer;
-extern AVOutputFormat ff_chromaprint_muxer;
-extern AVFilter ff_af_acompressor;
-extern AVFilter ff_af_acontrast;
-extern AVFilter ff_af_acopy;
-extern AVFilter ff_af_acue;
-extern AVFilter ff_af_acrossfade;
-extern AVFilter ff_af_acrossover;
-extern AVFilter ff_af_acrusher;
-extern AVFilter ff_af_adeclick;
-extern AVFilter ff_af_adeclip;
-extern AVFilter ff_af_adelay;
-extern AVFilter ff_af_aderivative;
-extern AVFilter ff_af_aecho;
-extern AVFilter ff_af_aemphasis;
-extern AVFilter ff_af_aeval;
-extern AVFilter ff_af_afade;
-extern AVFilter ff_af_afftdn;
-extern AVFilter ff_af_afftfilt;
-extern AVFilter ff_af_afir;
-extern AVFilter ff_af_aformat;
-extern AVFilter ff_af_agate;
-extern AVFilter ff_af_aiir;
-extern AVFilter ff_af_aintegral;
-extern AVFilter ff_af_ainterleave;
-extern AVFilter ff_af_alimiter;
-extern AVFilter ff_af_allpass;
-extern AVFilter ff_af_aloop;
-extern AVFilter ff_af_amerge;
-extern AVFilter ff_af_ametadata;
-extern AVFilter ff_af_amix;
-extern AVFilter ff_af_amultiply;
-extern AVFilter ff_af_anequalizer;
-extern AVFilter ff_af_anlmdn;
-extern AVFilter ff_af_anlms;
-extern AVFilter ff_af_anull;
-extern AVFilter ff_af_apad;
-extern AVFilter ff_af_aperms;
-extern AVFilter ff_af_aphaser;
-extern AVFilter ff_af_apulsator;
-extern AVFilter ff_af_arealtime;
-extern AVFilter ff_af_aresample;
-extern AVFilter ff_af_areverse;
-extern AVFilter ff_af_arnndn;
-extern AVFilter ff_af_aselect;
-extern AVFilter ff_af_asendcmd;
-extern AVFilter ff_af_asetnsamples;
-extern AVFilter ff_af_asetpts;
-extern AVFilter ff_af_asetrate;
-extern AVFilter ff_af_asettb;
-extern AVFilter ff_af_ashowinfo;
-extern AVFilter ff_af_asidedata;
-extern AVFilter ff_af_asoftclip;
-extern AVFilter ff_af_asplit;
-extern AVFilter ff_af_astats;
-extern AVFilter ff_af_astreamselect;
-extern AVFilter ff_af_asubboost;
-extern AVFilter ff_af_atempo;
-extern AVFilter ff_af_atrim;
-extern AVFilter ff_af_axcorrelate;
-extern AVFilter ff_af_azmq;
-extern AVFilter ff_af_bandpass;
-extern AVFilter ff_af_bandreject;
-extern AVFilter ff_af_bass;
-extern AVFilter ff_af_biquad;
-extern AVFilter ff_af_bs2b;
-extern AVFilter ff_af_channelmap;
-extern AVFilter ff_af_channelsplit;
-extern AVFilter ff_af_chorus;
-extern AVFilter ff_af_compand;
-extern AVFilter ff_af_compensationdelay;
-extern AVFilter ff_af_crossfeed;
-extern AVFilter ff_af_crystalizer;
-extern AVFilter ff_af_dcshift;
-extern AVFilter ff_af_deesser;
-extern AVFilter ff_af_drmeter;
-extern AVFilter ff_af_dynaudnorm;
-extern AVFilter ff_af_earwax;
-extern AVFilter ff_af_ebur128;
-extern AVFilter ff_af_equalizer;
-extern AVFilter ff_af_extrastereo;
-extern AVFilter ff_af_firequalizer;
-extern AVFilter ff_af_flanger;
-extern AVFilter ff_af_haas;
-extern AVFilter ff_af_hdcd;
-extern AVFilter ff_af_headphone;
-extern AVFilter ff_af_highpass;
-extern AVFilter ff_af_highshelf;
-extern AVFilter ff_af_join;
-extern AVFilter ff_af_loudnorm;
-extern AVFilter ff_af_lowpass;
-extern AVFilter ff_af_lowshelf;
-extern AVFilter ff_af_mcompand;
-extern AVFilter ff_af_pan;
-extern AVFilter ff_af_replaygain;
-extern AVFilter ff_af_rubberband;
-extern AVFilter ff_af_sidechaincompress;
-extern AVFilter ff_af_sidechaingate;
-extern AVFilter ff_af_silencedetect;
-extern AVFilter ff_af_silenceremove;
-extern AVFilter ff_af_sofalizer;
-extern AVFilter ff_af_stereotools;
-extern AVFilter ff_af_stereowiden;
-extern AVFilter ff_af_superequalizer;
-extern AVFilter ff_af_surround;
-extern AVFilter ff_af_treble;
-extern AVFilter ff_af_tremolo;
-extern AVFilter ff_af_vibrato;
-extern AVFilter ff_af_volume;
-extern AVFilter ff_af_volumedetect;
-extern AVFilter ff_asrc_aevalsrc;
-extern AVFilter ff_asrc_afirsrc;
-extern AVFilter ff_asrc_anoisesrc;
-extern AVFilter ff_asrc_anullsrc;
-extern AVFilter ff_asrc_hilbert;
-extern AVFilter ff_asrc_sinc;
-extern AVFilter ff_asrc_sine;
-extern AVFilter ff_asink_anullsink;
-extern AVFilter ff_vf_addroi;
-extern AVFilter ff_vf_alphaextract;
-extern AVFilter ff_vf_alphamerge;
-extern AVFilter ff_vf_amplify;
-extern AVFilter ff_vf_ass;
-extern AVFilter ff_vf_atadenoise;
-extern AVFilter ff_vf_avgblur;
-extern AVFilter ff_vf_bbox;
-extern AVFilter ff_vf_bench;
-extern AVFilter ff_vf_bilateral;
-extern AVFilter ff_vf_bitplanenoise;
-extern AVFilter ff_vf_blackdetect;
-extern AVFilter ff_vf_blackframe;
-extern AVFilter ff_vf_blend;
-extern AVFilter ff_vf_bm3d;
-extern AVFilter ff_vf_boxblur;
-extern AVFilter ff_vf_bwdif;
-extern AVFilter ff_vf_cas;
-extern AVFilter ff_vf_chromahold;
-extern AVFilter ff_vf_chromakey;
-extern AVFilter ff_vf_chromanr;
-extern AVFilter ff_vf_chromashift;
-extern AVFilter ff_vf_ciescope;
-extern AVFilter ff_vf_codecview;
-extern AVFilter ff_vf_colorbalance;
-extern AVFilter ff_vf_colorchannelmixer;
-extern AVFilter ff_vf_colorkey;
-extern AVFilter ff_vf_colorhold;
-extern AVFilter ff_vf_colorlevels;
-extern AVFilter ff_vf_colormatrix;
-extern AVFilter ff_vf_colorspace;
-extern AVFilter ff_vf_convolution;
-extern AVFilter ff_vf_convolve;
-extern AVFilter ff_vf_copy;
-extern AVFilter ff_vf_cover_rect;
-extern AVFilter ff_vf_crop;
-extern AVFilter ff_vf_cropdetect;
-extern AVFilter ff_vf_cue;
-extern AVFilter ff_vf_curves;
-extern AVFilter ff_vf_datascope;
-extern AVFilter ff_vf_dblur;
-extern AVFilter ff_vf_dctdnoiz;
-extern AVFilter ff_vf_deband;
-extern AVFilter ff_vf_deblock;
-extern AVFilter ff_vf_decimate;
-extern AVFilter ff_vf_deconvolve;
-extern AVFilter ff_vf_dedot;
-extern AVFilter ff_vf_deflate;
-extern AVFilter ff_vf_deflicker;
-extern AVFilter ff_vf_deinterlace_qsv;
-extern AVFilter ff_vf_dejudder;
-extern AVFilter ff_vf_delogo;
-extern AVFilter ff_vf_derain;
-extern AVFilter ff_vf_deshake;
-extern AVFilter ff_vf_despill;
-extern AVFilter ff_vf_detelecine;
-extern AVFilter ff_vf_dilation;
-extern AVFilter ff_vf_displace;
-extern AVFilter ff_vf_dnn_processing;
-extern AVFilter ff_vf_doubleweave;
-extern AVFilter ff_vf_drawbox;
-extern AVFilter ff_vf_drawgraph;
-extern AVFilter ff_vf_drawgrid;
-extern AVFilter ff_vf_drawtext;
-extern AVFilter ff_vf_edgedetect;
-extern AVFilter ff_vf_elbg;
-extern AVFilter ff_vf_entropy;
-extern AVFilter ff_vf_eq;
-extern AVFilter ff_vf_erosion;
-extern AVFilter ff_vf_extractplanes;
-extern AVFilter ff_vf_fade;
-extern AVFilter ff_vf_fftdnoiz;
-extern AVFilter ff_vf_fftfilt;
-extern AVFilter ff_vf_field;
-extern AVFilter ff_vf_fieldhint;
-extern AVFilter ff_vf_fieldmatch;
-extern AVFilter ff_vf_fieldorder;
-extern AVFilter ff_vf_fillborders;
-extern AVFilter ff_vf_find_rect;
-extern AVFilter ff_vf_floodfill;
-extern AVFilter ff_vf_format;
-extern AVFilter ff_vf_fps;
-extern AVFilter ff_vf_framepack;
-extern AVFilter ff_vf_framerate;
-extern AVFilter ff_vf_framestep;
-extern AVFilter ff_vf_freezedetect;
-extern AVFilter ff_vf_freezeframes;
-extern AVFilter ff_vf_fspp;
-extern AVFilter ff_vf_gblur;
-extern AVFilter ff_vf_geq;
-extern AVFilter ff_vf_gradfun;
-extern AVFilter ff_vf_graphmonitor;
-extern AVFilter ff_vf_greyedge;
-extern AVFilter ff_vf_haldclut;
-extern AVFilter ff_vf_hflip;
-extern AVFilter ff_vf_histeq;
-extern AVFilter ff_vf_histogram;
-extern AVFilter ff_vf_hqdn3d;
-extern AVFilter ff_vf_hqx;
-extern AVFilter ff_vf_hstack;
-extern AVFilter ff_vf_hue;
-extern AVFilter ff_vf_hwdownload;
-extern AVFilter ff_vf_hwmap;
-extern AVFilter ff_vf_hwupload;
-extern AVFilter ff_vf_hysteresis;
-extern AVFilter ff_vf_idet;
-extern AVFilter ff_vf_il;
-extern AVFilter ff_vf_inflate;
-extern AVFilter ff_vf_interlace;
-extern AVFilter ff_vf_interleave;
-extern AVFilter ff_vf_kerndeint;
-extern AVFilter ff_vf_lagfun;
-extern AVFilter ff_vf_lenscorrection;
-extern AVFilter ff_vf_limiter;
-extern AVFilter ff_vf_loop;
-extern AVFilter ff_vf_lumakey;
-extern AVFilter ff_vf_lut;
-extern AVFilter ff_vf_lut1d;
-extern AVFilter ff_vf_lut2;
-extern AVFilter ff_vf_lut3d;
-extern AVFilter ff_vf_lutrgb;
-extern AVFilter ff_vf_lutyuv;
-extern AVFilter ff_vf_maskedclamp;
-extern AVFilter ff_vf_maskedmax;
-extern AVFilter ff_vf_maskedmerge;
-extern AVFilter ff_vf_maskedmin;
-extern AVFilter ff_vf_maskedthreshold;
-extern AVFilter ff_vf_maskfun;
-extern AVFilter ff_vf_mcdeint;
-extern AVFilter ff_vf_median;
-extern AVFilter ff_vf_mergeplanes;
-extern AVFilter ff_vf_mestimate;
-extern AVFilter ff_vf_metadata;
-extern AVFilter ff_vf_midequalizer;
-extern AVFilter ff_vf_minterpolate;
-extern AVFilter ff_vf_mix;
-extern AVFilter ff_vf_mpdecimate;
-extern AVFilter ff_vf_negate;
-extern AVFilter ff_vf_nlmeans;
-extern AVFilter ff_vf_nnedi;
-extern AVFilter ff_vf_noformat;
-extern AVFilter ff_vf_noise;
-extern AVFilter ff_vf_normalize;
-extern AVFilter ff_vf_null;
-extern AVFilter ff_vf_oscilloscope;
-extern AVFilter ff_vf_overlay;
-extern AVFilter ff_vf_overlay_qsv;
-extern AVFilter ff_vf_owdenoise;
-extern AVFilter ff_vf_pad;
-extern AVFilter ff_vf_palettegen;
-extern AVFilter ff_vf_paletteuse;
-extern AVFilter ff_vf_perms;
-extern AVFilter ff_vf_perspective;
-extern AVFilter ff_vf_phase;
-extern AVFilter ff_vf_photosensitivity;
-extern AVFilter ff_vf_pixdesctest;
-extern AVFilter ff_vf_pixscope;
-extern AVFilter ff_vf_pp;
-extern AVFilter ff_vf_pp7;
-extern AVFilter ff_vf_premultiply;
-extern AVFilter ff_vf_prewitt;
-extern AVFilter ff_vf_pseudocolor;
-extern AVFilter ff_vf_psnr;
-extern AVFilter ff_vf_pullup;
-extern AVFilter ff_vf_qp;
-extern AVFilter ff_vf_random;
-extern AVFilter ff_vf_readeia608;
-extern AVFilter ff_vf_readvitc;
-extern AVFilter ff_vf_realtime;
-extern AVFilter ff_vf_remap;
-extern AVFilter ff_vf_removegrain;
-extern AVFilter ff_vf_removelogo;
-extern AVFilter ff_vf_repeatfields;
-extern AVFilter ff_vf_reverse;
-extern AVFilter ff_vf_rgbashift;
-extern AVFilter ff_vf_roberts;
-extern AVFilter ff_vf_rotate;
-extern AVFilter ff_vf_sab;
-extern AVFilter ff_vf_scale;
-extern AVFilter ff_vf_scale_qsv;
-extern AVFilter ff_vf_scale2ref;
-extern AVFilter ff_vf_scdet;
-extern AVFilter ff_vf_scroll;
-extern AVFilter ff_vf_select;
-extern AVFilter ff_vf_selectivecolor;
-extern AVFilter ff_vf_sendcmd;
-extern AVFilter ff_vf_separatefields;
-extern AVFilter ff_vf_setdar;
-extern AVFilter ff_vf_setfield;
-extern AVFilter ff_vf_setparams;
-extern AVFilter ff_vf_setpts;
-extern AVFilter ff_vf_setrange;
-extern AVFilter ff_vf_setsar;
-extern AVFilter ff_vf_settb;
-extern AVFilter ff_vf_showinfo;
-extern AVFilter ff_vf_showpalette;
-extern AVFilter ff_vf_shuffleframes;
-extern AVFilter ff_vf_shuffleplanes;
-extern AVFilter ff_vf_sidedata;
-extern AVFilter ff_vf_signalstats;
-extern AVFilter ff_vf_signature;
-extern AVFilter ff_vf_smartblur;
-extern AVFilter ff_vf_sobel;
-extern AVFilter ff_vf_split;
-extern AVFilter ff_vf_spp;
-extern AVFilter ff_vf_sr;
-extern AVFilter ff_vf_ssim;
-extern AVFilter ff_vf_stereo3d;
-extern AVFilter ff_vf_streamselect;
-extern AVFilter ff_vf_subtitles;
-extern AVFilter ff_vf_super2xsai;
-extern AVFilter ff_vf_swaprect;
-extern AVFilter ff_vf_swapuv;
-extern AVFilter ff_vf_tblend;
-extern AVFilter ff_vf_telecine;
-extern AVFilter ff_vf_thistogram;
-extern AVFilter ff_vf_threshold;
-extern AVFilter ff_vf_thumbnail;
-extern AVFilter ff_vf_tile;
-extern AVFilter ff_vf_tinterlace;
-extern AVFilter ff_vf_tlut2;
-extern AVFilter ff_vf_tmedian;
-extern AVFilter ff_vf_tmix;
-extern AVFilter ff_vf_tonemap;
-extern AVFilter ff_vf_tpad;
-extern AVFilter ff_vf_transpose;
-extern AVFilter ff_vf_trim;
-extern AVFilter ff_vf_unpremultiply;
-extern AVFilter ff_vf_unsharp;
-extern AVFilter ff_vf_untile;
-extern AVFilter ff_vf_uspp;
-extern AVFilter ff_vf_v360;
-extern AVFilter ff_vf_vaguedenoiser;
-extern AVFilter ff_vf_vectorscope;
-extern AVFilter ff_vf_vflip;
-extern AVFilter ff_vf_vfrdet;
-extern AVFilter ff_vf_vibrance;
-extern AVFilter ff_vf_vidstabdetect;
-extern AVFilter ff_vf_vidstabtransform;
-extern AVFilter ff_vf_vignette;
-extern AVFilter ff_vf_vmafmotion;
-extern AVFilter ff_vf_vpp_qsv;
-extern AVFilter ff_vf_vstack;
-extern AVFilter ff_vf_w3fdif;
-extern AVFilter ff_vf_waveform;
-extern AVFilter ff_vf_weave;
-extern AVFilter ff_vf_xbr;
-extern AVFilter ff_vf_xfade;
-extern AVFilter ff_vf_xmedian;
-extern AVFilter ff_vf_xstack;
-extern AVFilter ff_vf_yadif;
-extern AVFilter ff_vf_yaepblur;
-extern AVFilter ff_vf_zmq;
-extern AVFilter ff_vf_zoompan;
-extern AVFilter ff_vf_zscale;
-extern AVFilter ff_vsrc_allrgb;
-extern AVFilter ff_vsrc_allyuv;
-extern AVFilter ff_vsrc_cellauto;
-extern AVFilter ff_vsrc_color;
-extern AVFilter ff_vsrc_gradients;
-extern AVFilter ff_vsrc_haldclutsrc;
-extern AVFilter ff_vsrc_life;
-extern AVFilter ff_vsrc_mandelbrot;
-extern AVFilter ff_vsrc_mptestsrc;
-extern AVFilter ff_vsrc_nullsrc;
-extern AVFilter ff_vsrc_pal75bars;
-extern AVFilter ff_vsrc_pal100bars;
-extern AVFilter ff_vsrc_rgbtestsrc;
-extern AVFilter ff_vsrc_sierpinski;
-extern AVFilter ff_vsrc_smptebars;
-extern AVFilter ff_vsrc_smptehdbars;
-extern AVFilter ff_vsrc_testsrc;
-extern AVFilter ff_vsrc_testsrc2;
-extern AVFilter ff_vsrc_yuvtestsrc;
-extern AVFilter ff_vsink_nullsink;
-extern AVFilter ff_avf_abitscope;
-extern AVFilter ff_avf_adrawgraph;
-extern AVFilter ff_avf_agraphmonitor;
-extern AVFilter ff_avf_ahistogram;
-extern AVFilter ff_avf_aphasemeter;
-extern AVFilter ff_avf_avectorscope;
-extern AVFilter ff_avf_concat;
-extern AVFilter ff_avf_showcqt;
-extern AVFilter ff_avf_showfreqs;
-extern AVFilter ff_avf_showspatial;
-extern AVFilter ff_avf_showspectrum;
-extern AVFilter ff_avf_showspectrumpic;
-extern AVFilter ff_avf_showvolume;
-extern AVFilter ff_avf_showwaves;
-extern AVFilter ff_avf_showwavespic;
-extern AVFilter ff_vaf_spectrumsynth;
-extern AVFilter ff_avsrc_amovie;
-extern AVFilter ff_avsrc_movie;
-extern AVFilter ff_af_afifo;
-extern AVFilter ff_vf_fifo;
-extern AVFilter ff_asrc_abuffer;
-extern AVFilter ff_vsrc_buffer;
-extern AVFilter ff_asink_abuffer;
-extern AVFilter ff_vsink_buffer;
 
 static const AVOutputFormat * const muxer_list[] = {
-    &ff_a64_muxer,
-    &ff_ac3_muxer,
-    &ff_adts_muxer,
-    &ff_adx_muxer,
-    &ff_aiff_muxer,
-    &ff_amr_muxer,
-    &ff_apm_muxer,
-    &ff_apng_muxer,
-    &ff_aptx_muxer,
-    &ff_aptx_hd_muxer,
-    &ff_argo_asf_muxer,
-    &ff_asf_muxer,
-    &ff_ass_muxer,
-    &ff_ast_muxer,
-    &ff_asf_stream_muxer,
-    &ff_au_muxer,
-    &ff_avi_muxer,
-    &ff_avm2_muxer,
-    &ff_avs2_muxer,
-    &ff_bit_muxer,
-    &ff_caf_muxer,
-    &ff_cavsvideo_muxer,
-    &ff_codec2_muxer,
-    &ff_codec2raw_muxer,
-    &ff_crc_muxer,
-    &ff_dash_muxer,
-    &ff_data_muxer,
-    &ff_daud_muxer,
-    &ff_dirac_muxer,
-    &ff_dnxhd_muxer,
-    &ff_dts_muxer,
-    &ff_dv_muxer,
-    &ff_eac3_muxer,
-    &ff_f4v_muxer,
-    &ff_ffmetadata_muxer,
-    &ff_fifo_muxer,
-    &ff_fifo_test_muxer,
-    &ff_filmstrip_muxer,
-    &ff_fits_muxer,
-    &ff_flac_muxer,
-    &ff_flv_muxer,
-    &ff_framecrc_muxer,
-    &ff_framehash_muxer,
-    &ff_framemd5_muxer,
-    &ff_g722_muxer,
-    &ff_g723_1_muxer,
-    &ff_g726_muxer,
-    &ff_g726le_muxer,
-    &ff_gif_muxer,
-    &ff_gsm_muxer,
-    &ff_gxf_muxer,
-    &ff_h261_muxer,
-    &ff_h263_muxer,
-    &ff_h264_muxer,
-    &ff_hash_muxer,
-    &ff_hds_muxer,
-    &ff_hevc_muxer,
-    &ff_hls_muxer,
-    &ff_ico_muxer,
-    &ff_ilbc_muxer,
-    &ff_image2_muxer,
-    &ff_image2pipe_muxer,
-    &ff_ipod_muxer,
-    &ff_ircam_muxer,
-    &ff_ismv_muxer,
-    &ff_ivf_muxer,
-    &ff_jacosub_muxer,
-    &ff_kvag_muxer,
-    &ff_latm_muxer,
-    &ff_lrc_muxer,
-    &ff_m4v_muxer,
-    &ff_md5_muxer,
-    &ff_matroska_muxer,
-    &ff_matroska_audio_muxer,
-    &ff_microdvd_muxer,
-    &ff_mjpeg_muxer,
-    &ff_mlp_muxer,
-    &ff_mmf_muxer,
-    &ff_mov_muxer,
-    &ff_mp2_muxer,
-    &ff_mp3_muxer,
-    &ff_mp4_muxer,
-    &ff_mpeg1system_muxer,
-    &ff_mpeg1vcd_muxer,
-    &ff_mpeg1video_muxer,
-    &ff_mpeg2dvd_muxer,
-    &ff_mpeg2svcd_muxer,
-    &ff_mpeg2video_muxer,
-    &ff_mpeg2vob_muxer,
-    &ff_mpegts_muxer,
-    &ff_mpjpeg_muxer,
-    &ff_mxf_muxer,
-    &ff_mxf_d10_muxer,
-    &ff_mxf_opatom_muxer,
-    &ff_null_muxer,
-    &ff_nut_muxer,
-    &ff_oga_muxer,
-    &ff_ogg_muxer,
-    &ff_ogv_muxer,
-    &ff_oma_muxer,
-    &ff_opus_muxer,
-    &ff_pcm_alaw_muxer,
-    &ff_pcm_mulaw_muxer,
-    &ff_pcm_vidc_muxer,
-    &ff_pcm_f64be_muxer,
-    &ff_pcm_f64le_muxer,
-    &ff_pcm_f32be_muxer,
-    &ff_pcm_f32le_muxer,
-    &ff_pcm_s32be_muxer,
-    &ff_pcm_s32le_muxer,
-    &ff_pcm_s24be_muxer,
-    &ff_pcm_s24le_muxer,
-    &ff_pcm_s16be_muxer,
-    &ff_pcm_s16le_muxer,
-    &ff_pcm_s8_muxer,
-    &ff_pcm_u32be_muxer,
-    &ff_pcm_u32le_muxer,
-    &ff_pcm_u24be_muxer,
-    &ff_pcm_u24le_muxer,
-    &ff_pcm_u16be_muxer,
-    &ff_pcm_u16le_muxer,
-    &ff_pcm_u8_muxer,
-    &ff_psp_muxer,
-    &ff_rawvideo_muxer,
-    &ff_rm_muxer,
-    &ff_roq_muxer,
-    &ff_rso_muxer,
-    &ff_rtp_muxer,
-    &ff_rtp_mpegts_muxer,
-    &ff_rtsp_muxer,
-    &ff_sap_muxer,
-    &ff_sbc_muxer,
-    &ff_scc_muxer,
-    &ff_segafilm_muxer,
-    &ff_segment_muxer,
-    &ff_stream_segment_muxer,
-    &ff_singlejpeg_muxer,
-    &ff_smjpeg_muxer,
-    &ff_smoothstreaming_muxer,
-    &ff_sox_muxer,
-    &ff_spx_muxer,
-    &ff_spdif_muxer,
-    &ff_srt_muxer,
-    &ff_streamhash_muxer,
-    &ff_sup_muxer,
-    &ff_swf_muxer,
-    &ff_tee_muxer,
-    &ff_tg2_muxer,
-    &ff_tgp_muxer,
-    &ff_mkvtimestamp_v2_muxer,
-    &ff_truehd_muxer,
-    &ff_tta_muxer,
-    &ff_uncodedframecrc_muxer,
-    &ff_vc1_muxer,
-    &ff_vc1t_muxer,
-    &ff_voc_muxer,
-    &ff_w64_muxer,
-    &ff_wav_muxer,
-    &ff_webm_muxer,
-    &ff_webm_dash_manifest_muxer,
-    &ff_webm_chunk_muxer,
-    &ff_webp_muxer,
-    &ff_webvtt_muxer,
-    &ff_wtv_muxer,
-    &ff_wv_muxer,
-    &ff_yuv4mpegpipe_muxer,
-    &ff_chromaprint_muxer,
+    // &ff_a64_muxer,
+    // &ff_ac3_muxer,
+    // &ff_adts_muxer,
+    // &ff_adx_muxer,
+    // &ff_aiff_muxer,
+    // &ff_amr_muxer,
+    // &ff_apm_muxer,
+    // &ff_apng_muxer,
+    // &ff_aptx_muxer,
+    // &ff_aptx_hd_muxer,
+    // &ff_argo_asf_muxer,
+    // &ff_asf_muxer,
+    // &ff_ass_muxer,
+    // &ff_ast_muxer,
+    // &ff_asf_stream_muxer,
+    // &ff_au_muxer,
+    // &ff_avi_muxer,
+    // &ff_avm2_muxer,
+    // &ff_avs2_muxer,
+    // &ff_bit_muxer,
+    // &ff_caf_muxer,
+    // &ff_cavsvideo_muxer,
+    // &ff_codec2_muxer,
+    // &ff_codec2raw_muxer,
+    // &ff_crc_muxer,
+    // &ff_dash_muxer,
+    // &ff_data_muxer,
+    // &ff_daud_muxer,
+    // &ff_dirac_muxer,
+    // &ff_dnxhd_muxer,
+    // &ff_dts_muxer,
+    // &ff_dv_muxer,
+    // &ff_eac3_muxer,
+    // &ff_f4v_muxer,
+    // &ff_ffmetadata_muxer,
+    // &ff_fifo_muxer,
+    // &ff_fifo_test_muxer,
+    // &ff_filmstrip_muxer,
+    // &ff_fits_muxer,
+    // &ff_flac_muxer,
+    // &ff_flv_muxer,
+    // &ff_framecrc_muxer,
+    // &ff_framehash_muxer,
+    // &ff_framemd5_muxer,
+    // &ff_g722_muxer,
+    // &ff_g723_1_muxer,
+    // &ff_g726_muxer,
+    // &ff_g726le_muxer,
+    // &ff_gif_muxer,
+    // &ff_gsm_muxer,
+    // &ff_gxf_muxer,
+    // &ff_h261_muxer,
+    // &ff_h263_muxer,
+    // &ff_h264_muxer,
+    // &ff_hash_muxer,
+    // &ff_hds_muxer,
+    // &ff_hevc_muxer,
+    // &ff_hls_muxer,
+    // &ff_ico_muxer,
+    // &ff_ilbc_muxer,
+    // &ff_image2_muxer,
+    // &ff_image2pipe_muxer,
+    // &ff_ipod_muxer,
+    // &ff_ircam_muxer,
+    // &ff_ismv_muxer,
+    // &ff_ivf_muxer,
+    // &ff_jacosub_muxer,
+    // &ff_kvag_muxer,
+    // &ff_latm_muxer,
+    // &ff_lrc_muxer,
+    // &ff_m4v_muxer,
+    // &ff_md5_muxer,
+    // &ff_matroska_muxer,
+    // &ff_matroska_audio_muxer,
+    // &ff_microdvd_muxer,
+    // &ff_mjpeg_muxer,
+    // &ff_mlp_muxer,
+    // &ff_mmf_muxer,
+    // &ff_mov_muxer,
+    // &ff_mp2_muxer,
+    // &ff_mp3_muxer,
+    // &ff_mp4_muxer,
+    // &ff_mpeg1system_muxer,
+    // &ff_mpeg1vcd_muxer,
+    // &ff_mpeg1video_muxer,
+    // &ff_mpeg2dvd_muxer,
+    // &ff_mpeg2svcd_muxer,
+    // &ff_mpeg2video_muxer,
+    // &ff_mpeg2vob_muxer,
+    // &ff_mpegts_muxer,
+    // &ff_mpjpeg_muxer,
+    // &ff_mxf_muxer,
+    // &ff_mxf_d10_muxer,
+    // &ff_mxf_opatom_muxer,
+    // &ff_null_muxer,
+    // &ff_nut_muxer,
+    // &ff_oga_muxer,
+    // &ff_ogg_muxer,
+    // &ff_ogv_muxer,
+    // &ff_oma_muxer,
+    // &ff_opus_muxer,
+    // &ff_pcm_alaw_muxer,
+    // &ff_pcm_mulaw_muxer,
+    // &ff_pcm_vidc_muxer,
+    // &ff_pcm_f64be_muxer,
+    // &ff_pcm_f64le_muxer,
+    // &ff_pcm_f32be_muxer,
+    // &ff_pcm_f32le_muxer,
+    // &ff_pcm_s32be_muxer,
+    // &ff_pcm_s32le_muxer,
+    // &ff_pcm_s24be_muxer,
+    // &ff_pcm_s24le_muxer,
+    // &ff_pcm_s16be_muxer,
+    // &ff_pcm_s16le_muxer,
+    // &ff_pcm_s8_muxer,
+    // &ff_pcm_u32be_muxer,
+    // &ff_pcm_u32le_muxer,
+    // &ff_pcm_u24be_muxer,
+    // &ff_pcm_u24le_muxer,
+    // &ff_pcm_u16be_muxer,
+    // &ff_pcm_u16le_muxer,
+    // &ff_pcm_u8_muxer,
+    // &ff_psp_muxer,
+    // &ff_rawvideo_muxer,
+    // &ff_rm_muxer,
+    // &ff_roq_muxer,
+    // &ff_rso_muxer,
+    // &ff_rtp_muxer,
+    // &ff_rtp_mpegts_muxer,
+    // &ff_rtsp_muxer,
+    // &ff_sap_muxer,
+    // &ff_sbc_muxer,
+    // &ff_scc_muxer,
+    // &ff_segafilm_muxer,
+    // &ff_segment_muxer,
+    // &ff_stream_segment_muxer,
+    // &ff_singlejpeg_muxer,
+    // &ff_smjpeg_muxer,
+    // &ff_smoothstreaming_muxer,
+    // &ff_sox_muxer,
+    // &ff_spx_muxer,
+    // &ff_spdif_muxer,
+    // &ff_srt_muxer,
+    // &ff_streamhash_muxer,
+    // &ff_sup_muxer,
+    // &ff_swf_muxer,
+    // &ff_tee_muxer,
+    // &ff_tg2_muxer,
+    // &ff_tgp_muxer,
+    // &ff_mkvtimestamp_v2_muxer,
+    // &ff_truehd_muxer,
+    // &ff_tta_muxer,
+    // &ff_uncodedframecrc_muxer,
+    // &ff_vc1_muxer,
+    // &ff_vc1t_muxer,
+    // &ff_voc_muxer,
+    // &ff_w64_muxer,
+    // &ff_wav_muxer,
+    // &ff_webm_muxer,
+    // &ff_webm_dash_manifest_muxer,
+    // &ff_webm_chunk_muxer,
+    // &ff_webp_muxer,
+    // &ff_webvtt_muxer,
+    // &ff_wtv_muxer,
+    // &ff_wv_muxer,
+    // &ff_yuv4mpegpipe_muxer,
+    // &ff_chromaprint_muxer,
     NULL };
 
     static const AVInputFormat * const demuxer_list[] = {
-    &ff_aa_demuxer,
-    &ff_aac_demuxer,
-    &ff_aax_demuxer,
-    &ff_ac3_demuxer,
-    &ff_acm_demuxer,
-    &ff_act_demuxer,
-    &ff_adf_demuxer,
-    &ff_adp_demuxer,
-    &ff_ads_demuxer,
-    &ff_adx_demuxer,
-    &ff_aea_demuxer,
-    &ff_afc_demuxer,
-    &ff_aiff_demuxer,
-    &ff_aix_demuxer,
-    &ff_alp_demuxer,
-    &ff_amr_demuxer,
-    &ff_amrnb_demuxer,
-    &ff_amrwb_demuxer,
-    &ff_anm_demuxer,
-    &ff_apc_demuxer,
-    &ff_ape_demuxer,
-    &ff_apm_demuxer,
-    &ff_apng_demuxer,
-    &ff_aptx_demuxer,
-    &ff_aptx_hd_demuxer,
-    &ff_aqtitle_demuxer,
-    &ff_argo_asf_demuxer,
-    &ff_argo_brp_demuxer,
-    &ff_asf_demuxer,
-    &ff_asf_o_demuxer,
-    &ff_ass_demuxer,
-    &ff_ast_demuxer,
-    &ff_au_demuxer,
-    &ff_av1_demuxer,
-    &ff_avi_demuxer,
-    &ff_avr_demuxer,
-    &ff_avs_demuxer,
-    &ff_avs2_demuxer,
-    &ff_bethsoftvid_demuxer,
-    &ff_bfi_demuxer,
-    &ff_bintext_demuxer,
-    &ff_bink_demuxer,
-    &ff_bit_demuxer,
-    &ff_bmv_demuxer,
-    &ff_bfstm_demuxer,
-    &ff_brstm_demuxer,
-    &ff_boa_demuxer,
-    &ff_c93_demuxer,
-    &ff_caf_demuxer,
-    &ff_cavsvideo_demuxer,
-    &ff_cdg_demuxer,
-    &ff_cdxl_demuxer,
-    &ff_cine_demuxer,
-    &ff_codec2_demuxer,
-    &ff_codec2raw_demuxer,
-    &ff_concat_demuxer,
-    &ff_dash_demuxer,
-    &ff_data_demuxer,
-    &ff_daud_demuxer,
-    &ff_dcstr_demuxer,
-    &ff_derf_demuxer,
-    &ff_dfa_demuxer,
-    &ff_dhav_demuxer,
-    &ff_dirac_demuxer,
-    &ff_dnxhd_demuxer,
-    &ff_dsf_demuxer,
-    &ff_dsicin_demuxer,
-    &ff_dss_demuxer,
-    &ff_dts_demuxer,
-    &ff_dtshd_demuxer,
-    &ff_dv_demuxer,
-    &ff_dvbsub_demuxer,
-    &ff_dvbtxt_demuxer,
-    &ff_dxa_demuxer,
-    &ff_ea_demuxer,
-    &ff_ea_cdata_demuxer,
-    &ff_eac3_demuxer,
-    &ff_epaf_demuxer,
-    &ff_ffmetadata_demuxer,
-    &ff_filmstrip_demuxer,
-    &ff_fits_demuxer,
-    &ff_flac_demuxer,
-    &ff_flic_demuxer,
-    &ff_flv_demuxer,
-    &ff_live_flv_demuxer,
-    &ff_fourxm_demuxer,
-    &ff_frm_demuxer,
-    &ff_fsb_demuxer,
-    &ff_fwse_demuxer,
-    &ff_g722_demuxer,
-    &ff_g723_1_demuxer,
-    &ff_g726_demuxer,
-    &ff_g726le_demuxer,
-    &ff_g729_demuxer,
-    &ff_gdv_demuxer,
-    &ff_genh_demuxer,
-    &ff_gif_demuxer,
-    &ff_gsm_demuxer,
-    &ff_gxf_demuxer,
-    &ff_h261_demuxer,
-    &ff_h263_demuxer,
-    &ff_h264_demuxer,
-    &ff_hca_demuxer,
-    &ff_hcom_demuxer,
-    &ff_hevc_demuxer,
-    &ff_hls_demuxer,
-    &ff_hnm_demuxer,
-    &ff_ico_demuxer,
-    &ff_idcin_demuxer,
-    &ff_idf_demuxer,
-    &ff_iff_demuxer,
-    &ff_ifv_demuxer,
-    &ff_ilbc_demuxer,
-    &ff_image2_demuxer,
-    &ff_image2pipe_demuxer,
-    &ff_image2_alias_pix_demuxer,
-    &ff_image2_brender_pix_demuxer,
-    &ff_ingenient_demuxer,
-    &ff_ipmovie_demuxer,
-    &ff_ipu_demuxer,
-    &ff_ircam_demuxer,
-    &ff_iss_demuxer,
-    &ff_iv8_demuxer,
-    &ff_ivf_demuxer,
-    &ff_ivr_demuxer,
-    &ff_jacosub_demuxer,
-    &ff_jv_demuxer,
-    &ff_kux_demuxer,
-    &ff_kvag_demuxer,
-    &ff_lmlm4_demuxer,
-    &ff_loas_demuxer,
-    &ff_luodat_demuxer,
-    &ff_lrc_demuxer,
-    &ff_lvf_demuxer,
-    &ff_lxf_demuxer,
-    &ff_m4v_demuxer,
-    &ff_mca_demuxer,
-    &ff_mcc_demuxer,
-    &ff_matroska_demuxer,
-    &ff_mgsts_demuxer,
-    &ff_microdvd_demuxer,
-    &ff_mjpeg_demuxer,
-    &ff_mjpeg_2000_demuxer,
-    &ff_mlp_demuxer,
-    &ff_mlv_demuxer,
-    &ff_mm_demuxer,
-    &ff_mmf_demuxer,
-    &ff_mods_demuxer,
-    &ff_moflex_demuxer,
-    &ff_mov_demuxer,
-    &ff_mp3_demuxer,
-    &ff_mpc_demuxer,
-    &ff_mpc8_demuxer,
-    &ff_mpegps_demuxer,
-    &ff_mpegts_demuxer,
-    &ff_mpegtsraw_demuxer,
-    &ff_mpegvideo_demuxer,
-    &ff_mpjpeg_demuxer,
-    &ff_mpl2_demuxer,
-    &ff_mpsub_demuxer,
-    &ff_msf_demuxer,
-    &ff_msnwc_tcp_demuxer,
-    &ff_mtaf_demuxer,
-    &ff_mtv_demuxer,
-    &ff_musx_demuxer,
-    &ff_mv_demuxer,
-    &ff_mvi_demuxer,
-    &ff_mxf_demuxer,
-    &ff_mxg_demuxer,
-    &ff_nc_demuxer,
-    &ff_nistsphere_demuxer,
-    &ff_nsp_demuxer,
-    &ff_nsv_demuxer,
-    &ff_nut_demuxer,
-    &ff_nuv_demuxer,
-    &ff_obu_demuxer,
-    &ff_ogg_demuxer,
-    &ff_oma_demuxer,
-    &ff_paf_demuxer,
-    &ff_pcm_alaw_demuxer,
-    &ff_pcm_mulaw_demuxer,
-    &ff_pcm_vidc_demuxer,
-    &ff_pcm_f64be_demuxer,
-    &ff_pcm_f64le_demuxer,
-    &ff_pcm_f32be_demuxer,
-    &ff_pcm_f32le_demuxer,
-    &ff_pcm_s32be_demuxer,
-    &ff_pcm_s32le_demuxer,
-    &ff_pcm_s24be_demuxer,
-    &ff_pcm_s24le_demuxer,
-    &ff_pcm_s16be_demuxer,
-    &ff_pcm_s16le_demuxer,
-    &ff_pcm_s8_demuxer,
-    &ff_pcm_u32be_demuxer,
-    &ff_pcm_u32le_demuxer,
-    &ff_pcm_u24be_demuxer,
-    &ff_pcm_u24le_demuxer,
-    &ff_pcm_u16be_demuxer,
-    &ff_pcm_u16le_demuxer,
-    &ff_pcm_u8_demuxer,
-    &ff_pjs_demuxer,
-    &ff_pmp_demuxer,
-    &ff_pp_bnk_demuxer,
-    &ff_pva_demuxer,
-    &ff_pvf_demuxer,
-    &ff_qcp_demuxer,
-    &ff_r3d_demuxer,
-    &ff_rawvideo_demuxer,
-    &ff_realtext_demuxer,
-    &ff_redspark_demuxer,
-    &ff_rl2_demuxer,
-    &ff_rm_demuxer,
-    &ff_roq_demuxer,
-    &ff_rpl_demuxer,
-    &ff_rsd_demuxer,
-    &ff_rso_demuxer,
-    &ff_rtp_demuxer,
-    &ff_rtsp_demuxer,
-    &ff_s337m_demuxer,
-    &ff_sami_demuxer,
-    &ff_sap_demuxer,
-    &ff_sbc_demuxer,
-    &ff_sbg_demuxer,
-    &ff_scc_demuxer,
-    &ff_sdp_demuxer,
-    &ff_sdr2_demuxer,
-    &ff_sds_demuxer,
-    &ff_sdx_demuxer,
-    &ff_segafilm_demuxer,
-    &ff_ser_demuxer,
-    &ff_shorten_demuxer,
-    &ff_siff_demuxer,
-    &ff_sln_demuxer,
-    &ff_smacker_demuxer,
-    &ff_smjpeg_demuxer,
-    &ff_smush_demuxer,
-    &ff_sol_demuxer,
-    &ff_sox_demuxer,
-    &ff_spdif_demuxer,
-    &ff_srt_demuxer,
-    &ff_str_demuxer,
-    &ff_stl_demuxer,
-    &ff_subviewer1_demuxer,
-    &ff_subviewer_demuxer,
-    &ff_sup_demuxer,
-    &ff_svag_demuxer,
-    &ff_svs_demuxer,
-    &ff_swf_demuxer,
-    &ff_tak_demuxer,
-    &ff_tedcaptions_demuxer,
-    &ff_thp_demuxer,
-    &ff_threedostr_demuxer,
-    &ff_tiertexseq_demuxer,
-    &ff_tmv_demuxer,
-    &ff_truehd_demuxer,
-    &ff_tta_demuxer,
-    &ff_txd_demuxer,
-    &ff_tty_demuxer,
-    &ff_ty_demuxer,
-    &ff_v210_demuxer,
-    &ff_v210x_demuxer,
-    &ff_vag_demuxer,
-    &ff_vc1_demuxer,
-    &ff_vc1t_demuxer,
-    &ff_vividas_demuxer,
-    &ff_vivo_demuxer,
-    &ff_vmd_demuxer,
-    &ff_vobsub_demuxer,
-    &ff_voc_demuxer,
-    &ff_vpk_demuxer,
-    &ff_vplayer_demuxer,
-    &ff_vqf_demuxer,
-    &ff_w64_demuxer,
-    &ff_wav_demuxer,
-    &ff_wc3_demuxer,
-    &ff_webm_dash_manifest_demuxer,
-    &ff_webvtt_demuxer,
-    &ff_wsaud_demuxer,
-    &ff_wsd_demuxer,
-    &ff_wsvqa_demuxer,
-    &ff_wtv_demuxer,
-    &ff_wve_demuxer,
-    &ff_wv_demuxer,
-    &ff_xa_demuxer,
-    &ff_xbin_demuxer,
-    &ff_xmv_demuxer,
-    &ff_xvag_demuxer,
-    &ff_xwma_demuxer,
-    &ff_yop_demuxer,
-    &ff_yuv4mpegpipe_demuxer,
-    &ff_image_bmp_pipe_demuxer,
-    &ff_image_dds_pipe_demuxer,
-    &ff_image_dpx_pipe_demuxer,
-    &ff_image_exr_pipe_demuxer,
-    &ff_image_gif_pipe_demuxer,
-    &ff_image_j2k_pipe_demuxer,
-    &ff_image_jpeg_pipe_demuxer,
-    &ff_image_jpegls_pipe_demuxer,
-    &ff_image_pam_pipe_demuxer,
-    &ff_image_pbm_pipe_demuxer,
-    &ff_image_pcx_pipe_demuxer,
-    &ff_image_pgmyuv_pipe_demuxer,
-    &ff_image_pgm_pipe_demuxer,
-    &ff_image_pgx_pipe_demuxer,
-    &ff_image_photocd_pipe_demuxer,
-    &ff_image_pictor_pipe_demuxer,
-    &ff_image_png_pipe_demuxer,
-    &ff_image_ppm_pipe_demuxer,
-    &ff_image_psd_pipe_demuxer,
-    &ff_image_qdraw_pipe_demuxer,
-    &ff_image_sgi_pipe_demuxer,
-    &ff_image_svg_pipe_demuxer,
-    &ff_image_sunrast_pipe_demuxer,
-    &ff_image_tiff_pipe_demuxer,
-    &ff_image_webp_pipe_demuxer,
-    &ff_image_xpm_pipe_demuxer,
-    &ff_image_xwd_pipe_demuxer,
-    &ff_libgme_demuxer,
-    &ff_libmodplug_demuxer,
+    // &ff_aa_demuxer,
+    // &ff_aac_demuxer,
+    // &ff_aax_demuxer,
+    // &ff_ac3_demuxer,
+    // &ff_acm_demuxer,
+    // &ff_act_demuxer,
+    // &ff_adf_demuxer,
+    // &ff_adp_demuxer,
+    // &ff_ads_demuxer,
+    // &ff_adx_demuxer,
+    // &ff_aea_demuxer,
+    // &ff_afc_demuxer,
+    // &ff_aiff_demuxer,
+    // &ff_aix_demuxer,
+    // &ff_alp_demuxer,
+    // &ff_amr_demuxer,
+    // &ff_amrnb_demuxer,
+    // &ff_amrwb_demuxer,
+    // &ff_anm_demuxer,
+    // &ff_apc_demuxer,
+    // &ff_ape_demuxer,
+    // &ff_apm_demuxer,
+    // &ff_apng_demuxer,
+    // &ff_aptx_demuxer,
+    // &ff_aptx_hd_demuxer,
+    // &ff_aqtitle_demuxer,
+    // &ff_argo_asf_demuxer,
+    // &ff_argo_brp_demuxer,
+    // &ff_asf_demuxer,
+    // &ff_asf_o_demuxer,
+    // &ff_ass_demuxer,
+    // &ff_ast_demuxer,
+    // &ff_au_demuxer,
+    // &ff_av1_demuxer,
+    // &ff_avi_demuxer,
+    // &ff_avr_demuxer,
+    // &ff_avs_demuxer,
+    // &ff_avs2_demuxer,
+    // &ff_bethsoftvid_demuxer,
+    // &ff_bfi_demuxer,
+    // &ff_bintext_demuxer,
+    // &ff_bink_demuxer,
+    // &ff_bit_demuxer,
+    // &ff_bmv_demuxer,
+    // &ff_bfstm_demuxer,
+    // &ff_brstm_demuxer,
+    // &ff_boa_demuxer,
+    // &ff_c93_demuxer,
+    // &ff_caf_demuxer,
+    // &ff_cavsvideo_demuxer,
+    // &ff_cdg_demuxer,
+    // &ff_cdxl_demuxer,
+    // &ff_cine_demuxer,
+    // &ff_codec2_demuxer,
+    // &ff_codec2raw_demuxer,
+    // &ff_concat_demuxer,
+    // &ff_dash_demuxer,
+    // &ff_data_demuxer,
+    // &ff_daud_demuxer,
+    // &ff_dcstr_demuxer,
+    // &ff_derf_demuxer,
+    // &ff_dfa_demuxer,
+    // &ff_dhav_demuxer,
+    // &ff_dirac_demuxer,
+    // &ff_dnxhd_demuxer,
+    // &ff_dsf_demuxer,
+    // &ff_dsicin_demuxer,
+    // &ff_dss_demuxer,
+    // &ff_dts_demuxer,
+    // &ff_dtshd_demuxer,
+    // &ff_dv_demuxer,
+    // &ff_dvbsub_demuxer,
+    // &ff_dvbtxt_demuxer,
+    // &ff_dxa_demuxer,
+    // &ff_ea_demuxer,
+    // &ff_ea_cdata_demuxer,
+    // &ff_eac3_demuxer,
+    // &ff_epaf_demuxer,
+    // &ff_ffmetadata_demuxer,
+    // &ff_filmstrip_demuxer,
+    // &ff_fits_demuxer,
+    // &ff_flac_demuxer,
+    // &ff_flic_demuxer,
+    // &ff_flv_demuxer,
+    // &ff_live_flv_demuxer,
+    // &ff_fourxm_demuxer,
+    // &ff_frm_demuxer,
+    // &ff_fsb_demuxer,
+    // &ff_fwse_demuxer,
+    // &ff_g722_demuxer,
+    // &ff_g723_1_demuxer,
+    // &ff_g726_demuxer,
+    // &ff_g726le_demuxer,
+    // &ff_g729_demuxer,
+    // &ff_gdv_demuxer,
+    // &ff_genh_demuxer,
+    // &ff_gif_demuxer,
+    // &ff_gsm_demuxer,
+    // &ff_gxf_demuxer,
+    // &ff_h261_demuxer,
+    // &ff_h263_demuxer,
+    // &ff_h264_demuxer,
+    // &ff_hca_demuxer,
+    // &ff_hcom_demuxer,
+    // &ff_hevc_demuxer,
+    // &ff_hls_demuxer,
+    // &ff_hnm_demuxer,
+    // &ff_ico_demuxer,
+    // &ff_idcin_demuxer,
+    // &ff_idf_demuxer,
+    // &ff_iff_demuxer,
+    // &ff_ifv_demuxer,
+    // &ff_ilbc_demuxer,
+    // &ff_image2_demuxer,
+    // &ff_image2pipe_demuxer,
+    // &ff_image2_alias_pix_demuxer,
+    // &ff_image2_brender_pix_demuxer,
+    // &ff_ingenient_demuxer,
+    // &ff_ipmovie_demuxer,
+    // &ff_ipu_demuxer,
+    // &ff_ircam_demuxer,
+    // &ff_iss_demuxer,
+    // &ff_iv8_demuxer,
+    // &ff_ivf_demuxer,
+    // &ff_ivr_demuxer,
+    // &ff_jacosub_demuxer,
+    // &ff_jv_demuxer,
+    // &ff_kux_demuxer,
+    // &ff_kvag_demuxer,
+    // &ff_lmlm4_demuxer,
+    // &ff_loas_demuxer,
+    // &ff_luodat_demuxer,
+    // &ff_lrc_demuxer,
+    // &ff_lvf_demuxer,
+    // &ff_lxf_demuxer,
+    // &ff_m4v_demuxer,
+    // &ff_mca_demuxer,
+    // &ff_mcc_demuxer,
+    // &ff_matroska_demuxer,
+    // &ff_mgsts_demuxer,
+    // &ff_microdvd_demuxer,
+    // &ff_mjpeg_demuxer,
+    // &ff_mjpeg_2000_demuxer,
+    // &ff_mlp_demuxer,
+    // &ff_mlv_demuxer,
+    // &ff_mm_demuxer,
+    // &ff_mmf_demuxer,
+    // &ff_mods_demuxer,
+    // &ff_moflex_demuxer,
+    // &ff_mov_demuxer,
+    // &ff_mp3_demuxer,
+    // &ff_mpc_demuxer,
+    // &ff_mpc8_demuxer,
+    // &ff_mpegps_demuxer,
+    // &ff_mpegts_demuxer,
+    // &ff_mpegtsraw_demuxer,
+    // &ff_mpegvideo_demuxer,
+    // &ff_mpjpeg_demuxer,
+    // &ff_mpl2_demuxer,
+    // &ff_mpsub_demuxer,
+    // &ff_msf_demuxer,
+    // &ff_msnwc_tcp_demuxer,
+    // &ff_mtaf_demuxer,
+    // &ff_mtv_demuxer,
+    // &ff_musx_demuxer,
+    // &ff_mv_demuxer,
+    // &ff_mvi_demuxer,
+    // &ff_mxf_demuxer,
+    // &ff_mxg_demuxer,
+    // &ff_nc_demuxer,
+    // &ff_nistsphere_demuxer,
+    // &ff_nsp_demuxer,
+    // &ff_nsv_demuxer,
+    // &ff_nut_demuxer,
+    // &ff_nuv_demuxer,
+    // &ff_obu_demuxer,
+    // &ff_ogg_demuxer,
+    // &ff_oma_demuxer,
+    // &ff_paf_demuxer,
+    // &ff_pcm_alaw_demuxer,
+    // &ff_pcm_mulaw_demuxer,
+    // &ff_pcm_vidc_demuxer,
+    // &ff_pcm_f64be_demuxer,
+    // &ff_pcm_f64le_demuxer,
+    // &ff_pcm_f32be_demuxer,
+    // &ff_pcm_f32le_demuxer,
+    // &ff_pcm_s32be_demuxer,
+    // &ff_pcm_s32le_demuxer,
+    // &ff_pcm_s24be_demuxer,
+    // &ff_pcm_s24le_demuxer,
+    // &ff_pcm_s16be_demuxer,
+    // &ff_pcm_s16le_demuxer,
+    // &ff_pcm_s8_demuxer,
+    // &ff_pcm_u32be_demuxer,
+    // &ff_pcm_u32le_demuxer,
+    // &ff_pcm_u24be_demuxer,
+    // &ff_pcm_u24le_demuxer,
+    // &ff_pcm_u16be_demuxer,
+    // &ff_pcm_u16le_demuxer,
+    // &ff_pcm_u8_demuxer,
+    // &ff_pjs_demuxer,
+    // &ff_pmp_demuxer,
+    // &ff_pp_bnk_demuxer,
+    // &ff_pva_demuxer,
+    // &ff_pvf_demuxer,
+    // &ff_qcp_demuxer,
+    // &ff_r3d_demuxer,
+    // &ff_rawvideo_demuxer,
+    // &ff_realtext_demuxer,
+    // &ff_redspark_demuxer,
+    // &ff_rl2_demuxer,
+    // &ff_rm_demuxer,
+    // &ff_roq_demuxer,
+    // &ff_rpl_demuxer,
+    // &ff_rsd_demuxer,
+    // &ff_rso_demuxer,
+    // &ff_rtp_demuxer,
+    // &ff_rtsp_demuxer,
+    // &ff_s337m_demuxer,
+    // &ff_sami_demuxer,
+    // &ff_sap_demuxer,
+    // &ff_sbc_demuxer,
+    // &ff_sbg_demuxer,
+    // &ff_scc_demuxer,
+    // &ff_sdp_demuxer,
+    // &ff_sdr2_demuxer,
+    // &ff_sds_demuxer,
+    // &ff_sdx_demuxer,
+    // &ff_segafilm_demuxer,
+    // &ff_ser_demuxer,
+    // &ff_shorten_demuxer,
+    // &ff_siff_demuxer,
+    // &ff_sln_demuxer,
+    // &ff_smacker_demuxer,
+    // &ff_smjpeg_demuxer,
+    // &ff_smush_demuxer,
+    // &ff_sol_demuxer,
+    // &ff_sox_demuxer,
+    // &ff_spdif_demuxer,
+    // &ff_srt_demuxer,
+    // &ff_str_demuxer,
+    // &ff_stl_demuxer,
+    // &ff_subviewer1_demuxer,
+    // &ff_subviewer_demuxer,
+    // &ff_sup_demuxer,
+    // &ff_svag_demuxer,
+    // &ff_svs_demuxer,
+    // &ff_swf_demuxer,
+    // &ff_tak_demuxer,
+    // &ff_tedcaptions_demuxer,
+    // &ff_thp_demuxer,
+    // &ff_threedostr_demuxer,
+    // &ff_tiertexseq_demuxer,
+    // &ff_tmv_demuxer,
+    // &ff_truehd_demuxer,
+    // &ff_tta_demuxer,
+    // &ff_txd_demuxer,
+    // &ff_tty_demuxer,
+    // &ff_ty_demuxer,
+    // &ff_v210_demuxer,
+    // &ff_v210x_demuxer,
+    // &ff_vag_demuxer,
+    // &ff_vc1_demuxer,
+    // &ff_vc1t_demuxer,
+    // &ff_vividas_demuxer,
+    // &ff_vivo_demuxer,
+    // &ff_vmd_demuxer,
+    // &ff_vobsub_demuxer,
+    // &ff_voc_demuxer,
+    // &ff_vpk_demuxer,
+    // &ff_vplayer_demuxer,
+    // &ff_vqf_demuxer,
+    // &ff_w64_demuxer,
+    // &ff_wav_demuxer,
+    // &ff_wc3_demuxer,
+    // &ff_webm_dash_manifest_demuxer,
+    // &ff_webvtt_demuxer,
+    // &ff_wsaud_demuxer,
+    // &ff_wsd_demuxer,
+    // &ff_wsvqa_demuxer,
+    // &ff_wtv_demuxer,
+    // &ff_wve_demuxer,
+    // &ff_wv_demuxer,
+    // &ff_xa_demuxer,
+    // &ff_xbin_demuxer,
+    // &ff_xmv_demuxer,
+    // &ff_xvag_demuxer,
+    // &ff_xwma_demuxer,
+    // &ff_yop_demuxer,
+    // &ff_yuv4mpegpipe_demuxer,
+    // &ff_image_bmp_pipe_demuxer,
+    // &ff_image_dds_pipe_demuxer,
+    // &ff_image_dpx_pipe_demuxer,
+    // &ff_image_exr_pipe_demuxer,
+    // &ff_image_gif_pipe_demuxer,
+    // &ff_image_j2k_pipe_demuxer,
+    // &ff_image_jpeg_pipe_demuxer,
+    // &ff_image_jpegls_pipe_demuxer,
+    // &ff_image_pam_pipe_demuxer,
+    // &ff_image_pbm_pipe_demuxer,
+    // &ff_image_pcx_pipe_demuxer,
+    // &ff_image_pgmyuv_pipe_demuxer,
+    // &ff_image_pgm_pipe_demuxer,
+    // &ff_image_pgx_pipe_demuxer,
+    // &ff_image_photocd_pipe_demuxer,
+    // &ff_image_pictor_pipe_demuxer,
+    // &ff_image_png_pipe_demuxer,
+    // &ff_image_ppm_pipe_demuxer,
+    // &ff_image_psd_pipe_demuxer,
+    // &ff_image_qdraw_pipe_demuxer,
+    // &ff_image_sgi_pipe_demuxer,
+    // &ff_image_svg_pipe_demuxer,
+    // &ff_image_sunrast_pipe_demuxer,
+    // &ff_image_tiff_pipe_demuxer,
+    // &ff_image_webp_pipe_demuxer,
+    // &ff_image_xpm_pipe_demuxer,
+    // &ff_image_xwd_pipe_demuxer,
+    // &ff_libgme_demuxer,
+    // &ff_libmodplug_demuxer,
     NULL };
 #define MT(...) (const char *const[]){ __VA_ARGS__, NULL }
 
+
+const AVProfile ff_aac_profiles[] = {
+    { FF_PROFILE_AAC_LOW,   "LC"       },
+    { FF_PROFILE_AAC_HE,    "HE-AAC"   },
+    { FF_PROFILE_AAC_HE_V2, "HE-AACv2" },
+    { FF_PROFILE_AAC_LD,    "LD"       },
+    { FF_PROFILE_AAC_ELD,   "ELD"      },
+    { FF_PROFILE_AAC_MAIN,  "Main" },
+    { FF_PROFILE_AAC_SSR,   "SSR"  },
+    { FF_PROFILE_AAC_LTP,   "LTP"  },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_dca_profiles[] = {
+    { FF_PROFILE_DTS,         "DTS"         },
+    { FF_PROFILE_DTS_ES,      "DTS-ES"      },
+    { FF_PROFILE_DTS_96_24,   "DTS 96/24"   },
+    { FF_PROFILE_DTS_HD_HRA,  "DTS-HD HRA"  },
+    { FF_PROFILE_DTS_HD_MA,   "DTS-HD MA"   },
+    { FF_PROFILE_DTS_EXPRESS, "DTS Express" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_dnxhd_profiles[] = {
+  { FF_PROFILE_DNXHD,      "DNXHD"},
+  { FF_PROFILE_DNXHR_LB,   "DNXHR LB"},
+  { FF_PROFILE_DNXHR_SQ,   "DNXHR SQ"},
+  { FF_PROFILE_DNXHR_HQ,   "DNXHR HQ" },
+  { FF_PROFILE_DNXHR_HQX,  "DNXHR HQX"},
+  { FF_PROFILE_DNXHR_444,  "DNXHR 444"},
+  { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_h264_profiles[] = {
+    { FF_PROFILE_H264_BASELINE,             "Baseline"              },
+    { FF_PROFILE_H264_CONSTRAINED_BASELINE, "Constrained Baseline"  },
+    { FF_PROFILE_H264_MAIN,                 "Main"                  },
+    { FF_PROFILE_H264_EXTENDED,             "Extended"              },
+    { FF_PROFILE_H264_HIGH,                 "High"                  },
+    { FF_PROFILE_H264_HIGH_10,              "High 10"               },
+    { FF_PROFILE_H264_HIGH_10_INTRA,        "High 10 Intra"         },
+    { FF_PROFILE_H264_HIGH_422,             "High 4:2:2"            },
+    { FF_PROFILE_H264_HIGH_422_INTRA,       "High 4:2:2 Intra"      },
+    { FF_PROFILE_H264_HIGH_444,             "High 4:4:4"            },
+    { FF_PROFILE_H264_HIGH_444_PREDICTIVE,  "High 4:4:4 Predictive" },
+    { FF_PROFILE_H264_HIGH_444_INTRA,       "High 4:4:4 Intra"      },
+    { FF_PROFILE_H264_CAVLC_444,            "CAVLC 4:4:4"           },
+    { FF_PROFILE_H264_MULTIVIEW_HIGH,       "Multiview High"        },
+    { FF_PROFILE_H264_STEREO_HIGH,          "Stereo High"           },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_hevc_profiles[] = {
+    { FF_PROFILE_HEVC_MAIN,                 "Main"                },
+    { FF_PROFILE_HEVC_MAIN_10,              "Main 10"             },
+    { FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   "Main Still Picture"  },
+    { FF_PROFILE_HEVC_REXT,                 "Rext"                },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_jpeg2000_profiles[] = {
+    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_0,  "JPEG 2000 codestream restriction 0"   },
+    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_1,  "JPEG 2000 codestream restriction 1"   },
+    { FF_PROFILE_JPEG2000_CSTREAM_NO_RESTRICTION, "JPEG 2000 no codestream restrictions" },
+    { FF_PROFILE_JPEG2000_DCINEMA_2K,             "JPEG 2000 digital cinema 2K"          },
+    { FF_PROFILE_JPEG2000_DCINEMA_4K,             "JPEG 2000 digital cinema 4K"          },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_mpeg2_video_profiles[] = {
+    { FF_PROFILE_MPEG2_422,          "4:2:2"              },
+    { FF_PROFILE_MPEG2_HIGH,         "High"               },
+    { FF_PROFILE_MPEG2_SS,           "Spatially Scalable" },
+    { FF_PROFILE_MPEG2_SNR_SCALABLE, "SNR Scalable"       },
+    { FF_PROFILE_MPEG2_MAIN,         "Main"               },
+    { FF_PROFILE_MPEG2_SIMPLE,       "Simple"             },
+    { FF_PROFILE_RESERVED,           "Reserved"           },
+    { FF_PROFILE_UNKNOWN                                  },
+};
+
+const AVProfile ff_mpeg4_video_profiles[] = {
+    { FF_PROFILE_MPEG4_SIMPLE,                    "Simple Profile" },
+    { FF_PROFILE_MPEG4_SIMPLE_SCALABLE,           "Simple Scalable Profile" },
+    { FF_PROFILE_MPEG4_CORE,                      "Core Profile" },
+    { FF_PROFILE_MPEG4_MAIN,                      "Main Profile" },
+    { FF_PROFILE_MPEG4_N_BIT,                     "N-bit Profile" },
+    { FF_PROFILE_MPEG4_SCALABLE_TEXTURE,          "Scalable Texture Profile" },
+    { FF_PROFILE_MPEG4_SIMPLE_FACE_ANIMATION,     "Simple Face Animation Profile" },
+    { FF_PROFILE_MPEG4_BASIC_ANIMATED_TEXTURE,    "Basic Animated Texture Profile" },
+    { FF_PROFILE_MPEG4_HYBRID,                    "Hybrid Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_REAL_TIME,        "Advanced Real Time Simple Profile" },
+    { FF_PROFILE_MPEG4_CORE_SCALABLE,             "Code Scalable Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_CODING,           "Advanced Coding Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_CORE,             "Advanced Core Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE, "Advanced Scalable Texture Profile" },
+    { FF_PROFILE_MPEG4_SIMPLE_STUDIO,             "Simple Studio Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_SIMPLE,           "Advanced Simple Profile" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_vc1_profiles[] = {
+    { FF_PROFILE_VC1_SIMPLE,   "Simple"   },
+    { FF_PROFILE_VC1_MAIN,     "Main"     },
+    { FF_PROFILE_VC1_COMPLEX,  "Complex"  },
+    { FF_PROFILE_VC1_ADVANCED, "Advanced" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_vp9_profiles[] = {
+    { FF_PROFILE_VP9_0, "Profile 0" },
+    { FF_PROFILE_VP9_1, "Profile 1" },
+    { FF_PROFILE_VP9_2, "Profile 2" },
+    { FF_PROFILE_VP9_3, "Profile 3" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_av1_profiles[] = {
+    { FF_PROFILE_AV1_MAIN,         "Main" },
+    { FF_PROFILE_AV1_HIGH,         "High" },
+    { FF_PROFILE_AV1_PROFESSIONAL, "Professional" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_sbc_profiles[] = {
+    { FF_PROFILE_SBC_MSBC, "mSBC" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_prores_profiles[] = {
+    { FF_PROFILE_PRORES_PROXY,    "Proxy"    },
+    { FF_PROFILE_PRORES_LT,       "LT"       },
+    { FF_PROFILE_PRORES_STANDARD, "Standard" },
+    { FF_PROFILE_PRORES_HQ,       "HQ"       },
+    { FF_PROFILE_PRORES_4444,     "4444"     },
+    { FF_PROFILE_PRORES_XQ,       "XQ"       },
+    { FF_PROFILE_UNKNOWN }
+};
+
+const AVProfile ff_mjpeg_profiles[] = {
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,            "Baseline"    },
+    { FF_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT, "Sequential"  },
+    { FF_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT,         "Progressive" },
+    { FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS,                "Lossless"    },
+    { FF_PROFILE_MJPEG_JPEG_LS,                         "JPEG LS"     },
+    { FF_PROFILE_UNKNOWN }
+};
+
+const AVProfile ff_arib_caption_profiles[] = {
+    { FF_PROFILE_ARIB_PROFILE_A, "Profile A" },
+    { FF_PROFILE_ARIB_PROFILE_C, "Profile C" },
+    { FF_PROFILE_UNKNOWN }
+};
 static const AVCodecDescriptor codec_descriptors[] = {
     /* video codecs */
     {
