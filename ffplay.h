@@ -13,6 +13,185 @@
 
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
+static const char *const var_names[] = {
+    "t",
+    "n",
+    "pos",
+    "w",
+    "h",
+    NULL
+};
+enum {
+    VAR_T,
+    VAR_N,
+    VAR_POS,
+    VAR_W,
+    VAR_H,
+    VAR_VARS_NB
+};
+enum AVStereo3DType {
+    /**
+     * Video is not stereoscopic (and metadata has to be there).
+     */
+    AV_STEREO3D_2D,
+
+    /**
+     * Views are next to each other.
+     *
+     * @code{.unparsed}
+     *    LLLLRRRR
+     *    LLLLRRRR
+     *    LLLLRRRR
+     *    ...
+     * @endcode
+     */
+    AV_STEREO3D_SIDEBYSIDE,
+
+    /**
+     * Views are on top of each other.
+     *
+     * @code{.unparsed}
+     *    LLLLLLLL
+     *    LLLLLLLL
+     *    RRRRRRRR
+     *    RRRRRRRR
+     * @endcode
+     */
+    AV_STEREO3D_TOPBOTTOM,
+
+    /**
+     * Views are alternated temporally.
+     *
+     * @code{.unparsed}
+     *     frame0   frame1   frame2   ...
+     *    LLLLLLLL RRRRRRRR LLLLLLLL
+     *    LLLLLLLL RRRRRRRR LLLLLLLL
+     *    LLLLLLLL RRRRRRRR LLLLLLLL
+     *    ...      ...      ...
+     * @endcode
+     */
+    AV_STEREO3D_FRAMESEQUENCE,
+
+    /**
+     * Views are packed in a checkerboard-like structure per pixel.
+     *
+     * @code{.unparsed}
+     *    LRLRLRLR
+     *    RLRLRLRL
+     *    LRLRLRLR
+     *    ...
+     * @endcode
+     */
+    AV_STEREO3D_CHECKERBOARD,
+
+    /**
+     * Views are next to each other, but when upscaling
+     * apply a checkerboard pattern.
+     *
+     * @code{.unparsed}
+     *     LLLLRRRR          L L L L    R R R R
+     *     LLLLRRRR    =>     L L L L  R R R R
+     *     LLLLRRRR          L L L L    R R R R
+     *     LLLLRRRR           L L L L  R R R R
+     * @endcode
+     */
+    AV_STEREO3D_SIDEBYSIDE_QUINCUNX,
+
+    /**
+     * Views are packed per line, as if interlaced.
+     *
+     * @code{.unparsed}
+     *    LLLLLLLL
+     *    RRRRRRRR
+     *    LLLLLLLL
+     *    ...
+     * @endcode
+     */
+    AV_STEREO3D_LINES,
+
+    /**
+     * Views are packed per column.
+     *
+     * @code{.unparsed}
+     *    LRLRLRLR
+     *    LRLRLRLR
+     *    LRLRLRLR
+     *    ...
+     * @endcode
+     */
+    AV_STEREO3D_COLUMNS,
+};
+
+enum AVStereo3DView {
+    /**
+     * Frame contains two packed views.
+     */
+    AV_STEREO3D_VIEW_PACKED,
+
+    /**
+     * Frame contains only the left view.
+     */
+    AV_STEREO3D_VIEW_LEFT,
+
+    /**
+     * Frame contains only the right view.
+     */
+    AV_STEREO3D_VIEW_RIGHT,
+};
+typedef enum {
+    H264_SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
+    H264_SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
+    H264_SEI_TYPE_PAN_SCAN_RECT          = 2,   ///< pan-scan rectangle
+    H264_SEI_TYPE_FILLER_PAYLOAD         = 3,   ///< filler data
+    H264_SEI_TYPE_USER_DATA_REGISTERED   = 4,   ///< registered user data as specified by Rec. ITU-T T.35
+    H264_SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
+    H264_SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
+    H264_SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
+    H264_SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
+    H264_SEI_TYPE_GREEN_METADATA         = 56,  ///< GreenMPEG information
+    H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME = 137,  ///< mastering display properties
+    H264_SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
+} H264_SEI_Type;
+
+/**
+ * pic_struct in picture timing SEI message
+ */
+typedef enum {
+    H264_SEI_PIC_STRUCT_FRAME             = 0, ///<  0: %frame
+    H264_SEI_PIC_STRUCT_TOP_FIELD         = 1, ///<  1: top field
+    H264_SEI_PIC_STRUCT_BOTTOM_FIELD      = 2, ///<  2: bottom field
+    H264_SEI_PIC_STRUCT_TOP_BOTTOM        = 3, ///<  3: top field, bottom field, in that order
+    H264_SEI_PIC_STRUCT_BOTTOM_TOP        = 4, ///<  4: bottom field, top field, in that order
+    H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP    = 5, ///<  5: top field, bottom field, top field repeated, in that order
+    H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM = 6, ///<  6: bottom field, top field, bottom field repeated, in that order
+    H264_SEI_PIC_STRUCT_FRAME_DOUBLING    = 7, ///<  7: %frame doubling
+    H264_SEI_PIC_STRUCT_FRAME_TRIPLING    = 8  ///<  8: %frame tripling
+} H264_SEI_PicStructType;
+
+/**
+ * frame_packing_arrangement types
+ */
+typedef enum {
+    H264_SEI_FPA_TYPE_CHECKERBOARD        = 0,
+    H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN   = 1,
+    H264_SEI_FPA_TYPE_INTERLEAVE_ROW      = 2,
+    H264_SEI_FPA_TYPE_SIDE_BY_SIDE        = 3,
+    H264_SEI_FPA_TYPE_TOP_BOTTOM          = 4,
+    H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL = 5,
+    H264_SEI_FPA_TYPE_2D                  = 6,
+} H264_SEI_FpaType;
+
+enum ID3v2Encoding {
+    ID3v2_ENCODING_ISO8859  = 0,
+    ID3v2_ENCODING_UTF16BOM = 1,
+    ID3v2_ENCODING_UTF16BE  = 2,
+    ID3v2_ENCODING_UTF8     = 3,
+};
+enum AVEscapeMode {
+    AV_ESCAPE_MODE_AUTO,      ///< Use auto-selected escaping mode.
+    AV_ESCAPE_MODE_BACKSLASH, ///< Use backslash escaping.
+    AV_ESCAPE_MODE_QUOTE,     ///< Use single-quote escaping.
+};
 
 enum AVPacketSideDataType {
 
@@ -1374,11 +1553,81 @@ enum {
 // #define offsetof(s,m) __builtin_offsetof(s,m)
 
 #ifdef __GNUC__
-#define AV_GCC_VERSION_AT_LEAST(x, y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
-#define AV_GCC_VERSION_AT_MOST(x, y) (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
+#    define AV_GCC_VERSION_AT_LEAST(x,y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
+#    define AV_GCC_VERSION_AT_MOST(x,y)  (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
 #else
-#define AV_GCC_VERSION_AT_LEAST(x, y) 0
-#define AV_GCC_VERSION_AT_MOST(x, y) 0
+#    define AV_GCC_VERSION_AT_LEAST(x,y) 0
+#    define AV_GCC_VERSION_AT_MOST(x,y)  0
+#endif
+
+#ifdef __has_builtin
+#    define AV_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#    define AV_HAS_BUILTIN(x) 0
+#endif
+
+#ifndef av_always_inline
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#    define av_always_inline __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#    define av_always_inline __forceinline
+#else
+#    define av_always_inline inline
+#endif
+#endif
+
+#ifndef av_extern_inline
+#if defined(__ICL) && __ICL >= 1210 || defined(__GNUC_STDC_INLINE__)
+#    define av_extern_inline extern inline
+#else
+#    define av_extern_inline inline
+#endif
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(3,4)
+#    define av_warn_unused_result __attribute__((warn_unused_result))
+#else
+#    define av_warn_unused_result
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#    define av_noinline __attribute__((noinline))
+#elif defined(_MSC_VER)
+#    define av_noinline __declspec(noinline)
+#else
+#    define av_noinline
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
+#    define av_pure __attribute__((pure))
+#else
+#    define av_pure
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(2,6) || defined(__clang__)
+#    define av_const __attribute__((const))
+#else
+#    define av_const
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(4,3) || defined(__clang__)
+#    define av_cold __attribute__((cold))
+#else
+#    define av_cold
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(4,1) && !defined(__llvm__)
+#    define av_flatten __attribute__((flatten))
+#else
+#    define av_flatten
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#    define attribute_deprecated __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#    define attribute_deprecated __declspec(deprecated)
+#else
+#    define attribute_deprecated
 #endif
 
 
@@ -1436,7 +1685,7 @@ enum {
 #define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
 
 
-
+#define HWACCEL_CAP_ASYNC_SAFE      (1 << 0)
 #if !HAVE_BIGENDIAN
 #define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
 static void shuffle_bytes_##name (const uint8_t *src,                   \
@@ -5038,9 +5287,25 @@ static av_const uint32_t av_bswap32(uint32_t x)
 #       define AV_RN24(p) AV_RL24(p)
 #   endif
 
+#define PNGSIG 0x89504e470d0a1a0a
+#define MNGSIG 0x8a4d4e470d0a1a0a
+
+#define FFERROR_REDO FFERRTAG('R','E','D','O')
+
+#define AV_TS_MAX_STRING_SIZE 32
+
+static inline char *av_ts_make_string(char *buf, int64_t ts)
+{
+    if (ts == AV_NOPTS_VALUE) snprintf(buf, AV_TS_MAX_STRING_SIZE, "NOPTS");
+    else                      snprintf(buf, AV_TS_MAX_STRING_SIZE, "%" PRId64, ts);
+    return buf;
+}
+#define av_ts2str(ts) av_ts_make_string((char[AV_TS_MAX_STRING_SIZE]){0}, ts)
+
 #define AV_RN32(p) AV_RN(32, p)
 #define AV_RB(s, p)    av_bswap##s(AV_RN##s(p))
 #define AV_RB32(p)    AV_RB(32, p)
+#   define AV_RB64(p)    AV_RB(64, p)
 # define UPDATE_CACHE_BE(name, gb) name ## _cache = \
       AV_RB32((gb)->buffer + (name ## _index >> 3)) << (name ## _index & 7)
 # define UPDATE_CACHE(name, gb) UPDATE_CACHE_BE(name, gb)
@@ -5922,6 +6187,7 @@ static  av_const int ff_ctzll_x86(long long v)
 }
 #   endif
 
+int av_opt_set_bin(void *obj, const char *name, const uint8_t *val, int len, int search_flags);
 #define av_opt_set_int_list(obj, name, val, term, flags) \
     (av_int_list_length(val, term) > INT_MAX / sizeof(*(val)) ? \
      AVERROR(EINVAL) : \
@@ -5950,6 +6216,22 @@ do {                                                               \
     *ref = NULL;                                                   \
 } while (0)
 
+static inline double av_q2d(AVRational a){
+    return a.num / (double) a.den;
+}
+#define AV_TS_MAX_STRING_SIZE 32
+static inline char *av_ts_make_time_string(char *buf, int64_t ts, AVRational *tb)
+{
+    if (ts == AV_NOPTS_VALUE) snprintf(buf, AV_TS_MAX_STRING_SIZE, "NOPTS");
+    else                      snprintf(buf, AV_TS_MAX_STRING_SIZE, "%.6g", av_q2d(*tb) * ts);
+    return buf;
+}
+
+/**
+ * Convenience macro, the return value should be used only directly in
+ * function arguments but never stand-alone.
+ */
+#define av_ts2timestr(ts, tb) av_ts_make_time_string((char[AV_TS_MAX_STRING_SIZE]){0}, ts, tb)
 #define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format, pts)\
     if (c->w != width || c->h != height || c->pix_fmt != format) {\
         av_log(s, AV_LOG_INFO, "filter context - w: %d h: %d fmt: %d, incoming frame - w: %d h: %d fmt: %d pts_time: %s\n",\
@@ -5998,6 +6280,12 @@ do {                                                               \
 #define AV_CODEC_FLAG2_SKIP_MANUAL    (1 << 29)
 #define AV_CODEC_FLAG2_RO_FLUSH_NOOP  (1 << 30)
 
+int av_strerror(int errnum, char *errbuf, size_t errbuf_size);
+static inline char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
+{
+    av_strerror(errnum, errbuf, errbuf_size);
+    return errbuf;
+}
 #define media_type_string av_get_media_type_string
 #define AV_ERROR_MAX_STRING_SIZE 64
 #define av_err2str(errnum) \
@@ -6629,6 +6917,8 @@ static inline av_const int ff_ctzll_x86(long long v)
 
 #endif 
 
+#define ff_fft_init FFT_NAME(ff_fft_init)
+
 #define CPUEXT_SUFFIX_FAST2(flags, suffix, cpuext, slow_cpuext)         \
     (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
      !((flags) & AV_CPU_FLAG_ ## slow_cpuext ## SLOW))
@@ -6639,6 +6929,24 @@ static inline av_const int ff_ctzll_x86(long long v)
 
 #define AV_CPU_FLAG_AMD3DNOW    AV_CPU_FLAG_3DNOW
 #define AV_CPU_FLAG_AMD3DNOWEXT AV_CPU_FLAG_3DNOWEXT
+
+#define CPUEXT_SUFFIX(flags, suffix, cpuext)                            \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext))
+
+#define CPUEXT_SUFFIX_FAST2(flags, suffix, cpuext, slow_cpuext)         \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
+     !((flags) & AV_CPU_FLAG_ ## slow_cpuext ## SLOW))
+
+#define CPUEXT_SUFFIX_SLOW2(flags, suffix, cpuext, slow_cpuext)         \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
+     ((flags) & AV_CPU_FLAG_ ## slow_cpuext ## SLOW))
+
+#define CPUEXT_SUFFIX_FAST(flags, suffix, cpuext) CPUEXT_SUFFIX_FAST2(flags, suffix, cpuext, cpuext)
+#define CPUEXT_SUFFIX_SLOW(flags, suffix, cpuext) CPUEXT_SUFFIX_SLOW2(flags, suffix, cpuext, cpuext)
+
+#define CPUEXT(flags, cpuext) CPUEXT_SUFFIX(flags, , cpuext)
+#define CPUEXT_FAST(flags, cpuext) CPUEXT_SUFFIX_FAST(flags, , cpuext)
+#define CPUEXT_SLOW(flags, cpuext) CPUEXT_SUFFIX_SLOW(flags, , cpuext)
 
 #define X86_AMD3DNOW(flags)         CPUEXT(flags, AMD3DNOW)
 #define X86_AMD3DNOWEXT(flags)      CPUEXT(flags, AMD3DNOWEXT)
@@ -6770,7 +7078,38 @@ static inline av_const int ff_ctzll_x86(long long v)
 #define RV ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
 #define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
 
-typedef float FFTSample;
+#define FIND_REF_INDEX(ref, idx)            \
+do {                                        \
+    int i;                                  \
+    for (i = 0; i < (*ref)->refcount; i ++) \
+        if((*ref)->refs[i] == ref) {        \
+            idx = i;                        \
+            break;                          \
+        }                                   \
+} while (0)
+
+typedef struct AVOption
+{
+    const char *name;
+    const char *help;
+    int offset;
+    enum AVOptionType type;
+    union
+    {
+        int64_t i64;
+        double dbl;
+        const char *str;
+        /* TODO those are unused now */
+        AVRational q;
+    } default_val;
+    double min; ///< minimum valid value for the option
+    double max; ///< maximum valid value for the option
+
+    int flags;
+    const char *unit;
+} AVOption;
+
+typedef struct AVFilterContext AVFilterContext;
 
 
 
@@ -7105,20 +7444,18 @@ static inline int MULH(int a, int b){
 #define COS3_1 FIXHR(1.30656296487637652785/4)
 #define COS4_0 FIXHR(M_SQRT1_2/2)
 
-#define BF(x, y, a, b) do {                     \
-        x = a - b;                              \
-        y = a + b;                              \
-    } while (0)
-
-#define CMUL(dre, dim, are, aim, bre, bim) do { \
-        (dre) = (are) * (bre) - (aim) * (bim);  \
-        (dim) = (are) * (bim) + (aim) * (bre);  \
-    } while (0)
-
-
-
 #define ADD(a, b) val##a += val##b
 
+typedef float FFTSample;
+
+typedef struct FFTComplex {
+    FFTSample re, im;
+} FFTComplex;
+
+typedef struct FFTContext FFTContext;
+typedef float FFTDouble;
+
+#define FFT_NAME(x) x
 
 #if CONFIG_HARDCODED_TABLES
 #define COSTABLE_CONST const
@@ -7126,296 +7463,435 @@ static inline int MULH(int a, int b){
 #define COSTABLE_CONST
 #endif
 
-#define FFT_NAME(x) x
-#define ff_fft_end  FFT_NAME(ff_fft_end)
-#define ff_imdct_calc_c FFT_NAME(ff_imdct_calc_c)
-#define ff_imdct_half_c FFT_NAME(ff_imdct_half_c)
-#define ff_mdct_calc_c  FFT_NAME(ff_mdct_calc_c)
 #define COSTABLE(size) \
     COSTABLE_CONST DECLARE_ALIGNED(32, FFTSample, FFT_NAME(ff_cos_##size))[size/2]
 
- COSTABLE(16);
- COSTABLE(32);
- COSTABLE(64);
- COSTABLE(128);
- COSTABLE(256);
- COSTABLE(512);
- COSTABLE(1024);
- COSTABLE(2048);
- COSTABLE(4096);
- COSTABLE(8192);
- COSTABLE(16384);
- COSTABLE(32768);
- COSTABLE(65536);
- COSTABLE(131072);
- COSTABLE_CONST FFTSample* const FFT_NAME(ff_cos_tabs)[18];
+#if FFT_FIXED_32
+#include "fft_table.h"
+static void av_cold fft_lut_init(void)
+{
+    int n = 0;
+    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
+}
+#else 
+/* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
+#if !CONFIG_HARDCODED_TABLES
+COSTABLE(16);
+COSTABLE(32);
+COSTABLE(64);
+COSTABLE(128);
+COSTABLE(256);
+COSTABLE(512);
+COSTABLE(1024);
+COSTABLE(2048);
+COSTABLE(4096);
+COSTABLE(8192);
+COSTABLE(16384);
+COSTABLE(32768);
+COSTABLE(65536);
+COSTABLE(131072);
+typedef struct CosTabsInitOnce {
+    void (*func)(void);
+    AVOnce control;
+} CosTabsInitOnce;
+#endif
+#endif 
 
-typedef struct AVComplexFloat {
-    float re, im;
-} AVComplexFloat;
-
-#define TX_FLOAT
-#ifdef TX_FLOAT
-#define TX_NAME(x) x ## _float
-#define SCALE_TYPE float
-typedef float FFTSample;
-typedef AVComplexFloat FFTComplex;
-#elif defined(TX_DOUBLE)
-#define TX_NAME(x) x ## _double
-#define SCALE_TYPE double
-typedef double FFTSample;
-typedef AVComplexDouble FFTComplex;
-#elif defined(TX_INT32)
-#define TX_NAME(x) x ## _int32
-#define SCALE_TYPE float
-typedef int32_t FFTSample;
-typedef AVComplexInt32 FFTComplex;
+#if HAVE_BIGENDIAN
+#   define X_NE(be, le) be
 #else
-typedef void FFTComplex;
+#   define X_NE(be, le) le
 #endif
 
-// typedef struct FFTComplex {
-//     FFTSample re, im;
-// } FFTComplex;
+#define FF_FILTER_FLAG_HWFRAME_AWARE (1 << 0)
+
+#define FF_COUNT2LAYOUT(c) (0x8000000000000000ULL | (c))
+#define FF_LAYOUT2COUNT(l) (((l) & 0x8000000000000000ULL) ? \
+                           (int)((l) & 0x7FFFFFFF) : 0)
+#define MAKE_FORMAT_LIST(type, field, count_field)                      \
+    type *formats;                                                      \
+    int count = 0;                                                      \
+    if (fmts)                                                           \
+        for (count = 0; fmts[count] != -1; count++)                     \
+            ;                                                           \
+    formats = av_mallocz(sizeof(*formats));                             \
+    if (!formats)                                                       \
+        return NULL;                                                    \
+    formats->count_field = count;                                       \
+    if (count) {                                                        \
+        formats->field = av_malloc_array(count, sizeof(*formats->field));      \
+        if (!formats->field) {                                          \
+            av_freep(&formats);                                         \
+            return NULL;                                                \
+        }                                                               \
+    }
+
+#define SET_COMMON_FORMATS(ctx, fmts, ref_fn, unref_fn)             \
+    int count = 0, i;                                               \
+                                                                    \
+    if (!fmts)                                                      \
+        return AVERROR(ENOMEM);                                     \
+                                                                    \
+    for (i = 0; i < ctx->nb_inputs; i++) {                          \
+        if (ctx->inputs[i] && !ctx->inputs[i]->outcfg.fmts) {       \
+            int ret = ref_fn(fmts, &ctx->inputs[i]->outcfg.fmts);   \
+            if (ret < 0) {                                          \
+                return ret;                                         \
+            }                                                       \
+            count++;                                                \
+        }                                                           \
+    }                                                               \
+    for (i = 0; i < ctx->nb_outputs; i++) {                         \
+        if (ctx->outputs[i] && !ctx->outputs[i]->incfg.fmts) {      \
+            int ret = ref_fn(fmts, &ctx->outputs[i]->incfg.fmts);   \
+            if (ret < 0) {                                          \
+                return ret;                                         \
+            }                                                       \
+            count++;                                                \
+        }                                                           \
+    }                                                               \
+                                                                    \
+    if (!count) {                                                   \
+        unref_fn(&fmts);                                            \
+    }                                                               \
+                                                                    \
+    return 0;
+
+#define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64 || \
+                              opt->type == AV_OPT_TYPE_UINT64 || \
+                              opt->type == AV_OPT_TYPE_CONST || \
+                              opt->type == AV_OPT_TYPE_FLAGS || \
+                              opt->type == AV_OPT_TYPE_INT)     \
+                             ? opt->default_val.i64             \
+                             : opt->default_val.dbl)
+
+#define FORMATS_REF(f, ref, unref_fn)                                           \
+    void *tmp;                                                                  \
+                                                                                \
+    if (!f)                                                                     \
+        return AVERROR(ENOMEM);                                                 \
+                                                                                \
+    tmp = av_realloc_array(f->refs, sizeof(*f->refs), f->refcount + 1);         \
+    if (!tmp) {                                                                 \
+        unref_fn(&f);                                                           \
+        return AVERROR(ENOMEM);                                                 \
+    }                                                                           \
+    f->refs = tmp;                                                              \
+    f->refs[f->refcount++] = ref;                                               \
+    *ref = f;                                                                   \
+    return 0
 
 
+#define ADD_FORMAT(f, fmt, unref_fn, type, list, nb)        \
+do {                                                        \
+    type *fmts;                                             \
+                                                            \
+    if (!(*f) && !(*f = av_mallocz(sizeof(**f)))) {         \
+        return AVERROR(ENOMEM);                             \
+    }                                                       \
+                                                            \
+    fmts = av_realloc_array((*f)->list, (*f)->nb + 1,       \
+                            sizeof(*(*f)->list));           \
+    if (!fmts) {                                            \
+        unref_fn(f);                                        \
+        return AVERROR(ENOMEM);                             \
+    }                                                       \
+                                                            \
+    (*f)->list = fmts;                                      \
+    (*f)->list[(*f)->nb++] = fmt;                           \
+} while (0)
 
 
+#define MERGE_REF(ret, a, fmts, type, fail_statement)                      \
+do {                                                                       \
+    type ***tmp;                                                           \
+    int i;                                                                 \
+                                                                           \
+    if (!(tmp = av_realloc_array(ret->refs, ret->refcount + a->refcount,   \
+                                 sizeof(*tmp))))                           \
+        { fail_statement }                                                 \
+    ret->refs = tmp;                                                       \
+                                                                           \
+    for (i = 0; i < a->refcount; i ++) {                                   \
+        ret->refs[ret->refcount] = a->refs[i];                             \
+        *ret->refs[ret->refcount++] = ret;                                 \
+    }                                                                      \
+                                                                           \
+    av_freep(&a->refs);                                                    \
+    av_freep(&a->fmts);                                                    \
+    av_freep(&a);                                                          \
+} while (0)
+#define MERGE_FORMATS(a, b, fmts, nb, type, check, empty_allowed)          \
+do {                                                                       \
+    int i, j, k = 0, skip = 0;                                             \
+                                                                           \
+    if (empty_allowed) {                                                   \
+        if (!a->nb || !b->nb) {                                            \
+            if (check)                                                     \
+                return 1;                                                  \
+            if (!a->nb)                                                    \
+                FFSWAP(type *, a, b);                                      \
+            skip = 1;                                                      \
+        }                                                                  \
+    }                                                                      \
+    if (!skip) {                                                           \
+        for (i = 0; i < a->nb; i++)                                        \
+            for (j = 0; j < b->nb; j++)                                    \
+                if (a->fmts[i] == b->fmts[j]) {                            \
+                    if (check)                                             \
+                        return 1;                                          \
+                    a->fmts[k++] = a->fmts[i];                             \
+                    break;                                                 \
+                }                                                          \
+        /* Check that there was at least one common format.                \
+         * Notice that both a and b are unchanged if not. */               \
+        if (!k)                                                            \
+            return 0;                                                      \
+        av_assert2(!check);                                                \
+        a->nb = k;                                                         \
+    }                                                                      \
+                                                                           \
+    MERGE_REF(a, b, fmts, type, return AVERROR(ENOMEM););                  \
+} while (0)
 
-#define RESCALE(x) (x)
+#define FORMATS_CHANGEREF(oldref, newref)       \
+do {                                            \
+    int idx = -1;                               \
+                                                \
+    FIND_REF_INDEX(oldref, idx);                \
+                                                \
+    if (idx >= 0) {                             \
+        (*oldref)->refs[idx] = newref;          \
+        *newref = *oldref;                      \
+        *oldref = NULL;                         \
+    }                                           \
+} while (0)
 
-DECLARE_ALIGNED(32, FFTComplex, TX_NAME(ff_cos_53))[4];
-static av_cold void ff_init_53_tabs(void)
-{
-    TX_NAME(ff_cos_53)[0] = (FFTComplex){ RESCALE(cos(2 * M_PI / 12)), RESCALE(cos(2 * M_PI / 12)) };
-    TX_NAME(ff_cos_53)[1] = (FFTComplex){ RESCALE(cos(2 * M_PI /  6)), RESCALE(cos(2 * M_PI /  6)) };
-    TX_NAME(ff_cos_53)[2] = (FFTComplex){ RESCALE(cos(2 * M_PI /  5)), RESCALE(sin(2 * M_PI /  5)) };
-    TX_NAME(ff_cos_53)[3] = (FFTComplex){ RESCALE(cos(2 * M_PI / 10)), RESCALE(sin(2 * M_PI / 10)) };
+#define REDUCE_FORMATS(fmt_type, list_type, list, var, nb, add_format) \
+do {                                                                   \
+    for (i = 0; i < filter->nb_inputs; i++) {                          \
+        AVFilterLink *link = filter->inputs[i];                        \
+        fmt_type fmt;                                                  \
+                                                                       \
+        if (!link->outcfg.list || link->outcfg.list->nb != 1)          \
+            continue;                                                  \
+        fmt = link->outcfg.list->var[0];                               \
+                                                                       \
+        for (j = 0; j < filter->nb_outputs; j++) {                     \
+            AVFilterLink *out_link = filter->outputs[j];               \
+            list_type *fmts;                                           \
+                                                                       \
+            if (link->type != out_link->type ||                        \
+                out_link->incfg.list->nb == 1)                         \
+                continue;                                              \
+            fmts = out_link->incfg.list;                               \
+                                                                       \
+            if (!out_link->incfg.list->nb) {                           \
+                if ((ret = add_format(&out_link->incfg.list, fmt)) < 0)\
+                    return ret;                                        \
+                ret = 1;                                               \
+                break;                                                 \
+            }                                                          \
+                                                                       \
+            for (k = 0; k < out_link->incfg.list->nb; k++)             \
+                if (fmts->var[k] == fmt) {                             \
+                    fmts->var[0]  = fmt;                               \
+                    fmts->nb = 1;                                      \
+                    ret = 1;                                           \
+                    break;                                             \
+                }                                                      \
+        }                                                              \
+    }                                                                  \
+} while (0)
+
+
+#define CH_CENTER_PAIR (AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
+#define CH_FRONT_PAIR  (AV_CH_FRONT_LEFT           | AV_CH_FRONT_RIGHT)
+#define CH_STEREO_PAIR (AV_CH_STEREO_LEFT          | AV_CH_STEREO_RIGHT)
+#define CH_WIDE_PAIR   (AV_CH_WIDE_LEFT            | AV_CH_WIDE_RIGHT)
+#define CH_SIDE_PAIR   (AV_CH_SIDE_LEFT            | AV_CH_SIDE_RIGHT)
+#define CH_DIRECT_PAIR (AV_CH_SURROUND_DIRECT_LEFT | AV_CH_SURROUND_DIRECT_RIGHT)
+#define CH_BACK_PAIR   (AV_CH_BACK_LEFT            | AV_CH_BACK_RIGHT)
+#define KNOWN(l) (!FF_LAYOUT2COUNT(l)) /* for readability */
+
+#define FF_LOSS_RESOLUTION  0x0001 /**< loss due to resolution change */
+#define FF_LOSS_DEPTH       0x0002 /**< loss due to color depth change */
+#define FF_LOSS_COLORSPACE  0x0004 /**< loss due to color space conversion */
+#define FF_LOSS_ALPHA       0x0008 /**< loss of alpha bits */
+#define FF_LOSS_COLORQUANT  0x0010 /**< loss due to color quantization */
+#define FF_LOSS_CHROMA      0x0020 /**< loss of chroma (e.g. RGB to gray conversion) */
+
+#define FF_COLOR_NA      -1
+#define FF_COLOR_RGB      0 /**< RGB color space */
+#define FF_COLOR_GRAY     1 /**< gray color space */
+#define FF_COLOR_YUV      2 /**< YUV color space. 16 <= Y <= 235, 16 <= U, V <= 240 */
+#define FF_COLOR_YUV_JPEG 3 /**< YUV color space. 0 <= Y <= 255, 0 <= U, V <= 255 */
+#define FF_COLOR_XYZ      4
+
+#define FFERROR_NOT_READY FFERRTAG('N','R','D','Y')
+
+#define pixdesc_has_alpha(pixdesc) \
+    ((pixdesc)->flags & AV_PIX_FMT_FLAG_ALPHA)
+
+
+#define AVPALETTE_SIZE 1024
+#define AVPALETTE_COUNT 256
+
+#ifdef TRACE
+#   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
+#else
+#   define ff_tlog(ctx, ...) do { } while(0)
+#endif
+
+#define FF_TPRINTF_START(ctx, func) ff_tlog(NULL, "%-16s: ", #func)
+
+unsigned av_int_list_length_for_size(unsigned elsize,
+                                     const void *list, uint64_t term);
+#define av_int_list_length(list, term) \
+    av_int_list_length_for_size(sizeof(*(list)), list, term)
+
+
+typedef struct ResampleContext ResampleContext;
+#define RESAMPLE_FUNCS(type, opt) \
+int ff_resample_common_##type##_##opt(ResampleContext *c, void *dst, \
+                                      const void *src, int sz, int upd); \
+int ff_resample_linear_##type##_##opt(ResampleContext *c, void *dst, \
+                                      const void *src, int sz, int upd)
+
+RESAMPLE_FUNCS(int16,  mmxext);
+RESAMPLE_FUNCS(int16,  sse2);
+RESAMPLE_FUNCS(int16,  xop);
+RESAMPLE_FUNCS(float,  sse);
+RESAMPLE_FUNCS(float,  avx);
+RESAMPLE_FUNCS(float,  fma3);
+RESAMPLE_FUNCS(float,  fma4);
+RESAMPLE_FUNCS(double, sse2);
+RESAMPLE_FUNCS(double, avx);
+RESAMPLE_FUNCS(double, fma3);
+
+typedef void (conv_func_type)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end);
+typedef void (simd_func_type)(uint8_t **dst, const uint8_t **src, int len);
+
+#define CONV_FUNC_NAME(dst_fmt, src_fmt) conv_ ## src_fmt ## _to_ ## dst_fmt
+
+//FIXME rounding ?
+#define CONV_FUNC(ofmt, otype, ifmt, expr)\
+static void CONV_FUNC_NAME(ofmt, ifmt)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end)\
+{\
+    uint8_t *end2 = end - 3*os;\
+    while(po < end2){\
+        *(otype*)po = expr; pi += is; po += os;\
+        *(otype*)po = expr; pi += is; po += os;\
+        *(otype*)po = expr; pi += is; po += os;\
+        *(otype*)po = expr; pi += is; po += os;\
+    }\
+    while(po < end){\
+        *(otype*)po = expr; pi += is; po += os;\
+    }\
 }
 
+CONV_FUNC(AV_SAMPLE_FMT_U8 , uint8_t, AV_SAMPLE_FMT_U8 ,  *(const uint8_t*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, AV_SAMPLE_FMT_U8 , (*(const uint8_t*)pi - 0x80U)<<8)
+CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, AV_SAMPLE_FMT_U8 , (*(const uint8_t*)pi - 0x80U)<<24)
+CONV_FUNC(AV_SAMPLE_FMT_S64, int64_t, AV_SAMPLE_FMT_U8 , (uint64_t)((*(const uint8_t*)pi - 0x80U))<<56)
+CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , AV_SAMPLE_FMT_U8 , (*(const uint8_t*)pi - 0x80)*(1.0f/ (1<<7)))
+CONV_FUNC(AV_SAMPLE_FMT_DBL, double , AV_SAMPLE_FMT_U8 , (*(const uint8_t*)pi - 0x80)*(1.0 / (1<<7)))
+CONV_FUNC(AV_SAMPLE_FMT_U8 , uint8_t, AV_SAMPLE_FMT_S16, (*(const int16_t*)pi>>8) + 0x80)
+CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, AV_SAMPLE_FMT_S16,  *(const int16_t*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, AV_SAMPLE_FMT_S16, *(const int16_t*)pi * (1 << 16))
+CONV_FUNC(AV_SAMPLE_FMT_S64, int64_t, AV_SAMPLE_FMT_S16, (uint64_t)(*(const int16_t*)pi)<<48)
+CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , AV_SAMPLE_FMT_S16,  *(const int16_t*)pi*(1.0f/ (1<<15)))
+CONV_FUNC(AV_SAMPLE_FMT_DBL, double , AV_SAMPLE_FMT_S16,  *(const int16_t*)pi*(1.0 / (1<<15)))
+CONV_FUNC(AV_SAMPLE_FMT_U8 , uint8_t, AV_SAMPLE_FMT_S32, (*(const int32_t*)pi>>24) + 0x80)
+CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, AV_SAMPLE_FMT_S32,  *(const int32_t*)pi>>16)
+CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, AV_SAMPLE_FMT_S32,  *(const int32_t*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_S64, int64_t, AV_SAMPLE_FMT_S32, (uint64_t)(*(const int32_t*)pi)<<32)
+CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , AV_SAMPLE_FMT_S32,  *(const int32_t*)pi*(1.0f/ (1U<<31)))
+CONV_FUNC(AV_SAMPLE_FMT_DBL, double , AV_SAMPLE_FMT_S32,  *(const int32_t*)pi*(1.0 / (1U<<31)))
+CONV_FUNC(AV_SAMPLE_FMT_U8 , uint8_t, AV_SAMPLE_FMT_S64, (*(const int64_t*)pi>>56) + 0x80)
+CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, AV_SAMPLE_FMT_S64,  *(const int64_t*)pi>>48)
+CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, AV_SAMPLE_FMT_S64,  *(const int64_t*)pi>>32)
+CONV_FUNC(AV_SAMPLE_FMT_S64, int64_t, AV_SAMPLE_FMT_S64,  *(const int64_t*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , AV_SAMPLE_FMT_S64,  *(const int64_t*)pi*(1.0f/ (UINT64_C(1)<<63)))
+CONV_FUNC(AV_SAMPLE_FMT_DBL, double , AV_SAMPLE_FMT_S64,  *(const int64_t*)pi*(1.0 / (UINT64_C(1)<<63)))
+CONV_FUNC(AV_SAMPLE_FMT_U8 , uint8_t, AV_SAMPLE_FMT_FLT, av_clip_uint8(  lrintf(*(const float*)pi * (1<<7)) + 0x80))
+CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, AV_SAMPLE_FMT_FLT, av_clip_int16(  lrintf(*(const float*)pi * (1<<15))))
+CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, AV_SAMPLE_FMT_FLT, av_clipl_int32(llrintf(*(const float*)pi * (1U<<31))))
+CONV_FUNC(AV_SAMPLE_FMT_S64, int64_t, AV_SAMPLE_FMT_FLT, llrintf(*(const float*)pi * (UINT64_C(1)<<63)))
+CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , AV_SAMPLE_FMT_FLT, *(const float*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_DBL, double , AV_SAMPLE_FMT_FLT, *(const float*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_U8 , uint8_t, AV_SAMPLE_FMT_DBL, av_clip_uint8(  lrint(*(const double*)pi * (1<<7)) + 0x80))
+CONV_FUNC(AV_SAMPLE_FMT_S16, int16_t, AV_SAMPLE_FMT_DBL, av_clip_int16(  lrint(*(const double*)pi * (1<<15))))
+CONV_FUNC(AV_SAMPLE_FMT_S32, int32_t, AV_SAMPLE_FMT_DBL, av_clipl_int32(llrint(*(const double*)pi * (1U<<31))))
+CONV_FUNC(AV_SAMPLE_FMT_S64, int64_t, AV_SAMPLE_FMT_DBL, llrint(*(const double*)pi * (UINT64_C(1)<<63)))
+CONV_FUNC(AV_SAMPLE_FMT_FLT, float  , AV_SAMPLE_FMT_DBL, *(const double*)pi)
+CONV_FUNC(AV_SAMPLE_FMT_DBL, double , AV_SAMPLE_FMT_DBL, *(const double*)pi)
 
-static inline void fft3(FFTComplex *out, FFTComplex *in,
-                                  ptrdiff_t stride)
-{
-    FFTComplex tmp[2];
-#ifdef TX_INT32
-    int64_t mtmp[4];
-#endif
+#define FMT_PAIR_FUNC(out, in) [(out) + AV_SAMPLE_FMT_NB*(in)] = CONV_FUNC_NAME(out, in)
 
-    // BF(tmp[0].re, tmp[1].im, in[1].im, in[2].im);
-    // BF(tmp[0].im, tmp[1].re, in[1].re, in[2].re);
+#define FRONT_LEFT             0
+#define FRONT_RIGHT            1
+#define FRONT_CENTER           2
+#define LOW_FREQUENCY          3
+#define BACK_LEFT              4
+#define BACK_RIGHT             5
+#define FRONT_LEFT_OF_CENTER   6
+#define FRONT_RIGHT_OF_CENTER  7
+#define BACK_CENTER            8
+#define SIDE_LEFT              9
+#define SIDE_RIGHT             10
+#define TOP_CENTER             11
+#define TOP_FRONT_LEFT         12
+#define TOP_FRONT_CENTER       13
+#define TOP_FRONT_RIGHT        14
+#define TOP_BACK_LEFT          15
+#define TOP_BACK_CENTER        16
+#define TOP_BACK_RIGHT         17
+#define NUM_NAMED_CHANNELS     18
+#define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
+#define ID3v1_TAG_SIZE 128
 
-    out[0*stride].re = in[0].re + tmp[1].re;
-    out[0*stride].im = in[0].im + tmp[1].im;
+#define ID3v1_GENRE_MAX 191
+#define AV_FRAME_FILENAME_FLAGS_MULTIPLE 1 ///< Allow multiple %d
 
-#ifdef TX_INT32
-    mtmp[0] = (int64_t)TX_NAME(ff_cos_53)[0].re * tmp[0].re;
-    mtmp[1] = (int64_t)TX_NAME(ff_cos_53)[0].im * tmp[0].im;
-    mtmp[2] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].re;
-    mtmp[3] = (int64_t)TX_NAME(ff_cos_53)[1].re * tmp[1].im;
-    out[1*stride].re = in[0].re - (mtmp[2] + mtmp[0] + 0x40000000 >> 31);
-    out[1*stride].im = in[0].im - (mtmp[3] - mtmp[1] + 0x40000000 >> 31);
-    out[2*stride].re = in[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
-    out[2*stride].im = in[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
-#else
-    tmp[0].re = TX_NAME(ff_cos_53)[0].re * tmp[0].re;
-    tmp[0].im = TX_NAME(ff_cos_53)[0].im * tmp[0].im;
-    tmp[1].re = TX_NAME(ff_cos_53)[1].re * tmp[1].re;
-    tmp[1].im = TX_NAME(ff_cos_53)[1].re * tmp[1].im;
-    out[1*stride].re = in[0].re - tmp[1].re + tmp[0].re;
-    out[1*stride].im = in[0].im - tmp[1].im - tmp[0].im;
-    out[2*stride].re = in[0].re - tmp[1].re - tmp[0].re;
-    out[2*stride].im = in[0].im - tmp[1].im + tmp[0].im;
-#endif
-}
+#define AV_ESCAPE_FLAG_WHITESPACE (1 << 0)
+#define AV_ESCAPE_FLAG_STRICT (1 << 1)
 
-#define SMUL(dre, dim, are, aim, bre, bim) do {                                \
-        (dre) = (are) * (bre) - (aim) * (bim);                                 \
-        (dim) = (are) * (bim) - (aim) * (bre);                                 \
+#define MAX_AUTO_THREADS 16
+#define FF_DYNARRAY_ADD(av_size_max, av_elt_size, av_array, av_size, \
+                        av_success, av_failure) \
+    do { \
+        size_t av_size_new = (av_size); \
+        if (!((av_size) & ((av_size) - 1))) { \
+            av_size_new = (av_size) ? (av_size) << 1 : 1; \
+            if (av_size_new > (av_size_max) / (av_elt_size)) { \
+                av_size_new = 0; \
+            } else { \
+                void *av_array_new = \
+                    av_realloc((av_array), av_size_new * (av_elt_size)); \
+                if (!av_array_new) \
+                    av_size_new = 0; \
+                else \
+                    (av_array) = av_array_new; \
+            } \
+        } \
+        if (av_size_new) { \
+            { av_success } \
+            (av_size)++; \
+        } else { \
+            av_failure \
+        } \
     } while (0)
 
-#define DECL_FFT5(NAME, D0, D1, D2, D3, D4)                                                       \
-static inline void NAME(FFTComplex *out, FFTComplex *in,                                \
-                                  ptrdiff_t stride)                                               \
-{                                                                                                 \
-    FFTComplex z0[4], t[6];                                                                       \
-                                                                                                  \
-    BF(t[1].im, t[0].re, in[1].re, in[4].re);                                                     \
-    BF(t[1].re, t[0].im, in[1].im, in[4].im);                                                     \
-    BF(t[3].im, t[2].re, in[2].re, in[3].re);                                                     \
-    BF(t[3].re, t[2].im, in[2].im, in[3].im);                                                     \
-                                                                                                  \
-    out[D0*stride].re = in[0].re + t[0].re + t[2].re;                                             \
-    out[D0*stride].im = in[0].im + t[0].im + t[2].im;                                             \
-                                                                                                  \
-    SMUL(t[4].re, t[0].re, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].re, t[0].re); \
-    SMUL(t[4].im, t[0].im, TX_NAME(ff_cos_53)[2].re, TX_NAME(ff_cos_53)[3].re, t[2].im, t[0].im); \
-    CMUL(t[5].re, t[1].re, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].re, t[1].re); \
-    CMUL(t[5].im, t[1].im, TX_NAME(ff_cos_53)[2].im, TX_NAME(ff_cos_53)[3].im, t[3].im, t[1].im); \
-                                                                                                  \
-    BF(z0[0].re, z0[3].re, t[0].re, t[1].re);                                                     \
-    BF(z0[0].im, z0[3].im, t[0].im, t[1].im);                                                     \
-    BF(z0[2].re, z0[1].re, t[4].re, t[5].re);                                                     \
-    BF(z0[2].im, z0[1].im, t[4].im, t[5].im);                                                     \
-                                                                                                  \
-    out[D1*stride].re = in[0].re + z0[3].re;                                                      \
-    out[D1*stride].im = in[0].im + z0[0].im;                                                      \
-    out[D2*stride].re = in[0].re + z0[2].re;                                                      \
-    out[D2*stride].im = in[0].im + z0[1].im;                                                      \
-    out[D3*stride].re = in[0].re + z0[1].re;                                                      \
-    out[D3*stride].im = in[0].im + z0[2].im;                                                      \
-    out[D4*stride].re = in[0].re + z0[0].re;                                                      \
-    out[D4*stride].im = in[0].im + z0[3].im;                                                      \
-}
+#define THREAD_SAFE_CALLBACKS(avctx) \
+((avctx)->thread_safe_callbacks || (avctx)->get_buffer2 == avcodec_default_get_buffer2)
 
-DECL_FFT5(fft5,     0,  1,  2,  3,  4)
-DECL_FFT5(fft5_m1,  0,  6, 12,  3,  9)
-DECL_FFT5(fft5_m2, 10,  1,  7, 13,  4)
-DECL_FFT5(fft5_m3,  5, 11,  2,  8, 14)
-
-static inline void fft15(FFTComplex *out, FFTComplex *in,
-                                   ptrdiff_t stride)
-{
-    FFTComplex tmp[15];
-
-    for (int i = 0; i < 5; i++)
-        fft3(tmp + i, in + i*3, 5);
-
-    // fft5_m1(out, tmp +  0, stride);
-    // fft5_m2(out, tmp +  5, stride);
-    // fft5_m3(out, tmp + 10, stride);
-}
-
-#define BUTTERFLIES(a0,a1,a2,a3) {\
-    BF(t3, t5, t5, t1);\
-    BF(a2.re, a0.re, a0.re, t5);\
-    BF(a3.im, a1.im, a1.im, t3);\
-    BF(t4, t6, t2, t6);\
-    BF(a3.re, a1.re, a1.re, t4);\
-    BF(a2.im, a0.im, a0.im, t6);\
-}
+#define AVIO_SEEKABLE_TIME   (1 << 1)
 
 
-#define BUTTERFLIES_BIG(a0,a1,a2,a3) {\
-    FFTSample r0=a0.re, i0=a0.im, r1=a1.re, i1=a1.im;\
-    BF(t3, t5, t5, t1);\
-    BF(a2.re, a0.re, r0, t5);\
-    BF(a3.im, a1.im, i1, t3);\
-    BF(t4, t6, t2, t6);\
-    BF(a3.re, a1.re, r1, t4);\
-    BF(a2.im, a0.im, i0, t6);\
-}
-
-#define TRANSFORM(a0,a1,a2,a3,wre,wim) {\
-    CMUL(t1, t2, a2.re, a2.im, wre, -wim);\
-    CMUL(t5, t6, a3.re, a3.im, wre,  wim);\
-    BUTTERFLIES(a0,a1,a2,a3)\
-}
-
-#define TRANSFORM_ZERO(a0,a1,a2,a3) {\
-    t1 = a2.re;\
-    t2 = a2.im;\
-    t5 = a3.re;\
-    t6 = a3.im;\
-    BUTTERFLIES(a0,a1,a2,a3)\
-}
-
-/* z[0...8n-1], w[1...2n-1] */
-#define PASS(name)\
-static void name(FFTComplex *z, const FFTSample *wre, unsigned int n)\
-{\
-    FFTSample t1, t2, t3, t4, t5, t6;\
-    int o1 = 2*n;\
-    int o2 = 4*n;\
-    int o3 = 6*n;\
-    const FFTSample *wim = wre+o1;\
-    n--;\
-\
-    TRANSFORM_ZERO(z[0],z[o1],z[o2],z[o3]);\
-    TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
-    do {\
-        z += 2;\
-        wre += 2;\
-        wim -= 2;\
-        TRANSFORM(z[0],z[o1],z[o2],z[o3],wre[0],wim[0]);\
-        TRANSFORM(z[1],z[o1+1],z[o2+1],z[o3+1],wre[1],wim[-1]);\
-    } while(--n);\
-}
-
-
-PASS(pass)
-#undef BUTTERFLIES
-#define BUTTERFLIES BUTTERFLIES_BIG
-PASS(pass_big)
-
-#define DECL_FFT(n,n2,n4)\
-static void fft##n(FFTComplex *z)\
-{\
-    fft##n2(z);\
-    fft##n4(z+n4*2);\
-    fft##n4(z+n4*3);\
-    pass(z,TX_NAME(ff_cos_##n),n4/2);\
-}
-
-
-
-// DECL_COMP_FFT(3)
-// DECL_COMP_FFT(5)
-// DECL_COMP_FFT(15)
-
-
-// DECL_COMP_IMDCT(3)
-// DECL_COMP_IMDCT(5)
-// DECL_COMP_IMDCT(15)
-
-#define DECL_COMP_MDCT(N)                                                      \
-static void compound_mdct_##N##xM(AVTXContext *s, void *_dst, void *_src,      \
-                                  ptrdiff_t stride)                            \
-{                                                                              \
-    FFTSample *src = _src, *dst = _dst;                                        \
-    FFTComplex *exp = s->exptab, tmp, fft##N##in[N];                           \
-    const int m = s->m, len4 = N*m, len3 = len4 * 3, len8 = len4 >> 1;         \
-    const int *in_map = s->pfatab, *out_map = in_map + N*m;                    \
-    void (*fftp)(FFTComplex *) = fft_dispatch[av_log2(m)];                     \
-                                                                               \
-    stride /= sizeof(*dst);                                                    \
-                                                                               \
-    for (int i = 0; i < m; i++) { /* Folding and pre-reindexing */             \
-        for (int j = 0; j < N; j++) {                                          \
-            const int k = in_map[i*N + j];                                     \
-            if (k < len4) {                                                    \
-                tmp.re = FOLD(-src[ len4 + k],  src[1*len4 - 1 - k]);          \
-                tmp.im = FOLD(-src[ len3 + k], -src[1*len3 - 1 - k]);          \
-            } else {                                                           \
-                tmp.re = FOLD(-src[ len4 + k], -src[5*len4 - 1 - k]);          \
-                tmp.im = FOLD( src[-len4 + k], -src[1*len3 - 1 - k]);          \
-            }                                                                  \
-            CMUL(fft##N##in[j].im, fft##N##in[j].re, tmp.re, tmp.im,           \
-                 exp[k >> 1].re, exp[k >> 1].im);                              \
-        }                                                                      \
-        fft##N(s->tmp + s->revtab[i], fft##N##in, m);                          \
-    }                                                                          \
-                                                                               \
-    for (int i = 0; i < N; i++)                                                \
-        fftp(s->tmp + m*i);                                                    \
-                                                                               \
-    for (int i = 0; i < len8; i++) {                                           \
-        const int i0 = len8 + i, i1 = len8 - i - 1;                            \
-        const int s0 = out_map[i0], s1 = out_map[i1];                          \
-        FFTComplex src1 = { s->tmp[s1].re, s->tmp[s1].im };                    \
-        FFTComplex src0 = { s->tmp[s0].re, s->tmp[s0].im };                    \
-                                                                               \
-        CMUL(dst[2*i1*stride + stride], dst[2*i0*stride], src0.re, src0.im,    \
-             exp[i0].im, exp[i0].re);                                          \
-        CMUL(dst[2*i0*stride + stride], dst[2*i1*stride], src1.re, src1.im,    \
-             exp[i1].im, exp[i1].re);                                          \
-    }                                                                          \
-}
-
-// DECL_COMP_MDCT(3)
-// DECL_COMP_MDCT(5)
-// DECL_COMP_MDCT(15)
-
+#define AV_PTS_WRAP_IGNORE      0   ///< ignore the wrap
+#define AV_PTS_WRAP_ADD_OFFSET  1   ///< add the format specific offset on wrap detection
+#define AV_PTS_WRAP_SUB_OFFSET  -1  ///< subtract the format specific offset on wrap detection
 
 DECLARE_ALIGNED(8, const uint8_t, ff_dither_2x2_4)[][8] = {
 {  1,   3,   1,   3,   1,   3,   1,   3, },
@@ -7709,6 +8185,141 @@ yuv2NBPS(14, LE, 0, 10, int16_t)
 yuv2NBPS(16, BE, 1, 16, int32_t)
 yuv2NBPS(16, LE, 0, 16, int32_t)
 
+#define have_vfp_vm(flags)                                              \
+    (HAVE_VFP && ((flags) & AV_CPU_FLAG_VFP_VM))
+
+#if FFT_FLOAT
+#   define RSCALE(x, y) ((x) + (y))
+#else
+#if FFT_FIXED_32
+#   define RSCALE(x, y) ((int)((x) + (unsigned)(y) + 32) >> 6)
+#else 
+#   define RSCALE(x, y) ((int)((x) + (unsigned)(y)) >> 1)
+#endif
+#endif
+
+#   define MUL16(ra, rb) ((ra) * (rb))
+
+#define FFT_FLOAT 1
+#if FFT_FLOAT
+
+#define FIX15(v) (v)
+#define sqrthalf (float)M_SQRT1_2
+
+#define BF(x, y, a, b) do {                     \
+        x = a - b;                              \
+        y = a + b;                              \
+    } while (0)
+
+#define CMUL(dre, dim, are, aim, bre, bim) do { \
+        (dre) = (are) * (bre) - (aim) * (bim);  \
+        (dim) = (are) * (bim) + (aim) * (bre);  \
+    } while (0)
+
+#else
+
+#define SCALE_FLOAT(a, bits) lrint((a) * (double)(1 << (bits)))
+
+#if FFT_FIXED_32
+
+#define CMUL(dre, dim, are, aim, bre, bim) do {             \
+        int64_t accu;                                     \
+        (accu)  = (int64_t)(bre) * (are);                 \
+        (accu) -= (int64_t)(bim) * (aim);                 \
+        (dre)   = (int)(((accu) + 0x40000000) >> 31);       \
+        (accu)  = (int64_t)(bre) * (aim);                 \
+        (accu) += (int64_t)(bim) * (are);                 \
+        (dim)   = (int)(((accu) + 0x40000000) >> 31);       \
+    } while (0)
+
+#define FIX15(a) av_clip(SCALE_FLOAT(a, 31), -2147483647, 2147483647)
+
+#else 
+
+void ff_mdct_calcw_c(FFTContext *s, FFTDouble *output, const FFTSample *input);
+
+#define FIX15(a) av_clip(SCALE_FLOAT(a, 15), -32767, 32767)
+
+#define sqrthalf ((int16_t)((1<<15)*M_SQRT1_2))
+
+#define BF(x, y, a, b) do {                     \
+        x = (a - b) >> 1;                       \
+        y = (a + b) >> 1;                       \
+    } while (0)
+
+#define CMULS(dre, dim, are, aim, bre, bim, sh) do {            \
+        (dre) = (MUL16(are, bre) - MUL16(aim, bim)) >> sh;      \
+        (dim) = (MUL16(are, bim) + MUL16(aim, bre)) >> sh;      \
+    } while (0)
+
+#define CMUL(dre, dim, are, aim, bre, bim)      \
+    CMULS(dre, dim, are, aim, bre, bim, 15)
+
+#define CMULL(dre, dim, are, aim, bre, bim)     \
+    CMULS(dre, dim, are, aim, bre, bim, 0)
+
+#endif 
+
+#endif 
+
+#define ff_imdct_calc_c FFT_NAME(ff_imdct_calc_c)
+#define ff_imdct_half_c FFT_NAME(ff_imdct_half_c)
+#define ff_mdct_calc_c  FFT_NAME(ff_mdct_calc_c)
+
+void ff_imdct_calc_c(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_c(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_mdct_calc_c(FFTContext *s, FFTSample *output, const FFTSample *input);
+
+
+#define FFT_NAME(x) x
+#define ff_fft_end  FFT_NAME(ff_fft_end)
+
+#define H264_MAX_PICTURE_COUNT 36
+
+#define MAX_MMCO_COUNT         66
+
+#define MAX_DELAYED_PIC_COUNT  16
+
+/* Compiling in interlaced support reduces the speed
+ * of progressive decoding by about 2%. */
+#define ALLOW_INTERLACE
+
+#define FMO 0
+
+#define MAX_SLICES 32
+#define MB_MBAFF(h)    (h)->mb_mbaff
+#define MB_FIELD(sl)  (sl)->mb_field_decoding_flag
+#define FRAME_MBAFF(h) (h)->mb_aff_frame
+#define FIELD_PICTURE(h) ((h)->picture_structure != PICT_FRAME)
+#define LEFT_MBS 2
+#define LTOP     0
+#define LBOT     1
+#define LEFT(i)  (i)
+
+#define AV_DISPOSITION_CAPTIONS     0x10000
+#define AV_DISPOSITION_DESCRIPTIONS 0x20000
+#define AV_DISPOSITION_METADATA     0x40000
+#define AV_DISPOSITION_DEPENDENT    0x80000 ///< dependent audio stream (mix_type=0 in mpegts)
+#define AV_DISPOSITION_STILL_IMAGE 0x100000 ///< still images in video stream (still_picture_flag=1 in mpegts)
+
+/**
+ * Options for behavior on timestamp wrap detection.
+ */
+#define AV_PTS_WRAP_IGNORE      0   ///< ignore the wrap
+#define AV_PTS_WRAP_ADD_OFFSET  1   ///< add the format specific offset on wrap detection
+#define AV_PTS_WRAP_SUB_OFFSET  -1  ///< subtract the format specific offset on wrap detection
+
+
+#define MAX_SPS_COUNT          32
+#define MAX_PPS_COUNT         256
+#define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
+
+#define DURATION_MAX_READ_SIZE 250000LL
+#define DURATION_MAX_RETRY 6
+char *av_fourcc_make_string(char *buf, uint32_t fourcc);
+#define AV_FOURCC_MAX_STRING_SIZE 32
+
+#define av_fourcc2str(fourcc) av_fourcc_make_string((char[AV_FOURCC_MAX_STRING_SIZE]){0}, fourcc)
 
 #if CONFIG_AVDEVICE
 #define CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                       \
@@ -8151,26 +8762,7 @@ const char *av_default_item_name(void *ptr);
         .category   = AV_CLASS_CATEGORY_FILTER, \
     }
 
-typedef struct AVOption
-{
-    const char *name;
-    const char *help;
-    int offset;
-    enum AVOptionType type;
-    union
-    {
-        int64_t i64;
-        double dbl;
-        const char *str;
-        /* TODO those are unused now */
-        AVRational q;
-    } default_val;
-    double min; ///< minimum valid value for the option
-    double max; ///< maximum valid value for the option
 
-    int flags;
-    const char *unit;
-} AVOption;
 
 typedef struct BenchContext {
     const AVClass *class;
@@ -9294,7 +9886,7 @@ typedef struct AVCodec
     const struct AVCodecHWConfigInternal **hw_configs;
 } AVCodec;
 
- const AVCodec * const codec_list[];
+extern const AVCodec * const codec_list[];
 
 
 typedef struct AVCodecParameters
@@ -9556,6 +10148,14 @@ struct AVFormatContext;
 
 struct AVDeviceCapabilitiesQuery;
 
+#if FF_API_AVIOFORMAT
+#define ff_const59
+#else
+#define ff_const59 const
+#endif
+#if FF_API_NEXT
+    ff_const59 struct AVOutputFormat *next;
+#endif
 typedef struct AVOutputFormat
 {
     const char *name;
@@ -9568,11 +10168,7 @@ typedef struct AVOutputFormat
     int flags;
     const struct AVCodecTag *const *codec_tag;
     const AVClass *priv_class; ///< AVClass for the private context
-#if FF_API_AVIOFORMAT
-#define ff_const59
-#else
-#define ff_const59 const
-#endif
+
     const struct AVOutputFormat *next;
     int priv_data_size;
     int (*write_header)(struct AVFormatContext *);
@@ -9598,9 +10194,11 @@ typedef struct AVOutputFormat
     int (*check_bitstream)(struct AVFormatContext *, const AVPacket *pkt);
 } AVOutputFormat;
 
-typedef float FFTSample;
-typedef float FFTDouble;
 
+
+typedef struct FFTDComplex {
+    FFTDouble re, im;
+} FFTDComplex;
 
 
 enum fft_permutation_type
@@ -9627,14 +10225,9 @@ struct FFTContext
     /* pre/post rotation tables */
     FFTSample *tcos;
     FFTSample *tsin;
-    /**
-     * Do the permutation needed BEFORE calling fft_calc().
-     */
+
     void (*fft_permute)(struct FFTContext *s, FFTComplex *z);
-    /**
-     * Do a complex FFT with the parameters defined in ff_fft_init(). The
-     * input data must be permuted before. No 1.0/sqrt(n) normalization is done.
-     */
+
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
     void (*imdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
@@ -9756,28 +10349,37 @@ typedef void (conv_func_interleave)(uint8_t *out, uint8_t *const *in,
 
 typedef void (conv_func_deinterleave)(uint8_t **out, const uint8_t *in, int len,
                                       int channels);
-struct AudioConvert {
-    AVAudioResampleContext *avr;
-    DitherContext *dc;
-    enum AVSampleFormat in_fmt;
-    enum AVSampleFormat out_fmt;
-    int apply_map;
-    int channels;
-    int planes;
-    int ptr_align;
-    int samples_align;
-    int has_optimized_func;
-    const char *func_descr;
-    const char *func_descr_generic;
-    enum ConvFuncType func_type;
-    conv_func_flat         *conv_flat;
-    conv_func_flat         *conv_flat_generic;
-    conv_func_interleave   *conv_interleave;
-    conv_func_interleave   *conv_interleave_generic;
-    conv_func_deinterleave *conv_deinterleave;
-    conv_func_deinterleave *conv_deinterleave_generic;
-};
+// struct AudioConvert {
+//     AVAudioResampleContext *avr;
+//     DitherContext *dc;
+//     enum AVSampleFormat in_fmt;
+//     enum AVSampleFormat out_fmt;
+//     int apply_map;
+//     int channels;
+//     int planes;
+//     int ptr_align;
+//     int samples_align;
+//     int has_optimized_func;
+//     const char *func_descr;
+//     const char *func_descr_generic;
+//     enum ConvFuncType func_type;
+//     conv_func_flat         *conv_flat;
+//     conv_func_flat         *conv_flat_generic;
+//     conv_func_interleave   *conv_interleave;
+//     conv_func_interleave   *conv_interleave_generic;
+//     conv_func_deinterleave *conv_deinterleave;
+//     conv_func_deinterleave *conv_deinterleave_generic;
+// };
 
+typedef struct AudioConvert {
+    int channels;
+    int  in_simd_align_mask;
+    int out_simd_align_mask;
+    conv_func_type *conv_f;
+    simd_func_type *simd_f;
+    const int *ch_map;
+    uint8_t silence[8]; ///< silence input sample
+}AudioConvert;
 typedef struct AudioConvert AudioConvert;
 
 struct DitherContext {
@@ -9896,12 +10498,9 @@ typedef struct ResampleContext {
     int phase_count_compensation;      /* desired phase_count when compensation is enabled */
 
     struct {
-        void (*resample_one)(void *dst, const void *src,
-                             int n, int64_t index, int64_t incr);
-        int (*resample_common)(struct ResampleContext *c, void *dst,
-                               const void *src, int n, int update_ctx);
-        int (*resample_linear)(struct ResampleContext *c, void *dst,
-                               const void *src, int n, int update_ctx);
+        void (*resample_one)(void *dst, const void *src,int n, int64_t index, int64_t incr);
+        int (*resample_common)(struct ResampleContext *c, void *dst,const void *src, int n, int update_ctx);
+        int (*resample_linear)(struct ResampleContext *c, void *dst,const void *src, int n, int update_ctx);
     } dsp;
 } ResampleContext;
 
@@ -10100,7 +10699,7 @@ struct SwrContext {
 };
 typedef struct SwrContext SwrContext;
 
-typedef struct AVFilterContext AVFilterContext;
+
 
 struct AVFilterChannelLayouts {
     uint64_t *channel_layouts;  ///< list of channel layouts
@@ -11962,10 +12561,7 @@ typedef struct AVCodecParser {
     struct AVCodecParser *next;
 } AVCodecParser;
 
-typedef struct ColorEntry {
-    const char *name;         ///< a string representing the name of the color
-    uint32_t    rgb_color;    ///< RGB values for the color
-} ColorEntry;
+
 
 typedef struct HWMapDescriptor {
     AVFrame *source;
@@ -12044,928 +12640,1905 @@ typedef union {
 } av_alias av_alias16;
 
 
+struct FFFramePool {
+    enum AVMediaType type;
+    /* video */
+    int width;
+    int height;
+    /* audio */
+    int planes;
+    int channels;
+    int nb_samples;
+
+    /* common */
+    int format;
+    int align;
+    int linesize[4];
+    AVBufferPool *pools[4];
+
+};
+
+typedef struct AVFilterCommand {
+    double time;                ///< time expressed in seconds
+    char *command;              ///< command
+    char *arg;                  ///< optional argument for the command
+    int flags;
+    struct AVFilterCommand *next;
+} AVFilterCommand;
+
+struct channel_name {
+    const char *name;
+    const char *description;
+};
+typedef struct EvalContext {
+    const AVClass *class;
+    char *sample_rate_str;
+    int sample_rate;
+    int64_t chlayout;
+    char *chlayout_str;
+    int nb_channels;            ///< number of output channels
+    int nb_in_channels;         ///< number of input channels
+    int same_chlayout;          ///< set output as input channel layout
+    int64_t pts;
+    AVExpr **expr;
+    char *exprs;
+    int nb_samples;             ///< number of samples per requested frame
+    int64_t duration;
+    uint64_t n;
+    double var_values[VAR_VARS_NB];
+    double *channel_values;
+    int64_t out_channel_layout;
+} EvalContext;
+
+#define TYPE_ALL 2
+typedef struct ConcatContext {
+    const AVClass *class;
+    unsigned nb_streams[TYPE_ALL]; /**< number of out streams of each type */
+    unsigned nb_segments;
+    unsigned cur_idx; /**< index of the first input of current segment */
+    int64_t delta_ts; /**< timestamp to add to produce output timestamps */
+    unsigned nb_in_active; /**< number of active inputs in current segment */
+    unsigned unsafe;
+    struct concat_in {
+        int64_t pts;
+        int64_t nb_frames;
+        unsigned eof;
+    } *in;
+} ConcatContext;
+
+typedef struct{
+    void *indata;
+    void *outdata;
+    int64_t return_code;
+    unsigned index;
+} Task;
+
+typedef struct FrameThreadTaskContext{
+    AVCodecContext *parent_avctx;
+    pthread_mutex_t buffer_mutex;
+
+    AVFifoBuffer *task_fifo;
+    pthread_mutex_t task_fifo_mutex;
+    pthread_cond_t task_fifo_cond;
+
+    Task finished_tasks[BUFFER_SIZE];
+    pthread_mutex_t finished_task_mutex;
+    pthread_cond_t finished_task_cond;
+
+    unsigned task_index;
+    unsigned finished_task_index;
+
+    pthread_t worker[MAX_THREADS];
+    atomic_int exit;
+} FrameThreadTaskContext;
+
+
+typedef enum MMCOOpcode {
+    MMCO_END = 0,
+    MMCO_SHORT2UNUSED,
+    MMCO_LONG2UNUSED,
+    MMCO_SHORT2LONG,
+    MMCO_SET_MAX_LONG,
+    MMCO_RESET,
+    MMCO_LONG,
+} MMCOOpcode;
+
+/**
+ * Memory management control operation.
+ */
+typedef struct MMCO {
+    MMCOOpcode opcode;
+    int short_pic_num;  ///< pic_num without wrapping (pic_num & max_pic_num)
+    int long_arg;       ///< index, pic_num, or num long refs depending on opcode
+} MMCO;
+
+#define QP_MAX_NUM (51 + 6*6)  
+typedef struct SPS {
+    unsigned int sps_id;
+    int profile_idc;
+    int level_idc;
+    int chroma_format_idc;
+    int transform_bypass;              ///< qpprime_y_zero_transform_bypass_flag
+    int log2_max_frame_num;            ///< log2_max_frame_num_minus4 + 4
+    int poc_type;                      ///< pic_order_cnt_type
+    int log2_max_poc_lsb;              ///< log2_max_pic_order_cnt_lsb_minus4
+    int delta_pic_order_always_zero_flag;
+    int offset_for_non_ref_pic;
+    int offset_for_top_to_bottom_field;
+    int poc_cycle_length;              ///< num_ref_frames_in_pic_order_cnt_cycle
+    int ref_frame_count;               ///< num_ref_frames
+    int gaps_in_frame_num_allowed_flag;
+    int mb_width;                      ///< pic_width_in_mbs_minus1 + 1
+    ///< (pic_height_in_map_units_minus1 + 1) * (2 - frame_mbs_only_flag)
+    int mb_height;
+    int frame_mbs_only_flag;
+    int mb_aff;                        ///< mb_adaptive_frame_field_flag
+    int direct_8x8_inference_flag;
+    int crop;                          ///< frame_cropping_flag
+
+    /* those 4 are already in luma samples */
+    unsigned int crop_left;            ///< frame_cropping_rect_left_offset
+    unsigned int crop_right;           ///< frame_cropping_rect_right_offset
+    unsigned int crop_top;             ///< frame_cropping_rect_top_offset
+    unsigned int crop_bottom;          ///< frame_cropping_rect_bottom_offset
+    int vui_parameters_present_flag;
+    AVRational sar;
+    int video_signal_type_present_flag;
+    int full_range;
+    int colour_description_present_flag;
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace colorspace;
+    enum AVChromaLocation chroma_location;
+
+    int timing_info_present_flag;
+    uint32_t num_units_in_tick;
+    uint32_t time_scale;
+    int fixed_frame_rate_flag;
+    int32_t offset_for_ref_frame[256];
+    int bitstream_restriction_flag;
+    int num_reorder_frames;
+    int scaling_matrix_present;
+    uint8_t scaling_matrix4[6][16];
+    uint8_t scaling_matrix8[6][64];
+    int nal_hrd_parameters_present_flag;
+    int vcl_hrd_parameters_present_flag;
+    int pic_struct_present_flag;
+    int time_offset_length;
+    int cpb_cnt;                          ///< See H.264 E.1.2
+    int initial_cpb_removal_delay_length; ///< initial_cpb_removal_delay_length_minus1 + 1
+    int cpb_removal_delay_length;         ///< cpb_removal_delay_length_minus1 + 1
+    int dpb_output_delay_length;          ///< dpb_output_delay_length_minus1 + 1
+    int bit_depth_luma;                   ///< bit_depth_luma_minus8 + 8
+    int bit_depth_chroma;                 ///< bit_depth_chroma_minus8 + 8
+    int residual_color_transform_flag;    ///< residual_colour_transform_flag
+    int constraint_set_flags;             ///< constraint_set[0-3]_flag
+    uint8_t data[4096];
+    size_t data_size;
+} SPS;
+typedef struct PPS {
+    unsigned int sps_id;
+    int cabac;                  ///< entropy_coding_mode_flag
+    int pic_order_present;      ///< pic_order_present_flag
+    int slice_group_count;      ///< num_slice_groups_minus1 + 1
+    int mb_slice_group_map_type;
+    unsigned int ref_count[2];  ///< num_ref_idx_l0/1_active_minus1 + 1
+    int weighted_pred;          ///< weighted_pred_flag
+    int weighted_bipred_idc;
+    int init_qp;                ///< pic_init_qp_minus26 + 26
+    int init_qs;                ///< pic_init_qs_minus26 + 26
+    int chroma_qp_index_offset[2];
+    int deblocking_filter_parameters_present; ///< deblocking_filter_parameters_present_flag
+    int constrained_intra_pred;     ///< constrained_intra_pred_flag
+    int redundant_pic_cnt_present;  ///< redundant_pic_cnt_present_flag
+    int transform_8x8_mode;         ///< transform_8x8_mode_flag
+    uint8_t scaling_matrix4[6][16];
+    uint8_t scaling_matrix8[6][64];
+    uint8_t chroma_qp_table[2][QP_MAX_NUM+1];  ///< pre-scaled (with chroma_qp_index_offset) version of qp_table
+    int chroma_qp_diff;
+    uint8_t data[4096];
+    size_t data_size;
+
+    uint32_t dequant4_buffer[6][QP_MAX_NUM + 1][16];
+    uint32_t dequant8_buffer[6][QP_MAX_NUM + 1][64];
+    uint32_t(*dequant4_coeff[6])[16];
+    uint32_t(*dequant8_coeff[6])[64];
+
+    AVBufferRef *sps_ref;
+    const SPS   *sps;
+} PPS;
+
+typedef struct H264Picture {
+    AVFrame *f;
+    ThreadFrame tf;
+
+    AVBufferRef *qscale_table_buf;
+    int8_t *qscale_table;
+
+    AVBufferRef *motion_val_buf[2];
+    int16_t (*motion_val[2])[2];
+
+    AVBufferRef *mb_type_buf;
+    uint32_t *mb_type;
+
+    AVBufferRef *hwaccel_priv_buf;
+    void *hwaccel_picture_private; ///< hardware accelerator private data
+
+    AVBufferRef *ref_index_buf[2];
+    int8_t *ref_index[2];
+
+    int field_poc[2];       ///< top/bottom POC
+    int poc;                ///< frame POC
+    int frame_num;          ///< frame_num (raw frame_num from slice header)
+    int mmco_reset;         /**< MMCO_RESET set this 1. Reordering code must
+                                 not mix pictures before and after MMCO_RESET. */
+    int pic_id;             /**< pic_num (short -> no wrap version of pic_num,
+                                 pic_num & max_pic_num; long -> long_pic_num) */
+    int long_ref;           ///< 1->long term reference 0->short term reference
+    int ref_poc[2][2][32];  ///< POCs of the frames/fields used as reference (FIXME need per slice)
+    int ref_count[2][2];    ///< number of entries in ref_poc         (FIXME need per slice)
+    int mbaff;              ///< 1 -> MBAFF frame 0-> not MBAFF
+    int field_picture;      ///< whether or not picture was encoded in separate fields
+
+    int reference;
+    int recovered;          ///< picture at IDR or recovery point + recovery count
+    int invalid_gap;
+    int sei_recovery_frame_cnt;
+
+    AVBufferRef *pps_buf;
+    const PPS   *pps;
+
+    int mb_width, mb_height;
+    int mb_stride;
+} H264Picture;
+
+typedef struct H264Ref {
+    uint8_t *data[3];
+    int linesize[3];
+
+    int reference;
+    int poc;
+    int pic_id;
+
+    H264Picture *parent;
+} H264Ref;
+
+typedef struct H264PredWeightTable {
+    int use_weight;
+    int use_weight_chroma;
+    int luma_log2_weight_denom;
+    int chroma_log2_weight_denom;
+    int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
+    int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
+    // The following 2 can be changed to int8_t but that causes a 10 CPU cycles speed loss
+    int luma_weight[48][2][2];
+    int chroma_weight[48][2][2][2];
+    int implicit_weight[48][48][2];
+} H264PredWeightTable;
+
+typedef struct H264POCContext {
+    int poc_lsb;
+    int poc_msb;
+    int delta_poc_bottom;
+    int delta_poc[2];
+    int frame_num;
+    int prev_poc_msb;           ///< poc_msb of the last reference pic for POC type 0
+    int prev_poc_lsb;           ///< poc_lsb of the last reference pic for POC type 0
+    int frame_num_offset;       ///< for POC type 2
+    int prev_frame_num_offset;  ///< for POC type 2
+    int prev_frame_num;         ///< frame_num of the last pic for POC type 1/2
+} H264POCContext;
+
+typedef struct CABACContext{
+    int low;
+    int range;
+    int outstanding_count;
+    const uint8_t *bytestream_start;
+    const uint8_t *bytestream;
+    const uint8_t *bytestream_end;
+    PutBitContext pb;
+}CABACContext;
+typedef struct H264SliceContext {
+    struct H264Context *h264;
+    GetBitContext gb;
+    ERContext er;
+
+    int slice_num;
+    int slice_type;
+    int slice_type_nos;         ///< S free slice type (SI/SP are remapped to I/P)
+    int slice_type_fixed;
+
+    int qscale;
+    int chroma_qp[2];   // QPc
+    int qp_thresh;      ///< QP threshold to skip loopfilter
+    int last_qscale_diff;
+
+    // deblock
+    int deblocking_filter;          ///< disable_deblocking_filter_idc with 1 <-> 0
+    int slice_alpha_c0_offset;
+    int slice_beta_offset;
+
+    H264PredWeightTable pwt;
+
+    int prev_mb_skipped;
+    int next_mb_skipped;
+
+    int chroma_pred_mode;
+    int intra16x16_pred_mode;
+
+    int8_t intra4x4_pred_mode_cache[5 * 8];
+    int8_t(*intra4x4_pred_mode);
+
+    int topleft_mb_xy;
+    int top_mb_xy;
+    int topright_mb_xy;
+    int left_mb_xy[LEFT_MBS];
+
+    int topleft_type;
+    int top_type;
+    int topright_type;
+    int left_type[LEFT_MBS];
+
+    const uint8_t *left_block;
+    int topleft_partition;
+
+    unsigned int topleft_samples_available;
+    unsigned int top_samples_available;
+    unsigned int topright_samples_available;
+    unsigned int left_samples_available;
+
+    ptrdiff_t linesize, uvlinesize;
+    ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
+    ptrdiff_t mb_uvlinesize;
+
+    int mb_x, mb_y;
+    int mb_xy;
+    int resync_mb_x;
+    int resync_mb_y;
+    unsigned int first_mb_addr;
+    // index of the first MB of the next slice
+    int next_slice_idx;
+    int mb_skip_run;
+    int is_complex;
+
+    int picture_structure;
+    int mb_field_decoding_flag;
+    int mb_mbaff;               ///< mb_aff_frame && mb_field_decoding_flag
+
+    int redundant_pic_count;
+
+    /**
+     * number of neighbors (top and/or left) that used 8x8 dct
+     */
+    int neighbor_transform_size;
+
+    int direct_spatial_mv_pred;
+    int col_parity;
+    int col_fieldoff;
+
+    int cbp;
+    int top_cbp;
+    int left_cbp;
+
+    int dist_scale_factor[32];
+    int dist_scale_factor_field[2][32];
+    int map_col_to_list0[2][16 + 32];
+    int map_col_to_list0_field[2][2][16 + 32];
+
+    /**
+     * num_ref_idx_l0/1_active_minus1 + 1
+     */
+    unsigned int ref_count[2];          ///< counts frames or fields, depending on current mb mode
+    unsigned int list_count;
+    H264Ref ref_list[2][48];        /**< 0..15: frame refs, 16..47: mbaff field refs.
+                                         *   Reordered version of default_ref_list
+                                         *   according to picture reordering in slice header */
+    struct {
+        uint8_t op;
+        uint32_t val;
+    } ref_modifications[2][32];
+    int nb_ref_modifications[2];
+
+    unsigned int pps_id;
+
+    const uint8_t *intra_pcm_ptr;
+    int16_t *dc_val_base;
+
+    uint8_t *bipred_scratchpad;
+    uint8_t *edge_emu_buffer;
+    uint8_t (*top_borders[2])[(16 * 3) * 2];
+    int bipred_scratchpad_allocated;
+    int edge_emu_buffer_allocated;
+    int top_borders_allocated[2];
+
+    /**
+     * non zero coeff count cache.
+     * is 64 if not available.
+     */
+    DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)[15 * 8];
+
+    /**
+     * Motion vector cache.
+     */
+    DECLARE_ALIGNED(16, int16_t, mv_cache)[2][5 * 8][2];
+    DECLARE_ALIGNED(8,  int8_t, ref_cache)[2][5 * 8];
+    DECLARE_ALIGNED(16, uint8_t, mvd_cache)[2][5 * 8][2];
+    uint8_t direct_cache[5 * 8];
+
+    DECLARE_ALIGNED(8, uint16_t, sub_mb_type)[4];
+
+    ///< as a DCT coefficient is int32_t in high depth, we need to reserve twice the space.
+    DECLARE_ALIGNED(16, int16_t, mb)[16 * 48 * 2];
+    DECLARE_ALIGNED(16, int16_t, mb_luma_dc)[3][16 * 2];
+    ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either
+    ///< check that i is not too large or ensure that there is some unused stuff after mb
+    int16_t mb_padding[256 * 2];
+
+    uint8_t (*mvd_table[2])[2];
+
+    /**
+     * Cabac
+     */
+    CABACContext cabac;
+    uint8_t cabac_state[1024];
+    int cabac_init_idc;
+
+    MMCO mmco[MAX_MMCO_COUNT];
+    int  nb_mmco;
+    int explicit_ref_marking;
+
+    int frame_num;
+    int poc_lsb;
+    int delta_poc_bottom;
+    int delta_poc[2];
+    int curr_pic_num;
+    int max_pic_num;
+} H264SliceContext;
+
+typedef void (*h264_weight_func)(uint8_t *block, ptrdiff_t stride, int height,
+                                 int log2_denom, int weight, int offset);
+typedef void (*h264_biweight_func)(uint8_t *dst, uint8_t *src,
+                                   ptrdiff_t stride, int height, int log2_denom,
+                                   int weightd, int weights, int offset);
+typedef struct H264DSPContext {
+    /* weighted MC */
+    h264_weight_func weight_h264_pixels_tab[4];
+    h264_biweight_func biweight_h264_pixels_tab[4];
+
+    /* loop filter */
+    void (*h264_v_loop_filter_luma)(uint8_t *pix /*align 16*/, ptrdiff_t stride,
+                                    int alpha, int beta, int8_t *tc0);
+    void (*h264_h_loop_filter_luma)(uint8_t *pix /*align 4 */, ptrdiff_t stride,
+                                    int alpha, int beta, int8_t *tc0);
+    void (*h264_h_loop_filter_luma_mbaff)(uint8_t *pix /*align 16*/, ptrdiff_t stride,
+                                          int alpha, int beta, int8_t *tc0);
+    /* v/h_loop_filter_luma_intra: align 16 */
+    void (*h264_v_loop_filter_luma_intra)(uint8_t *pix, ptrdiff_t stride,
+                                          int alpha, int beta);
+    void (*h264_h_loop_filter_luma_intra)(uint8_t *pix, ptrdiff_t stride,
+                                          int alpha, int beta);
+    void (*h264_h_loop_filter_luma_mbaff_intra)(uint8_t *pix /*align 16*/,
+                                                ptrdiff_t stride, int alpha, int beta);
+    void (*h264_v_loop_filter_chroma)(uint8_t *pix /*align 8*/, ptrdiff_t stride,
+                                      int alpha, int beta, int8_t *tc0);
+    void (*h264_h_loop_filter_chroma)(uint8_t *pix /*align 4*/, ptrdiff_t stride,
+                                      int alpha, int beta, int8_t *tc0);
+    void (*h264_h_loop_filter_chroma_mbaff)(uint8_t *pix /*align 8*/,
+                                            ptrdiff_t stride, int alpha, int beta,
+                                            int8_t *tc0);
+    void (*h264_v_loop_filter_chroma_intra)(uint8_t *pix /*align 8*/,
+                                            ptrdiff_t stride, int alpha, int beta);
+    void (*h264_h_loop_filter_chroma_intra)(uint8_t *pix /*align 8*/,
+                                            ptrdiff_t stride, int alpha, int beta);
+    void (*h264_h_loop_filter_chroma_mbaff_intra)(uint8_t *pix /*align 8*/,
+                                                  ptrdiff_t stride, int alpha, int beta);
+    // h264_loop_filter_strength: simd only. the C version is inlined in h264_loopfilter.c
+    void (*h264_loop_filter_strength)(int16_t bS[2][4][4], uint8_t nnz[40],
+                                      int8_t ref[2][40], int16_t mv[2][40][2],
+                                      int bidir, int edges, int step,
+                                      int mask_mv0, int mask_mv1, int field);
+
+    /* IDCT */
+    void (*h264_idct_add)(uint8_t *dst /*align 4*/,
+                          int16_t *block /*align 16*/, int stride);
+    void (*h264_idct8_add)(uint8_t *dst /*align 8*/,
+                           int16_t *block /*align 16*/, int stride);
+    void (*h264_idct_dc_add)(uint8_t *dst /*align 4*/,
+                             int16_t *block /*align 16*/, int stride);
+    void (*h264_idct8_dc_add)(uint8_t *dst /*align 8*/,
+                              int16_t *block /*align 16*/, int stride);
+
+    void (*h264_idct_add16)(uint8_t *dst /*align 16*/, const int *blockoffset,
+                            int16_t *block /*align 16*/, int stride,
+                            const uint8_t nnzc[15 * 8]);
+    void (*h264_idct8_add4)(uint8_t *dst /*align 16*/, const int *blockoffset,
+                            int16_t *block /*align 16*/, int stride,
+                            const uint8_t nnzc[15 * 8]);
+    void (*h264_idct_add8)(uint8_t **dst /*align 16*/, const int *blockoffset,
+                           int16_t *block /*align 16*/, int stride,
+                           const uint8_t nnzc[15 * 8]);
+    void (*h264_idct_add16intra)(uint8_t *dst /*align 16*/, const int *blockoffset,
+                                 int16_t *block /*align 16*/,
+                                 int stride, const uint8_t nnzc[15 * 8]);
+    void (*h264_luma_dc_dequant_idct)(int16_t *output,
+                                      int16_t *input /*align 16*/, int qmul);
+    void (*h264_chroma_dc_dequant_idct)(int16_t *block, int qmul);
+
+    /* bypass-transform */
+    void (*h264_add_pixels8_clear)(uint8_t *dst, int16_t *block, int stride);
+    void (*h264_add_pixels4_clear)(uint8_t *dst, int16_t *block, int stride);
+
+    /**
+     * Search buf from the start for up to size bytes. Return the index
+     * of a zero byte, or >= size if not found. Ideally, use lookahead
+     * to filter out any zero bytes that are known to not be followed by
+     * one or more further zero bytes and a one byte. Better still, filter
+     * out any bytes that form the trailing_zero_8bits syntax element too.
+     */
+    int (*startcode_find_candidate)(const uint8_t *buf, int size);
+} H264DSPContext;
+typedef struct H264QpelContext {
+    qpel_mc_func put_h264_qpel_pixels_tab[4][16];
+    qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
+} H264QpelContext;
+
+typedef struct H2645NAL {
+    uint8_t *rbsp_buffer;
+
+    int size;
+    const uint8_t *data;
+
+    /**
+     * Size, in bits, of just the data, excluding the stop bit and any trailing
+     * padding. I.e. what HEVC calls SODB.
+     */
+    int size_bits;
+
+    int raw_size;
+    const uint8_t *raw_data;
+
+    GetBitContext gb;
+
+    /**
+     * NAL unit type
+     */
+    int type;
+
+    /**
+     * HEVC only, nuh_temporal_id_plus_1 - 1
+     */
+    int temporal_id;
+
+    /*
+     * HEVC only, identifier of layer to which nal unit belongs
+     */
+    int nuh_layer_id;
+
+    int skipped_bytes;
+    int skipped_bytes_pos_size;
+    int *skipped_bytes_pos;
+    /**
+     * H.264 only, nal_ref_idc
+     */
+    int ref_idc;
+} H2645NAL;
+
+typedef struct H2645RBSP {
+    uint8_t *rbsp_buffer;
+    AVBufferRef *rbsp_buffer_ref;
+    int rbsp_buffer_alloc_size;
+    int rbsp_buffer_size;
+} H2645RBSP;
+typedef struct H2645Packet {
+    H2645NAL *nals;
+    H2645RBSP rbsp;
+    int nb_nals;
+    int nals_allocated;
+    unsigned nal_buffer_size;
+} H2645Packet;
+typedef struct H264PredContext {
+    void(*pred4x4[9 + 3 + 3])(uint8_t *src, const uint8_t *topright,
+                              ptrdiff_t stride);
+    void(*pred8x8l[9 + 3])(uint8_t *src, int topleft, int topright,
+                           ptrdiff_t stride);
+    void(*pred8x8[4 + 3 + 4])(uint8_t *src, ptrdiff_t stride);
+    void(*pred16x16[4 + 3 + 2])(uint8_t *src, ptrdiff_t stride);
+
+    void(*pred4x4_add[2])(uint8_t *pix /*align  4*/,
+                          int16_t *block /*align 16*/, ptrdiff_t stride);
+    void(*pred8x8l_add[2])(uint8_t *pix /*align  8*/,
+                           int16_t *block /*align 16*/, ptrdiff_t stride);
+    void(*pred8x8l_filter_add[2])(uint8_t *pix /*align  8*/,
+                           int16_t *block /*align 16*/, int topleft, int topright, ptrdiff_t stride);
+    void(*pred8x8_add[3])(uint8_t *pix /*align  8*/,
+                          const int *block_offset,
+                          int16_t *block /*align 16*/, ptrdiff_t stride);
+    void(*pred16x16_add[3])(uint8_t *pix /*align 16*/,
+                            const int *block_offset,
+                            int16_t *block /*align 16*/, ptrdiff_t stride);
+} H264PredContext;
+
+typedef struct H264ParamSets {
+    AVBufferRef *sps_list[MAX_SPS_COUNT];
+    AVBufferRef *pps_list[MAX_PPS_COUNT];
+
+    AVBufferRef *pps_ref;
+    /* currently active parameters sets */
+    const PPS *pps;
+    const SPS *sps;
+
+    int overread_warning_printed[2];
+} H264ParamSets;
+
+typedef struct H264SEITimeCode {
+    /* When not continuously receiving full timecodes, we have to reference
+       the previous timecode received */
+    int full;
+    int frame;
+    int seconds;
+    int minutes;
+    int hours;
+    int dropframe;
+} H264SEITimeCode;
+
+typedef struct H264SEIPictureTiming {
+    // maximum size of pic_timing according to the spec should be 274 bits
+    uint8_t payload[40];
+    int     payload_size_bits;
+
+    int present;
+    H264_SEI_PicStructType pic_struct;
+
+    /**
+     * Bit set of clock types for fields/frames in picture timing SEI message.
+     * For each found ct_type, appropriate bit is set (e.g., bit 1 for
+     * interlaced).
+     */
+    int ct_type;
+
+    /**
+     * dpb_output_delay in picture timing SEI message, see H.264 C.2.2
+     */
+    int dpb_output_delay;
+
+    /**
+     * cpb_removal_delay in picture timing SEI message, see H.264 C.1.2
+     */
+    int cpb_removal_delay;
+
+    /**
+     * Maximum three timecodes in a pic_timing SEI.
+     */
+    H264SEITimeCode timecode[3];
+
+    /**
+     * Number of timecode in use
+     */
+    int timecode_cnt;
+} H264SEIPictureTiming;
+
+typedef struct H264SEIAFD {
+    int present;
+    uint8_t active_format_description;
+} H264SEIAFD;
+
+typedef struct H264SEIA53Caption {
+    AVBufferRef *buf_ref;
+} H264SEIA53Caption;
+
+typedef struct H264SEIUnregistered {
+    int x264_build;
+    AVBufferRef **buf_ref;
+    int nb_buf_ref;
+} H264SEIUnregistered;
+
+typedef struct H264SEIRecoveryPoint {
+    /**
+     * recovery_frame_cnt
+     *
+     * Set to -1 if no recovery point SEI message found or to number of frames
+     * before playback synchronizes. Frames having recovery point are key
+     * frames.
+     */
+    int recovery_frame_cnt;
+} H264SEIRecoveryPoint;
+
+typedef struct H264SEIBufferingPeriod {
+    int present;   ///< Buffering period SEI flag
+    int initial_cpb_removal_delay[32];  ///< Initial timestamps for CPBs
+} H264SEIBufferingPeriod;
+
+typedef struct H264SEIFramePacking {
+    int present;
+    int arrangement_id;
+    int arrangement_cancel_flag;  ///< is previous arrangement canceled, -1 if never received
+    H264_SEI_FpaType arrangement_type;
+    int arrangement_repetition_period;
+    int content_interpretation_type;
+    int quincunx_sampling_flag;
+    int current_frame_is_frame0_flag;
+} H264SEIFramePacking;
+
+typedef struct H264SEIDisplayOrientation {
+    int present;
+    int anticlockwise_rotation;
+    int hflip, vflip;
+} H264SEIDisplayOrientation;
+
+typedef struct H264SEIGreenMetaData {
+    uint8_t green_metadata_type;
+    uint8_t period_type;
+    uint16_t num_seconds;
+    uint16_t num_pictures;
+    uint8_t percent_non_zero_macroblocks;
+    uint8_t percent_intra_coded_macroblocks;
+    uint8_t percent_six_tap_filtering;
+    uint8_t percent_alpha_point_deblocking_instance;
+    uint8_t xsd_metric_type;
+    uint16_t xsd_metric_value;
+} H264SEIGreenMetaData;
+
+typedef struct H264SEIAlternativeTransfer {
+    int present;
+    int preferred_transfer_characteristics;
+} H264SEIAlternativeTransfer;
+typedef struct H264SEIContext {
+    H264SEIPictureTiming picture_timing;
+    H264SEIAFD afd;
+    H264SEIA53Caption a53_caption;
+    H264SEIUnregistered unregistered;
+    H264SEIRecoveryPoint recovery_point;
+    H264SEIBufferingPeriod buffering_period;
+    H264SEIFramePacking frame_packing;
+    H264SEIDisplayOrientation display_orientation;
+    H264SEIGreenMetaData green_metadata;
+    H264SEIAlternativeTransfer alternative_transfer;
+} H264SEIContext;
+typedef struct H264Context {
+    const AVClass *class;
+    AVCodecContext *avctx;
+    VideoDSPContext vdsp;
+    H264DSPContext h264dsp;
+    H264ChromaContext h264chroma;
+    H264QpelContext h264qpel;
+
+    H264Picture DPB[H264_MAX_PICTURE_COUNT];
+    H264Picture *cur_pic_ptr;
+    H264Picture cur_pic;
+    H264Picture last_pic_for_ec;
+
+    H264SliceContext *slice_ctx;
+    int            nb_slice_ctx;
+    int            nb_slice_ctx_queued;
+
+    H2645Packet pkt;
+
+    int pixel_shift;    ///< 0 for 8-bit H.264, 1 for high-bit-depth H.264
+
+    /* coded dimensions -- 16 * mb w/h */
+    int width, height;
+    int chroma_x_shift, chroma_y_shift;
+
+    int droppable;
+    int coded_picture_number;
+
+    int context_initialized;
+    int flags;
+    int workaround_bugs;
+    int x264_build;
+    /* Set when slice threading is used and at least one slice uses deblocking
+     * mode 1 (i.e. across slice boundaries). Then we disable the loop filter
+     * during normal MB decoding and execute it serially at the end.
+     */
+    int postpone_filter;
+
+    /*
+     * Set to 1 when the current picture is IDR, 0 otherwise.
+     */
+    int picture_idr;
+
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
+
+    int8_t(*intra4x4_pred_mode);
+    H264PredContext hpc;
+
+    uint8_t (*non_zero_count)[48];
+
+#define LIST_NOT_USED -1 // FIXME rename?
+#define PART_NOT_AVAILABLE -2
+
+    /**
+     * block_offset[ 0..23] for frame macroblocks
+     * block_offset[24..47] for field macroblocks
+     */
+    int block_offset[2 * (16 * 3)];
+
+    uint32_t *mb2b_xy;  // FIXME are these 4 a good idea?
+    uint32_t *mb2br_xy;
+    int b_stride;       // FIXME use s->b4_stride
+
+    uint16_t *slice_table;      ///< slice_table_base + 2*mb_stride + 1
+
+    // interlacing specific flags
+    int mb_aff_frame;
+    int picture_structure;
+    int first_field;
+
+    uint8_t *list_counts;               ///< Array of list_count per MB specifying the slice type
+
+    /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0, 1, 2), 0x0? luma_cbp */
+    uint16_t *cbp_table;
+
+    /* chroma_pred_mode for i4x4 or i16x16, else 0 */
+    uint8_t *chroma_pred_mode_table;
+    uint8_t (*mvd_table[2])[2];
+    uint8_t *direct_table;
+
+    uint8_t scan_padding[16];
+    uint8_t zigzag_scan[16];
+    uint8_t zigzag_scan8x8[64];
+    uint8_t zigzag_scan8x8_cavlc[64];
+    uint8_t field_scan[16];
+    uint8_t field_scan8x8[64];
+    uint8_t field_scan8x8_cavlc[64];
+    uint8_t zigzag_scan_q0[16];
+    uint8_t zigzag_scan8x8_q0[64];
+    uint8_t zigzag_scan8x8_cavlc_q0[64];
+    uint8_t field_scan_q0[16];
+    uint8_t field_scan8x8_q0[64];
+    uint8_t field_scan8x8_cavlc_q0[64];
+
+    int mb_y;
+    int mb_height, mb_width;
+    int mb_stride;
+    int mb_num;
+
+    // =============================================================
+    // Things below are not used in the MB or more inner code
+
+    int nal_ref_idc;
+    int nal_unit_type;
+
+    int has_slice;          ///< slice NAL is found in the packet, set by decode_nal_units, its state does not need to be preserved outside h264_decode_frame()
+
+    /**
+     * Used to parse AVC variant of H.264
+     */
+    int is_avc;           ///< this flag is != 0 if codec is avc1
+    int nal_length_size;  ///< Number of bytes used for nal length (1, 2 or 4)
+
+    int bit_depth_luma;         ///< luma bit depth from sps to detect changes
+    int chroma_format_idc;      ///< chroma format from sps to detect changes
+
+    H264ParamSets ps;
+
+    uint16_t *slice_table_base;
+
+    H264POCContext poc;
+
+    H264Ref default_ref[2];
+    H264Picture *short_ref[32];
+    H264Picture *long_ref[32];
+    H264Picture *delayed_pic[MAX_DELAYED_PIC_COUNT + 2]; // FIXME size?
+    int last_pocs[MAX_DELAYED_PIC_COUNT];
+    H264Picture *next_output_pic;
+    int next_outputed_poc;
+
+    /**
+     * memory management control operations buffer.
+     */
+    MMCO mmco[MAX_MMCO_COUNT];
+    int  nb_mmco;
+    int mmco_reset;
+    int explicit_ref_marking;
+
+    int long_ref_count;     ///< number of actual long term references
+    int short_ref_count;    ///< number of actual short term references
+
+    /**
+     * @name Members for slice based multithreading
+     * @{
+     */
+    /**
+     * current slice number, used to initialize slice_num of each thread/context
+     */
+    int current_slice;
+
+    /** @} */
+
+    /**
+     * Complement sei_pic_struct
+     * SEI_PIC_STRUCT_TOP_BOTTOM and SEI_PIC_STRUCT_BOTTOM_TOP indicate interlaced frames.
+     * However, soft telecined frames may have these values.
+     * This is used in an attempt to flag soft telecine progressive.
+     */
+    int prev_interlaced_frame;
+
+    /**
+     * Are the SEI recovery points looking valid.
+     */
+    int valid_recovery_point;
+
+    /**
+     * recovery_frame is the frame_num at which the next frame should
+     * be fully constructed.
+     *
+     * Set to -1 when not expecting a recovery point.
+     */
+    int recovery_frame;
+
+/**
+ * We have seen an IDR, so all the following frames in coded order are correctly
+ * decodable.
+ */
+#define FRAME_RECOVERED_IDR  (1 << 0)
+/**
+ * Sufficient number of frames have been decoded since a SEI recovery point,
+ * so all the following frames in presentation order are correct.
+ */
+#define FRAME_RECOVERED_SEI  (1 << 1)
+
+    int frame_recovered;    ///< Initial frame has been completely recovered
+
+    int has_recovery_point;
+
+    int missing_fields;
+
+    /* for frame threading, this is set to 1
+     * after finish_setup() has been called, so we cannot modify
+     * some context properties (which are supposed to stay constant between
+     * slices) anymore */
+    int setup_finished;
+
+    int cur_chroma_format_idc;
+    int cur_bit_depth_luma;
+    int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
+
+    /* original AVCodecContext dimensions, used to handle container
+     * cropping */
+    int width_from_caller;
+    int height_from_caller;
+
+    int enable_er;
+
+    H264SEIContext sei;
+
+    AVBufferPool *qscale_table_pool;
+    AVBufferPool *mb_type_pool;
+    AVBufferPool *motion_val_pool;
+    AVBufferPool *ref_index_pool;
+    int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
+} H264Context;
+
+
+
+typedef struct FFFramePool FFFramePool;
+
 static const SampleFmtInfo sample_fmt_info[AV_SAMPLE_FMT_NB];
 
 static const AVClass ac3_decoder_class;
 AVCodec ff_ac3_fixed_decoder;
 
-const AVProfile ff_aac_profiles[];
-const AVProfile ff_dca_profiles[];
-const AVProfile ff_dnxhd_profiles[];
-const AVProfile ff_h264_profiles[];
-const AVProfile ff_hevc_profiles[];
-const AVProfile ff_jpeg2000_profiles[];
-const AVProfile ff_mpeg2_video_profiles[];
-const AVProfile ff_mpeg4_video_profiles[];
-const AVProfile ff_vc1_profiles[];
-const AVProfile ff_vp9_profiles[];
-const AVProfile ff_av1_profiles[];
-const AVProfile ff_sbc_profiles[];
-const AVProfile ff_prores_profiles[];
-const AVProfile ff_mjpeg_profiles[];
-const AVProfile ff_arib_caption_profiles[];
+extern const AVProfile ff_aac_profiles[];
+extern const AVProfile ff_dca_profiles[];
+extern const AVProfile ff_dnxhd_profiles[];
+extern const AVProfile ff_h264_profiles[];
+extern const AVProfile ff_hevc_profiles[];
+extern const AVProfile ff_jpeg2000_profiles[];
+extern const AVProfile ff_mpeg2_video_profiles[];
+extern const AVProfile ff_mpeg4_video_profiles[];
+extern const AVProfile ff_vc1_profiles[];
+extern const AVProfile ff_vp9_profiles[];
+extern const AVProfile ff_av1_profiles[];
+extern const AVProfile ff_sbc_profiles[];
+extern const AVProfile ff_prores_profiles[];
+extern const AVProfile ff_mjpeg_profiles[];
+extern const AVProfile ff_arib_caption_profiles[];
 
-AVInputFormat ff_aa_demuxer;
-AVInputFormat ff_aac_demuxer;
-AVInputFormat ff_aax_demuxer;
-AVInputFormat ff_ac3_demuxer;
-AVInputFormat ff_acm_demuxer;
-AVInputFormat ff_act_demuxer;
-AVInputFormat ff_adf_demuxer;
-AVInputFormat ff_adp_demuxer;
-AVInputFormat ff_ads_demuxer;
-AVInputFormat ff_adx_demuxer;
-AVInputFormat ff_aea_demuxer;
-AVInputFormat ff_afc_demuxer;
-AVInputFormat ff_aiff_demuxer;
-AVInputFormat ff_aix_demuxer;
-AVInputFormat ff_alp_demuxer;
-AVInputFormat ff_amr_demuxer;
-AVInputFormat ff_amrnb_demuxer;
-AVInputFormat ff_amrwb_demuxer;
-AVInputFormat ff_anm_demuxer;
-AVInputFormat ff_apc_demuxer;
-AVInputFormat ff_ape_demuxer;
-AVInputFormat ff_apm_demuxer;
-AVInputFormat ff_apng_demuxer;
-AVInputFormat ff_aptx_demuxer;
-AVInputFormat ff_aptx_hd_demuxer;
-AVInputFormat ff_aqtitle_demuxer;
-AVInputFormat ff_argo_asf_demuxer;
-AVInputFormat ff_argo_brp_demuxer;
-AVInputFormat ff_asf_demuxer;
-AVInputFormat ff_asf_o_demuxer;
-AVInputFormat ff_ass_demuxer;
-AVInputFormat ff_ast_demuxer;
-AVInputFormat ff_au_demuxer;
-AVInputFormat ff_av1_demuxer;
-AVInputFormat ff_avi_demuxer;
-AVInputFormat ff_avr_demuxer;
-AVInputFormat ff_avs_demuxer;
-AVInputFormat ff_avs2_demuxer;
-AVInputFormat ff_bethsoftvid_demuxer;
-AVInputFormat ff_bfi_demuxer;
-AVInputFormat ff_bintext_demuxer;
-AVInputFormat ff_bink_demuxer;
-AVInputFormat ff_bit_demuxer;
-AVInputFormat ff_bmv_demuxer;
-AVInputFormat ff_bfstm_demuxer;
-AVInputFormat ff_brstm_demuxer;
-AVInputFormat ff_boa_demuxer;
-AVInputFormat ff_c93_demuxer;
-AVInputFormat ff_caf_demuxer;
-AVInputFormat ff_cavsvideo_demuxer;
-AVInputFormat ff_cdg_demuxer;
-AVInputFormat ff_cdxl_demuxer;
-AVInputFormat ff_cine_demuxer;
-AVInputFormat ff_codec2_demuxer;
-AVInputFormat ff_codec2raw_demuxer;
-AVInputFormat ff_concat_demuxer;
-AVInputFormat ff_dash_demuxer;
-AVInputFormat ff_data_demuxer;
-AVInputFormat ff_daud_demuxer;
-AVInputFormat ff_dcstr_demuxer;
-AVInputFormat ff_derf_demuxer;
-AVInputFormat ff_dfa_demuxer;
-AVInputFormat ff_dhav_demuxer;
-AVInputFormat ff_dirac_demuxer;
-AVInputFormat ff_dnxhd_demuxer;
-AVInputFormat ff_dsf_demuxer;
-AVInputFormat ff_dsicin_demuxer;
-AVInputFormat ff_dss_demuxer;
-AVInputFormat ff_dts_demuxer;
-AVInputFormat ff_dtshd_demuxer;
-AVInputFormat ff_dv_demuxer;
-AVInputFormat ff_dvbsub_demuxer;
-AVInputFormat ff_dvbtxt_demuxer;
-AVInputFormat ff_dxa_demuxer;
-AVInputFormat ff_ea_demuxer;
-AVInputFormat ff_ea_cdata_demuxer;
-AVInputFormat ff_eac3_demuxer;
-AVInputFormat ff_epaf_demuxer;
-AVInputFormat ff_ffmetadata_demuxer;
-AVInputFormat ff_filmstrip_demuxer;
-AVInputFormat ff_fits_demuxer;
-AVInputFormat ff_flac_demuxer;
-AVInputFormat ff_flic_demuxer;
-AVInputFormat ff_flv_demuxer;
-AVInputFormat ff_live_flv_demuxer;
-AVInputFormat ff_fourxm_demuxer;
-AVInputFormat ff_frm_demuxer;
-AVInputFormat ff_fsb_demuxer;
-AVInputFormat ff_fwse_demuxer;
-AVInputFormat ff_g722_demuxer;
-AVInputFormat ff_g723_1_demuxer;
-AVInputFormat ff_g726_demuxer;
-AVInputFormat ff_g726le_demuxer;
-AVInputFormat ff_g729_demuxer;
-AVInputFormat ff_gdv_demuxer;
-AVInputFormat ff_genh_demuxer;
-AVInputFormat ff_gif_demuxer;
-AVInputFormat ff_gsm_demuxer;
-AVInputFormat ff_gxf_demuxer;
-AVInputFormat ff_h261_demuxer;
-AVInputFormat ff_h263_demuxer;
-AVInputFormat ff_h264_demuxer;
-AVInputFormat ff_hca_demuxer;
-AVInputFormat ff_hcom_demuxer;
-AVInputFormat ff_hevc_demuxer;
-AVInputFormat ff_hls_demuxer;
-AVInputFormat ff_hnm_demuxer;
-AVInputFormat ff_ico_demuxer;
-AVInputFormat ff_idcin_demuxer;
-AVInputFormat ff_idf_demuxer;
-AVInputFormat ff_iff_demuxer;
-AVInputFormat ff_ifv_demuxer;
-AVInputFormat ff_ilbc_demuxer;
-AVInputFormat ff_image2_demuxer;
-AVInputFormat ff_image2pipe_demuxer;
-AVInputFormat ff_image2_alias_pix_demuxer;
-AVInputFormat ff_image2_brender_pix_demuxer;
-AVInputFormat ff_ingenient_demuxer;
-AVInputFormat ff_ipmovie_demuxer;
-AVInputFormat ff_ipu_demuxer;
-AVInputFormat ff_ircam_demuxer;
-AVInputFormat ff_iss_demuxer;
-AVInputFormat ff_iv8_demuxer;
-AVInputFormat ff_ivf_demuxer;
-AVInputFormat ff_ivr_demuxer;
-AVInputFormat ff_jacosub_demuxer;
-AVInputFormat ff_jv_demuxer;
-AVInputFormat ff_kux_demuxer;
-AVInputFormat ff_kvag_demuxer;
-AVInputFormat ff_lmlm4_demuxer;
-AVInputFormat ff_loas_demuxer;
-AVInputFormat ff_luodat_demuxer;
-AVInputFormat ff_lrc_demuxer;
-AVInputFormat ff_lvf_demuxer;
-AVInputFormat ff_lxf_demuxer;
-AVInputFormat ff_m4v_demuxer;
-AVInputFormat ff_mca_demuxer;
-AVInputFormat ff_mcc_demuxer;
-AVInputFormat ff_matroska_demuxer;
-AVInputFormat ff_mgsts_demuxer;
-AVInputFormat ff_microdvd_demuxer;
-AVInputFormat ff_mjpeg_demuxer;
-AVInputFormat ff_mjpeg_2000_demuxer;
-AVInputFormat ff_mlp_demuxer;
-AVInputFormat ff_mlv_demuxer;
-AVInputFormat ff_mm_demuxer;
-AVInputFormat ff_mmf_demuxer;
-AVInputFormat ff_mods_demuxer;
-AVInputFormat ff_moflex_demuxer;
-AVInputFormat ff_mov_demuxer;
-AVInputFormat ff_mp3_demuxer;
-AVInputFormat ff_mpc_demuxer;
-AVInputFormat ff_mpc8_demuxer;
-AVInputFormat ff_mpegps_demuxer;
-AVInputFormat ff_mpegts_demuxer;
-AVInputFormat ff_mpegtsraw_demuxer;
-AVInputFormat ff_mpegvideo_demuxer;
-AVInputFormat ff_mpjpeg_demuxer;
-AVInputFormat ff_mpl2_demuxer;
-AVInputFormat ff_mpsub_demuxer;
-AVInputFormat ff_msf_demuxer;
-AVInputFormat ff_msnwc_tcp_demuxer;
-AVInputFormat ff_mtaf_demuxer;
-AVInputFormat ff_mtv_demuxer;
-AVInputFormat ff_musx_demuxer;
-AVInputFormat ff_mv_demuxer;
-AVInputFormat ff_mvi_demuxer;
-AVInputFormat ff_mxf_demuxer;
-AVInputFormat ff_mxg_demuxer;
-AVInputFormat ff_nc_demuxer;
-AVInputFormat ff_nistsphere_demuxer;
-AVInputFormat ff_nsp_demuxer;
-AVInputFormat ff_nsv_demuxer;
-AVInputFormat ff_nut_demuxer;
-AVInputFormat ff_nuv_demuxer;
-AVInputFormat ff_obu_demuxer;
-AVInputFormat ff_ogg_demuxer;
-AVInputFormat ff_oma_demuxer;
-AVInputFormat ff_paf_demuxer;
-AVInputFormat ff_pcm_alaw_demuxer;
-AVInputFormat ff_pcm_mulaw_demuxer;
-AVInputFormat ff_pcm_vidc_demuxer;
-AVInputFormat ff_pcm_f64be_demuxer;
-AVInputFormat ff_pcm_f64le_demuxer;
-AVInputFormat ff_pcm_f32be_demuxer;
-AVInputFormat ff_pcm_f32le_demuxer;
-AVInputFormat ff_pcm_s32be_demuxer;
-AVInputFormat ff_pcm_s32le_demuxer;
-AVInputFormat ff_pcm_s24be_demuxer;
-AVInputFormat ff_pcm_s24le_demuxer;
-AVInputFormat ff_pcm_s16be_demuxer;
-AVInputFormat ff_pcm_s16le_demuxer;
-AVInputFormat ff_pcm_s8_demuxer;
-AVInputFormat ff_pcm_u32be_demuxer;
-AVInputFormat ff_pcm_u32le_demuxer;
-AVInputFormat ff_pcm_u24be_demuxer;
-AVInputFormat ff_pcm_u24le_demuxer;
-AVInputFormat ff_pcm_u16be_demuxer;
-AVInputFormat ff_pcm_u16le_demuxer;
-AVInputFormat ff_pcm_u8_demuxer;
-AVInputFormat ff_pjs_demuxer;
-AVInputFormat ff_pmp_demuxer;
-AVInputFormat ff_pp_bnk_demuxer;
-AVInputFormat ff_pva_demuxer;
-AVInputFormat ff_pvf_demuxer;
-AVInputFormat ff_qcp_demuxer;
-AVInputFormat ff_r3d_demuxer;
-AVInputFormat ff_rawvideo_demuxer;
-AVInputFormat ff_realtext_demuxer;
-AVInputFormat ff_redspark_demuxer;
-AVInputFormat ff_rl2_demuxer;
-AVInputFormat ff_rm_demuxer;
-AVInputFormat ff_roq_demuxer;
-AVInputFormat ff_rpl_demuxer;
-AVInputFormat ff_rsd_demuxer;
-AVInputFormat ff_rso_demuxer;
-AVInputFormat ff_rtp_demuxer;
-AVInputFormat ff_rtsp_demuxer;
-AVInputFormat ff_s337m_demuxer;
-AVInputFormat ff_sami_demuxer;
-AVInputFormat ff_sap_demuxer;
-AVInputFormat ff_sbc_demuxer;
-AVInputFormat ff_sbg_demuxer;
-AVInputFormat ff_scc_demuxer;
-AVInputFormat ff_sdp_demuxer;
-AVInputFormat ff_sdr2_demuxer;
-AVInputFormat ff_sds_demuxer;
-AVInputFormat ff_sdx_demuxer;
-AVInputFormat ff_segafilm_demuxer;
-AVInputFormat ff_ser_demuxer;
-AVInputFormat ff_shorten_demuxer;
-AVInputFormat ff_siff_demuxer;
-AVInputFormat ff_sln_demuxer;
-AVInputFormat ff_smacker_demuxer;
-AVInputFormat ff_smjpeg_demuxer;
-AVInputFormat ff_smush_demuxer;
-AVInputFormat ff_sol_demuxer;
-AVInputFormat ff_sox_demuxer;
-AVInputFormat ff_spdif_demuxer;
-AVInputFormat ff_srt_demuxer;
-AVInputFormat ff_str_demuxer;
-AVInputFormat ff_stl_demuxer;
-AVInputFormat ff_subviewer1_demuxer;
-AVInputFormat ff_subviewer_demuxer;
-AVInputFormat ff_sup_demuxer;
-AVInputFormat ff_svag_demuxer;
-AVInputFormat ff_svs_demuxer;
-AVInputFormat ff_swf_demuxer;
-AVInputFormat ff_tak_demuxer;
-AVInputFormat ff_tedcaptions_demuxer;
-AVInputFormat ff_thp_demuxer;
-AVInputFormat ff_threedostr_demuxer;
-AVInputFormat ff_tiertexseq_demuxer;
-AVInputFormat ff_tmv_demuxer;
-AVInputFormat ff_truehd_demuxer;
-AVInputFormat ff_tta_demuxer;
-AVInputFormat ff_txd_demuxer;
-AVInputFormat ff_tty_demuxer;
-AVInputFormat ff_ty_demuxer;
-AVInputFormat ff_v210_demuxer;
-AVInputFormat ff_v210x_demuxer;
-AVInputFormat ff_vag_demuxer;
-AVInputFormat ff_vc1_demuxer;
-AVInputFormat ff_vc1t_demuxer;
-AVInputFormat ff_vividas_demuxer;
-AVInputFormat ff_vivo_demuxer;
-AVInputFormat ff_vmd_demuxer;
-AVInputFormat ff_vobsub_demuxer;
-AVInputFormat ff_voc_demuxer;
-AVInputFormat ff_vpk_demuxer;
-AVInputFormat ff_vplayer_demuxer;
-AVInputFormat ff_vqf_demuxer;
-AVInputFormat ff_w64_demuxer;
-AVInputFormat ff_wav_demuxer;
-AVInputFormat ff_wc3_demuxer;
-AVInputFormat ff_webm_dash_manifest_demuxer;
-AVInputFormat ff_webvtt_demuxer;
-AVInputFormat ff_wsaud_demuxer;
-AVInputFormat ff_wsd_demuxer;
-AVInputFormat ff_wsvqa_demuxer;
-AVInputFormat ff_wtv_demuxer;
-AVInputFormat ff_wve_demuxer;
-AVInputFormat ff_wv_demuxer;
-AVInputFormat ff_xa_demuxer;
-AVInputFormat ff_xbin_demuxer;
-AVInputFormat ff_xmv_demuxer;
-AVInputFormat ff_xvag_demuxer;
-AVInputFormat ff_xwma_demuxer;
-AVInputFormat ff_yop_demuxer;
-AVInputFormat ff_yuv4mpegpipe_demuxer;
-AVInputFormat ff_image_bmp_pipe_demuxer;
-AVInputFormat ff_image_dds_pipe_demuxer;
-AVInputFormat ff_image_dpx_pipe_demuxer;
-AVInputFormat ff_image_exr_pipe_demuxer;
-AVInputFormat ff_image_gif_pipe_demuxer;
-AVInputFormat ff_image_j2k_pipe_demuxer;
-AVInputFormat ff_image_jpeg_pipe_demuxer;
-AVInputFormat ff_image_jpegls_pipe_demuxer;
-AVInputFormat ff_image_pam_pipe_demuxer;
-AVInputFormat ff_image_pbm_pipe_demuxer;
-AVInputFormat ff_image_pcx_pipe_demuxer;
-AVInputFormat ff_image_pgmyuv_pipe_demuxer;
-AVInputFormat ff_image_pgm_pipe_demuxer;
-AVInputFormat ff_image_pgx_pipe_demuxer;
-AVInputFormat ff_image_photocd_pipe_demuxer;
-AVInputFormat ff_image_pictor_pipe_demuxer;
-AVInputFormat ff_image_png_pipe_demuxer;
-AVInputFormat ff_image_ppm_pipe_demuxer;
-AVInputFormat ff_image_psd_pipe_demuxer;
-AVInputFormat ff_image_qdraw_pipe_demuxer;
-AVInputFormat ff_image_sgi_pipe_demuxer;
-AVInputFormat ff_image_svg_pipe_demuxer;
-AVInputFormat ff_image_sunrast_pipe_demuxer;
-AVInputFormat ff_image_tiff_pipe_demuxer;
-AVInputFormat ff_image_webp_pipe_demuxer;
-AVInputFormat ff_image_xpm_pipe_demuxer;
-AVInputFormat ff_image_xwd_pipe_demuxer;
-AVInputFormat ff_libgme_demuxer;
-AVInputFormat ff_libmodplug_demuxer;
-AVOutputFormat ff_a64_muxer;
-AVOutputFormat ff_ac3_muxer;
-AVOutputFormat ff_adts_muxer;
-AVOutputFormat ff_adx_muxer;
-AVOutputFormat ff_aiff_muxer;
-AVOutputFormat ff_amr_muxer;
-AVOutputFormat ff_apm_muxer;
-AVOutputFormat ff_apng_muxer;
-AVOutputFormat ff_aptx_muxer;
-AVOutputFormat ff_aptx_hd_muxer;
-AVOutputFormat ff_argo_asf_muxer;
-AVOutputFormat ff_asf_muxer;
-AVOutputFormat ff_ass_muxer;
-AVOutputFormat ff_ast_muxer;
-AVOutputFormat ff_asf_stream_muxer;
-AVOutputFormat ff_au_muxer;
-AVOutputFormat ff_avi_muxer;
-AVOutputFormat ff_avm2_muxer;
-AVOutputFormat ff_avs2_muxer;
-AVOutputFormat ff_bit_muxer;
-AVOutputFormat ff_caf_muxer;
-AVOutputFormat ff_cavsvideo_muxer;
-AVOutputFormat ff_codec2_muxer;
-AVOutputFormat ff_codec2raw_muxer;
-AVOutputFormat ff_crc_muxer;
-AVOutputFormat ff_dash_muxer;
-AVOutputFormat ff_data_muxer;
-AVOutputFormat ff_daud_muxer;
-AVOutputFormat ff_dirac_muxer;
-AVOutputFormat ff_dnxhd_muxer;
-AVOutputFormat ff_dts_muxer;
-AVOutputFormat ff_dv_muxer;
-AVOutputFormat ff_eac3_muxer;
-AVOutputFormat ff_f4v_muxer;
-AVOutputFormat ff_ffmetadata_muxer;
-AVOutputFormat ff_fifo_muxer;
-AVOutputFormat ff_fifo_test_muxer;
-AVOutputFormat ff_filmstrip_muxer;
-AVOutputFormat ff_fits_muxer;
-AVOutputFormat ff_flac_muxer;
-AVOutputFormat ff_flv_muxer;
-AVOutputFormat ff_framecrc_muxer;
-AVOutputFormat ff_framehash_muxer;
-AVOutputFormat ff_framemd5_muxer;
-AVOutputFormat ff_g722_muxer;
-AVOutputFormat ff_g723_1_muxer;
-AVOutputFormat ff_g726_muxer;
-AVOutputFormat ff_g726le_muxer;
-AVOutputFormat ff_gif_muxer;
-AVOutputFormat ff_gsm_muxer;
-AVOutputFormat ff_gxf_muxer;
-AVOutputFormat ff_h261_muxer;
-AVOutputFormat ff_h263_muxer;
-AVOutputFormat ff_h264_muxer;
-AVOutputFormat ff_hash_muxer;
-AVOutputFormat ff_hds_muxer;
-AVOutputFormat ff_hevc_muxer;
-AVOutputFormat ff_hls_muxer;
-AVOutputFormat ff_ico_muxer;
-AVOutputFormat ff_ilbc_muxer;
-AVOutputFormat ff_image2_muxer;
-AVOutputFormat ff_image2pipe_muxer;
-AVOutputFormat ff_ipod_muxer;
-AVOutputFormat ff_ircam_muxer;
-AVOutputFormat ff_ismv_muxer;
-AVOutputFormat ff_ivf_muxer;
-AVOutputFormat ff_jacosub_muxer;
-AVOutputFormat ff_kvag_muxer;
-AVOutputFormat ff_latm_muxer;
-AVOutputFormat ff_lrc_muxer;
-AVOutputFormat ff_m4v_muxer;
-AVOutputFormat ff_md5_muxer;
-AVOutputFormat ff_matroska_muxer;
-AVOutputFormat ff_matroska_audio_muxer;
-AVOutputFormat ff_microdvd_muxer;
-AVOutputFormat ff_mjpeg_muxer;
-AVOutputFormat ff_mlp_muxer;
-AVOutputFormat ff_mmf_muxer;
-AVOutputFormat ff_mov_muxer;
-AVOutputFormat ff_mp2_muxer;
-AVOutputFormat ff_mp3_muxer;
-AVOutputFormat ff_mp4_muxer;
-AVOutputFormat ff_mpeg1system_muxer;
-AVOutputFormat ff_mpeg1vcd_muxer;
-AVOutputFormat ff_mpeg1video_muxer;
-AVOutputFormat ff_mpeg2dvd_muxer;
-AVOutputFormat ff_mpeg2svcd_muxer;
-AVOutputFormat ff_mpeg2video_muxer;
-AVOutputFormat ff_mpeg2vob_muxer;
-AVOutputFormat ff_mpegts_muxer;
-AVOutputFormat ff_mpjpeg_muxer;
-AVOutputFormat ff_mxf_muxer;
-AVOutputFormat ff_mxf_d10_muxer;
-AVOutputFormat ff_mxf_opatom_muxer;
-AVOutputFormat ff_null_muxer;
-AVOutputFormat ff_nut_muxer;
-AVOutputFormat ff_oga_muxer;
-AVOutputFormat ff_ogg_muxer;
-AVOutputFormat ff_ogv_muxer;
-AVOutputFormat ff_oma_muxer;
-AVOutputFormat ff_opus_muxer;
-AVOutputFormat ff_pcm_alaw_muxer;
-AVOutputFormat ff_pcm_mulaw_muxer;
-AVOutputFormat ff_pcm_vidc_muxer;
-AVOutputFormat ff_pcm_f64be_muxer;
-AVOutputFormat ff_pcm_f64le_muxer;
-AVOutputFormat ff_pcm_f32be_muxer;
-AVOutputFormat ff_pcm_f32le_muxer;
-AVOutputFormat ff_pcm_s32be_muxer;
-AVOutputFormat ff_pcm_s32le_muxer;
-AVOutputFormat ff_pcm_s24be_muxer;
-AVOutputFormat ff_pcm_s24le_muxer;
-AVOutputFormat ff_pcm_s16be_muxer;
-AVOutputFormat ff_pcm_s16le_muxer;
-AVOutputFormat ff_pcm_s8_muxer;
-AVOutputFormat ff_pcm_u32be_muxer;
-AVOutputFormat ff_pcm_u32le_muxer;
-AVOutputFormat ff_pcm_u24be_muxer;
-AVOutputFormat ff_pcm_u24le_muxer;
-AVOutputFormat ff_pcm_u16be_muxer;
-AVOutputFormat ff_pcm_u16le_muxer;
-AVOutputFormat ff_pcm_u8_muxer;
-AVOutputFormat ff_psp_muxer;
-AVOutputFormat ff_rawvideo_muxer;
-AVOutputFormat ff_rm_muxer;
-AVOutputFormat ff_roq_muxer;
-AVOutputFormat ff_rso_muxer;
-AVOutputFormat ff_rtp_muxer;
-AVOutputFormat ff_rtp_mpegts_muxer;
-AVOutputFormat ff_rtsp_muxer;
-AVOutputFormat ff_sap_muxer;
-AVOutputFormat ff_sbc_muxer;
-AVOutputFormat ff_scc_muxer;
-AVOutputFormat ff_segafilm_muxer;
-AVOutputFormat ff_segment_muxer;
-AVOutputFormat ff_stream_segment_muxer;
-AVOutputFormat ff_singlejpeg_muxer;
-AVOutputFormat ff_smjpeg_muxer;
-AVOutputFormat ff_smoothstreaming_muxer;
-AVOutputFormat ff_sox_muxer;
-AVOutputFormat ff_spx_muxer;
-AVOutputFormat ff_spdif_muxer;
-AVOutputFormat ff_srt_muxer;
-AVOutputFormat ff_streamhash_muxer;
-AVOutputFormat ff_sup_muxer;
-AVOutputFormat ff_swf_muxer;
-AVOutputFormat ff_tee_muxer;
-AVOutputFormat ff_tg2_muxer;
-AVOutputFormat ff_tgp_muxer;
-AVOutputFormat ff_mkvtimestamp_v2_muxer;
-AVOutputFormat ff_truehd_muxer;
-AVOutputFormat ff_tta_muxer;
-AVOutputFormat ff_uncodedframecrc_muxer;
-AVOutputFormat ff_vc1_muxer;
-AVOutputFormat ff_vc1t_muxer;
-AVOutputFormat ff_voc_muxer;
-AVOutputFormat ff_w64_muxer;
-AVOutputFormat ff_wav_muxer;
-AVOutputFormat ff_webm_muxer;
-AVOutputFormat ff_webm_dash_manifest_muxer;
-AVOutputFormat ff_webm_chunk_muxer;
-AVOutputFormat ff_webp_muxer;
-AVOutputFormat ff_webvtt_muxer;
-AVOutputFormat ff_wtv_muxer;
-AVOutputFormat ff_wv_muxer;
-AVOutputFormat ff_yuv4mpegpipe_muxer;
-AVOutputFormat ff_chromaprint_muxer;
-AVFilter ff_af_acompressor;
-AVFilter ff_af_acontrast;
-AVFilter ff_af_acopy;
-AVFilter ff_af_acue;
-AVFilter ff_af_acrossfade;
-AVFilter ff_af_acrossover;
-AVFilter ff_af_acrusher;
-AVFilter ff_af_adeclick;
-AVFilter ff_af_adeclip;
-AVFilter ff_af_adelay;
-AVFilter ff_af_aderivative;
-AVFilter ff_af_aecho;
-AVFilter ff_af_aemphasis;
-AVFilter ff_af_aeval;
-AVFilter ff_af_afade;
-AVFilter ff_af_afftdn;
-AVFilter ff_af_afftfilt;
-AVFilter ff_af_afir;
-AVFilter ff_af_aformat;
-AVFilter ff_af_agate;
-AVFilter ff_af_aiir;
-AVFilter ff_af_aintegral;
-AVFilter ff_af_ainterleave;
-AVFilter ff_af_alimiter;
-AVFilter ff_af_allpass;
-AVFilter ff_af_aloop;
-AVFilter ff_af_amerge;
-AVFilter ff_af_ametadata;
-AVFilter ff_af_amix;
-AVFilter ff_af_amultiply;
-AVFilter ff_af_anequalizer;
-AVFilter ff_af_anlmdn;
-AVFilter ff_af_anlms;
-AVFilter ff_af_anull;
-AVFilter ff_af_apad;
-AVFilter ff_af_aperms;
-AVFilter ff_af_aphaser;
-AVFilter ff_af_apulsator;
-AVFilter ff_af_arealtime;
-AVFilter ff_af_aresample;
-AVFilter ff_af_areverse;
-AVFilter ff_af_arnndn;
-AVFilter ff_af_aselect;
-AVFilter ff_af_asendcmd;
-AVFilter ff_af_asetnsamples;
-AVFilter ff_af_asetpts;
-AVFilter ff_af_asetrate;
-AVFilter ff_af_asettb;
-AVFilter ff_af_ashowinfo;
-AVFilter ff_af_asidedata;
-AVFilter ff_af_asoftclip;
-AVFilter ff_af_asplit;
-AVFilter ff_af_astats;
-AVFilter ff_af_astreamselect;
-AVFilter ff_af_asubboost;
-AVFilter ff_af_atempo;
-AVFilter ff_af_atrim;
-AVFilter ff_af_axcorrelate;
-AVFilter ff_af_azmq;
-AVFilter ff_af_bandpass;
-AVFilter ff_af_bandreject;
-AVFilter ff_af_bass;
-AVFilter ff_af_biquad;
-AVFilter ff_af_bs2b;
-AVFilter ff_af_channelmap;
-AVFilter ff_af_channelsplit;
-AVFilter ff_af_chorus;
-AVFilter ff_af_compand;
-AVFilter ff_af_compensationdelay;
-AVFilter ff_af_crossfeed;
-AVFilter ff_af_crystalizer;
-AVFilter ff_af_dcshift;
-AVFilter ff_af_deesser;
-AVFilter ff_af_drmeter;
-AVFilter ff_af_dynaudnorm;
-AVFilter ff_af_earwax;
-AVFilter ff_af_ebur128;
-AVFilter ff_af_equalizer;
-AVFilter ff_af_extrastereo;
-AVFilter ff_af_firequalizer;
-AVFilter ff_af_flanger;
-AVFilter ff_af_haas;
-AVFilter ff_af_hdcd;
-AVFilter ff_af_headphone;
-AVFilter ff_af_highpass;
-AVFilter ff_af_highshelf;
-AVFilter ff_af_join;
-AVFilter ff_af_loudnorm;
-AVFilter ff_af_lowpass;
-AVFilter ff_af_lowshelf;
-AVFilter ff_af_mcompand;
-AVFilter ff_af_pan;
-AVFilter ff_af_replaygain;
-AVFilter ff_af_rubberband;
-AVFilter ff_af_sidechaincompress;
-AVFilter ff_af_sidechaingate;
-AVFilter ff_af_silencedetect;
-AVFilter ff_af_silenceremove;
-AVFilter ff_af_sofalizer;
-AVFilter ff_af_stereotools;
-AVFilter ff_af_stereowiden;
-AVFilter ff_af_superequalizer;
-AVFilter ff_af_surround;
-AVFilter ff_af_treble;
-AVFilter ff_af_tremolo;
-AVFilter ff_af_vibrato;
-AVFilter ff_af_volume;
-AVFilter ff_af_volumedetect;
-AVFilter ff_asrc_aevalsrc;
-AVFilter ff_asrc_afirsrc;
-AVFilter ff_asrc_anoisesrc;
-AVFilter ff_asrc_anullsrc;
-AVFilter ff_asrc_hilbert;
-AVFilter ff_asrc_sinc;
-AVFilter ff_asrc_sine;
-AVFilter ff_asink_anullsink;
-AVFilter ff_vf_addroi;
-AVFilter ff_vf_alphaextract;
-AVFilter ff_vf_alphamerge;
-AVFilter ff_vf_amplify;
-AVFilter ff_vf_ass;
-AVFilter ff_vf_atadenoise;
-AVFilter ff_vf_avgblur;
-AVFilter ff_vf_bbox;
-AVFilter ff_vf_bench;
-AVFilter ff_vf_bilateral;
-AVFilter ff_vf_bitplanenoise;
-AVFilter ff_vf_blackdetect;
-AVFilter ff_vf_blackframe;
-AVFilter ff_vf_blend;
-AVFilter ff_vf_bm3d;
-AVFilter ff_vf_boxblur;
-AVFilter ff_vf_bwdif;
-AVFilter ff_vf_cas;
-AVFilter ff_vf_chromahold;
-AVFilter ff_vf_chromakey;
-AVFilter ff_vf_chromanr;
-AVFilter ff_vf_chromashift;
-AVFilter ff_vf_ciescope;
-AVFilter ff_vf_codecview;
-AVFilter ff_vf_colorbalance;
-AVFilter ff_vf_colorchannelmixer;
-AVFilter ff_vf_colorkey;
-AVFilter ff_vf_colorhold;
-AVFilter ff_vf_colorlevels;
-AVFilter ff_vf_colormatrix;
-AVFilter ff_vf_colorspace;
-AVFilter ff_vf_convolution;
-AVFilter ff_vf_convolve;
-AVFilter ff_vf_copy;
-AVFilter ff_vf_cover_rect;
-AVFilter ff_vf_crop;
-AVFilter ff_vf_cropdetect;
-AVFilter ff_vf_cue;
-AVFilter ff_vf_curves;
-AVFilter ff_vf_datascope;
-AVFilter ff_vf_dblur;
-AVFilter ff_vf_dctdnoiz;
-AVFilter ff_vf_deband;
-AVFilter ff_vf_deblock;
-AVFilter ff_vf_decimate;
-AVFilter ff_vf_deconvolve;
-AVFilter ff_vf_dedot;
-AVFilter ff_vf_deflate;
-AVFilter ff_vf_deflicker;
-AVFilter ff_vf_deinterlace_qsv;
-AVFilter ff_vf_dejudder;
-AVFilter ff_vf_delogo;
-AVFilter ff_vf_derain;
-AVFilter ff_vf_deshake;
-AVFilter ff_vf_despill;
-AVFilter ff_vf_detelecine;
-AVFilter ff_vf_dilation;
-AVFilter ff_vf_displace;
-AVFilter ff_vf_dnn_processing;
-AVFilter ff_vf_doubleweave;
-AVFilter ff_vf_drawbox;
-AVFilter ff_vf_drawgraph;
-AVFilter ff_vf_drawgrid;
-AVFilter ff_vf_drawtext;
-AVFilter ff_vf_edgedetect;
-AVFilter ff_vf_elbg;
-AVFilter ff_vf_entropy;
-AVFilter ff_vf_eq;
-AVFilter ff_vf_erosion;
-AVFilter ff_vf_extractplanes;
-AVFilter ff_vf_fade;
-AVFilter ff_vf_fftdnoiz;
-AVFilter ff_vf_fftfilt;
-AVFilter ff_vf_field;
-AVFilter ff_vf_fieldhint;
-AVFilter ff_vf_fieldmatch;
-AVFilter ff_vf_fieldorder;
-AVFilter ff_vf_fillborders;
-AVFilter ff_vf_find_rect;
-AVFilter ff_vf_floodfill;
-AVFilter ff_vf_format;
-AVFilter ff_vf_fps;
-AVFilter ff_vf_framepack;
-AVFilter ff_vf_framerate;
-AVFilter ff_vf_framestep;
-AVFilter ff_vf_freezedetect;
-AVFilter ff_vf_freezeframes;
-AVFilter ff_vf_fspp;
-AVFilter ff_vf_gblur;
-AVFilter ff_vf_geq;
-AVFilter ff_vf_gradfun;
-AVFilter ff_vf_graphmonitor;
-AVFilter ff_vf_greyedge;
-AVFilter ff_vf_haldclut;
-AVFilter ff_vf_hflip;
-AVFilter ff_vf_histeq;
-AVFilter ff_vf_histogram;
-AVFilter ff_vf_hqdn3d;
-AVFilter ff_vf_hqx;
-AVFilter ff_vf_hstack;
-AVFilter ff_vf_hue;
-AVFilter ff_vf_hwdownload;
-AVFilter ff_vf_hwmap;
-AVFilter ff_vf_hwupload;
-AVFilter ff_vf_hysteresis;
-AVFilter ff_vf_idet;
-AVFilter ff_vf_il;
-AVFilter ff_vf_inflate;
-AVFilter ff_vf_interlace;
-AVFilter ff_vf_interleave;
-AVFilter ff_vf_kerndeint;
-AVFilter ff_vf_lagfun;
-AVFilter ff_vf_lenscorrection;
-AVFilter ff_vf_limiter;
-AVFilter ff_vf_loop;
-AVFilter ff_vf_lumakey;
-AVFilter ff_vf_lut;
-AVFilter ff_vf_lut1d;
-AVFilter ff_vf_lut2;
-AVFilter ff_vf_lut3d;
-AVFilter ff_vf_lutrgb;
-AVFilter ff_vf_lutyuv;
-AVFilter ff_vf_maskedclamp;
-AVFilter ff_vf_maskedmax;
-AVFilter ff_vf_maskedmerge;
-AVFilter ff_vf_maskedmin;
-AVFilter ff_vf_maskedthreshold;
-AVFilter ff_vf_maskfun;
-AVFilter ff_vf_mcdeint;
-AVFilter ff_vf_median;
-AVFilter ff_vf_mergeplanes;
-AVFilter ff_vf_mestimate;
-AVFilter ff_vf_metadata;
-AVFilter ff_vf_midequalizer;
-AVFilter ff_vf_minterpolate;
-AVFilter ff_vf_mix;
-AVFilter ff_vf_mpdecimate;
-AVFilter ff_vf_negate;
-AVFilter ff_vf_nlmeans;
-AVFilter ff_vf_nnedi;
-AVFilter ff_vf_noformat;
-AVFilter ff_vf_noise;
-AVFilter ff_vf_normalize;
-AVFilter ff_vf_null;
-AVFilter ff_vf_oscilloscope;
-AVFilter ff_vf_overlay;
-AVFilter ff_vf_overlay_qsv;
-AVFilter ff_vf_owdenoise;
-AVFilter ff_vf_pad;
-AVFilter ff_vf_palettegen;
-AVFilter ff_vf_paletteuse;
-AVFilter ff_vf_perms;
-AVFilter ff_vf_perspective;
-AVFilter ff_vf_phase;
-AVFilter ff_vf_photosensitivity;
-AVFilter ff_vf_pixdesctest;
-AVFilter ff_vf_pixscope;
-AVFilter ff_vf_pp;
-AVFilter ff_vf_pp7;
-AVFilter ff_vf_premultiply;
-AVFilter ff_vf_prewitt;
-AVFilter ff_vf_pseudocolor;
-AVFilter ff_vf_psnr;
-AVFilter ff_vf_pullup;
-AVFilter ff_vf_qp;
-AVFilter ff_vf_random;
-AVFilter ff_vf_readeia608;
-AVFilter ff_vf_readvitc;
-AVFilter ff_vf_realtime;
-AVFilter ff_vf_remap;
-AVFilter ff_vf_removegrain;
-AVFilter ff_vf_removelogo;
-AVFilter ff_vf_repeatfields;
-AVFilter ff_vf_reverse;
-AVFilter ff_vf_rgbashift;
-AVFilter ff_vf_roberts;
-AVFilter ff_vf_rotate;
-AVFilter ff_vf_sab;
-AVFilter ff_vf_scale;
-AVFilter ff_vf_scale_qsv;
-AVFilter ff_vf_scale2ref;
-AVFilter ff_vf_scdet;
-AVFilter ff_vf_scroll;
-AVFilter ff_vf_select;
-AVFilter ff_vf_selectivecolor;
-AVFilter ff_vf_sendcmd;
-AVFilter ff_vf_separatefields;
-AVFilter ff_vf_setdar;
-AVFilter ff_vf_setfield;
-AVFilter ff_vf_setparams;
-AVFilter ff_vf_setpts;
-AVFilter ff_vf_setrange;
-AVFilter ff_vf_setsar;
-AVFilter ff_vf_settb;
-AVFilter ff_vf_showinfo;
-AVFilter ff_vf_showpalette;
-AVFilter ff_vf_shuffleframes;
-AVFilter ff_vf_shuffleplanes;
-AVFilter ff_vf_sidedata;
-AVFilter ff_vf_signalstats;
-AVFilter ff_vf_signature;
-AVFilter ff_vf_smartblur;
-AVFilter ff_vf_sobel;
-AVFilter ff_vf_split;
-AVFilter ff_vf_spp;
-AVFilter ff_vf_sr;
-AVFilter ff_vf_ssim;
-AVFilter ff_vf_stereo3d;
-AVFilter ff_vf_streamselect;
-AVFilter ff_vf_subtitles;
-AVFilter ff_vf_super2xsai;
-AVFilter ff_vf_swaprect;
-AVFilter ff_vf_swapuv;
-AVFilter ff_vf_tblend;
-AVFilter ff_vf_telecine;
-AVFilter ff_vf_thistogram;
-AVFilter ff_vf_threshold;
-AVFilter ff_vf_thumbnail;
-AVFilter ff_vf_tile;
-AVFilter ff_vf_tinterlace;
-AVFilter ff_vf_tlut2;
-AVFilter ff_vf_tmedian;
-AVFilter ff_vf_tmix;
-AVFilter ff_vf_tonemap;
-AVFilter ff_vf_tpad;
-AVFilter ff_vf_transpose;
-AVFilter ff_vf_trim;
-AVFilter ff_vf_unpremultiply;
-AVFilter ff_vf_unsharp;
-AVFilter ff_vf_untile;
-AVFilter ff_vf_uspp;
-AVFilter ff_vf_v360;
-AVFilter ff_vf_vaguedenoiser;
-AVFilter ff_vf_vectorscope;
-AVFilter ff_vf_vflip;
-AVFilter ff_vf_vfrdet;
-AVFilter ff_vf_vibrance;
-AVFilter ff_vf_vidstabdetect;
-AVFilter ff_vf_vidstabtransform;
-AVFilter ff_vf_vignette;
-AVFilter ff_vf_vmafmotion;
-AVFilter ff_vf_vpp_qsv;
-AVFilter ff_vf_vstack;
-AVFilter ff_vf_w3fdif;
-AVFilter ff_vf_waveform;
-AVFilter ff_vf_weave;
-AVFilter ff_vf_xbr;
-AVFilter ff_vf_xfade;
-AVFilter ff_vf_xmedian;
-AVFilter ff_vf_xstack;
-AVFilter ff_vf_yadif;
-AVFilter ff_vf_yaepblur;
-AVFilter ff_vf_zmq;
-AVFilter ff_vf_zoompan;
-AVFilter ff_vf_zscale;
-AVFilter ff_vsrc_allrgb;
-AVFilter ff_vsrc_allyuv;
-AVFilter ff_vsrc_cellauto;
-AVFilter ff_vsrc_color;
-AVFilter ff_vsrc_gradients;
-AVFilter ff_vsrc_haldclutsrc;
-AVFilter ff_vsrc_life;
-AVFilter ff_vsrc_mandelbrot;
-AVFilter ff_vsrc_mptestsrc;
-AVFilter ff_vsrc_nullsrc;
-AVFilter ff_vsrc_pal75bars;
-AVFilter ff_vsrc_pal100bars;
-AVFilter ff_vsrc_rgbtestsrc;
-AVFilter ff_vsrc_sierpinski;
-AVFilter ff_vsrc_smptebars;
-AVFilter ff_vsrc_smptehdbars;
-AVFilter ff_vsrc_testsrc;
-AVFilter ff_vsrc_testsrc2;
-AVFilter ff_vsrc_yuvtestsrc;
-AVFilter ff_vsink_nullsink;
-AVFilter ff_avf_abitscope;
-AVFilter ff_avf_adrawgraph;
-AVFilter ff_avf_agraphmonitor;
-AVFilter ff_avf_ahistogram;
-AVFilter ff_avf_aphasemeter;
-AVFilter ff_avf_avectorscope;
-AVFilter ff_avf_concat;
-AVFilter ff_avf_showcqt;
-AVFilter ff_avf_showfreqs;
-AVFilter ff_avf_showspatial;
-AVFilter ff_avf_showspectrum;
-AVFilter ff_avf_showspectrumpic;
-AVFilter ff_avf_showvolume;
-AVFilter ff_avf_showwaves;
-AVFilter ff_avf_showwavespic;
-AVFilter ff_vaf_spectrumsynth;
-AVFilter ff_avsrc_amovie;
-AVFilter ff_avsrc_movie;
-AVFilter ff_af_afifo;
-AVFilter ff_vf_fifo;
-AVFilter ff_asrc_abuffer;
-AVFilter ff_vsrc_buffer;
-AVFilter ff_asink_abuffer;
-AVFilter ff_vsink_buffer;
+extern AVInputFormat ff_aa_demuxer;
+extern AVInputFormat ff_aac_demuxer;
+extern AVInputFormat ff_aax_demuxer;
+extern AVInputFormat ff_ac3_demuxer;
+extern AVInputFormat ff_acm_demuxer;
+extern AVInputFormat ff_act_demuxer;
+extern AVInputFormat ff_adf_demuxer;
+extern AVInputFormat ff_adp_demuxer;
+extern AVInputFormat ff_ads_demuxer;
+extern AVInputFormat ff_adx_demuxer;
+extern AVInputFormat ff_aea_demuxer;
+extern AVInputFormat ff_afc_demuxer;
+extern AVInputFormat ff_aiff_demuxer;
+extern AVInputFormat ff_aix_demuxer;
+extern AVInputFormat ff_alp_demuxer;
+extern AVInputFormat ff_amr_demuxer;
+extern AVInputFormat ff_amrnb_demuxer;
+extern AVInputFormat ff_amrwb_demuxer;
+extern AVInputFormat ff_anm_demuxer;
+extern AVInputFormat ff_apc_demuxer;
+extern AVInputFormat ff_ape_demuxer;
+extern AVInputFormat ff_apm_demuxer;
+extern AVInputFormat ff_apng_demuxer;
+extern AVInputFormat ff_aptx_demuxer;
+extern AVInputFormat ff_aptx_hd_demuxer;
+extern AVInputFormat ff_aqtitle_demuxer;
+extern AVInputFormat ff_argo_asf_demuxer;
+extern AVInputFormat ff_argo_brp_demuxer;
+extern AVInputFormat ff_asf_demuxer;
+extern AVInputFormat ff_asf_o_demuxer;
+extern AVInputFormat ff_ass_demuxer;
+extern AVInputFormat ff_ast_demuxer;
+extern AVInputFormat ff_au_demuxer;
+extern AVInputFormat ff_av1_demuxer;
+extern AVInputFormat ff_avi_demuxer;
+extern AVInputFormat ff_avr_demuxer;
+extern AVInputFormat ff_avs_demuxer;
+extern AVInputFormat ff_avs2_demuxer;
+extern AVInputFormat ff_bethsoftvid_demuxer;
+extern AVInputFormat ff_bfi_demuxer;
+extern AVInputFormat ff_bintext_demuxer;
+extern AVInputFormat ff_bink_demuxer;
+extern AVInputFormat ff_bit_demuxer;
+extern AVInputFormat ff_bmv_demuxer;
+extern AVInputFormat ff_bfstm_demuxer;
+extern AVInputFormat ff_brstm_demuxer;
+extern AVInputFormat ff_boa_demuxer;
+extern AVInputFormat ff_c93_demuxer;
+extern AVInputFormat ff_caf_demuxer;
+extern AVInputFormat ff_cavsvideo_demuxer;
+extern AVInputFormat ff_cdg_demuxer;
+extern AVInputFormat ff_cdxl_demuxer;
+extern AVInputFormat ff_cine_demuxer;
+extern AVInputFormat ff_codec2_demuxer;
+extern AVInputFormat ff_codec2raw_demuxer;
+extern AVInputFormat ff_concat_demuxer;
+extern AVInputFormat ff_dash_demuxer;
+extern AVInputFormat ff_data_demuxer;
+extern AVInputFormat ff_daud_demuxer;
+extern AVInputFormat ff_dcstr_demuxer;
+extern AVInputFormat ff_derf_demuxer;
+extern AVInputFormat ff_dfa_demuxer;
+extern AVInputFormat ff_dhav_demuxer;
+extern AVInputFormat ff_dirac_demuxer;
+extern AVInputFormat ff_dnxhd_demuxer;
+extern AVInputFormat ff_dsf_demuxer;
+extern AVInputFormat ff_dsicin_demuxer;
+extern AVInputFormat ff_dss_demuxer;
+extern AVInputFormat ff_dts_demuxer;
+extern AVInputFormat ff_dtshd_demuxer;
+extern AVInputFormat ff_dv_demuxer;
+extern AVInputFormat ff_dvbsub_demuxer;
+extern AVInputFormat ff_dvbtxt_demuxer;
+extern AVInputFormat ff_dxa_demuxer;
+extern AVInputFormat ff_ea_demuxer;
+extern AVInputFormat ff_ea_cdata_demuxer;
+extern AVInputFormat ff_eac3_demuxer;
+extern AVInputFormat ff_epaf_demuxer;
+extern AVInputFormat ff_ffmetadata_demuxer;
+extern AVInputFormat ff_filmstrip_demuxer;
+extern AVInputFormat ff_fits_demuxer;
+extern AVInputFormat ff_flac_demuxer;
+extern AVInputFormat ff_flic_demuxer;
+extern AVInputFormat ff_flv_demuxer;
+extern AVInputFormat ff_live_flv_demuxer;
+extern AVInputFormat ff_fourxm_demuxer;
+extern AVInputFormat ff_frm_demuxer;
+extern AVInputFormat ff_fsb_demuxer;
+extern AVInputFormat ff_fwse_demuxer;
+extern AVInputFormat ff_g722_demuxer;
+extern AVInputFormat ff_g723_1_demuxer;
+extern AVInputFormat ff_g726_demuxer;
+extern AVInputFormat ff_g726le_demuxer;
+extern AVInputFormat ff_g729_demuxer;
+extern AVInputFormat ff_gdv_demuxer;
+extern AVInputFormat ff_genh_demuxer;
+extern AVInputFormat ff_gif_demuxer;
+extern AVInputFormat ff_gsm_demuxer;
+extern AVInputFormat ff_gxf_demuxer;
+extern AVInputFormat ff_h261_demuxer;
+extern AVInputFormat ff_h263_demuxer;
+extern AVInputFormat ff_h264_demuxer;
+extern AVInputFormat ff_hca_demuxer;
+extern AVInputFormat ff_hcom_demuxer;
+extern AVInputFormat ff_hevc_demuxer;
+extern AVInputFormat ff_hls_demuxer;
+extern AVInputFormat ff_hnm_demuxer;
+extern AVInputFormat ff_ico_demuxer;
+extern AVInputFormat ff_idcin_demuxer;
+extern AVInputFormat ff_idf_demuxer;
+extern AVInputFormat ff_iff_demuxer;
+extern AVInputFormat ff_ifv_demuxer;
+extern AVInputFormat ff_ilbc_demuxer;
+extern AVInputFormat ff_image2_demuxer;
+extern AVInputFormat ff_image2pipe_demuxer;
+extern AVInputFormat ff_image2_alias_pix_demuxer;
+extern AVInputFormat ff_image2_brender_pix_demuxer;
+extern AVInputFormat ff_ingenient_demuxer;
+extern AVInputFormat ff_ipmovie_demuxer;
+extern AVInputFormat ff_ipu_demuxer;
+extern AVInputFormat ff_ircam_demuxer;
+extern AVInputFormat ff_iss_demuxer;
+extern AVInputFormat ff_iv8_demuxer;
+extern AVInputFormat ff_ivf_demuxer;
+extern AVInputFormat ff_ivr_demuxer;
+extern AVInputFormat ff_jacosub_demuxer;
+extern AVInputFormat ff_jv_demuxer;
+extern AVInputFormat ff_kux_demuxer;
+extern AVInputFormat ff_kvag_demuxer;
+extern AVInputFormat ff_lmlm4_demuxer;
+extern AVInputFormat ff_loas_demuxer;
+extern AVInputFormat ff_luodat_demuxer;
+extern AVInputFormat ff_lrc_demuxer;
+extern AVInputFormat ff_lvf_demuxer;
+extern AVInputFormat ff_lxf_demuxer;
+extern AVInputFormat ff_m4v_demuxer;
+extern AVInputFormat ff_mca_demuxer;
+extern AVInputFormat ff_mcc_demuxer;
+extern AVInputFormat ff_matroska_demuxer;
+extern AVInputFormat ff_mgsts_demuxer;
+extern AVInputFormat ff_microdvd_demuxer;
+extern AVInputFormat ff_mjpeg_demuxer;
+extern AVInputFormat ff_mjpeg_2000_demuxer;
+extern AVInputFormat ff_mlp_demuxer;
+extern AVInputFormat ff_mlv_demuxer;
+extern AVInputFormat ff_mm_demuxer;
+extern AVInputFormat ff_mmf_demuxer;
+extern AVInputFormat ff_mods_demuxer;
+extern AVInputFormat ff_moflex_demuxer;
+extern AVInputFormat ff_mov_demuxer;
+extern AVInputFormat ff_mp3_demuxer;
+extern AVInputFormat ff_mpc_demuxer;
+extern AVInputFormat ff_mpc8_demuxer;
+extern AVInputFormat ff_mpegps_demuxer;
+extern AVInputFormat ff_mpegts_demuxer;
+extern AVInputFormat ff_mpegtsraw_demuxer;
+extern AVInputFormat ff_mpegvideo_demuxer;
+extern AVInputFormat ff_mpjpeg_demuxer;
+extern AVInputFormat ff_mpl2_demuxer;
+extern AVInputFormat ff_mpsub_demuxer;
+extern AVInputFormat ff_msf_demuxer;
+extern AVInputFormat ff_msnwc_tcp_demuxer;
+extern AVInputFormat ff_mtaf_demuxer;
+extern AVInputFormat ff_mtv_demuxer;
+extern AVInputFormat ff_musx_demuxer;
+extern AVInputFormat ff_mv_demuxer;
+extern AVInputFormat ff_mvi_demuxer;
+extern AVInputFormat ff_mxf_demuxer;
+extern AVInputFormat ff_mxg_demuxer;
+extern AVInputFormat ff_nc_demuxer;
+extern AVInputFormat ff_nistsphere_demuxer;
+extern AVInputFormat ff_nsp_demuxer;
+extern AVInputFormat ff_nsv_demuxer;
+extern AVInputFormat ff_nut_demuxer;
+extern AVInputFormat ff_nuv_demuxer;
+extern AVInputFormat ff_obu_demuxer;
+extern AVInputFormat ff_ogg_demuxer;
+extern AVInputFormat ff_oma_demuxer;
+extern AVInputFormat ff_paf_demuxer;
+extern AVInputFormat ff_pcm_alaw_demuxer;
+extern AVInputFormat ff_pcm_mulaw_demuxer;
+extern AVInputFormat ff_pcm_vidc_demuxer;
+extern AVInputFormat ff_pcm_f64be_demuxer;
+extern AVInputFormat ff_pcm_f64le_demuxer;
+extern AVInputFormat ff_pcm_f32be_demuxer;
+extern AVInputFormat ff_pcm_f32le_demuxer;
+extern AVInputFormat ff_pcm_s32be_demuxer;
+extern AVInputFormat ff_pcm_s32le_demuxer;
+extern AVInputFormat ff_pcm_s24be_demuxer;
+extern AVInputFormat ff_pcm_s24le_demuxer;
+extern AVInputFormat ff_pcm_s16be_demuxer;
+extern AVInputFormat ff_pcm_s16le_demuxer;
+extern AVInputFormat ff_pcm_s8_demuxer;
+extern AVInputFormat ff_pcm_u32be_demuxer;
+extern AVInputFormat ff_pcm_u32le_demuxer;
+extern AVInputFormat ff_pcm_u24be_demuxer;
+extern AVInputFormat ff_pcm_u24le_demuxer;
+extern AVInputFormat ff_pcm_u16be_demuxer;
+extern AVInputFormat ff_pcm_u16le_demuxer;
+extern AVInputFormat ff_pcm_u8_demuxer;
+extern AVInputFormat ff_pjs_demuxer;
+extern AVInputFormat ff_pmp_demuxer;
+extern AVInputFormat ff_pp_bnk_demuxer;
+extern AVInputFormat ff_pva_demuxer;
+extern AVInputFormat ff_pvf_demuxer;
+extern AVInputFormat ff_qcp_demuxer;
+extern AVInputFormat ff_r3d_demuxer;
+extern AVInputFormat ff_rawvideo_demuxer;
+extern AVInputFormat ff_realtext_demuxer;
+extern AVInputFormat ff_redspark_demuxer;
+extern AVInputFormat ff_rl2_demuxer;
+extern AVInputFormat ff_rm_demuxer;
+extern AVInputFormat ff_roq_demuxer;
+extern AVInputFormat ff_rpl_demuxer;
+extern AVInputFormat ff_rsd_demuxer;
+extern AVInputFormat ff_rso_demuxer;
+extern AVInputFormat ff_rtp_demuxer;
+extern AVInputFormat ff_rtsp_demuxer;
+extern AVInputFormat ff_s337m_demuxer;
+extern AVInputFormat ff_sami_demuxer;
+extern AVInputFormat ff_sap_demuxer;
+extern AVInputFormat ff_sbc_demuxer;
+extern AVInputFormat ff_sbg_demuxer;
+extern AVInputFormat ff_scc_demuxer;
+extern AVInputFormat ff_sdp_demuxer;
+extern AVInputFormat ff_sdr2_demuxer;
+extern AVInputFormat ff_sds_demuxer;
+extern AVInputFormat ff_sdx_demuxer;
+extern AVInputFormat ff_segafilm_demuxer;
+extern AVInputFormat ff_ser_demuxer;
+extern AVInputFormat ff_shorten_demuxer;
+extern AVInputFormat ff_siff_demuxer;
+extern AVInputFormat ff_sln_demuxer;
+extern AVInputFormat ff_smacker_demuxer;
+extern AVInputFormat ff_smjpeg_demuxer;
+extern AVInputFormat ff_smush_demuxer;
+extern AVInputFormat ff_sol_demuxer;
+extern AVInputFormat ff_sox_demuxer;
+extern AVInputFormat ff_spdif_demuxer;
+extern AVInputFormat ff_srt_demuxer;
+extern AVInputFormat ff_str_demuxer;
+extern AVInputFormat ff_stl_demuxer;
+extern AVInputFormat ff_subviewer1_demuxer;
+extern AVInputFormat ff_subviewer_demuxer;
+extern AVInputFormat ff_sup_demuxer;
+extern AVInputFormat ff_svag_demuxer;
+extern AVInputFormat ff_svs_demuxer;
+extern AVInputFormat ff_swf_demuxer;
+extern AVInputFormat ff_tak_demuxer;
+extern AVInputFormat ff_tedcaptions_demuxer;
+extern AVInputFormat ff_thp_demuxer;
+extern AVInputFormat ff_threedostr_demuxer;
+extern AVInputFormat ff_tiertexseq_demuxer;
+extern AVInputFormat ff_tmv_demuxer;
+extern AVInputFormat ff_truehd_demuxer;
+extern AVInputFormat ff_tta_demuxer;
+extern AVInputFormat ff_txd_demuxer;
+extern AVInputFormat ff_tty_demuxer;
+extern AVInputFormat ff_ty_demuxer;
+extern AVInputFormat ff_v210_demuxer;
+extern AVInputFormat ff_v210x_demuxer;
+extern AVInputFormat ff_vag_demuxer;
+extern AVInputFormat ff_vc1_demuxer;
+extern AVInputFormat ff_vc1t_demuxer;
+extern AVInputFormat ff_vividas_demuxer;
+extern AVInputFormat ff_vivo_demuxer;
+extern AVInputFormat ff_vmd_demuxer;
+extern AVInputFormat ff_vobsub_demuxer;
+extern AVInputFormat ff_voc_demuxer;
+extern AVInputFormat ff_vpk_demuxer;
+extern AVInputFormat ff_vplayer_demuxer;
+extern AVInputFormat ff_vqf_demuxer;
+extern AVInputFormat ff_w64_demuxer;
+extern AVInputFormat ff_wav_demuxer;
+extern AVInputFormat ff_wc3_demuxer;
+extern AVInputFormat ff_webm_dash_manifest_demuxer;
+extern AVInputFormat ff_webvtt_demuxer;
+extern AVInputFormat ff_wsaud_demuxer;
+extern AVInputFormat ff_wsd_demuxer;
+extern AVInputFormat ff_wsvqa_demuxer;
+extern AVInputFormat ff_wtv_demuxer;
+extern AVInputFormat ff_wve_demuxer;
+extern AVInputFormat ff_wv_demuxer;
+extern AVInputFormat ff_xa_demuxer;
+extern AVInputFormat ff_xbin_demuxer;
+extern AVInputFormat ff_xmv_demuxer;
+extern AVInputFormat ff_xvag_demuxer;
+extern AVInputFormat ff_xwma_demuxer;
+extern AVInputFormat ff_yop_demuxer;
+extern AVInputFormat ff_yuv4mpegpipe_demuxer;
+extern AVInputFormat ff_image_bmp_pipe_demuxer;
+extern AVInputFormat ff_image_dds_pipe_demuxer;
+extern AVInputFormat ff_image_dpx_pipe_demuxer;
+extern AVInputFormat ff_image_exr_pipe_demuxer;
+extern AVInputFormat ff_image_gif_pipe_demuxer;
+extern AVInputFormat ff_image_j2k_pipe_demuxer;
+extern AVInputFormat ff_image_jpeg_pipe_demuxer;
+extern AVInputFormat ff_image_jpegls_pipe_demuxer;
+extern AVInputFormat ff_image_pam_pipe_demuxer;
+extern AVInputFormat ff_image_pbm_pipe_demuxer;
+extern AVInputFormat ff_image_pcx_pipe_demuxer;
+extern AVInputFormat ff_image_pgmyuv_pipe_demuxer;
+extern AVInputFormat ff_image_pgm_pipe_demuxer;
+extern AVInputFormat ff_image_pgx_pipe_demuxer;
+extern AVInputFormat ff_image_photocd_pipe_demuxer;
+extern AVInputFormat ff_image_pictor_pipe_demuxer;
+extern AVInputFormat ff_image_png_pipe_demuxer;
+extern AVInputFormat ff_image_ppm_pipe_demuxer;
+extern AVInputFormat ff_image_psd_pipe_demuxer;
+extern AVInputFormat ff_image_qdraw_pipe_demuxer;
+extern AVInputFormat ff_image_sgi_pipe_demuxer;
+extern AVInputFormat ff_image_svg_pipe_demuxer;
+extern AVInputFormat ff_image_sunrast_pipe_demuxer;
+extern AVInputFormat ff_image_tiff_pipe_demuxer;
+extern AVInputFormat ff_image_webp_pipe_demuxer;
+extern AVInputFormat ff_image_xpm_pipe_demuxer;
+extern AVInputFormat ff_image_xwd_pipe_demuxer;
+extern AVInputFormat ff_libgme_demuxer;
+extern AVInputFormat ff_libmodplug_demuxer;
+extern AVOutputFormat ff_a64_muxer;
+extern AVOutputFormat ff_ac3_muxer;
+extern AVOutputFormat ff_adts_muxer;
+extern AVOutputFormat ff_adx_muxer;
+extern AVOutputFormat ff_aiff_muxer;
+extern AVOutputFormat ff_amr_muxer;
+extern AVOutputFormat ff_apm_muxer;
+extern AVOutputFormat ff_apng_muxer;
+extern AVOutputFormat ff_aptx_muxer;
+extern AVOutputFormat ff_aptx_hd_muxer;
+extern AVOutputFormat ff_argo_asf_muxer;
+extern AVOutputFormat ff_asf_muxer;
+extern AVOutputFormat ff_ass_muxer;
+extern AVOutputFormat ff_ast_muxer;
+extern AVOutputFormat ff_asf_stream_muxer;
+extern AVOutputFormat ff_au_muxer;
+extern AVOutputFormat ff_avi_muxer;
+extern AVOutputFormat ff_avm2_muxer;
+extern AVOutputFormat ff_avs2_muxer;
+extern AVOutputFormat ff_bit_muxer;
+extern AVOutputFormat ff_caf_muxer;
+extern AVOutputFormat ff_cavsvideo_muxer;
+extern AVOutputFormat ff_codec2_muxer;
+extern AVOutputFormat ff_codec2raw_muxer;
+extern AVOutputFormat ff_crc_muxer;
+extern AVOutputFormat ff_dash_muxer;
+extern AVOutputFormat ff_data_muxer;
+extern AVOutputFormat ff_daud_muxer;
+extern AVOutputFormat ff_dirac_muxer;
+extern AVOutputFormat ff_dnxhd_muxer;
+extern AVOutputFormat ff_dts_muxer;
+extern AVOutputFormat ff_dv_muxer;
+extern AVOutputFormat ff_eac3_muxer;
+extern AVOutputFormat ff_f4v_muxer;
+extern AVOutputFormat ff_ffmetadata_muxer;
+extern AVOutputFormat ff_fifo_muxer;
+extern AVOutputFormat ff_fifo_test_muxer;
+extern AVOutputFormat ff_filmstrip_muxer;
+extern AVOutputFormat ff_fits_muxer;
+extern AVOutputFormat ff_flac_muxer;
+extern AVOutputFormat ff_flv_muxer;
+extern AVOutputFormat ff_framecrc_muxer;
+extern AVOutputFormat ff_framehash_muxer;
+extern AVOutputFormat ff_framemd5_muxer;
+extern AVOutputFormat ff_g722_muxer;
+extern AVOutputFormat ff_g723_1_muxer;
+extern AVOutputFormat ff_g726_muxer;
+extern AVOutputFormat ff_g726le_muxer;
+extern AVOutputFormat ff_gif_muxer;
+extern AVOutputFormat ff_gsm_muxer;
+extern AVOutputFormat ff_gxf_muxer;
+extern AVOutputFormat ff_h261_muxer;
+extern AVOutputFormat ff_h263_muxer;
+extern AVOutputFormat ff_h264_muxer;
+extern AVOutputFormat ff_hash_muxer;
+extern AVOutputFormat ff_hds_muxer;
+extern AVOutputFormat ff_hevc_muxer;
+extern AVOutputFormat ff_hls_muxer;
+extern AVOutputFormat ff_ico_muxer;
+extern AVOutputFormat ff_ilbc_muxer;
+extern AVOutputFormat ff_image2_muxer;
+extern AVOutputFormat ff_image2pipe_muxer;
+extern AVOutputFormat ff_ipod_muxer;
+extern AVOutputFormat ff_ircam_muxer;
+extern AVOutputFormat ff_ismv_muxer;
+extern AVOutputFormat ff_ivf_muxer;
+extern AVOutputFormat ff_jacosub_muxer;
+extern AVOutputFormat ff_kvag_muxer;
+extern AVOutputFormat ff_latm_muxer;
+extern AVOutputFormat ff_lrc_muxer;
+extern AVOutputFormat ff_m4v_muxer;
+extern AVOutputFormat ff_md5_muxer;
+extern AVOutputFormat ff_matroska_muxer;
+extern AVOutputFormat ff_matroska_audio_muxer;
+extern AVOutputFormat ff_microdvd_muxer;
+extern AVOutputFormat ff_mjpeg_muxer;
+extern AVOutputFormat ff_mlp_muxer;
+extern AVOutputFormat ff_mmf_muxer;
+extern AVOutputFormat ff_mov_muxer;
+extern AVOutputFormat ff_mp2_muxer;
+extern AVOutputFormat ff_mp3_muxer;
+extern AVOutputFormat ff_mp4_muxer;
+extern AVOutputFormat ff_mpeg1system_muxer;
+extern AVOutputFormat ff_mpeg1vcd_muxer;
+extern AVOutputFormat ff_mpeg1video_muxer;
+extern AVOutputFormat ff_mpeg2dvd_muxer;
+extern AVOutputFormat ff_mpeg2svcd_muxer;
+extern AVOutputFormat ff_mpeg2video_muxer;
+extern AVOutputFormat ff_mpeg2vob_muxer;
+extern AVOutputFormat ff_mpegts_muxer;
+extern AVOutputFormat ff_mpjpeg_muxer;
+extern AVOutputFormat ff_mxf_muxer;
+extern AVOutputFormat ff_mxf_d10_muxer;
+extern AVOutputFormat ff_mxf_opatom_muxer;
+extern AVOutputFormat ff_null_muxer;
+extern AVOutputFormat ff_nut_muxer;
+extern AVOutputFormat ff_oga_muxer;
+extern AVOutputFormat ff_ogg_muxer;
+extern AVOutputFormat ff_ogv_muxer;
+extern AVOutputFormat ff_oma_muxer;
+extern AVOutputFormat ff_opus_muxer;
+extern AVOutputFormat ff_pcm_alaw_muxer;
+extern AVOutputFormat ff_pcm_mulaw_muxer;
+extern AVOutputFormat ff_pcm_vidc_muxer;
+extern AVOutputFormat ff_pcm_f64be_muxer;
+extern AVOutputFormat ff_pcm_f64le_muxer;
+extern AVOutputFormat ff_pcm_f32be_muxer;
+extern AVOutputFormat ff_pcm_f32le_muxer;
+extern AVOutputFormat ff_pcm_s32be_muxer;
+extern AVOutputFormat ff_pcm_s32le_muxer;
+extern AVOutputFormat ff_pcm_s24be_muxer;
+extern AVOutputFormat ff_pcm_s24le_muxer;
+extern AVOutputFormat ff_pcm_s16be_muxer;
+extern AVOutputFormat ff_pcm_s16le_muxer;
+extern AVOutputFormat ff_pcm_s8_muxer;
+extern AVOutputFormat ff_pcm_u32be_muxer;
+extern AVOutputFormat ff_pcm_u32le_muxer;
+extern AVOutputFormat ff_pcm_u24be_muxer;
+extern AVOutputFormat ff_pcm_u24le_muxer;
+extern AVOutputFormat ff_pcm_u16be_muxer;
+extern AVOutputFormat ff_pcm_u16le_muxer;
+extern AVOutputFormat ff_pcm_u8_muxer;
+extern AVOutputFormat ff_psp_muxer;
+extern AVOutputFormat ff_rawvideo_muxer;
+extern AVOutputFormat ff_rm_muxer;
+extern AVOutputFormat ff_roq_muxer;
+extern AVOutputFormat ff_rso_muxer;
+extern AVOutputFormat ff_rtp_muxer;
+extern AVOutputFormat ff_rtp_mpegts_muxer;
+extern AVOutputFormat ff_rtsp_muxer;
+extern AVOutputFormat ff_sap_muxer;
+extern AVOutputFormat ff_sbc_muxer;
+extern AVOutputFormat ff_scc_muxer;
+extern AVOutputFormat ff_segafilm_muxer;
+extern AVOutputFormat ff_segment_muxer;
+extern AVOutputFormat ff_stream_segment_muxer;
+extern AVOutputFormat ff_singlejpeg_muxer;
+extern AVOutputFormat ff_smjpeg_muxer;
+extern AVOutputFormat ff_smoothstreaming_muxer;
+extern AVOutputFormat ff_sox_muxer;
+extern AVOutputFormat ff_spx_muxer;
+extern AVOutputFormat ff_spdif_muxer;
+extern AVOutputFormat ff_srt_muxer;
+extern AVOutputFormat ff_streamhash_muxer;
+extern AVOutputFormat ff_sup_muxer;
+extern AVOutputFormat ff_swf_muxer;
+extern AVOutputFormat ff_tee_muxer;
+extern AVOutputFormat ff_tg2_muxer;
+extern AVOutputFormat ff_tgp_muxer;
+extern AVOutputFormat ff_mkvtimestamp_v2_muxer;
+extern AVOutputFormat ff_truehd_muxer;
+extern AVOutputFormat ff_tta_muxer;
+extern AVOutputFormat ff_uncodedframecrc_muxer;
+extern AVOutputFormat ff_vc1_muxer;
+extern AVOutputFormat ff_vc1t_muxer;
+extern AVOutputFormat ff_voc_muxer;
+extern AVOutputFormat ff_w64_muxer;
+extern AVOutputFormat ff_wav_muxer;
+extern AVOutputFormat ff_webm_muxer;
+extern AVOutputFormat ff_webm_dash_manifest_muxer;
+extern AVOutputFormat ff_webm_chunk_muxer;
+extern AVOutputFormat ff_webp_muxer;
+extern AVOutputFormat ff_webvtt_muxer;
+extern AVOutputFormat ff_wtv_muxer;
+extern AVOutputFormat ff_wv_muxer;
+extern AVOutputFormat ff_yuv4mpegpipe_muxer;
+extern AVOutputFormat ff_chromaprint_muxer;
+extern AVFilter ff_af_acompressor;
+extern AVFilter ff_af_acontrast;
+extern AVFilter ff_af_acopy;
+extern AVFilter ff_af_acue;
+extern AVFilter ff_af_acrossfade;
+extern AVFilter ff_af_acrossover;
+extern AVFilter ff_af_acrusher;
+extern AVFilter ff_af_adeclick;
+extern AVFilter ff_af_adeclip;
+extern AVFilter ff_af_adelay;
+extern AVFilter ff_af_aderivative;
+extern AVFilter ff_af_aecho;
+extern AVFilter ff_af_aemphasis;
+extern AVFilter ff_af_aeval;
+extern AVFilter ff_af_afade;
+extern AVFilter ff_af_afftdn;
+extern AVFilter ff_af_afftfilt;
+extern AVFilter ff_af_afir;
+extern AVFilter ff_af_aformat;
+extern AVFilter ff_af_agate;
+extern AVFilter ff_af_aiir;
+extern AVFilter ff_af_aintegral;
+extern AVFilter ff_af_ainterleave;
+extern AVFilter ff_af_alimiter;
+extern AVFilter ff_af_allpass;
+extern AVFilter ff_af_aloop;
+extern AVFilter ff_af_amerge;
+extern AVFilter ff_af_ametadata;
+extern AVFilter ff_af_amix;
+extern AVFilter ff_af_amultiply;
+extern AVFilter ff_af_anequalizer;
+extern AVFilter ff_af_anlmdn;
+extern AVFilter ff_af_anlms;
+extern AVFilter ff_af_anull;
+extern AVFilter ff_af_apad;
+extern AVFilter ff_af_aperms;
+extern AVFilter ff_af_aphaser;
+extern AVFilter ff_af_apulsator;
+extern AVFilter ff_af_arealtime;
+extern AVFilter ff_af_aresample;
+extern AVFilter ff_af_areverse;
+extern AVFilter ff_af_arnndn;
+extern AVFilter ff_af_aselect;
+extern AVFilter ff_af_asendcmd;
+extern AVFilter ff_af_asetnsamples;
+extern AVFilter ff_af_asetpts;
+extern AVFilter ff_af_asetrate;
+extern AVFilter ff_af_asettb;
+extern AVFilter ff_af_ashowinfo;
+extern AVFilter ff_af_asidedata;
+extern AVFilter ff_af_asoftclip;
+extern AVFilter ff_af_asplit;
+extern AVFilter ff_af_astats;
+extern AVFilter ff_af_astreamselect;
+extern AVFilter ff_af_asubboost;
+extern AVFilter ff_af_atempo;
+extern AVFilter ff_af_atrim;
+extern AVFilter ff_af_axcorrelate;
+extern AVFilter ff_af_azmq;
+extern AVFilter ff_af_bandpass;
+extern AVFilter ff_af_bandreject;
+extern AVFilter ff_af_bass;
+extern AVFilter ff_af_biquad;
+extern AVFilter ff_af_bs2b;
+extern AVFilter ff_af_channelmap;
+extern AVFilter ff_af_channelsplit;
+extern AVFilter ff_af_chorus;
+extern AVFilter ff_af_compand;
+extern AVFilter ff_af_compensationdelay;
+extern AVFilter ff_af_crossfeed;
+extern AVFilter ff_af_crystalizer;
+extern AVFilter ff_af_dcshift;
+extern AVFilter ff_af_deesser;
+extern AVFilter ff_af_drmeter;
+extern AVFilter ff_af_dynaudnorm;
+extern AVFilter ff_af_earwax;
+extern AVFilter ff_af_ebur128;
+extern AVFilter ff_af_equalizer;
+extern AVFilter ff_af_extrastereo;
+extern AVFilter ff_af_firequalizer;
+extern AVFilter ff_af_flanger;
+extern AVFilter ff_af_haas;
+extern AVFilter ff_af_hdcd;
+extern AVFilter ff_af_headphone;
+extern AVFilter ff_af_highpass;
+extern AVFilter ff_af_highshelf;
+extern AVFilter ff_af_join;
+extern AVFilter ff_af_loudnorm;
+extern AVFilter ff_af_lowpass;
+extern AVFilter ff_af_lowshelf;
+extern AVFilter ff_af_mcompand;
+extern AVFilter ff_af_pan;
+extern AVFilter ff_af_replaygain;
+extern AVFilter ff_af_rubberband;
+extern AVFilter ff_af_sidechaincompress;
+extern AVFilter ff_af_sidechaingate;
+extern AVFilter ff_af_silencedetect;
+extern AVFilter ff_af_silenceremove;
+extern AVFilter ff_af_sofalizer;
+extern AVFilter ff_af_stereotools;
+extern AVFilter ff_af_stereowiden;
+extern AVFilter ff_af_superequalizer;
+extern AVFilter ff_af_surround;
+extern AVFilter ff_af_treble;
+extern AVFilter ff_af_tremolo;
+extern AVFilter ff_af_vibrato;
+extern AVFilter ff_af_volume;
+extern AVFilter ff_af_volumedetect;
+extern AVFilter ff_asrc_aevalsrc;
+extern AVFilter ff_asrc_afirsrc;
+extern AVFilter ff_asrc_anoisesrc;
+extern AVFilter ff_asrc_anullsrc;
+extern AVFilter ff_asrc_hilbert;
+extern AVFilter ff_asrc_sinc;
+extern AVFilter ff_asrc_sine;
+extern AVFilter ff_asink_anullsink;
+extern AVFilter ff_vf_addroi;
+extern AVFilter ff_vf_alphaextract;
+extern AVFilter ff_vf_alphamerge;
+extern AVFilter ff_vf_amplify;
+extern AVFilter ff_vf_ass;
+extern AVFilter ff_vf_atadenoise;
+extern AVFilter ff_vf_avgblur;
+extern AVFilter ff_vf_bbox;
+extern AVFilter ff_vf_bench;
+extern AVFilter ff_vf_bilateral;
+extern AVFilter ff_vf_bitplanenoise;
+extern AVFilter ff_vf_blackdetect;
+extern AVFilter ff_vf_blackframe;
+extern AVFilter ff_vf_blend;
+extern AVFilter ff_vf_bm3d;
+extern AVFilter ff_vf_boxblur;
+extern AVFilter ff_vf_bwdif;
+extern AVFilter ff_vf_cas;
+extern AVFilter ff_vf_chromahold;
+extern AVFilter ff_vf_chromakey;
+extern AVFilter ff_vf_chromanr;
+extern AVFilter ff_vf_chromashift;
+extern AVFilter ff_vf_ciescope;
+extern AVFilter ff_vf_codecview;
+extern AVFilter ff_vf_colorbalance;
+extern AVFilter ff_vf_colorchannelmixer;
+extern AVFilter ff_vf_colorkey;
+extern AVFilter ff_vf_colorhold;
+extern AVFilter ff_vf_colorlevels;
+extern AVFilter ff_vf_colormatrix;
+extern AVFilter ff_vf_colorspace;
+extern AVFilter ff_vf_convolution;
+extern AVFilter ff_vf_convolve;
+extern AVFilter ff_vf_copy;
+extern AVFilter ff_vf_cover_rect;
+extern AVFilter ff_vf_crop;
+extern AVFilter ff_vf_cropdetect;
+extern AVFilter ff_vf_cue;
+extern AVFilter ff_vf_curves;
+extern AVFilter ff_vf_datascope;
+extern AVFilter ff_vf_dblur;
+extern AVFilter ff_vf_dctdnoiz;
+extern AVFilter ff_vf_deband;
+extern AVFilter ff_vf_deblock;
+extern AVFilter ff_vf_decimate;
+extern AVFilter ff_vf_deconvolve;
+extern AVFilter ff_vf_dedot;
+extern AVFilter ff_vf_deflate;
+extern AVFilter ff_vf_deflicker;
+extern AVFilter ff_vf_deinterlace_qsv;
+extern AVFilter ff_vf_dejudder;
+extern AVFilter ff_vf_delogo;
+extern AVFilter ff_vf_derain;
+extern AVFilter ff_vf_deshake;
+extern AVFilter ff_vf_despill;
+extern AVFilter ff_vf_detelecine;
+extern AVFilter ff_vf_dilation;
+extern AVFilter ff_vf_displace;
+extern AVFilter ff_vf_dnn_processing;
+extern AVFilter ff_vf_doubleweave;
+extern AVFilter ff_vf_drawbox;
+extern AVFilter ff_vf_drawgraph;
+extern AVFilter ff_vf_drawgrid;
+extern AVFilter ff_vf_drawtext;
+extern AVFilter ff_vf_edgedetect;
+extern AVFilter ff_vf_elbg;
+extern AVFilter ff_vf_entropy;
+extern AVFilter ff_vf_eq;
+extern AVFilter ff_vf_erosion;
+extern AVFilter ff_vf_extractplanes;
+extern AVFilter ff_vf_fade;
+extern AVFilter ff_vf_fftdnoiz;
+extern AVFilter ff_vf_fftfilt;
+extern AVFilter ff_vf_field;
+extern AVFilter ff_vf_fieldhint;
+extern AVFilter ff_vf_fieldmatch;
+extern AVFilter ff_vf_fieldorder;
+extern AVFilter ff_vf_fillborders;
+extern AVFilter ff_vf_find_rect;
+extern AVFilter ff_vf_floodfill;
+extern AVFilter ff_vf_format;
+extern AVFilter ff_vf_fps;
+extern AVFilter ff_vf_framepack;
+extern AVFilter ff_vf_framerate;
+extern AVFilter ff_vf_framestep;
+extern AVFilter ff_vf_freezedetect;
+extern AVFilter ff_vf_freezeframes;
+extern AVFilter ff_vf_fspp;
+extern AVFilter ff_vf_gblur;
+extern AVFilter ff_vf_geq;
+extern AVFilter ff_vf_gradfun;
+extern AVFilter ff_vf_graphmonitor;
+extern AVFilter ff_vf_greyedge;
+extern AVFilter ff_vf_haldclut;
+extern AVFilter ff_vf_hflip;
+extern AVFilter ff_vf_histeq;
+extern AVFilter ff_vf_histogram;
+extern AVFilter ff_vf_hqdn3d;
+extern AVFilter ff_vf_hqx;
+extern AVFilter ff_vf_hstack;
+extern AVFilter ff_vf_hue;
+extern AVFilter ff_vf_hwdownload;
+extern AVFilter ff_vf_hwmap;
+extern AVFilter ff_vf_hwupload;
+extern AVFilter ff_vf_hysteresis;
+extern AVFilter ff_vf_idet;
+extern AVFilter ff_vf_il;
+extern AVFilter ff_vf_inflate;
+extern AVFilter ff_vf_interlace;
+extern AVFilter ff_vf_interleave;
+extern AVFilter ff_vf_kerndeint;
+extern AVFilter ff_vf_lagfun;
+extern AVFilter ff_vf_lenscorrection;
+extern AVFilter ff_vf_limiter;
+extern AVFilter ff_vf_loop;
+extern AVFilter ff_vf_lumakey;
+extern AVFilter ff_vf_lut;
+extern AVFilter ff_vf_lut1d;
+extern AVFilter ff_vf_lut2;
+extern AVFilter ff_vf_lut3d;
+extern AVFilter ff_vf_lutrgb;
+extern AVFilter ff_vf_lutyuv;
+extern AVFilter ff_vf_maskedclamp;
+extern AVFilter ff_vf_maskedmax;
+extern AVFilter ff_vf_maskedmerge;
+extern AVFilter ff_vf_maskedmin;
+extern AVFilter ff_vf_maskedthreshold;
+extern AVFilter ff_vf_maskfun;
+extern AVFilter ff_vf_mcdeint;
+extern AVFilter ff_vf_median;
+extern AVFilter ff_vf_mergeplanes;
+extern AVFilter ff_vf_mestimate;
+extern AVFilter ff_vf_metadata;
+extern AVFilter ff_vf_midequalizer;
+extern AVFilter ff_vf_minterpolate;
+extern AVFilter ff_vf_mix;
+extern AVFilter ff_vf_mpdecimate;
+extern AVFilter ff_vf_negate;
+extern AVFilter ff_vf_nlmeans;
+extern AVFilter ff_vf_nnedi;
+extern AVFilter ff_vf_noformat;
+extern AVFilter ff_vf_noise;
+extern AVFilter ff_vf_normalize;
+extern AVFilter ff_vf_null;
+extern AVFilter ff_vf_oscilloscope;
+extern AVFilter ff_vf_overlay;
+extern AVFilter ff_vf_overlay_qsv;
+extern AVFilter ff_vf_owdenoise;
+extern AVFilter ff_vf_pad;
+extern AVFilter ff_vf_palettegen;
+extern AVFilter ff_vf_paletteuse;
+extern AVFilter ff_vf_perms;
+extern AVFilter ff_vf_perspective;
+extern AVFilter ff_vf_phase;
+extern AVFilter ff_vf_photosensitivity;
+extern AVFilter ff_vf_pixdesctest;
+extern AVFilter ff_vf_pixscope;
+extern AVFilter ff_vf_pp;
+extern AVFilter ff_vf_pp7;
+extern AVFilter ff_vf_premultiply;
+extern AVFilter ff_vf_prewitt;
+extern AVFilter ff_vf_pseudocolor;
+extern AVFilter ff_vf_psnr;
+extern AVFilter ff_vf_pullup;
+extern AVFilter ff_vf_qp;
+extern AVFilter ff_vf_random;
+extern AVFilter ff_vf_readeia608;
+extern AVFilter ff_vf_readvitc;
+extern AVFilter ff_vf_realtime;
+extern AVFilter ff_vf_remap;
+extern AVFilter ff_vf_removegrain;
+extern AVFilter ff_vf_removelogo;
+extern AVFilter ff_vf_repeatfields;
+extern AVFilter ff_vf_reverse;
+extern AVFilter ff_vf_rgbashift;
+extern AVFilter ff_vf_roberts;
+extern AVFilter ff_vf_rotate;
+extern AVFilter ff_vf_sab;
+extern AVFilter ff_vf_scale;
+extern AVFilter ff_vf_scale_qsv;
+extern AVFilter ff_vf_scale2ref;
+extern AVFilter ff_vf_scdet;
+extern AVFilter ff_vf_scroll;
+extern AVFilter ff_vf_select;
+extern AVFilter ff_vf_selectivecolor;
+extern AVFilter ff_vf_sendcmd;
+extern AVFilter ff_vf_separatefields;
+extern AVFilter ff_vf_setdar;
+extern AVFilter ff_vf_setfield;
+extern AVFilter ff_vf_setparams;
+extern AVFilter ff_vf_setpts;
+extern AVFilter ff_vf_setrange;
+extern AVFilter ff_vf_setsar;
+extern AVFilter ff_vf_settb;
+extern AVFilter ff_vf_showinfo;
+extern AVFilter ff_vf_showpalette;
+extern AVFilter ff_vf_shuffleframes;
+extern AVFilter ff_vf_shuffleplanes;
+extern AVFilter ff_vf_sidedata;
+extern AVFilter ff_vf_signalstats;
+extern AVFilter ff_vf_signature;
+extern AVFilter ff_vf_smartblur;
+extern AVFilter ff_vf_sobel;
+extern AVFilter ff_vf_split;
+extern AVFilter ff_vf_spp;
+extern AVFilter ff_vf_sr;
+extern AVFilter ff_vf_ssim;
+extern AVFilter ff_vf_stereo3d;
+extern AVFilter ff_vf_streamselect;
+extern AVFilter ff_vf_subtitles;
+extern AVFilter ff_vf_super2xsai;
+extern AVFilter ff_vf_swaprect;
+extern AVFilter ff_vf_swapuv;
+extern AVFilter ff_vf_tblend;
+extern AVFilter ff_vf_telecine;
+extern AVFilter ff_vf_thistogram;
+extern AVFilter ff_vf_threshold;
+extern AVFilter ff_vf_thumbnail;
+extern AVFilter ff_vf_tile;
+extern AVFilter ff_vf_tinterlace;
+extern AVFilter ff_vf_tlut2;
+extern AVFilter ff_vf_tmedian;
+extern AVFilter ff_vf_tmix;
+extern AVFilter ff_vf_tonemap;
+extern AVFilter ff_vf_tpad;
+extern AVFilter ff_vf_transpose;
+extern AVFilter ff_vf_trim;
+extern AVFilter ff_vf_unpremultiply;
+extern AVFilter ff_vf_unsharp;
+extern AVFilter ff_vf_untile;
+extern AVFilter ff_vf_uspp;
+extern AVFilter ff_vf_v360;
+extern AVFilter ff_vf_vaguedenoiser;
+extern AVFilter ff_vf_vectorscope;
+extern AVFilter ff_vf_vflip;
+extern AVFilter ff_vf_vfrdet;
+extern AVFilter ff_vf_vibrance;
+extern AVFilter ff_vf_vidstabdetect;
+extern AVFilter ff_vf_vidstabtransform;
+extern AVFilter ff_vf_vignette;
+extern AVFilter ff_vf_vmafmotion;
+extern AVFilter ff_vf_vpp_qsv;
+extern AVFilter ff_vf_vstack;
+extern AVFilter ff_vf_w3fdif;
+extern AVFilter ff_vf_waveform;
+extern AVFilter ff_vf_weave;
+extern AVFilter ff_vf_xbr;
+extern AVFilter ff_vf_xfade;
+extern AVFilter ff_vf_xmedian;
+extern AVFilter ff_vf_xstack;
+extern AVFilter ff_vf_yadif;
+extern AVFilter ff_vf_yaepblur;
+extern AVFilter ff_vf_zmq;
+extern AVFilter ff_vf_zoompan;
+extern AVFilter ff_vf_zscale;
+extern AVFilter ff_vsrc_allrgb;
+extern AVFilter ff_vsrc_allyuv;
+extern AVFilter ff_vsrc_cellauto;
+extern AVFilter ff_vsrc_color;
+extern AVFilter ff_vsrc_gradients;
+extern AVFilter ff_vsrc_haldclutsrc;
+extern AVFilter ff_vsrc_life;
+extern AVFilter ff_vsrc_mandelbrot;
+extern AVFilter ff_vsrc_mptestsrc;
+extern AVFilter ff_vsrc_nullsrc;
+extern AVFilter ff_vsrc_pal75bars;
+extern AVFilter ff_vsrc_pal100bars;
+extern AVFilter ff_vsrc_rgbtestsrc;
+extern AVFilter ff_vsrc_sierpinski;
+extern AVFilter ff_vsrc_smptebars;
+extern AVFilter ff_vsrc_smptehdbars;
+extern AVFilter ff_vsrc_testsrc;
+extern AVFilter ff_vsrc_testsrc2;
+extern AVFilter ff_vsrc_yuvtestsrc;
+extern AVFilter ff_vsink_nullsink;
+extern AVFilter ff_avf_abitscope;
+extern AVFilter ff_avf_adrawgraph;
+extern AVFilter ff_avf_agraphmonitor;
+extern AVFilter ff_avf_ahistogram;
+extern AVFilter ff_avf_aphasemeter;
+extern AVFilter ff_avf_avectorscope;
+extern AVFilter ff_avf_concat;
+extern AVFilter ff_avf_showcqt;
+extern AVFilter ff_avf_showfreqs;
+extern AVFilter ff_avf_showspatial;
+extern AVFilter ff_avf_showspectrum;
+extern AVFilter ff_avf_showspectrumpic;
+extern AVFilter ff_avf_showvolume;
+extern AVFilter ff_avf_showwaves;
+extern AVFilter ff_avf_showwavespic;
+extern AVFilter ff_vaf_spectrumsynth;
+extern AVFilter ff_avsrc_amovie;
+extern AVFilter ff_avsrc_movie;
+extern AVFilter ff_af_afifo;
+extern AVFilter ff_vf_fifo;
+extern AVFilter ff_asrc_abuffer;
+extern AVFilter ff_vsrc_buffer;
+extern AVFilter ff_asink_abuffer;
+extern AVFilter ff_vsink_buffer;
 
 static const AVOutputFormat * const muxer_list[] = {
     &ff_a64_muxer,
@@ -16991,7 +18564,15 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt);
 static int aa_read_seek(AVFormatContext *s,int stream_index, int64_t timestamp, int flags);
 static int aa_probe(const AVProbeData *p);
 static int aa_read_close(AVFormatContext *s);
-static const AVOption aa_options[];
+#define OFFSET(x) offsetof(AADemuxContext, x)
+static const AVOption aa_options[] = {
+    { "aa_fixed_key", // extracted from libAAX_SDK.so and AAXSDKWin.dll files!
+        "Fixed key used for handling Audible AA files", OFFSET(aa_fixed_key),
+        AV_OPT_TYPE_BINARY, {.str="77214d4b196a87cd520045fd2a51d673"},
+        .flags = AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
 static const AVClass aa_class;
 static int adts_aac_probe(const AVProbeData *p);
 static int adts_aac_resync(AVFormatContext *s);
@@ -17024,9 +18605,477 @@ static int force_one_stream(AVFormatContext *s);
 int ff_standardize_creation_time(AVFormatContext *s);
 
 
+void ff_fft_permute_sse(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_avx(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_sse(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_3dnow(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_3dnowext(FFTContext *s, FFTComplex *z);
+
+void ff_imdct_calc_3dnow(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_3dnow(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_3dnowext(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_3dnowext(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_calc_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_sse(FFTContext *s, FFTSample *output, const FFTSample *input);
+void ff_imdct_half_avx(FFTContext *s, FFTSample *output, const FFTSample *input);
+
+#if AV_GCC_VERSION_AT_LEAST(3,4)
+#    define av_warn_unused_result __attribute__((warn_unused_result))
+#else
+#    define av_warn_unused_result
+#endif
+
+av_warn_unused_result
+int swri_realloc_audio(AudioData *a, int count);
+
+void swri_noise_shaping_int16 (SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
+void swri_noise_shaping_int32 (SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
+void swri_noise_shaping_float (SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
+void swri_noise_shaping_double(SwrContext *s, AudioData *dsts, const AudioData *srcs, const AudioData *noises, int count);
+
+av_warn_unused_result
+int swri_rematrix_init(SwrContext *s);
+void swri_rematrix_free(SwrContext *s);
+int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
+int swri_rematrix_init_x86(struct SwrContext *s);
+
+av_warn_unused_result
+int swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat noise_fmt);
+av_warn_unused_result
+int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt);
+
+void swri_audio_convert_init_aarch64(struct AudioConvert *ac,
+                                 enum AVSampleFormat out_fmt,
+                                 enum AVSampleFormat in_fmt,
+                                 int channels);
+void swri_audio_convert_init_arm(struct AudioConvert *ac,
+                                 enum AVSampleFormat out_fmt,
+                                 enum AVSampleFormat in_fmt,
+                                 int channels);
+void swri_audio_convert_init_x86(struct AudioConvert *ac,
+                                 enum AVSampleFormat out_fmt,
+                                 enum AVSampleFormat in_fmt,
+                                 int channels);
+
+static const AVFilter * const filter_list[] = {
+    // &ff_af_abench,
+    // &ff_af_acompressor,
+    // &ff_af_acontrast,
+    // &ff_af_acopy,
+    // &ff_af_acue,
+    // &ff_af_acrossfade,
+    // &ff_af_acrossover,
+    // &ff_af_acrusher,
+    // &ff_af_adeclick,
+    // &ff_af_adeclip,
+    // &ff_af_adelay,
+    // &ff_af_aderivative,
+    // &ff_af_aecho,
+    // &ff_af_aemphasis,
+    // &ff_af_aeval,
+    // &ff_af_afade,
+    // &ff_af_afftdn,
+    // &ff_af_afftfilt,
+    // &ff_af_afir,
+    // &ff_af_aformat,
+    // &ff_af_agate,
+    // &ff_af_aiir,
+    // &ff_af_aintegral,
+    // &ff_af_ainterleave,
+    // &ff_af_alimiter,
+    // &ff_af_allpass,
+    // &ff_af_aloop,
+    // &ff_af_amerge,
+    // &ff_af_ametadata,
+    // &ff_af_amix,
+    // &ff_af_amultiply,
+    // &ff_af_anequalizer,
+    // &ff_af_anlmdn,
+    // &ff_af_anlms,
+    // &ff_af_anull,
+    // &ff_af_apad,
+    // &ff_af_aperms,
+    // &ff_af_aphaser,
+    // &ff_af_apulsator,
+    // &ff_af_arealtime,
+    // &ff_af_aresample,
+    // &ff_af_areverse,
+    // &ff_af_arnndn,
+    // &ff_af_aselect,
+    // &ff_af_asendcmd,
+    // &ff_af_asetnsamples,
+    // &ff_af_asetpts,
+    // &ff_af_asetrate,
+    // &ff_af_asettb,
+    // &ff_af_ashowinfo,
+    // &ff_af_asidedata,
+    // &ff_af_asoftclip,
+    // &ff_af_asplit,
+    // &ff_af_astats,
+    // &ff_af_astreamselect,
+    // &ff_af_asubboost,
+    // &ff_af_atempo,
+    // &ff_af_atrim,
+    // &ff_af_axcorrelate,
+    // &ff_af_azmq,
+    // &ff_af_bandpass,
+    // &ff_af_bandreject,
+    // &ff_af_bass,
+    // &ff_af_biquad,
+    // &ff_af_bs2b,
+    // &ff_af_channelmap,
+    // &ff_af_channelsplit,
+    // &ff_af_chorus,
+    // &ff_af_compand,
+    // &ff_af_compensationdelay,
+    // &ff_af_crossfeed,
+    // &ff_af_crystalizer,
+    // &ff_af_dcshift,
+    // &ff_af_deesser,
+    // &ff_af_drmeter,
+    // &ff_af_dynaudnorm,
+    // &ff_af_earwax,
+    // &ff_af_ebur128,
+    // &ff_af_equalizer,
+    // &ff_af_extrastereo,
+    // &ff_af_firequalizer,
+    // &ff_af_flanger,
+    // &ff_af_haas,
+    // &ff_af_hdcd,
+    // &ff_af_headphone,
+    // &ff_af_highpass,
+    // &ff_af_highshelf,
+    // &ff_af_join,
+    // &ff_af_loudnorm,
+    // &ff_af_lowpass,
+    // &ff_af_lowshelf,
+    // &ff_af_mcompand,
+    // &ff_af_pan,
+    // &ff_af_replaygain,
+    // &ff_af_rubberband,
+    // &ff_af_sidechaincompress,
+    // &ff_af_sidechaingate,
+    // &ff_af_silencedetect,
+    // &ff_af_silenceremove,
+    // &ff_af_sofalizer,
+    // &ff_af_stereotools,
+    // &ff_af_stereowiden,
+    // &ff_af_superequalizer,
+    // &ff_af_surround,
+    // &ff_af_treble,
+    // &ff_af_tremolo,
+    // &ff_af_vibrato,
+    // &ff_af_volume,
+    // &ff_af_volumedetect,
+    // &ff_asrc_aevalsrc,
+    // &ff_asrc_afirsrc,
+    // &ff_asrc_anoisesrc,
+    // &ff_asrc_anullsrc,
+    // &ff_asrc_hilbert,
+    // &ff_asrc_sinc,
+    // &ff_asrc_sine,
+    // &ff_asink_anullsink,
+    // &ff_vf_addroi,
+    // &ff_vf_alphaextract,
+    // &ff_vf_alphamerge,
+    // &ff_vf_amplify,
+    // &ff_vf_ass,
+    // &ff_vf_atadenoise,
+    // &ff_vf_avgblur,
+    // &ff_vf_bbox,
+    // &ff_vf_bench,
+    // &ff_vf_bilateral,
+    // &ff_vf_bitplanenoise,
+    // &ff_vf_blackdetect,
+    // &ff_vf_blackframe,
+    // &ff_vf_blend,
+    // &ff_vf_bm3d,
+    // &ff_vf_boxblur,
+    // &ff_vf_bwdif,
+    // &ff_vf_cas,
+    // &ff_vf_chromahold,
+    // &ff_vf_chromakey,
+    // &ff_vf_chromanr,
+    // &ff_vf_chromashift,
+    // &ff_vf_ciescope,
+    // &ff_vf_codecview,
+    // &ff_vf_colorbalance,
+    // &ff_vf_colorchannelmixer,
+    // &ff_vf_colorkey,
+    // &ff_vf_colorhold,
+    // &ff_vf_colorlevels,
+    // &ff_vf_colormatrix,
+    // &ff_vf_colorspace,
+    // &ff_vf_convolution,
+    // &ff_vf_convolve,
+    // &ff_vf_copy,
+    // &ff_vf_cover_rect,
+    // &ff_vf_crop,
+    // &ff_vf_cropdetect,
+    // &ff_vf_cue,
+    // &ff_vf_curves,
+    // &ff_vf_datascope,
+    // &ff_vf_dblur,
+    // &ff_vf_dctdnoiz,
+    // &ff_vf_deband,
+    // &ff_vf_deblock,
+    // &ff_vf_decimate,
+    // &ff_vf_deconvolve,
+    // &ff_vf_dedot,
+    // &ff_vf_deflate,
+    // &ff_vf_deflicker,
+    // &ff_vf_deinterlace_qsv,
+    // &ff_vf_dejudder,
+    // &ff_vf_delogo,
+    // &ff_vf_derain,
+    // &ff_vf_deshake,
+    // &ff_vf_despill,
+    // &ff_vf_detelecine,
+    // &ff_vf_dilation,
+    // &ff_vf_displace,
+    // &ff_vf_dnn_processing,
+    // &ff_vf_doubleweave,
+    // &ff_vf_drawbox,
+    // &ff_vf_drawgraph,
+    // &ff_vf_drawgrid,
+    // &ff_vf_drawtext,
+    // &ff_vf_edgedetect,
+    // &ff_vf_elbg,
+    // &ff_vf_entropy,
+    // &ff_vf_eq,
+    // &ff_vf_erosion,
+    // &ff_vf_extractplanes,
+    // &ff_vf_fade,
+    // &ff_vf_fftdnoiz,
+    // &ff_vf_fftfilt,
+    // &ff_vf_field,
+    // &ff_vf_fieldhint,
+    // &ff_vf_fieldmatch,
+    // &ff_vf_fieldorder,
+    // &ff_vf_fillborders,
+    // &ff_vf_find_rect,
+    // &ff_vf_floodfill,
+    // &ff_vf_format,
+    // &ff_vf_fps,
+    // &ff_vf_framepack,
+    // &ff_vf_framerate,
+    // &ff_vf_framestep,
+    // &ff_vf_freezedetect,
+    // &ff_vf_freezeframes,
+    // &ff_vf_fspp,
+    // &ff_vf_gblur,
+    // &ff_vf_geq,
+    // &ff_vf_gradfun,
+    // &ff_vf_graphmonitor,
+    // &ff_vf_greyedge,
+    // &ff_vf_haldclut,
+    // &ff_vf_hflip,
+    // &ff_vf_histeq,
+    // &ff_vf_histogram,
+    // &ff_vf_hqdn3d,
+    // &ff_vf_hqx,
+    // &ff_vf_hstack,
+    // &ff_vf_hue,
+    // &ff_vf_hwdownload,
+    // &ff_vf_hwmap,
+    // &ff_vf_hwupload,
+    // &ff_vf_hysteresis,
+    // &ff_vf_idet,
+    // &ff_vf_il,
+    // &ff_vf_inflate,
+    // &ff_vf_interlace,
+    // &ff_vf_interleave,
+    // &ff_vf_kerndeint,
+    // &ff_vf_lagfun,
+    // &ff_vf_lenscorrection,
+    // &ff_vf_limiter,
+    // &ff_vf_loop,
+    // &ff_vf_lumakey,
+    // &ff_vf_lut,
+    // &ff_vf_lut1d,
+    // &ff_vf_lut2,
+    // &ff_vf_lut3d,
+    // &ff_vf_lutrgb,
+    // &ff_vf_lutyuv,
+    // &ff_vf_maskedclamp,
+    // &ff_vf_maskedmax,
+    // &ff_vf_maskedmerge,
+    // &ff_vf_maskedmin,
+    // &ff_vf_maskedthreshold,
+    // &ff_vf_maskfun,
+    // &ff_vf_mcdeint,
+    // &ff_vf_median,
+    // &ff_vf_mergeplanes,
+    // &ff_vf_mestimate,
+    // &ff_vf_metadata,
+    // &ff_vf_midequalizer,
+    // &ff_vf_minterpolate,
+    // &ff_vf_mix,
+    // &ff_vf_mpdecimate,
+    // &ff_vf_negate,
+    // &ff_vf_nlmeans,
+    // &ff_vf_nnedi,
+    // &ff_vf_noformat,
+    // &ff_vf_noise,
+    // &ff_vf_normalize,
+    // &ff_vf_null,
+    // &ff_vf_oscilloscope,
+    // &ff_vf_overlay,
+    // &ff_vf_overlay_qsv,
+    // &ff_vf_owdenoise,
+    // &ff_vf_pad,
+    // &ff_vf_palettegen,
+    // &ff_vf_paletteuse,
+    // &ff_vf_perms,
+    // &ff_vf_perspective,
+    // &ff_vf_phase,
+    // &ff_vf_photosensitivity,
+    // &ff_vf_pixdesctest,
+    // &ff_vf_pixscope,
+    // &ff_vf_pp,
+    // &ff_vf_pp7,
+    // &ff_vf_premultiply,
+    // &ff_vf_prewitt,
+    // &ff_vf_pseudocolor,
+    // &ff_vf_psnr,
+    // &ff_vf_pullup,
+    // &ff_vf_qp,
+    // &ff_vf_random,
+    // &ff_vf_readeia608,
+    // &ff_vf_readvitc,
+    // &ff_vf_realtime,
+    // &ff_vf_remap,
+    // &ff_vf_removegrain,
+    // &ff_vf_removelogo,
+    // &ff_vf_repeatfields,
+    // &ff_vf_reverse,
+    // &ff_vf_rgbashift,
+    // &ff_vf_roberts,
+    // &ff_vf_rotate,
+    // &ff_vf_sab,
+    // &ff_vf_scale,
+    // &ff_vf_scale_qsv,
+    // &ff_vf_scale2ref,
+    // &ff_vf_scdet,
+    // &ff_vf_scroll,
+    // &ff_vf_select,
+    // &ff_vf_selectivecolor,
+    // &ff_vf_sendcmd,
+    // &ff_vf_separatefields,
+    // &ff_vf_setdar,
+    // &ff_vf_setfield,
+    // &ff_vf_setparams,
+    // &ff_vf_setpts,
+    // &ff_vf_setrange,
+    // &ff_vf_setsar,
+    // &ff_vf_settb,
+    // &ff_vf_showinfo,
+    // &ff_vf_showpalette,
+    // &ff_vf_shuffleframes,
+    // &ff_vf_shuffleplanes,
+    // &ff_vf_sidedata,
+    // &ff_vf_signalstats,
+    // &ff_vf_signature,
+    // &ff_vf_smartblur,
+    // &ff_vf_sobel,
+    // &ff_vf_split,
+    // &ff_vf_spp,
+    // &ff_vf_sr,
+    // &ff_vf_ssim,
+    // &ff_vf_stereo3d,
+    // &ff_vf_streamselect,
+    // &ff_vf_subtitles,
+    // &ff_vf_super2xsai,
+    // &ff_vf_swaprect,
+    // &ff_vf_swapuv,
+    // &ff_vf_tblend,
+    // &ff_vf_telecine,
+    // &ff_vf_thistogram,
+    // &ff_vf_threshold,
+    // &ff_vf_thumbnail,
+    // &ff_vf_tile,
+    // &ff_vf_tinterlace,
+    // &ff_vf_tlut2,
+    // &ff_vf_tmedian,
+    // &ff_vf_tmix,
+    // &ff_vf_tonemap,
+    // &ff_vf_tpad,
+    // &ff_vf_transpose,
+    // &ff_vf_trim,
+    // &ff_vf_unpremultiply,
+    // &ff_vf_unsharp,
+    // &ff_vf_untile,
+    // &ff_vf_uspp,
+    // &ff_vf_v360,
+    // &ff_vf_vaguedenoiser,
+    // &ff_vf_vectorscope,
+    // &ff_vf_vflip,
+    // &ff_vf_vfrdet,
+    // &ff_vf_vibrance,
+    // &ff_vf_vidstabdetect,
+    // &ff_vf_vidstabtransform,
+    // &ff_vf_vignette,
+    // &ff_vf_vmafmotion,
+    // &ff_vf_vpp_qsv,
+    // &ff_vf_vstack,
+    // &ff_vf_w3fdif,
+    // &ff_vf_waveform,
+    // &ff_vf_weave,
+    // &ff_vf_xbr,
+    // &ff_vf_xfade,
+    // &ff_vf_xmedian,
+    // &ff_vf_xstack,
+    // &ff_vf_yadif,
+    // &ff_vf_yaepblur,
+    // &ff_vf_zmq,
+    // &ff_vf_zoompan,
+    // &ff_vf_zscale,
+    // &ff_vsrc_allrgb,
+    // &ff_vsrc_allyuv,
+    // &ff_vsrc_cellauto,
+    // &ff_vsrc_color,
+    // &ff_vsrc_gradients,
+    // &ff_vsrc_haldclutsrc,
+    // &ff_vsrc_life,
+    // &ff_vsrc_mandelbrot,
+    // &ff_vsrc_mptestsrc,
+    // &ff_vsrc_nullsrc,
+    // &ff_vsrc_pal75bars,
+    // &ff_vsrc_pal100bars,
+    // &ff_vsrc_rgbtestsrc,
+    // &ff_vsrc_sierpinski,
+    // &ff_vsrc_smptebars,
+    // &ff_vsrc_smptehdbars,
+    // &ff_vsrc_testsrc,
+    // &ff_vsrc_testsrc2,
+    // &ff_vsrc_yuvtestsrc,
+    // &ff_vsink_nullsink,
+    // &ff_avf_abitscope,
+    // &ff_avf_adrawgraph,
+    // &ff_avf_agraphmonitor,
+    // &ff_avf_ahistogram,
+    // &ff_avf_aphasemeter,
+    // &ff_avf_avectorscope,
+    // &ff_avf_concat,
+    // &ff_avf_showcqt,
+    // &ff_avf_showfreqs,
+    // &ff_avf_showspatial,
+    // &ff_avf_showspectrum,
+    // &ff_avf_showspectrumpic,
+    // &ff_avf_showvolume,
+    // &ff_avf_showwaves,
+    // &ff_avf_showwavespic,
+    // &ff_vaf_spectrumsynth,
+    // &ff_avsrc_amovie,
+    // &ff_avsrc_movie,
+    // &ff_af_afifo,
+    // &ff_vf_fifo,
+    // &ff_asrc_abuffer,
+    // &ff_vsrc_buffer,
+    // &ff_asink_abuffer,
+    // &ff_vsink_buffer,
+    NULL };
 
 
 
-
-
-
+int av_opt_eval_flags (void *obj, const AVOption *o, const char *val, int        *flags_out);
