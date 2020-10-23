@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "type_traits": "c",
+        "atomic": "c",
+        "xxatomic": "c",
+        "cmath": "c",
+        "cstddef": "cpp",
+        "functional": "cpp",
+        "limits": "cpp",
+        "memory": "cpp",
+        "mutex": "cpp",
+        "system_error": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp",
+        "ratio": "cpp"
+    }
+}

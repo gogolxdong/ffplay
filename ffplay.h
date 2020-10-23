@@ -30,112 +30,19 @@ enum {
     VAR_VARS_NB
 };
 enum AVStereo3DType {
-    /**
-     * Video is not stereoscopic (and metadata has to be there).
-     */
     AV_STEREO3D_2D,
-
-    /**
-     * Views are next to each other.
-     *
-     * @code{.unparsed}
-     *    LLLLRRRR
-     *    LLLLRRRR
-     *    LLLLRRRR
-     *    ...
-     * @endcode
-     */
     AV_STEREO3D_SIDEBYSIDE,
-
-    /**
-     * Views are on top of each other.
-     *
-     * @code{.unparsed}
-     *    LLLLLLLL
-     *    LLLLLLLL
-     *    RRRRRRRR
-     *    RRRRRRRR
-     * @endcode
-     */
     AV_STEREO3D_TOPBOTTOM,
-
-    /**
-     * Views are alternated temporally.
-     *
-     * @code{.unparsed}
-     *     frame0   frame1   frame2   ...
-     *    LLLLLLLL RRRRRRRR LLLLLLLL
-     *    LLLLLLLL RRRRRRRR LLLLLLLL
-     *    LLLLLLLL RRRRRRRR LLLLLLLL
-     *    ...      ...      ...
-     * @endcode
-     */
     AV_STEREO3D_FRAMESEQUENCE,
-
-    /**
-     * Views are packed in a checkerboard-like structure per pixel.
-     *
-     * @code{.unparsed}
-     *    LRLRLRLR
-     *    RLRLRLRL
-     *    LRLRLRLR
-     *    ...
-     * @endcode
-     */
     AV_STEREO3D_CHECKERBOARD,
-
-    /**
-     * Views are next to each other, but when upscaling
-     * apply a checkerboard pattern.
-     *
-     * @code{.unparsed}
-     *     LLLLRRRR          L L L L    R R R R
-     *     LLLLRRRR    =>     L L L L  R R R R
-     *     LLLLRRRR          L L L L    R R R R
-     *     LLLLRRRR           L L L L  R R R R
-     * @endcode
-     */
     AV_STEREO3D_SIDEBYSIDE_QUINCUNX,
-
-    /**
-     * Views are packed per line, as if interlaced.
-     *
-     * @code{.unparsed}
-     *    LLLLLLLL
-     *    RRRRRRRR
-     *    LLLLLLLL
-     *    ...
-     * @endcode
-     */
     AV_STEREO3D_LINES,
-
-    /**
-     * Views are packed per column.
-     *
-     * @code{.unparsed}
-     *    LRLRLRLR
-     *    LRLRLRLR
-     *    LRLRLRLR
-     *    ...
-     * @endcode
-     */
     AV_STEREO3D_COLUMNS,
 };
 
 enum AVStereo3DView {
-    /**
-     * Frame contains two packed views.
-     */
     AV_STEREO3D_VIEW_PACKED,
-
-    /**
-     * Frame contains only the left view.
-     */
     AV_STEREO3D_VIEW_LEFT,
-
-    /**
-     * Frame contains only the right view.
-     */
     AV_STEREO3D_VIEW_RIGHT,
 };
 typedef enum {
@@ -153,9 +60,6 @@ typedef enum {
     H264_SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
 } H264_SEI_Type;
 
-/**
- * pic_struct in picture timing SEI message
- */
 typedef enum {
     H264_SEI_PIC_STRUCT_FRAME             = 0, ///<  0: %frame
     H264_SEI_PIC_STRUCT_TOP_FIELD         = 1, ///<  1: top field
@@ -168,9 +72,6 @@ typedef enum {
     H264_SEI_PIC_STRUCT_FRAME_TRIPLING    = 8  ///<  8: %frame tripling
 } H264_SEI_PicStructType;
 
-/**
- * frame_packing_arrangement types
- */
 typedef enum {
     H264_SEI_FPA_TYPE_CHECKERBOARD        = 0,
     H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN   = 1,
@@ -194,69 +95,37 @@ enum AVEscapeMode {
 };
 
 enum AVPacketSideDataType {
-
     AV_PKT_DATA_PALETTE,
-
     AV_PKT_DATA_NEW_EXTRADATA,
-
     AV_PKT_DATA_PARAM_CHANGE,
-
     AV_PKT_DATA_H263_MB_INFO,
-
     AV_PKT_DATA_REPLAYGAIN,
-
     AV_PKT_DATA_DISPLAYMATRIX,
-
     AV_PKT_DATA_STEREO3D,
-
     AV_PKT_DATA_AUDIO_SERVICE_TYPE,
-
     AV_PKT_DATA_QUALITY_STATS,
-
     AV_PKT_DATA_FALLBACK_TRACK,
-
     AV_PKT_DATA_CPB_PROPERTIES,
-
     AV_PKT_DATA_SKIP_SAMPLES,
-
     AV_PKT_DATA_JP_DUALMONO,
-
     AV_PKT_DATA_STRINGS_METADATA,
-
     AV_PKT_DATA_SUBTITLE_POSITION,
-
     AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
-
     AV_PKT_DATA_WEBVTT_IDENTIFIER,
-
     AV_PKT_DATA_WEBVTT_SETTINGS,
-
     AV_PKT_DATA_METADATA_UPDATE,
-
     AV_PKT_DATA_MPEGTS_STREAM_ID,
-
     AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
-
     AV_PKT_DATA_SPHERICAL,
-
     AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
-
     AV_PKT_DATA_A53_CC,
-
     AV_PKT_DATA_ENCRYPTION_INIT_INFO,
-
     AV_PKT_DATA_ENCRYPTION_INFO,
-
     AV_PKT_DATA_AFD,
-
     AV_PKT_DATA_PRFT,
-
     AV_PKT_DATA_ICC_PROFILE,
-
     AV_PKT_DATA_DOVI_CONF,
-
     AV_PKT_DATA_S12M_TIMECODE,
-
     AV_PKT_DATA_NB
 };
 
@@ -329,6 +198,13 @@ enum show_muxdemuxers
     SHOW_MUXERS,
 };
 
+
+enum AVPictureStructure {
+    AV_PICTURE_STRUCTURE_UNKNOWN,      //< unknown
+    AV_PICTURE_STRUCTURE_TOP_FIELD,    //< coded as top field
+    AV_PICTURE_STRUCTURE_BOTTOM_FIELD, //< coded as bottom field
+    AV_PICTURE_STRUCTURE_FRAME,        //< coded as frame
+};
 typedef enum memory_order
 {
     memory_order_relaxed,
@@ -546,10 +422,10 @@ enum AVFrameSideDataType
     AV_FRAME_DATA_SPHERICAL,
     AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
     AV_FRAME_DATA_ICC_PROFILE,
-    #if FF_API_FRAME_QP
+    // #if FF_API_FRAME_QP
     AV_FRAME_DATA_QP_TABLE_PROPERTIES,
     AV_FRAME_DATA_QP_TABLE_DATA,
-#endif
+    // #endif
     AV_FRAME_DATA_S12M_TIMECODE,
 AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
     AV_FRAME_DATA_REGIONS_OF_INTEREST,
@@ -578,8 +454,6 @@ enum RDFTransformType
     IDFT_R2C,
     DFT_C2R,
 };
-
-
 
 enum AVSubtitleType
 {
@@ -793,7 +667,6 @@ enum AVCodecID
     AV_CODEC_ID_ANM,
     AV_CODEC_ID_BINKVIDEO,
     AV_CODEC_ID_IFF_ILBM,
-#define AV_CODEC_ID_IFF_BYTERUN1 AV_CODEC_ID_IFF_ILBM
     AV_CODEC_ID_KGV1,
     AV_CODEC_ID_YOP,
     AV_CODEC_ID_VP8,
@@ -831,7 +704,6 @@ enum AVCodecID
     AV_CODEC_ID_WEBP,
     AV_CODEC_ID_HNM4_VIDEO,
     AV_CODEC_ID_HEVC,
-#define AV_CODEC_ID_H265 AV_CODEC_ID_HEVC
     AV_CODEC_ID_FIC,
     AV_CODEC_ID_ALIAS_PIX,
     AV_CODEC_ID_BRENDER_PIX,
@@ -1229,21 +1101,14 @@ enum AVPixelFormat
     AV_PIX_FMT_BGR555BE, ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), big-endian   , X=unused/undefined
     AV_PIX_FMT_BGR555LE, ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), little-endian, X=unused/undefined
 
-#if FF_API_VAAPI
-    /** @name Deprecated pixel formats */
-    /**@{*/
+// #if FF_API_VAAPI
     AV_PIX_FMT_VAAPI_MOCO, ///< HW acceleration through VA API at motion compensation entry-point, Picture.data[3] contains a vaapi_render_state struct which contains macroblocks as well as various fields extracted from headers
     AV_PIX_FMT_VAAPI_IDCT, ///< HW acceleration through VA API at IDCT entry-point, Picture.data[3] contains a vaapi_render_state struct which contains fields extracted from headers
     AV_PIX_FMT_VAAPI_VLD,  ///< HW decoding through VA API, Picture.data[3] contains a VASurfaceID
-    /**@}*/
     AV_PIX_FMT_VAAPI = AV_PIX_FMT_VAAPI_VLD,
-#else
-    /**
-     *  Hardware acceleration through VA-API, data[3] contains a
-     *  VASurfaceID.
-     */
+// #else
     AV_PIX_FMT_VAAPI,
-#endif
+// #endif
     AV_PIX_FMT_YUV420P16LE,              ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
     AV_PIX_FMT_YUV420P16BE,              ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
     AV_PIX_FMT_YUV422P16LE,              ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
@@ -1490,11 +1355,10 @@ enum SwrDitherType {
     SWR_DITHER_NB,              ///< not part of API/ABI
 };
 
-/** Resampling Engines */
 enum SwrEngine {
-    SWR_ENGINE_SWR,             /**< SW Resampler */
-    SWR_ENGINE_SOXR,            /**< SoX Resampler */
-    SWR_ENGINE_NB,              ///< not part of API/ABI
+    SWR_ENGINE_SWR,            
+    SWR_ENGINE_SOXR,        
+    SWR_ENGINE_NB,             
 };
 
 /** Resampling Filter Types */
@@ -1509,21 +1373,10 @@ enum {
 };
 
 enum {
-    ///< Set when the thread is awaiting a packet.
     STATE_INPUT_READY,
-    ///< Set before the codec has called ff_thread_finish_setup().
     STATE_SETTING_UP,
-    /**
-     * Set when the codec calls get_buffer().
-     * State is returned to STATE_SETTING_UP afterwards.
-     */
     STATE_GET_BUFFER,
-     /**
-      * Set when the codec calls get_format().
-      * State is returned to STATE_SETTING_UP afterwards.
-      */
     STATE_GET_FORMAT,
-    ///< Set after the codec has called ff_thread_finish_setup().
     STATE_SETUP_FINISHED,
 };
 
@@ -1544,176 +1397,380 @@ enum {
     AV_CODEC_HW_CONFIG_METHOD_AD_HOC        = 0x08,
 };
 
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(__INTEL_COMPILER)
-#    define av_uninit(x) x=x
-#else
-#    define av_uninit(x) x
-#endif
+// #if (defined(__GNUC__) || defined(__clang__)) && !defined(__INTEL_COMPILER)
+// #    define av_uninit(x) x=x
+// #else
+// #    define av_uninit(x) x
+// #endif
 
-// #define offsetof(s,m) __builtin_offsetof(s,m)
+// #ifdef __GNUC__
+// #    define AV_GCC_VERSION_AT_LEAST(x,y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
+// #    define AV_GCC_VERSION_AT_MOST(x,y)  (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
+// #else
+// #    define AV_GCC_VERSION_AT_LEAST(x,y) 0
+// #    define AV_GCC_VERSION_AT_MOST(x,y)  0
+// #endif
 
-#ifdef __GNUC__
-#    define AV_GCC_VERSION_AT_LEAST(x,y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
-#    define AV_GCC_VERSION_AT_MOST(x,y)  (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
-#else
-#    define AV_GCC_VERSION_AT_LEAST(x,y) 0
-#    define AV_GCC_VERSION_AT_MOST(x,y)  0
-#endif
+// #ifdef __has_builtin
+// #    define AV_HAS_BUILTIN(x) __has_builtin(x)
+// #else
+// #    define AV_HAS_BUILTIN(x) 0
+// #endif
 
-#ifdef __has_builtin
-#    define AV_HAS_BUILTIN(x) __has_builtin(x)
-#else
-#    define AV_HAS_BUILTIN(x) 0
-#endif
+// #ifndef av_always_inline
+// #if AV_GCC_VERSION_AT_LEAST(3,1)
+// #define av_always_inline __attribute__((always_inline)) inline
+// #elif defined(_MSC_VER)
+// #define av_always_inline __forceinline
+// #else
+// #define av_always_inline inline
+// #endif
+// #endif
 
-#ifndef av_always_inline
-#if AV_GCC_VERSION_AT_LEAST(3,1)
-#    define av_always_inline __attribute__((always_inline)) inline
-#elif defined(_MSC_VER)
-#    define av_always_inline __forceinline
-#else
-#    define av_always_inline inline
-#endif
-#endif
+// #ifndef av_extern_inline
+// #if defined(__ICL) && __ICL >= 1210 || defined(__GNUC_STDC_INLINE__)
+// #    define av_extern_inline extern inline
+// #else
+// #    define av_extern_inline inline
+// #endif
+// #endif
 
-#ifndef av_extern_inline
-#if defined(__ICL) && __ICL >= 1210 || defined(__GNUC_STDC_INLINE__)
-#    define av_extern_inline extern inline
-#else
-#    define av_extern_inline inline
-#endif
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(3,4)
+// #    define av_warn_unused_result __attribute__((warn_unused_result))
+// #else
+// #    define av_warn_unused_result
+// #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3,4)
-#    define av_warn_unused_result __attribute__((warn_unused_result))
-#else
-#    define av_warn_unused_result
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(3,1)
+// #    define av_noinline __attribute__((noinline))
+// #elif defined(_MSC_VER)
+// #    define av_noinline __declspec(noinline)
+// #else
+// #    define av_noinline
+// #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3,1)
-#    define av_noinline __attribute__((noinline))
-#elif defined(_MSC_VER)
-#    define av_noinline __declspec(noinline)
-#else
-#    define av_noinline
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
+// #    define av_pure __attribute__((pure))
+// #else
+// #    define av_pure
+// #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
-#    define av_pure __attribute__((pure))
-#else
-#    define av_pure
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(2,6) || defined(__clang__)
+// #    define av_const __attribute__((const))
+// #else
+// #    define av_const
+// #endif
 
-#if AV_GCC_VERSION_AT_LEAST(2,6) || defined(__clang__)
-#    define av_const __attribute__((const))
-#else
-#    define av_const
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(4,3) || defined(__clang__)
+// #    define av_cold __attribute__((cold))
+// #else
+// #    define av_cold
+// #endif
 
-#if AV_GCC_VERSION_AT_LEAST(4,3) || defined(__clang__)
-#    define av_cold __attribute__((cold))
-#else
-#    define av_cold
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(4,1) && !defined(__llvm__)
+// #    define av_flatten __attribute__((flatten))
+// #else
+// #    define av_flatten
+// #endif
 
-#if AV_GCC_VERSION_AT_LEAST(4,1) && !defined(__llvm__)
-#    define av_flatten __attribute__((flatten))
-#else
-#    define av_flatten
-#endif
-
-#if AV_GCC_VERSION_AT_LEAST(3,1)
-#    define attribute_deprecated __attribute__((deprecated))
-#elif defined(_MSC_VER)
-#    define attribute_deprecated __declspec(deprecated)
-#else
-#    define attribute_deprecated
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(3,1)
+// #    define attribute_deprecated __attribute__((deprecated))
+// #elif defined(_MSC_VER)
+// #    define attribute_deprecated __declspec(deprecated)
+// #else
+// #    define attribute_deprecated
+// #endif
 
 
-#if defined(__GNUC__) || defined(__clang__)
-#    define av_unused __attribute__((unused))
-#else
-#    define av_unused
-#endif
+// #if defined(__GNUC__) || defined(__clang__)
+// #    define av_unused __attribute__((unused))
+// #else
+// #    define av_unused
+// #endif
 
-#if HAVE_XMM_CLOBBERS
-#    define XMM_CLOBBERS(...)        __VA_ARGS__
-#    define XMM_CLOBBERS_ONLY(...) : __VA_ARGS__
-#else
-#    define XMM_CLOBBERS(...)
-#    define XMM_CLOBBERS_ONLY(...)
-#endif
-#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
-#    define av_used __attribute__((used))
-#else
-#    define av_used
-#endif
+// #if HAVE_XMM_CLOBBERS
+// #    define XMM_CLOBBERS(...)        __VA_ARGS__
+// #    define XMM_CLOBBERS_ONLY(...) : __VA_ARGS__
+// #else
+// #    define XMM_CLOBBERS(...)
+// #    define XMM_CLOBBERS_ONLY(...)
+// #endif
+// #if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
+// #    define av_used __attribute__((used))
+// #else
+// #    define av_used
+// #endif
 
-#if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
-#define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
-#define DECLARE_ASM_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
-#define DECLARE_ASM_CONST(n, t, v) const t __attribute__((aligned(n))) v
-#elif defined(__DJGPP__)
-#define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(FFMIN(n, 16)))) v
-#define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(FFMIN(n, 16)))) v
-#define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(FFMIN(n, 16)))) v
-#elif defined(__GNUC__) || defined(__clang__)
-#define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
-#define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(n))) v
-#define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(n))) v
-#elif defined(_MSC_VER)
-#define DECLARE_ALIGNED(n, t, v) __declspec(align(n)) t v
-#define DECLARE_ASM_ALIGNED(n, t, v) __declspec(align(n)) t v
-#define DECLARE_ASM_CONST(n, t, v) __declspec(align(n)) static const t v
-#else
-#define DECLARE_ALIGNED(n, t, v) t v
-#define DECLARE_ASM_ALIGNED(n, t, v) t v
-#define DECLARE_ASM_CONST(n, t, v) static const t v
-#endif
+// #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
+// #define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
+// #define DECLARE_ASM_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
+// #define DECLARE_ASM_CONST(n, t, v) const t __attribute__((aligned(n))) v
+// #elif defined(__DJGPP__)
+// #define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(FFMIN(n, 16)))) v
+// #define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(FFMIN(n, 16)))) v
+// #define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(FFMIN(n, 16)))) v
+// #elif defined(__GNUC__) || defined(__clang__)
+// #define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
+// #define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(n))) v
+// #define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(n))) v
+// #elif defined(_MSC_VER)
+// #define DECLARE_ALIGNED(n, t, v) __declspec(align(n)) t v
+// #define DECLARE_ASM_ALIGNED(n, t, v) __declspec(align(n)) t v
+// #define DECLARE_ASM_CONST(n, t, v) __declspec(align(n)) static const t v
+// #else
+// #define DECLARE_ALIGNED(n, t, v) t v
+// #define DECLARE_ASM_ALIGNED(n, t, v) t v
+// #define DECLARE_ASM_CONST(n, t, v) static const t v
+// #endif
 
-#if AV_GCC_VERSION_AT_LEAST(2, 6) || defined(__clang__)
-#define av_const __attribute__((const))
-#else
-#define av_const
-#endif
+// #if AV_GCC_VERSION_AT_LEAST(2, 6) || defined(__clang__)
+// #define av_const __attribute__((const))
+// #else
+// #define av_const
+// #endif
+
+// #if !HAVE_BIGENDIAN
+// #define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
+// static void shuffle_bytes_##name (const uint8_t *src,                   \
+//                                         uint8_t *dst, int src_size)     \
+// {                                                                       \
+//     int i;                                                              \
+//                                                                         \
+//     for (i = 0; i < src_size; i += 4) {                                 \
+//         dst[i + 0] = src[i + a];                                        \
+//         dst[i + 1] = src[i + b];                                        \
+//         dst[i + 2] = src[i + c];                                        \
+//         dst[i + 3] = src[i + d];                                        \
+//     }                                                                   \
+// }
+
+// DEFINE_SHUFFLE_BYTES(1230_c, 1, 2, 3, 0)
+// DEFINE_SHUFFLE_BYTES(3012_c, 3, 0, 1, 2)
+// DEFINE_SHUFFLE_BYTES(3210_c, 3, 2, 1, 0)
+// #endif
+
+// #define GET_SAMPLE_RATE_NAME(rate) \
+//     char name[16];                 \
+//     snprintf(name, sizeof(name), "%d", rate);
+
+// #define GET_CH_LAYOUT_NAME(ch_layout) \
+//     char name[16];                    \
+//     snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
+
+// #define GET_CH_LAYOUT_DESC(ch_layout) \
+//     char name[128];                   \
+//     av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
+
+// #define GROW_ARRAY(array, nb_elems) \
+//     array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
+
+// #define GET_PIX_FMT_NAME(pix_fmt) \
+//     const char *name = av_get_pix_fmt_name(pix_fmt);
+
+// #define GET_CODEC_NAME(id) \
+//     const char *name = avcodec_descriptor_get(id)->name;
+
+// #define GET_SAMPLE_FMT_NAME(sample_fmt) \
+//     const char *name = av_get_sample_fmt_name(sample_fmt)
+
+// #define LIBAVUTIL_VERSION_INT AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
+//                                              LIBAVUTIL_VERSION_MINOR, \
+//                                              LIBAVUTIL_VERSION_MICRO)
+// #define LIBAVUTIL_VERSION AV_VERSION(LIBAVUTIL_VERSION_MAJOR, \
+//                                      LIBAVUTIL_VERSION_MINOR, \
+//                                      LIBAVUTIL_VERSION_MICRO)
+// #define LIBAVCODEC_VERSION_INT AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
+//                                               LIBAVCODEC_VERSION_MINOR, \
+//                                               LIBAVCODEC_VERSION_MICRO)
+// #define LIBAVCODEC_VERSION AV_VERSION(LIBAVCODEC_VERSION_MAJOR, \
+//                                       LIBAVCODEC_VERSION_MINOR, \
+//                                       LIBAVCODEC_VERSION_MICRO)
+// #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
+//                                                LIBAVFORMAT_VERSION_MINOR, \
+//                                                LIBAVFORMAT_VERSION_MICRO)
+// #define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, \
+//                                        LIBAVFORMAT_VERSION_MINOR, \
+//                                        LIBAVFORMAT_VERSION_MICRO)
+// #define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
+//         LIBAVDEVICE_VERSION_MINOR, \
+//         LIBAVDEVICE_VERSION_MICRO)
+// #define LIBAVDEVICE_VERSION AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
+//                                        LIBAVDEVICE_VERSION_MINOR, \
+//                                        LIBAVDEVICE_VERSION_MICRO)
+
+// #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
+//                                         LIBAVFILTER_VERSION_MINOR, \
+//                                         LIBAVFILTER_VERSION_MICRO)
+// #define LIBAVFILTER_VERSION AV_VERSION(LIBAVFILTER_VERSION_MAJOR, \
+//                                        LIBAVFILTER_VERSION_MINOR, \
+//                                        LIBAVFILTER_VERSION_MICRO)
+
+// #define LIBAVRESAMPLE_VERSION_INT AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
+//                                                  LIBAVRESAMPLE_VERSION_MINOR, \
+//                                                  LIBAVRESAMPLE_VERSION_MICRO)
+// #define LIBAVRESAMPLE_VERSION AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
+//                                          LIBAVRESAMPLE_VERSION_MINOR, \
+//                                          LIBAVRESAMPLE_VERSION_MICRO)
+
+// #define LIBSWSCALE_VERSION_INT AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
+//                                               LIBSWSCALE_VERSION_MINOR, \
+//                                               LIBSWSCALE_VERSION_MICRO)
+// #define LIBSWSCALE_VERSION AV_VERSION(LIBSWSCALE_VERSION_MAJOR, \
+//                                       LIBSWSCALE_VERSION_MINOR, \
+//                                       LIBSWSCALE_VERSION_MICRO)
+
+// #define LIBSWRESAMPLE_VERSION_INT AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
+//                                                  LIBSWRESAMPLE_VERSION_MINOR, \
+//                                                  LIBSWRESAMPLE_VERSION_MICRO)
+// #define LIBSWRESAMPLE_VERSION AV_VERSION(LIBSWRESAMPLE_VERSION_MAJOR, \
+//                                          LIBSWRESAMPLE_VERSION_MINOR, \
+//                                          LIBSWRESAMPLE_VERSION_MICRO)
+// #define LIBPOSTPROC_VERSION_INT AV_VERSION_INT(LIBPOSTPROC_VERSION_MAJOR, \
+//                                                LIBPOSTPROC_VERSION_MINOR, \
+//                                                LIBPOSTPROC_VERSION_MICRO)
+// #define LIBPOSTPROC_VERSION AV_VERSION(LIBPOSTPROC_VERSION_MAJOR, \
+//                                        LIBPOSTPROC_VERSION_MINOR, \
+//                                        LIBPOSTPROC_VERSION_MICRO)
+
+// template GET_UTF8(val, GET_BYTE, ERROR) {.dirty.} = 
+//     val = GET_BYTE
+//     block:
+//         var top:uint32 = (val and 128) shr 1
+//         if ((val and 0xc0) == 0x80 or val >= 0xFE):
+//             ERROR
+//         while (val and top) > 0:
+//             var tmp:uint32 = (GET_BYTE) - 128.uint32
+//             if(tmp shr 6) > 0:
+//                 ERROR
+//             val= (val shl 6) + tmp
+//             top = top shl 5
+//         val = val and ((top shl 1) - 1)
+// #define GET_UTF8(val, GET_BYTE, ERROR)\
+//     val= (GET_BYTE);\
+//     {\
+//         uint32_t top = (val & 128) >> 1;\
+//         if ((val & 0xc0) == 0x80 || val >= 0xFE)\
+//             {ERROR}\
+//         while (val & top) {\
+//             unsigned int tmp = (GET_BYTE) - 128;\
+//             if(tmp>>6)\
+//                 {ERROR}\
+//             val= (val<<6) + tmp;\
+//             top <<= 5;\
+//         }\
+//         val &= (top << 1) - 1;\
+//     }
+
+// #define GET_UTF16(val, GET_16BIT, ERROR)\
+//     val = (GET_16BIT);\
+//     {\
+//         unsigned int hi = val - 0xD800;\
+//         if (hi < 0x800) {\
+//             val = (GET_16BIT) - 0xDC00;\
+//             if (val > 0x3FFU || hi > 0x3FFU)\
+//                 {ERROR}\
+//             val += (hi<<10) + 0x10000;\
+//         }\
+//     }\
+
+
+// #define PUT_UTF8(val, tmp, PUT_BYTE)\
+//     {\
+//         int bytes, shift;\
+//         uint32_t in = val;\
+//         if (in < 0x80) {\
+//             tmp = in;\
+//             PUT_BYTE\
+//         } else {\
+//             bytes = (av_log2(in) + 4) / 5;\
+//             shift = (bytes - 1) * 6;\
+//             tmp = (256 - (256 >> bytes)) | (in >> shift);\
+//             PUT_BYTE\
+//             while (shift >= 6) {\
+//                 shift -= 6;\
+//                 tmp = 0x80 | ((in >> shift) & 0x3f);\
+//                 PUT_BYTE\
+//             }\
+//         }\
+//     }
+
+// #define PUT_UTF16(val, tmp, PUT_16BIT)\
+//     {\
+//         uint32_t in = val;\
+//         if (in < 0x10000) {\
+//             tmp = in;\
+//             PUT_16BIT\
+//         } else {\
+//             tmp = 0xD800 | ((in - 0x10000) >> 10);\
+//             PUT_16BIT\
+//             tmp = 0xDC00 | ((in - 0x10000) & 0x3FF);\
+//             PUT_16BIT\
+//         }\
+//     }\
+#define atomic_store(object, desired) \
+    do                                \
+    {                                 \
+        *(object) = (desired);        \
+    } while (0)
+// #define atomic_init(obj, value) \
+//     do                          \
+//     {                           \
+//         *(obj) = (value);       \
+//     } while (0)
+// #define SKIP_BITS(name, gb, num)     \
+//     do                               \
+//     {                                \
+//         SKIP_CACHE(name, gb, num);   \
+//         SKIP_COUNTER(name, gb, num); \
+//     } while (0)
+
+// #define av_assert0(cond)                                                 \
+//     do                                                                   \
+//     {                                                                    \
+//         if (!(cond))                                                     \
+//         {                                                                \
+//             av_log(NULL, AV_LOG_PANIC, "Assertion %s failed at %s:%d\n", \
+//                    AV_STRINGIFY(cond), __FILE__, __LINE__);              \
+//             abort();                                                     \
+//         }                                                                \
+//     } while (0)
+// #define AV_IS_INPUT_DEVICE(category)                         \
+//     (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
+//      ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
+//      ((category) == AV_CLASS_CATEGORY_DEVICE_INPUT))
+
+// #define AV_IS_OUTPUT_DEVICE(category)                         \
+//     (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT) || \
+//      ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT) || \
+//      ((category) == AV_CLASS_CATEGORY_DEVICE_OUTPUT))
+
+// #define FF_PAD_STRUCTURE(name, size, ...)                                  \
+//     struct ff_pad_helper_##name                                            \
+//     {                                                                      \
+//         __VA_ARGS__                                                        \
+//     };                                                                     \
+//     typedef struct name                                                    \
+//     {                                                                      \
+//         __VA_ARGS__                                                        \
+//         char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
+//     } name;
+
+// #define FETCH_MODIFY(opname, op)                                            \
+// static intptr_t atomic_fetch_ ## opname(intptr_t *object, intptr_t operand) \
+// {                                                                    \
+//     intptr_t ret;                                                    \
+//     ret = *object;                                                   \
+//     *object = *object op operand;                                    \
+//     return ret;                                                      \
+// }
+
 
 #define YUVRGB_TABLE_HEADROOM 512
 #define YUVRGB_TABLE_LUMA_HEADROOM 512
 #define SWS_MAX_FILTER_SIZE 256
-
 #define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
-
-
 #define HWACCEL_CAP_ASYNC_SAFE      (1 << 0)
-#if !HAVE_BIGENDIAN
-#define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
-static void shuffle_bytes_##name (const uint8_t *src,                   \
-                                        uint8_t *dst, int src_size)     \
-{                                                                       \
-    int i;                                                              \
-                                                                        \
-    for (i = 0; i < src_size; i += 4) {                                 \
-        dst[i + 0] = src[i + a];                                        \
-        dst[i + 1] = src[i + b];                                        \
-        dst[i + 2] = src[i + c];                                        \
-        dst[i + 3] = src[i + d];                                        \
-    }                                                                   \
-}
 
-DEFINE_SHUFFLE_BYTES(1230_c, 1, 2, 3, 0)
-DEFINE_SHUFFLE_BYTES(3012_c, 3, 0, 1, 2)
-DEFINE_SHUFFLE_BYTES(3210_c, 3, 2, 1, 0)
-#endif
-
-#if _INTEGRAL_MAX_BITS >= 128
-// minimum signed 128 bit value
-#define _I128_MIN (-170141183460469231731687303715884105727i128 - 1)
-// maximum signed 128 bit value
-#define _I128_MAX 170141183460469231731687303715884105727i128
-// maximum unsigned 128 bit value
-#define _UI128_MAX 0xffffffffffffffffffffffffffffffffui128
-#endif
 
 #ifndef SIZE_MAX
 #ifdef _WIN64
@@ -4757,36 +4814,12 @@ static unsigned sws_flags = SWS_BICUBIC;
 
 void *grow_array(void *array, int elem_size, int *size, int new_size);
 
-#define GROW_ARRAY(array, nb_elems) \
-    array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
-
-#define GET_PIX_FMT_NAME(pix_fmt) \
-    const char *name = av_get_pix_fmt_name(pix_fmt);
-
-#define GET_CODEC_NAME(id) \
-    const char *name = avcodec_descriptor_get(id)->name;
-
-#define GET_SAMPLE_FMT_NAME(sample_fmt) \
-    const char *name = av_get_sample_fmt_name(sample_fmt)
-
-#define GET_SAMPLE_RATE_NAME(rate) \
-    char name[16];                 \
-    snprintf(name, sizeof(name), "%d", rate);
-
-#define GET_CH_LAYOUT_NAME(ch_layout) \
-    char name[16];                    \
-    snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
-
-#define GET_CH_LAYOUT_DESC(ch_layout) \
-    char name[128];                   \
-    av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
 
 #define AV_LOG_SKIP_REPEATED 1
-
 #define AV_LOG_PRINT_LEVEL 2
 
 #define AV_VERSION_INT(a, b, c) ((a) << 16 | (b) << 8 | (c))
-#define AV_VERSION_DOT(a, b, c) a##.##b##.##c
+// #define AV_VERSION_DOT(a, b, c) a##.##b##.##c
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 #define AV_VERSION_MAJOR(a) ((a) >> 16)
 #define AV_VERSION_MINOR(a) (((a)&0x00FF00) >> 8)
@@ -4796,26 +4829,17 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBAVUTIL_VERSION_MINOR 60
 #define LIBAVUTIL_VERSION_MICRO 100
 
-#define LIBAVUTIL_VERSION_INT AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
-                                             LIBAVUTIL_VERSION_MINOR, \
-                                             LIBAVUTIL_VERSION_MICRO)
-#define LIBAVUTIL_VERSION AV_VERSION(LIBAVUTIL_VERSION_MAJOR, \
-                                     LIBAVUTIL_VERSION_MINOR, \
-                                     LIBAVUTIL_VERSION_MICRO)
+
 #define LIBAVUTIL_BUILD LIBAVUTIL_VERSION_INT
 
-#define LIBAVUTIL_IDENT "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
+#define AV_STRINGIFY(s) AV_TOSTRING(s)
+#define AV_TOSTRING(s) #s
 
+#define LIBAVUTIL_IDENT "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
 #define LIBAVCODEC_VERSION_MAJOR 58
 #define LIBAVCODEC_VERSION_MINOR 111
 #define LIBAVCODEC_VERSION_MICRO 101
 
-#define LIBAVCODEC_VERSION_INT AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
-                                              LIBAVCODEC_VERSION_MINOR, \
-                                              LIBAVCODEC_VERSION_MICRO)
-#define LIBAVCODEC_VERSION AV_VERSION(LIBAVCODEC_VERSION_MAJOR, \
-                                      LIBAVCODEC_VERSION_MINOR, \
-                                      LIBAVCODEC_VERSION_MICRO)
 #define LIBAVCODEC_BUILD LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -4824,12 +4848,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBAVFORMAT_VERSION_MINOR 62
 #define LIBAVFORMAT_VERSION_MICRO 100
 
-#define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
-                                               LIBAVFORMAT_VERSION_MINOR, \
-                                               LIBAVFORMAT_VERSION_MICRO)
-#define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, \
-                                       LIBAVFORMAT_VERSION_MINOR, \
-                                       LIBAVFORMAT_VERSION_MICRO)
+
 #define LIBAVFORMAT_BUILD LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -4838,12 +4857,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBAVDEVICE_VERSION_MINOR 11
 #define LIBAVDEVICE_VERSION_MICRO 102
 
-#define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
-                                               LIBAVDEVICE_VERSION_MINOR, \
-                                               LIBAVDEVICE_VERSION_MICRO)
-#define LIBAVDEVICE_VERSION AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
-                                       LIBAVDEVICE_VERSION_MINOR, \
-                                       LIBAVDEVICE_VERSION_MICRO)
+
 #define LIBAVDEVICE_BUILD LIBAVDEVICE_VERSION_INT
 
 #define LIBAVDEVICE_IDENT "Lavd" AV_STRINGIFY(LIBAVDEVICE_VERSION)
@@ -4852,12 +4866,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBAVFILTER_VERSION_MINOR 87
 #define LIBAVFILTER_VERSION_MICRO 100
 
-#define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
-                                               LIBAVFILTER_VERSION_MINOR, \
-                                               LIBAVFILTER_VERSION_MICRO)
-#define LIBAVFILTER_VERSION AV_VERSION(LIBAVFILTER_VERSION_MAJOR, \
-                                       LIBAVFILTER_VERSION_MINOR, \
-                                       LIBAVFILTER_VERSION_MICRO)
+
 #define LIBAVFILTER_BUILD LIBAVFILTER_VERSION_INT
 
 #define LIBAVFILTER_IDENT "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
@@ -4866,12 +4875,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBAVRESAMPLE_VERSION_MINOR 0
 #define LIBAVRESAMPLE_VERSION_MICRO 0
 
-#define LIBAVRESAMPLE_VERSION_INT AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
-                                                 LIBAVRESAMPLE_VERSION_MINOR, \
-                                                 LIBAVRESAMPLE_VERSION_MICRO)
-#define LIBAVRESAMPLE_VERSION AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
-                                         LIBAVRESAMPLE_VERSION_MINOR, \
-                                         LIBAVRESAMPLE_VERSION_MICRO)
+
 #define LIBAVRESAMPLE_BUILD LIBAVRESAMPLE_VERSION_INT
 
 #define LIBAVRESAMPLE_IDENT "Lavr" AV_STRINGIFY(LIBAVRESAMPLE_VERSION)
@@ -4880,12 +4884,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBSWSCALE_VERSION_MINOR 8
 #define LIBSWSCALE_VERSION_MICRO 100
 
-#define LIBSWSCALE_VERSION_INT AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
-                                              LIBSWSCALE_VERSION_MINOR, \
-                                              LIBSWSCALE_VERSION_MICRO)
-#define LIBSWSCALE_VERSION AV_VERSION(LIBSWSCALE_VERSION_MAJOR, \
-                                      LIBSWSCALE_VERSION_MINOR, \
-                                      LIBSWSCALE_VERSION_MICRO)
+
 #define LIBSWSCALE_BUILD LIBSWSCALE_VERSION_INT
 
 #define LIBSWSCALE_IDENT "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
@@ -4894,12 +4893,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBSWRESAMPLE_VERSION_MINOR 8
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 
-#define LIBSWRESAMPLE_VERSION_INT AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
-                                                 LIBSWRESAMPLE_VERSION_MINOR, \
-                                                 LIBSWRESAMPLE_VERSION_MICRO)
-#define LIBSWRESAMPLE_VERSION AV_VERSION(LIBSWRESAMPLE_VERSION_MAJOR, \
-                                         LIBSWRESAMPLE_VERSION_MINOR, \
-                                         LIBSWRESAMPLE_VERSION_MICRO)
+
 #define LIBSWRESAMPLE_BUILD LIBSWRESAMPLE_VERSION_INT
 
 #define LIBSWRESAMPLE_IDENT "SwR" AV_STRINGIFY(LIBSWRESAMPLE_VERSION)
@@ -4908,12 +4902,7 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define LIBPOSTPROC_VERSION_MINOR 8
 #define LIBPOSTPROC_VERSION_MICRO 100
 
-#define LIBPOSTPROC_VERSION_INT AV_VERSION_INT(LIBPOSTPROC_VERSION_MAJOR, \
-                                               LIBPOSTPROC_VERSION_MINOR, \
-                                               LIBPOSTPROC_VERSION_MICRO)
-#define LIBPOSTPROC_VERSION AV_VERSION(LIBPOSTPROC_VERSION_MAJOR, \
-                                       LIBPOSTPROC_VERSION_MINOR, \
-                                       LIBPOSTPROC_VERSION_MICRO)
+
 #define LIBPOSTPROC_BUILD LIBPOSTPROC_VERSION_INT
 
 #define LIBPOSTPROC_IDENT "postproc" AV_STRINGIFY(LIBPOSTPROC_VERSION)
@@ -5165,38 +5154,16 @@ typedef int ptrdiff_t;
 typedef int intptr_t;
 #endif
 
-#define atomic_store(object, desired) \
-    do                                \
-    {                                 \
-        *(object) = (desired);        \
-    } while (0)
-
-#define atomic_store_explicit(object, desired, order) \
-    atomic_store(object, desired)
-
-#define atomic_load(object) \
-    (*(object))
-
-#define atomic_load_explicit(object, order) \
-    atomic_load(object)
-
+#define kill_dependency(y) ((void)0)
+#define atomic_thread_fence(order) ((void)0)
+#define atomic_signal_fence(order) ((void)0)
+#define atomic_store_explicit(object, desired, order) atomic_store(object, desired)
+#define atomic_load(object) (*(object))
+#define atomic_load_explicit(object, order) atomic_load(object)
 #define ATOMIC_FLAG_INIT 0
-
 #define ATOMIC_VAR_INIT(value) (value)
 
-#define atomic_init(obj, value) \
-    do                          \
-    {                           \
-        *(obj) = (value);       \
-    } while (0)
 
-#define kill_dependency(y) ((void)0)
-
-#define atomic_thread_fence(order) \
-    ((void)0)
-
-#define atomic_signal_fence(order) \
-    ((void)0)
 
 #define atomic_is_lock_free(obj) 0
 
@@ -5319,14 +5286,8 @@ static inline char *av_ts_make_string(char *buf, int64_t ts)
     name##_index = FFMIN(name##_size_plus8, name##_index + (num))
 #endif
 
-#define BITS_LEFT(name, gb) ((int)((gb)->size_in_bits - name##_index))
 
-#define SKIP_BITS(name, gb, num)     \
-    do                               \
-    {                                \
-        SKIP_CACHE(name, gb, num);   \
-        SKIP_COUNTER(name, gb, num); \
-    } while (0)
+#define BITS_LEFT(name, gb) ((int)((gb)->size_in_bits - name##_index))
 
 #define LAST_SKIP_BITS(name, gb, num) SKIP_COUNTER(name, gb, num)
 
@@ -5389,14 +5350,7 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
 #define AVFMT_TS_NONSTRICT 0x20000 /**< Format does not require strictly     \
                                         increasing timestamps, but they must \
                                         still be monotonic */
-#define AVFMT_TS_NEGATIVE 0x40000  /**< Format allows muxing negative               \
-                                        timestamps. If not set the timestamp        \
-                                        will be shifted in av_write_frame and       \
-                                        av_interleaved_write_frame so they          \
-                                        start from 0.                               \
-                                        The user or muxer can override this through \
-                                        AVFormatContext.avoid_negative_ts           \
-                                        */
+#define AVFMT_TS_NEGATIVE 0x40000  
 
 #define AVFMT_SEEK_TO_PTS 0x4000000 /**< Seeking is based on PTS */
 
@@ -5506,16 +5460,7 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
 #define AV_INPUT_BUFFER_PADDING_SIZE 64
 #define AV_INPUT_BUFFER_MIN_SIZE 16384
 
-#define av_assert0(cond)                                                 \
-    do                                                                   \
-    {                                                                    \
-        if (!(cond))                                                     \
-        {                                                                \
-            av_log(NULL, AV_LOG_PANIC, "Assertion %s failed at %s:%d\n", \
-                   AV_STRINGIFY(cond), __FILE__, __LINE__);              \
-            abort();                                                     \
-        }                                                                \
-    } while (0)
+
 
 #if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 0
 #define av_assert1(cond) av_assert0(cond)
@@ -5546,8 +5491,6 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
 
 #define WHITESPACES " \n\t\r"
 
-#define AV_STRINGIFY(s) AV_TOSTRING(s)
-#define AV_TOSTRING(s) #s
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846 /* pi */
@@ -5558,15 +5501,6 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
 // double to fixed point
 #define CONV_DB(x) (int32_t)((x) * (1 << 16))
 
-#define AV_IS_INPUT_DEVICE(category)                         \
-    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
-     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
-     ((category) == AV_CLASS_CATEGORY_DEVICE_INPUT))
-
-#define AV_IS_OUTPUT_DEVICE(category)                         \
-    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT) || \
-     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT) || \
-     ((category) == AV_CLASS_CATEGORY_DEVICE_OUTPUT))
 
 
 #define EPERM 1
@@ -5704,16 +5638,7 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
 #define AVSEEK_FLAG_ANY 4      ///< seek to any frame, even non-keyframes
 #define AVSEEK_FLAG_FRAME 8    ///< seeking based on frame number
 
-#define FF_PAD_STRUCTURE(name, size, ...)                                  \
-    struct ff_pad_helper_##name                                            \
-    {                                                                      \
-        __VA_ARGS__                                                        \
-    };                                                                     \
-    typedef struct name                                                    \
-    {                                                                      \
-        __VA_ARGS__                                                        \
-        char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
-    } name;
+
 
 FF_PAD_STRUCTURE(AVBPrint, 1024,
                  char *str;         /**< string so far */
@@ -5792,14 +5717,6 @@ typedef Uint16 SDL_AudioFormat;
 
 #define AVSEEK_FORCE 0x20000
 
-#define FETCH_MODIFY(opname, op)                                            \
-static intptr_t atomic_fetch_ ## opname(intptr_t *object, intptr_t operand) \
-{                                                                    \
-    intptr_t ret;                                                    \
-    ret = *object;                                                   \
-    *object = *object op operand;                                    \
-    return ret;                                                      \
-}
 
 FETCH_MODIFY(add, +)
 FETCH_MODIFY(sub, -)
@@ -6034,68 +5951,6 @@ static inline av_const int av_parity_c(uint32_t v)
 #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
 #define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
 
-#define GET_UTF8(val, GET_BYTE, ERROR)\
-    val= (GET_BYTE);\
-    {\
-        uint32_t top = (val & 128) >> 1;\
-        if ((val & 0xc0) == 0x80 || val >= 0xFE)\
-            {ERROR}\
-        while (val & top) {\
-            unsigned int tmp = (GET_BYTE) - 128;\
-            if(tmp>>6)\
-                {ERROR}\
-            val= (val<<6) + tmp;\
-            top <<= 5;\
-        }\
-        val &= (top << 1) - 1;\
-    }
-
-#define GET_UTF16(val, GET_16BIT, ERROR)\
-    val = (GET_16BIT);\
-    {\
-        unsigned int hi = val - 0xD800;\
-        if (hi < 0x800) {\
-            val = (GET_16BIT) - 0xDC00;\
-            if (val > 0x3FFU || hi > 0x3FFU)\
-                {ERROR}\
-            val += (hi<<10) + 0x10000;\
-        }\
-    }\
-
-
-#define PUT_UTF8(val, tmp, PUT_BYTE)\
-    {\
-        int bytes, shift;\
-        uint32_t in = val;\
-        if (in < 0x80) {\
-            tmp = in;\
-            PUT_BYTE\
-        } else {\
-            bytes = (av_log2(in) + 4) / 5;\
-            shift = (bytes - 1) * 6;\
-            tmp = (256 - (256 >> bytes)) | (in >> shift);\
-            PUT_BYTE\
-            while (shift >= 6) {\
-                shift -= 6;\
-                tmp = 0x80 | ((in >> shift) & 0x3f);\
-                PUT_BYTE\
-            }\
-        }\
-    }
-
-#define PUT_UTF16(val, tmp, PUT_16BIT)\
-    {\
-        uint32_t in = val;\
-        if (in < 0x10000) {\
-            tmp = in;\
-            PUT_16BIT\
-        } else {\
-            tmp = 0xD800 | ((in - 0x10000) >> 10);\
-            PUT_16BIT\
-            tmp = 0xDC00 | ((in - 0x10000) & 0x3FF);\
-            PUT_16BIT\
-        }\
-    }\
 
 
 /*
@@ -7239,65 +7094,64 @@ YUV2NV_DECL(nv12, avx2);
 YUV2NV_DECL(nv21, avx2);
 #endif
 
+#define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
+    if (c->srcBpc == 8) { \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale8to15_ ## filtersize ## _ ## opt2 : \
+                                     ff_hscale8to19_ ## filtersize ## _ ## opt1; \
+    } else if (c->srcBpc == 9) { \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale9to15_ ## filtersize ## _ ## opt2 : \
+                                     ff_hscale9to19_ ## filtersize ## _ ## opt1; \
+    } else if (c->srcBpc == 10) { \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale10to15_ ## filtersize ## _ ## opt2 : \
+                                     ff_hscale10to19_ ## filtersize ## _ ## opt1; \
+    } else if (c->srcBpc == 12) { \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale12to15_ ## filtersize ## _ ## opt2 : \
+                                     ff_hscale12to19_ ## filtersize ## _ ## opt1; \
+    } else if (c->srcBpc == 14 || ((c->srcFormat==AV_PIX_FMT_PAL8||isAnyRGB(c->srcFormat)) && av_pix_fmt_desc_get(c->srcFormat)->comp[0].depth<16)) { \
+        hscalefn = c->dstBpc <= 14 ? ff_hscale14to15_ ## filtersize ## _ ## opt2 : \
+                                     ff_hscale14to19_ ## filtersize ## _ ## opt1; \
+    } else { /* c->srcBpc == 16 */ \
+        av_assert0(c->srcBpc == 16);\
+        hscalefn = c->dstBpc <= 14 ? ff_hscale16to15_ ## filtersize ## _ ## opt2 : \
+                                     ff_hscale16to19_ ## filtersize ## _ ## opt1; \
+    } \
+} while (0)
+#define ASSIGN_MMX_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
+    switch (filtersize) { \
+    case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \
+    case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
+    default: ASSIGN_SCALE_FUNC2(hscalefn, X, opt1, opt2); break; \
+    }
+#define ASSIGN_VSCALEX_FUNC(vscalefn, opt, do_16_case, condition_8bit) \
+switch(c->dstBpc){ \
+    case 16:                          do_16_case;                          break; \
+    case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
+    case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_9_  ## opt; break; \
+    case 8: if ((condition_8bit) && !c->use_mmx_vfilter) vscalefn = ff_yuv2planeX_8_  ## opt; break; \
+    }
+#define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
+    switch(c->dstBpc){ \
+    case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
+    case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
+    case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
+    case 8:                                      vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
+    default: av_assert0(c->dstBpc>8); \
+    }
+#define case_rgb(x, X, opt) \
+        case AV_PIX_FMT_ ## X: \
+            c->lumToYV12 = ff_ ## x ## ToY_ ## opt; \
+            if (!c->chrSrcHSubSample) \
+                c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
+            break
 
-// #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt1, opt2) do { \
-//     if (c->srcBpc == 8) { \
-//         hscalefn = c->dstBpc <= 14 ? ff_hscale8to15_ ## filtersize ## _ ## opt2 : \
-//                                      ff_hscale8to19_ ## filtersize ## _ ## opt1; \
-//     } else if (c->srcBpc == 9) { \
-//         hscalefn = c->dstBpc <= 14 ? ff_hscale9to15_ ## filtersize ## _ ## opt2 : \
-//                                      ff_hscale9to19_ ## filtersize ## _ ## opt1; \
-//     } else if (c->srcBpc == 10) { \
-//         hscalefn = c->dstBpc <= 14 ? ff_hscale10to15_ ## filtersize ## _ ## opt2 : \
-//                                      ff_hscale10to19_ ## filtersize ## _ ## opt1; \
-//     } else if (c->srcBpc == 12) { \
-//         hscalefn = c->dstBpc <= 14 ? ff_hscale12to15_ ## filtersize ## _ ## opt2 : \
-//                                      ff_hscale12to19_ ## filtersize ## _ ## opt1; \
-//     } else if (c->srcBpc == 14 || ((c->srcFormat==AV_PIX_FMT_PAL8||isAnyRGB(c->srcFormat)) && av_pix_fmt_desc_get(c->srcFormat)->comp[0].depth<16)) { \
-//         hscalefn = c->dstBpc <= 14 ? ff_hscale14to15_ ## filtersize ## _ ## opt2 : \
-//                                      ff_hscale14to19_ ## filtersize ## _ ## opt1; \
-//     } else { /* c->srcBpc == 16 */ \
-//         av_assert0(c->srcBpc == 16);\
-//         hscalefn = c->dstBpc <= 14 ? ff_hscale16to15_ ## filtersize ## _ ## opt2 : \
-//                                      ff_hscale16to19_ ## filtersize ## _ ## opt1; \
-//     } \
-// } while (0)
-// #define ASSIGN_MMX_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
-//     switch (filtersize) { \
-//     case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \
-//     case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
-//     default: ASSIGN_SCALE_FUNC2(hscalefn, X, opt1, opt2); break; \
-//     }
-// #define ASSIGN_VSCALEX_FUNC(vscalefn, opt, do_16_case, condition_8bit) \
-// switch(c->dstBpc){ \
-//     case 16:                          do_16_case;                          break; \
-//     case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
-//     case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_9_  ## opt; break; \
-//     case 8: if ((condition_8bit) && !c->use_mmx_vfilter) vscalefn = ff_yuv2planeX_8_  ## opt; break; \
-//     }
-// #define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
-//     switch(c->dstBpc){ \
-//     case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
-//     case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
-//     case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
-//     case 8:                                      vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
-//     default: av_assert0(c->dstBpc>8); \
-//     }
-// #define case_rgb(x, X, opt) \
-//         case AV_PIX_FMT_ ## X: \
-//             c->lumToYV12 = ff_ ## x ## ToY_ ## opt; \
-//             if (!c->chrSrcHSubSample) \
-//                 c->chrToYV12 = ff_ ## x ## ToUV_ ## opt; \
-//             break
-
-// #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
-//     switch (filtersize) { \
-//     case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \
-//     case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
-//     default: if (filtersize & 4) ASSIGN_SCALE_FUNC2(hscalefn, X4, opt1, opt2); \
-//              else                ASSIGN_SCALE_FUNC2(hscalefn, X8, opt1, opt2); \
-//              break; \
-//     }
+#define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
+    switch (filtersize) { \
+    case 4:  ASSIGN_SCALE_FUNC2(hscalefn, 4, opt1, opt2); break; \
+    case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
+    default: if (filtersize & 4) ASSIGN_SCALE_FUNC2(hscalefn, X4, opt1, opt2); \
+             else                ASSIGN_SCALE_FUNC2(hscalefn, X8, opt1, opt2); \
+             break; \
+    }
 
 #define case_rgb(x, X, opt) \
         case AV_PIX_FMT_ ## X: \
@@ -8817,8 +8671,6 @@ typedef struct ThreadFrame
 {
     AVFrame *f;
     AVCodecContext *owner[2];
-    // progress->data is an array of 2 ints holding progress for top/bottom
-    // fields
     AVBufferRef *progress;
 } ThreadFrame;
 
@@ -9042,7 +8894,7 @@ typedef struct MpegvideoEncDSPContext
     int (*pix_sum)(uint8_t *pix, int line_size);
     int (*pix_norm1)(uint8_t *pix, int line_size);
 
-    // void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,int src_wrap, int width, int height);
+    void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,int src_wrap, int width, int height);
 
     void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w, int h, int sides);
 } MpegvideoEncDSPContext;
@@ -9621,26 +9473,6 @@ typedef struct MpegEncContext
     int intra_penalty;
 } MpegEncContext;
 
-typedef struct AVHWAccel
-{
-    const char *name;
-    enum AVMediaType type;
-    enum AVCodecID id;
-    enum AVPixelFormat pix_fmt;
-    int capabilities;
-    int (*alloc_frame)(AVCodecContext *avctx, AVFrame *frame);
-    int (*start_frame)(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size);
-    int (*decode_params)(AVCodecContext *avctx, int type, const uint8_t *buf, uint32_t buf_size);
-    int (*decode_slice)(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size);
-    int (*end_frame)(AVCodecContext *avctx);
-    int frame_priv_data_size;
-    void (*decode_mb)(struct MpegEncContext *s);
-    int (*init)(AVCodecContext *avctx);
-    int (*uninit)(AVCodecContext *avctx);
-    int priv_data_size;
-    int caps_internal;
-    int (*frame_params)(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx);
-} AVHWAccel;
 
 typedef struct AVCodecContext
 {
@@ -9759,9 +9591,6 @@ typedef struct AVCodecContext
     int idct_algo;
     int bits_per_coded_sample;
     int bits_per_raw_sample;
-#if FF_API_LOWRES
-    int lowres;
-#endif
     int thread_count;
     int thread_type;
     int active_thread_type;
@@ -9781,9 +9610,6 @@ typedef struct AVCodecContext
     enum AVPixelFormat sw_pix_fmt;
     AVRational pkt_timebase;
     const AVCodecDescriptor *codec_descriptor;
-#if !FF_API_LOWRES
-    int lowres;
-#endif
     int64_t pts_correction_num_faulty_pts; /// Number of incorrect PTS values so far
     int64_t pts_correction_num_faulty_dts; /// Number of incorrect DTS values so far
     int64_t pts_correction_last_pts;       /// PTS of the last frame
@@ -9802,9 +9628,6 @@ typedef struct AVCodecContext
     int nb_coded_side_data;
     AVBufferRef *hw_frames_ctx;
     int sub_text_format;
-#if FF_API_ASS_TIMING
-#define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
-#endif
     int trailing_padding;
     int64_t max_pixels;
     AVBufferRef *hw_device_ctx;
@@ -9816,13 +9639,33 @@ typedef struct AVCodecContext
     int export_side_data;
 } AVCodecContext;
 
-
 typedef struct AVCodecHWConfig
 {
     enum AVPixelFormat pix_fmt;
     int methods;
     enum AVHWDeviceType device_type;
 } AVCodecHWConfig;
+
+typedef struct AVHWAccel
+{
+    const char *name;
+    enum AVMediaType type;
+    enum AVCodecID id;
+    enum AVPixelFormat pix_fmt;
+    int capabilities;
+    int (*alloc_frame)(AVCodecContext *avctx, AVFrame *frame);
+    int (*start_frame)(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size);
+    int (*decode_params)(AVCodecContext *avctx, int type, const uint8_t *buf, uint32_t buf_size);
+    int (*decode_slice)(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size);
+    int (*end_frame)(AVCodecContext *avctx);
+    int frame_priv_data_size;
+    void (*decode_mb)(struct MpegEncContext *s);
+    int (*init)(AVCodecContext *avctx);
+    int (*uninit)(AVCodecContext *avctx);
+    int priv_data_size;
+    int caps_internal;
+    int (*frame_params)(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx);
+} AVHWAccel;
 
 typedef struct AVCodecHWConfigInternal
 {
@@ -9842,7 +9685,7 @@ typedef struct AVCodec
     const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
     const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
     const uint64_t *channel_layouts;        ///< array of support channel layouts, or NULL if unknown. array is terminated by 0
-    uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
+    uint8_t max_lowres;                     
     const AVClass *priv_class;              ///< AVClass for the private context
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
     const char *wrapper_name;
@@ -10083,6 +9926,8 @@ typedef struct AVIOInterruptCB
     void *opaque;
 } AVIOInterruptCB;
 
+#define RAW_PACKET_BUFFER_SIZE 2500000
+
 struct AVFormatInternal {
     int nb_interleaved_streams;
     struct AVPacketList *packet_buffer;
@@ -10092,13 +9937,9 @@ struct AVFormatInternal {
     struct AVPacketList *raw_packet_buffer_end;
     struct AVPacketList *parse_queue;
     struct AVPacketList *parse_queue_end;
-#define RAW_PACKET_BUFFER_SIZE 2500000
     int raw_packet_buffer_remaining_size;
     int64_t offset;
     AVRational offset_timebase;
-#if FF_API_COMPUTE_PKT_FIELDS2
-    int missing_ts_warning;
-#endif
     int inject_global_side_data;
     int avoid_negative_ts_use_pts;
     int64_t shortest_end;
@@ -10138,6 +9979,11 @@ struct AVDeviceCapabilitiesQuery;
 #if FF_API_NEXT
     ff_const59 struct AVOutputFormat *next;
 #endif
+
+typedef struct AVCodecTag {
+    enum AVCodecID id;
+    unsigned int tag;
+} AVCodecTag;
 typedef struct AVOutputFormat
 {
     const char *name;
@@ -10204,12 +10050,9 @@ struct FFTContext
     FFTComplex *tmp_buf;
     int mdct_size; /* size of MDCT (i.e. number of input data * 2) */
     int mdct_bits; /* n = 2^nbits */
-    /* pre/post rotation tables */
     FFTSample *tcos;
     FFTSample *tsin;
-
     void (*fft_permute)(struct FFTContext *s, FFTComplex *z);
-
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
     void (*imdct_calc)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
     void (*imdct_half)(struct FFTContext *s, FFTSample *output, const FFTSample *input);
@@ -10232,35 +10075,13 @@ struct RDFTContext
     FFTContext fft;
     void (*rdft_calc)(struct RDFTContext *s, FFTSample *z);
 };
-
 typedef struct RDFTContext RDFTContext;
 
 
 typedef struct DitherDSPContext {
-    /**
-     * Convert samples from flt to s16 with added dither noise.
-     *
-     * @param dst    destination float array, range -0.5 to 0.5
-     * @param src    source int array, range INT_MIN to INT_MAX.
-     * @param dither float dither noise array
-     * @param len    number of samples
-     */
     void (*quantize)(int16_t *dst, const float *src, float *dither, int len);
-
     int ptr_align;      ///< src and dst constraints for quantize()
     int samples_align;  ///< len constraints for quantize()
-
-    /**
-     * Convert dither noise from int to float with triangular distribution.
-     *
-     * @param dst  destination float array, range -0.5 to 0.5
-     *             constraints: 32-byte aligned
-     * @param src0 source int array, range INT_MIN to INT_MAX.
-     *             the array size is len * 2
-     *             constraints: 32-byte aligned
-     * @param len  number of output noise samples
-     *             constraints: multiple of 16
-     */
     void (*dither_int_to_float)(float *dst, int *src0, int len);
 } DitherDSPContext;
 
@@ -10331,28 +10152,6 @@ typedef void (conv_func_interleave)(uint8_t *out, uint8_t *const *in,
 
 typedef void (conv_func_deinterleave)(uint8_t **out, const uint8_t *in, int len,
                                       int channels);
-// struct AudioConvert {
-//     AVAudioResampleContext *avr;
-//     DitherContext *dc;
-//     enum AVSampleFormat in_fmt;
-//     enum AVSampleFormat out_fmt;
-//     int apply_map;
-//     int channels;
-//     int planes;
-//     int ptr_align;
-//     int samples_align;
-//     int has_optimized_func;
-//     const char *func_descr;
-//     const char *func_descr_generic;
-//     enum ConvFuncType func_type;
-//     conv_func_flat         *conv_flat;
-//     conv_func_flat         *conv_flat_generic;
-//     conv_func_interleave   *conv_interleave;
-//     conv_func_interleave   *conv_interleave_generic;
-//     conv_func_deinterleave *conv_deinterleave;
-//     conv_func_deinterleave *conv_deinterleave_generic;
-// };
-
 typedef struct AudioConvert {
     int channels;
     int  in_simd_align_mask;
@@ -10550,13 +10349,7 @@ struct AVAudioResampleContext {
     ResampleContext *resample;  /**< resampling context                      */
     AudioMix *am;               /**< channel mixing context                  */
     enum AVMatrixEncoding matrix_encoding;      /**< matrixed stereo encoding */
-
-    /**
-     * mix matrix
-     * only used if avresample_set_matrix() is called before avresample_open()
-     */
     double *mix_matrix;
-
     int use_channel_map;
     enum RemapPoint remap_point;
     ChannelMapInfo ch_map_info;
@@ -10564,8 +10357,7 @@ struct AVAudioResampleContext {
 
 
 struct SwrContext;
-typedef struct ResampleContext * (* resample_init_func)(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
-                                    double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta, double precision, int cheby, int exact_rational);
+typedef struct ResampleContext * (* resample_init_func)(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta, double precision, int cheby, int exact_rational);
 typedef void    (* resample_free_func)(struct ResampleContext **c);
 typedef int     (* multiple_resample_func)(struct ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed);
 typedef int     (* resample_flush_func)(struct SwrContext *c);
@@ -10586,11 +10378,7 @@ struct Resampler {
 
 
 
-#if ARCH_X86_64
 typedef int64_t integer;
-#else
-typedef int integer;
-#endif
 typedef void (mix_1_1_func_type)(void *out, const void *in, void *coeffp, integer index, integer len);
 typedef void (mix_2_1_func_type)(void *out, const void *in1, const void *in2, void *coeffp, integer index1, integer index2, integer len);
 typedef void (mix_any_func_type)(uint8_t **out, const uint8_t **in1, void *coeffp, integer len);
@@ -10676,12 +10464,8 @@ struct SwrContext {
     mix_2_1_func_type *mix_2_1_f;
     mix_2_1_func_type *mix_2_1_simd;
     mix_any_func_type *mix_any_f;
-
-    /* TODO: callbacks for ASM optimizations */
 };
 typedef struct SwrContext SwrContext;
-
-
 
 struct AVFilterChannelLayouts {
     uint64_t *channel_layouts;  ///< list of channel layouts
@@ -10728,6 +10512,7 @@ typedef struct AVFilterFormatsConfig {
     AVFilterFormats  *samplerates;
     AVFilterChannelLayouts  *channel_layouts;
 } AVFilterFormatsConfig;
+
 typedef struct AVFilterPad AVFilterPad;
 struct AVFilterLink {
     AVFilterContext *src;       ///< source filter
@@ -10735,18 +10520,15 @@ struct AVFilterLink {
     AVFilterContext *dst;       ///< dest filter
     AVFilterPad *dstpad;        ///< input pad on the dest filter
     enum AVMediaType type;      ///< filter media type
-    /* These parameters apply only to video */
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
-    /* These parameters apply only to audio */
     uint64_t channel_layout;    ///< channel layout of current buffer (see libavutil/channel_layout.h)
     int sample_rate;            ///< samples per second
     int format;                 ///< agreed upon media format
     AVRational time_base;
     AVFilterFormatsConfig incfg;
     AVFilterFormatsConfig outcfg;
-    /** stage of the initialization of the link properties (dimensions, etc) */
     enum {
         AVLINK_UNINIT = 0,      ///< not started
         AVLINK_STARTINIT,       ///< started, but incomplete
@@ -10767,16 +10549,11 @@ struct AVFilterLink {
     void *frame_pool;
     int frame_wanted_out;
     AVBufferRef *hw_frames_ctx;
-
-#ifndef FF_INTERNAL_FIELDS
-    char reserved[0xF000];
-#else /* FF_INTERNAL_FIELDS */
     FFFrameQueue fifo;
     int frame_blocked_in;
     int status_in;
     int64_t status_in_pts;
     int status_out;
-#endif /* FF_INTERNAL_FIELDS */
 
 };
 typedef struct AVFilterLink AVFilterLink;
@@ -11200,7 +10977,7 @@ typedef struct VideoState
     int video_stream;
     AVStream *video_st;
     PacketQueue videoq;
-    double max_frame_duration; // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
+    double max_frame_duration; 
     struct SwsContext *img_convert_ctx;
     struct SwsContext *sub_convert_ctx;
     int eof;
@@ -11228,45 +11005,29 @@ typedef struct DynBuffer
 typedef struct PerThreadContext
 {
     struct FrameThreadContext *parent;
-
     pthread_t thread;
     int thread_init;
     pthread_cond_t input_cond;    ///< Used to wait for a new packet from the main thread.
     pthread_cond_t progress_cond; ///< Used by child threads to wait for progress to change.
     pthread_cond_t output_cond;   ///< Used by the main thread to wait for frames to finish.
-
     pthread_mutex_t mutex;          ///< Mutex used to protect the contents of the PerThreadContext.
     pthread_mutex_t progress_mutex; ///< Mutex used to protect frame progress values and progress_cond.
-
     AVCodecContext *avctx; ///< Context used to decode packets passed to this thread.
-
     AVPacket avpkt; ///< Input packet (for decoding) or output (for encoding).
-
     AVFrame *frame; ///< Output frame (for decoding) or input (for encoding).
     int got_frame;  ///< The output of got_picture_ptr from the last avcodec_decode_video() call.
     int result;     ///< The result of the last codec decode/encode() call.
-
     atomic_int state;
-
-    /**
-     * Array of frames passed to ff_thread_release_buffer().
-     * Frames are released after all threads referencing them are finished.
-     */
     AVFrame **released_buffers;
     int num_released_buffers;
     int released_buffers_allocated;
-
     AVFrame *requested_frame; ///< AVFrame the codec passed to get_buffer()
     int requested_flags;      ///< flags passed to get_buffer() for requested_frame
-
     const enum AVPixelFormat *available_formats; ///< Format array for get_format()
     enum AVPixelFormat result_format;            ///< get_format() result
-
     int die; ///< Set when the thread should exit.
-
     int hwaccel_serializing;
     int async_serializing;
-
     atomic_int debug_threads; ///< Set if the FF_DEBUG_THREADS option is set.
 } PerThreadContext;
 
@@ -11281,14 +11042,9 @@ typedef struct FrameThreadContext
     pthread_mutex_t async_mutex;
     pthread_cond_t async_cond;
     int async_lock;
-
     int next_decoding; ///< The next context to submit a packet to.
     int next_finished; ///< The next context to return output from.
-
-    int delaying; /**<
-                                    * Set for the first N packets, where N is the number of threads.
-                                    * While it is set, ff_thread_en/decode_frame won't return any results.
-                                    */
+    int delaying; 
 } FrameThreadContext;
 
 typedef struct AVSliceThread AVSliceThread;
@@ -11317,7 +11073,6 @@ typedef struct SliceThreadContext {
 typedef struct SDL_Window SDL_Window;
 struct SDL_Renderer;
 typedef struct SDL_Renderer SDL_Renderer;
-/* options specified by the user */
 static AVInputFormat *file_iformat;
 static const char *input_filename;
 static const char *window_title;
@@ -12269,10 +12024,6 @@ typedef struct AVHWFramesConstraints {
 typedef struct BufferPoolEntry {
     uint8_t *data;
 
-    /*
-     * Backups of the original opaque/free of the AVBuffer corresponding to
-     * data. They will be used to free the buffer when the pool is freed.
-     */
     void *opaque;
     void (*free)(void *opaque, uint8_t *data);
 
@@ -12447,71 +12198,36 @@ typedef struct Context {
     AVIOInterruptCB interrupt_callback;
 } Context;
 
-enum AVPictureStructure {
-    AV_PICTURE_STRUCTURE_UNKNOWN,      //< unknown
-    AV_PICTURE_STRUCTURE_TOP_FIELD,    //< coded as top field
-    AV_PICTURE_STRUCTURE_BOTTOM_FIELD, //< coded as bottom field
-    AV_PICTURE_STRUCTURE_FRAME,        //< coded as frame
-};
+
+
+#define AV_PARSER_PTS_NB 4
+#define PARSER_FLAG_COMPLETE_FRAMES           0x0001
+#define PARSER_FLAG_ONCE                      0x0002
+#define PARSER_FLAG_FETCHED_OFFSET            0x0004
+#define PARSER_FLAG_USE_CODEC_TS              0x1000
 
 typedef struct AVCodecParserContext {
     void *priv_data;
     struct AVCodecParser *parser;
     int64_t frame_offset; /* offset of the current frame */
-    int64_t cur_offset; /* current offset
-                           (incremented by each av_parser_parse()) */
+    int64_t cur_offset; /* current offset (incremented by each av_parser_parse()) */
     int64_t next_frame_offset; /* offset of the next frame */
-    /* video info */
     int pict_type; /* XXX: Put it back in AVCodecContext. */
-    /**
-     * This field is used for proper frame duration computation in lavf.
-     * It signals, how much longer the frame duration of the current frame
-     * is compared to normal frame duration.
-     *
-     * frame_duration = (1 + repeat_pict) * time_base
-     *
-     * It is used by codecs like H.264 to display telecined material.
-     */
     int repeat_pict; /* XXX: Put it back in AVCodecContext. */
     int64_t pts;     /* pts of the current frame */
     int64_t dts;     /* dts of the current frame */
-
-    /* private data */
     int64_t last_pts;
     int64_t last_dts;
     int fetch_timestamp;
-
-#define AV_PARSER_PTS_NB 4
     int cur_frame_start_index;
     int64_t cur_frame_offset[AV_PARSER_PTS_NB];
     int64_t cur_frame_pts[AV_PARSER_PTS_NB];
     int64_t cur_frame_dts[AV_PARSER_PTS_NB];
-
     int flags;
-#define PARSER_FLAG_COMPLETE_FRAMES           0x0001
-#define PARSER_FLAG_ONCE                      0x0002
-/// Set if the parser has a valid file offset
-#define PARSER_FLAG_FETCHED_OFFSET            0x0004
-#define PARSER_FLAG_USE_CODEC_TS              0x1000
-
     int64_t offset;      ///< byte offset from starting packet start
     int64_t cur_frame_end[AV_PARSER_PTS_NB];
-
-    /**
-     * Set by parser to 1 for key frames and 0 for non-key frames.
-     * It is initialized to -1, so if the parser doesn't set this flag,
-     * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
-     * will be used.
-     */
     int key_frame;
-
-#if FF_API_CONVERGENCE_DURATION
-    /**
-     * @deprecated unused
-     */
-    
     int64_t convergence_duration;
-#endif
     int dts_sync_point;
     int dts_ref_dts_delta;
     int pts_dts_delta;
@@ -17811,7 +17527,6 @@ void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,con
 void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb,int padding_bytes);
 int ff_id3v2_write_simple(struct AVFormatContext *s, int id3v2_version,const char *magic);
 int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3);
-int avpriv_mpeg4audio_get_config2(MPEG4AudioConfig *c, const uint8_t *buf,int size, int sync_extension, void *logctx);
 
 static int a64_write_header(AVFormatContext *s);
 int ff_raw_write_packet(AVFormatContext *s, AVPacket *pkt);

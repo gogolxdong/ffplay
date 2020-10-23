@@ -18,63 +18,62 @@
 #include <share.h>
 #include <errno.h>
 
-#if HAVE_X86ASM
+// #if HAVE_X86ASM
 
-#define cpuid(index, eax, ebx, ecx, edx)        \
-    ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
+// #define cpuid(index, eax, ebx, ecx, edx)        \
+//     ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
 
-#define xgetbv(index, eax, edx)                 \
-    ff_cpu_xgetbv(index, &eax, &edx)
+// #define xgetbv(index, eax, edx)                 \
+//     ff_cpu_xgetbv(index, &eax, &edx)
 
-#elif HAVE_INLINE_ASM
+// #elif HAVE_INLINE_ASM
 
-/* ebx saving is necessary for PIC. gcc seems unable to see it alone */
-#define cpuid(index, eax, ebx, ecx, edx)                        \
-    __asm__ volatile (                                          \
-        "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
-        "cpuid                       \n\t"                      \
-        "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
-        : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
-        : "0" (index), "2"(0))
+// #define cpuid(index, eax, ebx, ecx, edx)                        \
+//     __asm__ volatile (                                          \
+//         "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
+//         "cpuid                       \n\t"                      \
+//         "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
+//         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
+//         : "0" (index), "2"(0))
 
-#define xgetbv(index, eax, edx)                                 \
-    __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
+// #define xgetbv(index, eax, edx)                                 \
+//     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
 
-#define get_eflags(x)                           \
-    __asm__ volatile ("pushfl     \n"           \
-                      "pop    %0  \n"           \
-                      : "=r"(x))
+// #define get_eflags(x)                           \
+//     __asm__ volatile ("pushfl     \n"           \
+//                       "pop    %0  \n"           \
+//                       : "=r"(x))
 
-#define set_eflags(x)                           \
-    __asm__ volatile ("push    %0 \n"           \
-                      "popfl      \n"           \
-                      :: "r"(x))
+// #define set_eflags(x)                           \
+//     __asm__ volatile ("push    %0 \n"           \
+//                       "popfl      \n"           \
+//                       :: "r"(x))
 
-#endif /* HAVE_INLINE_ASM */
+// #endif /* HAVE_INLINE_ASM */
 
-#if ARCH_X86_64
+// #if ARCH_X86_64
 
-#define cpuid_test() 1
+// #define cpuid_test() 1
 
-#elif HAVE_X86ASM
+// #elif HAVE_X86ASM
 
-#define cpuid_test ff_cpu_cpuid_test
+// #define cpuid_test ff_cpu_cpuid_test
 
-#elif HAVE_INLINE_ASM
+// #elif HAVE_INLINE_ASM
 
-static int cpuid_test(void)
-{
-    x86_reg a, c;
+// static int cpuid_test(void)
+// {
+//     x86_reg a, c;
 
-    /* Check if CPUID is supported by attempting to toggle the ID bit in
-     * the EFLAGS register. */
-    get_eflags(a);
-    set_eflags(a ^ 0x200000);
-    get_eflags(c);
+//     /* Check if CPUID is supported by attempting to toggle the ID bit in
+//      * the EFLAGS register. */
+//     get_eflags(a);
+//     set_eflags(a ^ 0x200000);
+//     get_eflags(c);
 
-    return a != c;
-}
-#endif
+//     return a != c;
+// }
+// #endif
 
 /* Function to test if multimedia instructions are supported...  */
 int ff_get_cpu_flags_x86(void)
@@ -232,18 +231,7 @@ int ff_get_cpu_flags_x86(void)
     return rval;
 }
 
-int ff_get_cpu_flags_mips(void)
-{
-#if defined __linux__ || defined __ANDROID__
-    if (cpucfg_available())
-        return cpu_flags_cpucfg();
-    else
-        return cpu_flags_cpuinfo();
-#else
-    /* Assume no SIMD ASE supported */
-    return 0;
-#endif
-}
+
 int ff_get_cpu_flags_aarch64(void)
 {
     return AV_CPU_FLAG_ARMV8 * HAVE_ARMV8 |
@@ -271,8 +259,7 @@ int ff_get_cpu_flags_ppc(void)
 static atomic_int cpu_flags = ATOMIC_VAR_INIT(-1);
 static int get_cpu_flags(void)
 {
-    if (ARCH_MIPS)
-        return ff_get_cpu_flags_mips();
+
     if (ARCH_AARCH64)
         return ff_get_cpu_flags_aarch64();
     if (ARCH_ARM)
@@ -352,7 +339,7 @@ void av_freep(void *arg)
     void *val;
 
     memcpy(&val, arg, sizeof(val));
-    memcpy(arg, &(void *){NULL}, sizeof(val));
+    // memcpy(arg, &(void *){NULL}, sizeof(val));
     av_free(val);
 }
 
@@ -486,11 +473,11 @@ void av_init_packet(AVPacket *pkt)
     pkt->dts = AV_NOPTS_VALUE;
     pkt->pos = -1;
     pkt->duration = 0;
-#if FF_API_CONVERGENCE_DURATION
-    FF_DISABLE_DEPRECATION_WARNINGS
-    pkt->convergence_duration = 0;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
+// #if FF_API_CONVERGENCE_DURATION
+//     FF_DISABLE_DEPRECATION_WARNINGS
+//     pkt->convergence_duration = 0;
+//     FF_ENABLE_DEPRECATION_WARNINGS
+// #endif
     pkt->flags = 0;
     pkt->stream_index = 0;
     pkt->buf = NULL;
@@ -515,11 +502,11 @@ int av_packet_copy_props(AVPacket *dst, const AVPacket *src)
     dst->dts = src->dts;
     dst->pos = src->pos;
     dst->duration = src->duration;
-#if FF_API_CONVERGENCE_DURATION
-    FF_DISABLE_DEPRECATION_WARNINGS
-    dst->convergence_duration = src->convergence_duration;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
+// #if FF_API_CONVERGENCE_DURATION
+//     FF_DISABLE_DEPRECATION_WARNINGS
+//     dst->convergence_duration = src->convergence_duration;
+//     FF_ENABLE_DEPRECATION_WARNINGS
+// #endif
     dst->flags = src->flags;
     dst->stream_index = src->stream_index;
 
@@ -1000,41 +987,66 @@ static void check_color_terminal(void)
     if (getenv("AV_LOG_FORCE_256COLOR") || term && strstr(term, "256color"))
         use_color *= 256;
 }
-
-static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
-    [AV_LOG_PANIC  /8] = 12,
-    [AV_LOG_FATAL  /8] = 12,
-    [AV_LOG_ERROR  /8] = 12,
-    [AV_LOG_WARNING/8] = 14,
-    [AV_LOG_INFO   /8] =  7,
-    [AV_LOG_VERBOSE/8] = 10,
-    [AV_LOG_DEBUG  /8] = 10,
-    [AV_LOG_TRACE  /8] = 8,
-    [16+AV_CLASS_CATEGORY_NA              ] =  7,
-    [16+AV_CLASS_CATEGORY_INPUT           ] = 13,
-    [16+AV_CLASS_CATEGORY_OUTPUT          ] =  5,
-    [16+AV_CLASS_CATEGORY_MUXER           ] = 13,
-    [16+AV_CLASS_CATEGORY_DEMUXER         ] =  5,
-    [16+AV_CLASS_CATEGORY_ENCODER         ] = 11,
-    [16+AV_CLASS_CATEGORY_DECODER         ] =  3,
-    [16+AV_CLASS_CATEGORY_FILTER          ] = 10,
-    [16+AV_CLASS_CATEGORY_BITSTREAM_FILTER] =  9,
-    [16+AV_CLASS_CATEGORY_SWSCALER        ] =  7,
-    [16+AV_CLASS_CATEGORY_SWRESAMPLER     ] =  7,
-    [16+AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT ] = 13,
-    [16+AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT  ] = 5,
-    [16+AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT ] = 13,
-    [16+AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT  ] = 5,
-    [16+AV_CLASS_CATEGORY_DEVICE_OUTPUT       ] = 13,
-    [16+AV_CLASS_CATEGORY_DEVICE_INPUT        ] = 5,
-};
+// var color: array[62]
+// color[0] = 12
+// color[1] = 12
+// color[2] = 12
+// color[3] = 14
+// color[4] =  7
+// color[5] = 10
+// color[6] = 10
+// color[7] = 8
+// color[16] =  7
+// color[17] = 13
+// color[18] =  5
+// color[19] = 13
+// color[20] =  5
+// color[21] = 11
+// color[22] =  3
+// color[23] = 10
+// color[24] =  9
+// color[25] =  7
+// color[26] =  7
+// color[56] = 13
+// color[57] = 5
+// color[58] = 13
+// color[59] = 5
+// color[60] = 13
+// color[61] = 5
+// static const uint8_t color[62] = {
+//     [0] = 12,
+//     [1] = 12,
+//     [2] = 12,
+//     [3] = 14,
+//     [4] =  7,
+//     [5] = 10,
+//     [6] = 10,
+//     [7] = 8,
+//     [16] =  7,
+//     [17] = 13,
+//     [18] =  5,
+//     [19] = 13,
+//     [20] =  5,
+//     [21] = 11,
+//     [22] =  3,
+//     [23] = 10,
+//     [24] =  9,
+//     [25] =  7,
+//     [26] =  7,
+//     [56] = 13,
+//     [57] = 5,
+//     [58] = 13,
+//     [59] = 5,
+//     [60] = 13,
+//     [61] = 5,
+// };
 
 
 #if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
 static void win_console_puts(const char *str)
 {
     const uint8_t *q = str;
-    uint16_t line[LINE_SZ];
+    uint16_t line[1024];
 
     while (*q) {
         uint16_t *buf = line;
@@ -1045,9 +1057,9 @@ static void win_console_puts(const char *str)
             uint32_t ch;
             uint16_t tmp;
 
-            GET_UTF8(ch, *q ? *q++ : 0, ch = 0xfffd; goto continue_on_invalid;)
+            // GET_UTF8(ch, *q ? *q++ : 0, ch = 0xfffd; goto continue_on_invalid;)
 continue_on_invalid:
-            PUT_UTF16(ch, tmp, *buf++ = tmp; nb_chars++;)
+            // PUT_UTF16(ch, tmp, *buf++ = tmp; nb_chars++;)
         }
 
         WriteConsoleW(con, line, nb_chars, &written, NULL);
@@ -1206,8 +1218,7 @@ end:
     ff_mutex_unlock(&mutex);
 }
 
-static void (*av_log_callback)(void *, int, const char *, va_list) =
-    av_log_default_callback;
+static void (*av_log_callback)(void *, int, const char *, va_list) = av_log_default_callback;
 
 void av_vlog(void *avcl, int level, const char *fmt, va_list vl)
 {
@@ -1247,14 +1258,6 @@ void av_log(void *avcl, int level, const char *fmt, ...)
     av_vlog(avcl, level, fmt, vl);
     va_end(vl);
 }
-
-
-
-
-
-
-
-
 
 static int opt_add_vfilter(void *optctx, const char *opt, const char *arg)
 {
@@ -6341,21 +6344,16 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
 int av_image_check_sar(unsigned int w, unsigned int h, AVRational sar)
 {
     int64_t scaled_dim;
-
     if (sar.den <= 0 || sar.num < 0)
         return AVERROR(EINVAL);
-
     if (!sar.num || sar.num == sar.den)
         return 0;
-
     if (sar.num < sar.den)
         scaled_dim = av_rescale_rnd(w, sar.num, sar.den, AV_ROUND_ZERO);
     else
         scaled_dim = av_rescale_rnd(h, sar.den, sar.num, AV_ROUND_ZERO);
-
     if (scaled_dim > 0)
         return 0;
-
     return AVERROR(EINVAL);
 }
 
@@ -11240,7 +11238,7 @@ const int32_t ff_yuv2rgb_coeffs[11][4] = {
     { 117489, 138438, 13975, 34925 }, /* no sequence_display_extension */
     { 117489, 138438, 13975, 34925 }, /* ITU-R Rec. 709 (1990) */
     { 104597, 132201, 25675, 53279 }, /* unspecified */
-    { 104597, 132201, 25675, 53279 }, /* reserved */
+    { 104597, 132201, 25675, 53279 }, 
     { 104448, 132798, 24759, 53109 }, /* FCC */
     { 104597, 132201, 25675, 53279 }, /* ITU-R Rec. 624-4 System B, G */
     { 104597, 132201, 25675, 53279 }, /* SMPTE 170M */
@@ -37182,6 +37180,1641 @@ void avpriv_register_devices(const AVOutputFormat *const o[], const AVInputForma
 #endif
 }
 
+
+typedef struct {
+    AVClass *class;
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+    char *window_title;
+    int window_width, window_height;  /**< size of the window */
+    int window_x, window_y;           /**< position of the window */
+    int window_fullscreen;
+    int window_borderless;
+    int enable_quit_action;
+
+    SDL_Texture *texture;
+    int texture_fmt;
+    SDL_Rect texture_rect;
+
+    int inited;
+} SDLContext;
+
+static const struct sdl_texture_format_entry {
+    enum AVPixelFormat format; int texture_fmt;
+} sdl_texture_format_map[] = {
+    { AV_PIX_FMT_RGB8,    SDL_PIXELFORMAT_RGB332 },
+    { AV_PIX_FMT_RGB444,  SDL_PIXELFORMAT_RGB444 },
+    { AV_PIX_FMT_RGB555,  SDL_PIXELFORMAT_RGB555 },
+    { AV_PIX_FMT_BGR555,  SDL_PIXELFORMAT_BGR555 },
+    { AV_PIX_FMT_RGB565,  SDL_PIXELFORMAT_RGB565 },
+    { AV_PIX_FMT_BGR565,  SDL_PIXELFORMAT_BGR565 },
+    { AV_PIX_FMT_RGB24,   SDL_PIXELFORMAT_RGB24 },
+    { AV_PIX_FMT_BGR24,   SDL_PIXELFORMAT_BGR24 },
+    { AV_PIX_FMT_0RGB32,  SDL_PIXELFORMAT_RGB888 },
+    { AV_PIX_FMT_0BGR32,  SDL_PIXELFORMAT_BGR888 },
+#if HAVE_BIGENDIAN
+    { AV_PIX_FMT_RGB0,    SDL_PIXELFORMAT_RGBX8888 },
+    { AV_PIX_FMT_BGR0,    SDL_PIXELFORMAT_BGRX8888 },
+#else
+    { AV_PIX_FMT_0BGR,    SDL_PIXELFORMAT_RGBX8888 },
+    { AV_PIX_FMT_0RGB,    SDL_PIXELFORMAT_BGRX8888 },
+#endif
+    { AV_PIX_FMT_RGB32,   SDL_PIXELFORMAT_ARGB8888 },
+    { AV_PIX_FMT_RGB32_1, SDL_PIXELFORMAT_RGBA8888 },
+    { AV_PIX_FMT_BGR32,   SDL_PIXELFORMAT_ABGR8888 },
+    { AV_PIX_FMT_BGR32_1, SDL_PIXELFORMAT_BGRA8888 },
+    { AV_PIX_FMT_YUV420P, SDL_PIXELFORMAT_IYUV },
+    { AV_PIX_FMT_YUYV422, SDL_PIXELFORMAT_YUY2 },
+    { AV_PIX_FMT_UYVY422, SDL_PIXELFORMAT_UYVY },
+    { AV_PIX_FMT_NONE,    0                },
+};
+
+static void compute_texture_rect(AVFormatContext *s)
+{
+    AVRational sar, dar; /* sample and display aspect ratios */
+    SDLContext *sdl = s->priv_data;
+    AVStream *st = s->streams[0];
+    AVCodecParameters *codecpar = st->codecpar;
+    SDL_Rect *texture_rect = &sdl->texture_rect;
+
+    /* compute texture width and height from the codec context information */
+    sar = st->sample_aspect_ratio.num ? st->sample_aspect_ratio : (AVRational){ 1, 1 };
+    dar = av_mul_q(sar, (AVRational){ codecpar->width, codecpar->height });
+
+    /* we suppose the screen has a 1/1 sample aspect ratio */
+    if (sdl->window_width && sdl->window_height) {
+        /* fit in the window */
+        if (av_cmp_q(dar, (AVRational){ sdl->window_width, sdl->window_height }) > 0) {
+            /* fit in width */
+            texture_rect->w = sdl->window_width;
+            texture_rect->h = av_rescale(texture_rect->w, dar.den, dar.num);
+        } else {
+            /* fit in height */
+            texture_rect->h = sdl->window_height;
+            texture_rect->w = av_rescale(texture_rect->h, dar.num, dar.den);
+        }
+    } else {
+        if (sar.num > sar.den) {
+            texture_rect->w = codecpar->width;
+            texture_rect->h = av_rescale(texture_rect->w, dar.den, dar.num);
+        } else {
+            texture_rect->h = codecpar->height;
+            texture_rect->w = av_rescale(texture_rect->h, dar.num, dar.den);
+        }
+        sdl->window_width  = texture_rect->w;
+        sdl->window_height = texture_rect->h;
+    }
+
+    texture_rect->x = (sdl->window_width  - texture_rect->w) / 2;
+    texture_rect->y = (sdl->window_height - texture_rect->h) / 2;
+}
+
+static int sdl2_write_trailer(AVFormatContext *s)
+{
+    SDLContext *sdl = s->priv_data;
+
+    if (sdl->texture)
+        SDL_DestroyTexture(sdl->texture);
+    sdl->texture = NULL;
+
+    if (sdl->renderer)
+        SDL_DestroyRenderer(sdl->renderer);
+    sdl->renderer = NULL;
+
+    if (sdl->window)
+        SDL_DestroyWindow(sdl->window);
+    sdl->window = NULL;
+
+    if (!sdl->inited)
+        SDL_Quit();
+
+    return 0;
+}
+
+static int sdl2_write_header(AVFormatContext *s)
+{
+    SDLContext *sdl = s->priv_data;
+    AVStream *st = s->streams[0];
+    AVCodecParameters *codecpar = st->codecpar;
+    int i, ret = 0;
+    int flags  = 0;
+
+    if (!sdl->window_title)
+        sdl->window_title = av_strdup(s->url);
+
+    if (SDL_WasInit(SDL_INIT_VIDEO)) {
+        av_log(s, AV_LOG_WARNING,
+               "SDL video subsystem was already inited, you could have multiple SDL outputs. This may cause unknown behaviour.\n");
+        sdl->inited = 1;
+    }
+
+    if (   s->nb_streams > 1
+        || codecpar->codec_type != AVMEDIA_TYPE_VIDEO
+        || codecpar->codec_id   != AV_CODEC_ID_RAWVIDEO) {
+        av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
+        goto fail;
+    }
+
+    for (i = 0; sdl_texture_format_map[i].format != AV_PIX_FMT_NONE; i++) {
+        if (sdl_texture_format_map[i].format == codecpar->format) {
+            sdl->texture_fmt = sdl_texture_format_map[i].texture_fmt;
+            break;
+        }
+    }
+
+    if (!sdl->texture_fmt) {
+        av_log(s, AV_LOG_ERROR,
+               "Unsupported pixel format '%s'.\n",
+               av_get_pix_fmt_name(codecpar->format));
+        goto fail;
+    }
+
+    /* resize texture to width and height from the codec context information */
+    flags = SDL_WINDOW_HIDDEN |
+            (sdl->window_fullscreen ? SDL_WINDOW_FULLSCREEN : 0) |
+            (sdl->window_borderless ? SDL_WINDOW_BORDERLESS : SDL_WINDOW_RESIZABLE);
+
+    /* initialization */
+    if (!sdl->inited){
+        if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+            av_log(s, AV_LOG_ERROR, "Unable to initialize SDL: %s\n", SDL_GetError());
+            goto fail;
+        }
+    }
+
+    compute_texture_rect(s);
+
+    if (SDL_CreateWindowAndRenderer(sdl->window_width, sdl->window_height,
+                                    flags, &sdl->window, &sdl->renderer) != 0){
+        av_log(sdl, AV_LOG_ERROR, "Couldn't create window and renderer: %s\n", SDL_GetError());
+        goto fail;
+    }
+
+    SDL_SetWindowTitle(sdl->window, sdl->window_title);
+    SDL_SetWindowPosition(sdl->window, sdl->window_x, sdl->window_y);
+    SDL_ShowWindow(sdl->window);
+
+    sdl->texture = SDL_CreateTexture(sdl->renderer, sdl->texture_fmt, SDL_TEXTUREACCESS_STREAMING,
+                                     codecpar->width, codecpar->height);
+
+    if (!sdl->texture) {
+        av_log(sdl, AV_LOG_ERROR, "Unable to set create mode: %s\n", SDL_GetError());
+        goto fail;
+    }
+
+    av_log(s, AV_LOG_VERBOSE, "w:%d h:%d fmt:%s -> w:%d h:%d\n",
+           codecpar->width, codecpar->height, av_get_pix_fmt_name(codecpar->format),
+           sdl->window_width, sdl->window_height);
+
+    sdl->inited = 1;
+
+    return 0;
+fail:
+    sdl2_write_trailer(s);
+    return ret;
+}
+
+static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret, quit = 0;
+    SDLContext *sdl = s->priv_data;
+    AVCodecParameters *codecpar = s->streams[0]->codecpar;
+    uint8_t *data[4];
+    int linesize[4];
+
+    SDL_Event event;
+    if (SDL_PollEvent(&event)){
+        switch (event.type) {
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym) {
+            case SDLK_ESCAPE:
+            case SDLK_q:
+                quit = 1;
+                break;
+            default:
+                break;
+            }
+            break;
+        case SDL_QUIT:
+            quit = 1;
+            break;
+        case SDL_WINDOWEVENT:
+            switch(event.window.event){
+            case SDL_WINDOWEVENT_RESIZED:
+            case SDL_WINDOWEVENT_SIZE_CHANGED:
+                sdl->window_width  = event.window.data1;
+                sdl->window_height = event.window.data2;
+                compute_texture_rect(s);
+                break;
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (quit && sdl->enable_quit_action) {
+        sdl2_write_trailer(s);
+        return AVERROR(EIO);
+    }
+
+    av_image_fill_arrays(data, linesize, pkt->data, codecpar->format, codecpar->width, codecpar->height, 1);
+    switch (sdl->texture_fmt) {
+    case SDL_PIXELFORMAT_IYUV:
+    case SDL_PIXELFORMAT_YUY2:
+    case SDL_PIXELFORMAT_UYVY:
+        ret = SDL_UpdateYUVTexture(sdl->texture, NULL,
+                                   data[0], linesize[0],
+                                   data[1], linesize[1],
+                                   data[2], linesize[2]);
+        break;
+    case SDL_PIXELFORMAT_RGB332:
+    case SDL_PIXELFORMAT_RGB444:
+    case SDL_PIXELFORMAT_RGB555:
+    case SDL_PIXELFORMAT_BGR555:
+    case SDL_PIXELFORMAT_RGB565:
+    case SDL_PIXELFORMAT_BGR565:
+    case SDL_PIXELFORMAT_RGB24:
+    case SDL_PIXELFORMAT_BGR24:
+    case SDL_PIXELFORMAT_RGB888:
+    case SDL_PIXELFORMAT_RGBX8888:
+    case SDL_PIXELFORMAT_BGR888:
+    case SDL_PIXELFORMAT_BGRX8888:
+    case SDL_PIXELFORMAT_ARGB8888:
+    case SDL_PIXELFORMAT_RGBA8888:
+    case SDL_PIXELFORMAT_ABGR8888:
+    case SDL_PIXELFORMAT_BGRA8888:
+        ret = SDL_UpdateTexture(sdl->texture, NULL, data[0], linesize[0]);
+        break;
+    default:
+        av_log(NULL, AV_LOG_FATAL, "Unsupported pixel format\n");
+        ret = -1;
+        break;
+    }
+    SDL_RenderClear(sdl->renderer);
+    SDL_RenderCopy(sdl->renderer, sdl->texture, NULL, &sdl->texture_rect);
+    SDL_RenderPresent(sdl->renderer);
+    return ret;
+}
+
+#define OFFSET(x) offsetof(SDLContext,x)
+
+static const AVOption options[] = {
+    { "window_title",      "set SDL window title",       OFFSET(window_title), AV_OPT_TYPE_STRING,     { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_size",       "set SDL window forced size", OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_x",          "set SDL window x position",  OFFSET(window_x),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_y",          "set SDL window y position",  OFFSET(window_y),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_fullscreen", "set SDL window fullscreen",  OFFSET(window_fullscreen), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_borderless", "set SDL window border off",  OFFSET(window_borderless), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_enable_quit", "set if quit action is available", OFFSET(enable_quit_action), AV_OPT_TYPE_INT, {.i64=1},   0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL },
+};
+
+static const AVClass sdl2_class = {
+    .class_name = "sdl2 outdev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT,
+};
+
+AVOutputFormat ff_sdl2_muxer = {
+    .name           = "sdl,sdl2",
+    .long_name      = NULL_IF_CONFIG_SMALL("SDL2 output device"),
+    .priv_data_size = sizeof(SDLContext),
+    .audio_codec    = AV_CODEC_ID_NONE,
+    .video_codec    = AV_CODEC_ID_RAWVIDEO,
+    .write_header   = sdl2_write_header,
+    .write_packet   = sdl2_write_packet,
+    .write_trailer  = sdl2_write_trailer,
+    .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
+    .priv_class     = &sdl2_class,
+};
+
+static const AVOutputFormat * const outdev_list[] = {
+    // &ff_caca_muxer,
+    &ff_sdl2_muxer,
+    NULL };
+
+static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
+{
+    switch(biCompression) {
+    case BI_BITFIELDS:
+    case BI_RGB:
+        switch(biBitCount) { /* 1-8 are untested */
+            case 1:
+                return AV_PIX_FMT_MONOWHITE;
+            case 4:
+                return AV_PIX_FMT_RGB4;
+            case 8:
+                return AV_PIX_FMT_RGB8;
+            case 16:
+                return AV_PIX_FMT_RGB555;
+            case 24:
+                return AV_PIX_FMT_BGR24;
+            case 32:
+                return AV_PIX_FMT_0RGB32;
+        }
+    }
+    return avpriv_find_pix_fmt(avpriv_get_raw_pix_fmt_tags(), biCompression); // all others
+}
+
+static int
+dshow_read_close(AVFormatContext *s)
+{
+    struct dshow_ctx *ctx = s->priv_data;
+    AVPacketList *pktl;
+
+    if (ctx->control) {
+        IMediaControl_Stop(ctx->control);
+        IMediaControl_Release(ctx->control);
+    }
+
+    if (ctx->media_event)
+        IMediaEvent_Release(ctx->media_event);
+
+    if (ctx->graph) {
+        IEnumFilters *fenum;
+        int r;
+        r = IGraphBuilder_EnumFilters(ctx->graph, &fenum);
+        if (r == S_OK) {
+            IBaseFilter *f;
+            IEnumFilters_Reset(fenum);
+            while (IEnumFilters_Next(fenum, 1, &f, NULL) == S_OK) {
+                if (IGraphBuilder_RemoveFilter(ctx->graph, f) == S_OK)
+                    IEnumFilters_Reset(fenum); /* When a filter is removed,
+                                                * the list must be reset. */
+                IBaseFilter_Release(f);
+            }
+            IEnumFilters_Release(fenum);
+        }
+        IGraphBuilder_Release(ctx->graph);
+    }
+
+    if (ctx->capture_pin[VideoDevice])
+        libAVPin_Release(ctx->capture_pin[VideoDevice]);
+    if (ctx->capture_pin[AudioDevice])
+        libAVPin_Release(ctx->capture_pin[AudioDevice]);
+    if (ctx->capture_filter[VideoDevice])
+        libAVFilter_Release(ctx->capture_filter[VideoDevice]);
+    if (ctx->capture_filter[AudioDevice])
+        libAVFilter_Release(ctx->capture_filter[AudioDevice]);
+
+    if (ctx->device_pin[VideoDevice])
+        IPin_Release(ctx->device_pin[VideoDevice]);
+    if (ctx->device_pin[AudioDevice])
+        IPin_Release(ctx->device_pin[AudioDevice]);
+    if (ctx->device_filter[VideoDevice])
+        IBaseFilter_Release(ctx->device_filter[VideoDevice]);
+    if (ctx->device_filter[AudioDevice])
+        IBaseFilter_Release(ctx->device_filter[AudioDevice]);
+
+    av_freep(&ctx->device_name[0]);
+    av_freep(&ctx->device_name[1]);
+    av_freep(&ctx->device_unique_name[0]);
+    av_freep(&ctx->device_unique_name[1]);
+
+    if(ctx->mutex)
+        CloseHandle(ctx->mutex);
+    if(ctx->event[0])
+        CloseHandle(ctx->event[0]);
+    if(ctx->event[1])
+        CloseHandle(ctx->event[1]);
+
+    pktl = ctx->pktl;
+    while (pktl) {
+        AVPacketList *next = pktl->next;
+        av_packet_unref(&pktl->pkt);
+        av_free(pktl);
+        pktl = next;
+    }
+
+    CoUninitialize();
+
+    return 0;
+}
+
+static char *dup_wchar_to_utf8(wchar_t *w)
+{
+    char *s = NULL;
+    int l = WideCharToMultiByte(CP_UTF8, 0, w, -1, 0, 0, 0, 0);
+    s = av_malloc(l);
+    if (s)
+        WideCharToMultiByte(CP_UTF8, 0, w, -1, s, l, 0, 0);
+    return s;
+}
+
+static int shall_we_drop(AVFormatContext *s, int index, enum dshowDeviceType devtype)
+{
+    struct dshow_ctx *ctx = s->priv_data;
+    static const uint8_t dropscore[] = {62, 75, 87, 100};
+    const int ndropscores = FF_ARRAY_ELEMS(dropscore);
+    unsigned int buffer_fullness = (ctx->curbufsize[index]*100)/s->max_picture_buffer;
+    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
+
+    if(dropscore[++ctx->video_frame_num%ndropscores] <= buffer_fullness) {
+        av_log(s, AV_LOG_ERROR,
+              "real-time buffer [%s] [%s input] too full or near too full (%d%% of size: %d [rtbufsize parameter])! frame dropped!\n",
+              ctx->device_name[devtype], devtypename, buffer_fullness, s->max_picture_buffer);
+        return 1;
+    }
+
+    return 0;
+}
+
+static void
+callback(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, enum dshowDeviceType devtype)
+{
+    AVFormatContext *s = priv_data;
+    struct dshow_ctx *ctx = s->priv_data;
+    AVPacketList **ppktl, *pktl_next;
+
+//    dump_videohdr(s, vdhdr);
+
+    WaitForSingleObject(ctx->mutex, INFINITE);
+
+    if(shall_we_drop(s, index, devtype))
+        goto fail;
+
+    pktl_next = av_mallocz(sizeof(AVPacketList));
+    if(!pktl_next)
+        goto fail;
+
+    if(av_new_packet(&pktl_next->pkt, buf_size) < 0) {
+        av_free(pktl_next);
+        goto fail;
+    }
+
+    pktl_next->pkt.stream_index = index;
+    pktl_next->pkt.pts = time;
+    memcpy(pktl_next->pkt.data, buf, buf_size);
+
+    for(ppktl = &ctx->pktl ; *ppktl ; ppktl = &(*ppktl)->next);
+    *ppktl = pktl_next;
+    ctx->curbufsize[index] += buf_size;
+
+    SetEvent(ctx->event[1]);
+    ReleaseMutex(ctx->mutex);
+
+    return;
+fail:
+    ReleaseMutex(ctx->mutex);
+    return;
+}
+
+/**
+ * Cycle through available devices using the device enumerator devenum,
+ * retrieve the device with type specified by devtype and return the
+ * pointer to the object found in *pfilter.
+ * If pfilter is NULL, list all device names.
+ */
+static int
+dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
+                    enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype,
+                    IBaseFilter **pfilter, char **device_unique_name)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IBaseFilter *device_filter = NULL;
+    IEnumMoniker *classenum = NULL;
+    IMoniker *m = NULL;
+    const char *device_name = ctx->device_name[devtype];
+    int skip = (devtype == VideoDevice) ? ctx->video_device_number
+                                        : ctx->audio_device_number;
+    int r;
+
+    const GUID *device_guid[2] = { &CLSID_VideoInputDeviceCategory,
+                                   &CLSID_AudioInputDeviceCategory };
+    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio only";
+    const char *sourcetypename = (sourcetype == VideoSourceDevice) ? "video" : "audio";
+
+    r = ICreateDevEnum_CreateClassEnumerator(devenum, device_guid[sourcetype],
+                                             (IEnumMoniker **) &classenum, 0);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not enumerate %s devices (or none found).\n",
+               devtypename);
+        return AVERROR(EIO);
+    }
+
+    while (!device_filter && IEnumMoniker_Next(classenum, 1, &m, NULL) == S_OK) {
+        IPropertyBag *bag = NULL;
+        char *friendly_name = NULL;
+        char *unique_name = NULL;
+        VARIANT var;
+        IBindCtx *bind_ctx = NULL;
+        LPOLESTR olestr = NULL;
+        LPMALLOC co_malloc = NULL;
+        int i;
+
+        r = CoGetMalloc(1, &co_malloc);
+        if (r != S_OK)
+            goto fail1;
+        r = CreateBindCtx(0, &bind_ctx);
+        if (r != S_OK)
+            goto fail1;
+        /* GetDisplayname works for both video and audio, DevicePath doesn't */
+        r = IMoniker_GetDisplayName(m, bind_ctx, NULL, &olestr);
+        if (r != S_OK)
+            goto fail1;
+        unique_name = dup_wchar_to_utf8(olestr);
+        /* replace ':' with '_' since we use : to delineate between sources */
+        for (i = 0; i < strlen(unique_name); i++) {
+            if (unique_name[i] == ':')
+                unique_name[i] = '_';
+        }
+
+        r = IMoniker_BindToStorage(m, 0, 0, &IID_IPropertyBag, (void *) &bag);
+        if (r != S_OK)
+            goto fail1;
+
+        var.vt = VT_BSTR;
+        r = IPropertyBag_Read(bag, L"FriendlyName", &var, NULL);
+        if (r != S_OK)
+            goto fail1;
+        friendly_name = dup_wchar_to_utf8(var.bstrVal);
+
+        if (pfilter) {
+            if (strcmp(device_name, friendly_name) && strcmp(device_name, unique_name))
+                goto fail1;
+
+            if (!skip--) {
+                r = IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
+                if (r != S_OK) {
+                    av_log(avctx, AV_LOG_ERROR, "Unable to BindToObject for %s\n", device_name);
+                    goto fail1;
+                }
+                *device_unique_name = unique_name;
+                unique_name = NULL;
+                // success, loop will end now
+            }
+        } else {
+            av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
+            av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
+        }
+
+fail1:
+        if (olestr && co_malloc)
+            IMalloc_Free(co_malloc, olestr);
+        if (bind_ctx)
+            IBindCtx_Release(bind_ctx);
+        av_freep(&friendly_name);
+        av_freep(&unique_name);
+        if (bag)
+            IPropertyBag_Release(bag);
+        IMoniker_Release(m);
+    }
+
+    IEnumMoniker_Release(classenum);
+
+    if (pfilter) {
+        if (!device_filter) {
+            av_log(avctx, AV_LOG_ERROR, "Could not find %s device with name [%s] among source devices of type %s.\n",
+                   devtypename, device_name, sourcetypename);
+            return AVERROR(EIO);
+        }
+        *pfilter = device_filter;
+    }
+
+    return 0;
+}
+
+/**
+ * Cycle through available formats using the specified pin,
+ * try to set parameters specified through AVOptions and if successful
+ * return 1 in *pformat_set.
+ * If pformat_set is NULL, list all pin capabilities.
+ */
+static void
+dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
+                    IPin *pin, int *pformat_set)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IAMStreamConfig *config = NULL;
+    AM_MEDIA_TYPE *type = NULL;
+    int format_set = 0;
+    void *caps = NULL;
+    int i, n, size, r;
+
+    if (IPin_QueryInterface(pin, &IID_IAMStreamConfig, (void **) &config) != S_OK)
+        return;
+    if (IAMStreamConfig_GetNumberOfCapabilities(config, &n, &size) != S_OK)
+        goto end;
+
+    caps = av_malloc(size);
+    if (!caps)
+        goto end;
+
+    for (i = 0; i < n && !format_set; i++) {
+        r = IAMStreamConfig_GetStreamCaps(config, i, &type, (void *) caps);
+        if (r != S_OK)
+            goto next;
+#if DSHOWDEBUG
+        ff_print_AM_MEDIA_TYPE(type);
+#endif
+
+        if (devtype == VideoDevice) {
+            VIDEO_STREAM_CONFIG_CAPS *vcaps = caps;
+            BITMAPINFOHEADER *bih;
+            int64_t *fr;
+            const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
+#if DSHOWDEBUG
+            ff_print_VIDEO_STREAM_CONFIG_CAPS(vcaps);
+#endif
+            if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo)) {
+                VIDEOINFOHEADER *v = (void *) type->pbFormat;
+                fr = &v->AvgTimePerFrame;
+                bih = &v->bmiHeader;
+            } else if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo2)) {
+                VIDEOINFOHEADER2 *v = (void *) type->pbFormat;
+                fr = &v->AvgTimePerFrame;
+                bih = &v->bmiHeader;
+            } else {
+                goto next;
+            }
+            if (!pformat_set) {
+                enum AVPixelFormat pix_fmt = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+                if (pix_fmt == AV_PIX_FMT_NONE) {
+                    enum AVCodecID codec_id = av_codec_get_id(tags, bih->biCompression);
+                    AVCodec *codec = avcodec_find_decoder(codec_id);
+                    if (codec_id == AV_CODEC_ID_NONE || !codec) {
+                        av_log(avctx, AV_LOG_INFO, "  unknown compression type 0x%X", (int) bih->biCompression);
+                    } else {
+                        av_log(avctx, AV_LOG_INFO, "  vcodec=%s", codec->name);
+                    }
+                } else {
+                    av_log(avctx, AV_LOG_INFO, "  pixel_format=%s", av_get_pix_fmt_name(pix_fmt));
+                }
+                av_log(avctx, AV_LOG_INFO, "  min s=%ldx%ld fps=%g max s=%ldx%ld fps=%g\n",
+                       vcaps->MinOutputSize.cx, vcaps->MinOutputSize.cy,
+                       1e7 / vcaps->MaxFrameInterval,
+                       vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy,
+                       1e7 / vcaps->MinFrameInterval);
+                continue;
+            }
+            if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
+                if (ctx->video_codec_id != av_codec_get_id(tags, bih->biCompression))
+                    goto next;
+            }
+            if (ctx->pixel_format != AV_PIX_FMT_NONE &&
+                ctx->pixel_format != dshow_pixfmt(bih->biCompression, bih->biBitCount)) {
+                goto next;
+            }
+            if (ctx->framerate) {
+                int64_t framerate = ((int64_t) ctx->requested_framerate.den*10000000)
+                                            /  ctx->requested_framerate.num;
+                if (framerate > vcaps->MaxFrameInterval ||
+                    framerate < vcaps->MinFrameInterval)
+                    goto next;
+                *fr = framerate;
+            }
+            if (ctx->requested_width && ctx->requested_height) {
+                if (ctx->requested_width  > vcaps->MaxOutputSize.cx ||
+                    ctx->requested_width  < vcaps->MinOutputSize.cx ||
+                    ctx->requested_height > vcaps->MaxOutputSize.cy ||
+                    ctx->requested_height < vcaps->MinOutputSize.cy)
+                    goto next;
+                bih->biWidth  = ctx->requested_width;
+                bih->biHeight = ctx->requested_height;
+            }
+        } else {
+            AUDIO_STREAM_CONFIG_CAPS *acaps = caps;
+            WAVEFORMATEX *fx;
+#if DSHOWDEBUG
+            ff_print_AUDIO_STREAM_CONFIG_CAPS(acaps);
+#endif
+            if (IsEqualGUID(&type->formattype, &FORMAT_WaveFormatEx)) {
+                fx = (void *) type->pbFormat;
+            } else {
+                goto next;
+            }
+            if (!pformat_set) {
+                av_log(avctx, AV_LOG_INFO, "  min ch=%lu bits=%lu rate=%6lu max ch=%lu bits=%lu rate=%6lu\n",
+                       acaps->MinimumChannels, acaps->MinimumBitsPerSample, acaps->MinimumSampleFrequency,
+                       acaps->MaximumChannels, acaps->MaximumBitsPerSample, acaps->MaximumSampleFrequency);
+                continue;
+            }
+            if (ctx->sample_rate) {
+                if (ctx->sample_rate > acaps->MaximumSampleFrequency ||
+                    ctx->sample_rate < acaps->MinimumSampleFrequency)
+                    goto next;
+                fx->nSamplesPerSec = ctx->sample_rate;
+            }
+            if (ctx->sample_size) {
+                if (ctx->sample_size > acaps->MaximumBitsPerSample ||
+                    ctx->sample_size < acaps->MinimumBitsPerSample)
+                    goto next;
+                fx->wBitsPerSample = ctx->sample_size;
+            }
+            if (ctx->channels) {
+                if (ctx->channels > acaps->MaximumChannels ||
+                    ctx->channels < acaps->MinimumChannels)
+                    goto next;
+                fx->nChannels = ctx->channels;
+            }
+        }
+        if (IAMStreamConfig_SetFormat(config, type) != S_OK)
+            goto next;
+        format_set = 1;
+next:
+        if (type->pbFormat)
+            CoTaskMemFree(type->pbFormat);
+        CoTaskMemFree(type);
+    }
+end:
+    IAMStreamConfig_Release(config);
+    av_free(caps);
+    if (pformat_set)
+        *pformat_set = format_set;
+}
+
+/**
+ * Set audio device buffer size in milliseconds (which can directly impact
+ * latency, depending on the device).
+ */
+static int
+dshow_set_audio_buffer_size(AVFormatContext *avctx, IPin *pin)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IAMBufferNegotiation *buffer_negotiation = NULL;
+    ALLOCATOR_PROPERTIES props = { -1, -1, -1, -1 };
+    IAMStreamConfig *config = NULL;
+    AM_MEDIA_TYPE *type = NULL;
+    int ret = AVERROR(EIO);
+
+    if (IPin_QueryInterface(pin, &IID_IAMStreamConfig, (void **) &config) != S_OK)
+        goto end;
+    if (IAMStreamConfig_GetFormat(config, &type) != S_OK)
+        goto end;
+    if (!IsEqualGUID(&type->formattype, &FORMAT_WaveFormatEx))
+        goto end;
+
+    props.cbBuffer = (((WAVEFORMATEX *) type->pbFormat)->nAvgBytesPerSec)
+                   * ctx->audio_buffer_size / 1000;
+
+    if (IPin_QueryInterface(pin, &IID_IAMBufferNegotiation, (void **) &buffer_negotiation) != S_OK)
+        goto end;
+    if (IAMBufferNegotiation_SuggestAllocatorProperties(buffer_negotiation, &props) != S_OK)
+        goto end;
+
+    ret = 0;
+
+end:
+    if (buffer_negotiation)
+        IAMBufferNegotiation_Release(buffer_negotiation);
+    if (type) {
+        if (type->pbFormat)
+            CoTaskMemFree(type->pbFormat);
+        CoTaskMemFree(type);
+    }
+    if (config)
+        IAMStreamConfig_Release(config);
+
+    return ret;
+}
+
+/**
+ * Pops up a user dialog allowing them to adjust properties for the given filter, if possible.
+ */
+void
+dshow_show_filter_properties(IBaseFilter *device_filter, AVFormatContext *avctx) {
+    ISpecifyPropertyPages *property_pages = NULL;
+    IUnknown *device_filter_iunknown = NULL;
+    HRESULT hr;
+    FILTER_INFO filter_info = {0}; /* a warning on this line is false positive GCC bug 53119 AFAICT */
+    CAUUID ca_guid = {0};
+
+    hr  = IBaseFilter_QueryInterface(device_filter, &IID_ISpecifyPropertyPages, (void **)&property_pages);
+    if (hr != S_OK) {
+        av_log(avctx, AV_LOG_WARNING, "requested filter does not have a property page to show");
+        goto end;
+    }
+    hr = IBaseFilter_QueryFilterInfo(device_filter, &filter_info);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    hr = IBaseFilter_QueryInterface(device_filter, &IID_IUnknown, (void **)&device_filter_iunknown);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    hr = ISpecifyPropertyPages_GetPages(property_pages, &ca_guid);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    hr = OleCreatePropertyFrame(NULL, 0, 0, filter_info.achName, 1, &device_filter_iunknown, ca_guid.cElems,
+        ca_guid.pElems, 0, 0, NULL);
+    if (hr != S_OK) {
+        goto fail;
+    }
+    goto end;
+fail:
+    av_log(avctx, AV_LOG_ERROR, "Failure showing property pages for filter");
+end:
+    if (property_pages)
+        ISpecifyPropertyPages_Release(property_pages);
+    if (device_filter_iunknown)
+        IUnknown_Release(device_filter_iunknown);
+    if (filter_info.pGraph)
+        IFilterGraph_Release(filter_info.pGraph);
+    if (ca_guid.pElems)
+        CoTaskMemFree(ca_guid.pElems);
+}
+
+/**
+ * Cycle through available pins using the device_filter device, of type
+ * devtype, retrieve the first output pin and return the pointer to the
+ * object found in *ppin.
+ * If ppin is NULL, cycle through all pins listing audio/video capabilities.
+ */
+static int
+dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
+                 enum dshowSourceFilterType sourcetype, IBaseFilter *device_filter, IPin **ppin)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IEnumPins *pins = 0;
+    IPin *device_pin = NULL;
+    IPin *pin;
+    int r;
+
+    const GUID *mediatype[2] = { &MEDIATYPE_Video, &MEDIATYPE_Audio };
+    const char *devtypename = (devtype == VideoDevice) ? "video" : "audio only";
+    const char *sourcetypename = (sourcetype == VideoSourceDevice) ? "video" : "audio";
+
+    int set_format = (devtype == VideoDevice && (ctx->framerate ||
+                                                (ctx->requested_width && ctx->requested_height) ||
+                                                 ctx->pixel_format != AV_PIX_FMT_NONE ||
+                                                 ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO))
+                  || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate));
+    int format_set = 0;
+    int should_show_properties = (devtype == VideoDevice) ? ctx->show_video_device_dialog : ctx->show_audio_device_dialog;
+
+    if (should_show_properties)
+        dshow_show_filter_properties(device_filter, avctx);
+
+    r = IBaseFilter_EnumPins(device_filter, &pins);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not enumerate pins.\n");
+        return AVERROR(EIO);
+    }
+
+    if (!ppin) {
+        av_log(avctx, AV_LOG_INFO, "DirectShow %s device options (from %s devices)\n",
+               devtypename, sourcetypename);
+    }
+
+    while (!device_pin && IEnumPins_Next(pins, 1, &pin, NULL) == S_OK) {
+        IKsPropertySet *p = NULL;
+        IEnumMediaTypes *types = NULL;
+        PIN_INFO info = {0};
+        AM_MEDIA_TYPE *type;
+        GUID category;
+        DWORD r2;
+        char *name_buf = NULL;
+        wchar_t *pin_id = NULL;
+        char *pin_buf = NULL;
+        char *desired_pin_name = devtype == VideoDevice ? ctx->video_pin_name : ctx->audio_pin_name;
+
+        IPin_QueryPinInfo(pin, &info);
+        IBaseFilter_Release(info.pFilter);
+
+        if (info.dir != PINDIR_OUTPUT)
+            goto next;
+        if (IPin_QueryInterface(pin, &IID_IKsPropertySet, (void **) &p) != S_OK)
+            goto next;
+        if (IKsPropertySet_Get(p, &AMPROPSETID_Pin, AMPROPERTY_PIN_CATEGORY,
+                               NULL, 0, &category, sizeof(GUID), &r2) != S_OK)
+            goto next;
+        if (!IsEqualGUID(&category, &PIN_CATEGORY_CAPTURE))
+            goto next;
+        name_buf = dup_wchar_to_utf8(info.achName);
+
+        r = IPin_QueryId(pin, &pin_id);
+        if (r != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Could not query pin id\n");
+            return AVERROR(EIO);
+        }
+        pin_buf = dup_wchar_to_utf8(pin_id);
+
+        if (!ppin) {
+            av_log(avctx, AV_LOG_INFO, " Pin \"%s\" (alternative pin name \"%s\")\n", name_buf, pin_buf);
+            dshow_cycle_formats(avctx, devtype, pin, NULL);
+            goto next;
+        }
+
+        if (desired_pin_name) {
+            if(strcmp(name_buf, desired_pin_name) && strcmp(pin_buf, desired_pin_name)) {
+                av_log(avctx, AV_LOG_DEBUG, "skipping pin \"%s\" (\"%s\") != requested \"%s\"\n",
+                    name_buf, pin_buf, desired_pin_name);
+                goto next;
+            }
+        }
+
+        if (set_format) {
+            dshow_cycle_formats(avctx, devtype, pin, &format_set);
+            if (!format_set) {
+                goto next;
+            }
+        }
+        if (devtype == AudioDevice && ctx->audio_buffer_size) {
+            if (dshow_set_audio_buffer_size(avctx, pin) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "unable to set audio buffer size %d to pin, using pin anyway...", ctx->audio_buffer_size);
+            }
+        }
+
+        if (IPin_EnumMediaTypes(pin, &types) != S_OK)
+            goto next;
+
+        IEnumMediaTypes_Reset(types);
+        /* in case format_set was not called, just verify the majortype */
+        while (!device_pin && IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
+            if (IsEqualGUID(&type->majortype, mediatype[devtype])) {
+                device_pin = pin;
+                av_log(avctx, AV_LOG_DEBUG, "Selecting pin %s on %s\n", name_buf, devtypename);
+                goto next;
+            }
+            CoTaskMemFree(type);
+        }
+
+next:
+        if (types)
+            IEnumMediaTypes_Release(types);
+        if (p)
+            IKsPropertySet_Release(p);
+        if (device_pin != pin)
+            IPin_Release(pin);
+        av_free(name_buf);
+        av_free(pin_buf);
+        if (pin_id)
+            CoTaskMemFree(pin_id);
+    }
+
+    IEnumPins_Release(pins);
+
+    if (ppin) {
+        if (set_format && !format_set) {
+            av_log(avctx, AV_LOG_ERROR, "Could not set %s options\n", devtypename);
+            return AVERROR(EIO);
+        }
+        if (!device_pin) {
+            av_log(avctx, AV_LOG_ERROR,
+                "Could not find output pin from %s capture device.\n", devtypename);
+            return AVERROR(EIO);
+        }
+        *ppin = device_pin;
+    }
+
+    return 0;
+}
+
+/**
+ * List options for device with type devtype, source filter type sourcetype
+ *
+ * @param devenum device enumerator used for accessing the device
+ */
+static int
+dshow_list_device_options(AVFormatContext *avctx, ICreateDevEnum *devenum,
+                          enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IBaseFilter *device_filter = NULL;
+    char *device_unique_name = NULL;
+    int r;
+
+    if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_unique_name)) < 0)
+        return r;
+    ctx->device_filter[devtype] = device_filter;
+    if ((r = dshow_cycle_pins(avctx, devtype, sourcetype, device_filter, NULL)) < 0)
+        return r;
+    av_freep(&device_unique_name);
+    return 0;
+}
+
+static int
+dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
+                  enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IBaseFilter *device_filter = NULL;
+    char *device_filter_unique_name = NULL;
+    IGraphBuilder *graph = ctx->graph;
+    IPin *device_pin = NULL;
+    libAVPin *capture_pin = NULL;
+    libAVFilter *capture_filter = NULL;
+    ICaptureGraphBuilder2 *graph_builder2 = NULL;
+    int ret = AVERROR(EIO);
+    int r;
+    IStream *ifile_stream = NULL;
+    IStream *ofile_stream = NULL;
+    IPersistStream *pers_stream = NULL;
+    enum dshowDeviceType otherDevType = (devtype == VideoDevice) ? AudioDevice : VideoDevice;
+
+    const wchar_t *filter_name[2] = { L"Audio capture filter", L"Video capture filter" };
+
+
+    if ( ((ctx->audio_filter_load_file) && (strlen(ctx->audio_filter_load_file)>0) && (sourcetype == AudioSourceDevice)) ||
+            ((ctx->video_filter_load_file) && (strlen(ctx->video_filter_load_file)>0) && (sourcetype == VideoSourceDevice)) ) {
+        HRESULT hr;
+        char *filename = NULL;
+
+        if (sourcetype == AudioSourceDevice)
+            filename = ctx->audio_filter_load_file;
+        else
+            filename = ctx->video_filter_load_file;
+
+        hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_READ, &ifile_stream);
+        if (S_OK != hr) {
+            av_log(avctx, AV_LOG_ERROR, "Could not open capture filter description file.\n");
+            goto error;
+        }
+
+        hr = OleLoadFromStream(ifile_stream, &IID_IBaseFilter, (void **) &device_filter);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Could not load capture filter from file.\n");
+            goto error;
+        }
+
+        if (sourcetype == AudioSourceDevice)
+            av_log(avctx, AV_LOG_INFO, "Audio-");
+        else
+            av_log(avctx, AV_LOG_INFO, "Video-");
+        av_log(avctx, AV_LOG_INFO, "Capture filter loaded successfully from file \"%s\".\n", filename);
+    } else {
+
+        if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_filter_unique_name)) < 0) {
+            ret = r;
+            goto error;
+        }
+    }
+        if (ctx->device_filter[otherDevType]) {
+        // avoid adding add two instances of the same device to the graph, one for video, one for audio
+        // a few devices don't support this (could also do this check earlier to avoid double crossbars, etc. but they seem OK)
+        if (strcmp(device_filter_unique_name, ctx->device_unique_name[otherDevType]) == 0) {
+          av_log(avctx, AV_LOG_DEBUG, "reusing previous graph capture filter... %s\n", device_filter_unique_name);
+          IBaseFilter_Release(device_filter);
+          device_filter = ctx->device_filter[otherDevType];
+          IBaseFilter_AddRef(ctx->device_filter[otherDevType]);
+        } else {
+            av_log(avctx, AV_LOG_DEBUG, "not reusing previous graph capture filter %s != %s\n", device_filter_unique_name, ctx->device_unique_name[otherDevType]);
+        }
+    }
+
+    ctx->device_filter [devtype] = device_filter;
+    ctx->device_unique_name [devtype] = device_filter_unique_name;
+
+    r = IGraphBuilder_AddFilter(graph, device_filter, NULL);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not add device filter to graph.\n");
+        goto error;
+    }
+
+    if ((r = dshow_cycle_pins(avctx, devtype, sourcetype, device_filter, &device_pin)) < 0) {
+        ret = r;
+        goto error;
+    }
+
+    ctx->device_pin[devtype] = device_pin;
+
+    capture_filter = libAVFilter_Create(avctx, callback, devtype);
+    if (!capture_filter) {
+        av_log(avctx, AV_LOG_ERROR, "Could not create grabber filter.\n");
+        goto error;
+    }
+    ctx->capture_filter[devtype] = capture_filter;
+
+    if ( ((ctx->audio_filter_save_file) && (strlen(ctx->audio_filter_save_file)>0) && (sourcetype == AudioSourceDevice)) ||
+            ((ctx->video_filter_save_file) && (strlen(ctx->video_filter_save_file)>0) && (sourcetype == VideoSourceDevice)) ) {
+
+        HRESULT hr;
+        char *filename = NULL;
+
+        if (sourcetype == AudioSourceDevice)
+            filename = ctx->audio_filter_save_file;
+        else
+            filename = ctx->video_filter_save_file;
+
+        hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_CREATE | STGM_READWRITE, &ofile_stream);
+        if (S_OK != hr) {
+            av_log(avctx, AV_LOG_ERROR, "Could not create capture filter description file.\n");
+            goto error;
+        }
+
+        hr  = IBaseFilter_QueryInterface(device_filter, &IID_IPersistStream, (void **) &pers_stream);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Query for IPersistStream failed.\n");
+            goto error;
+        }
+
+        hr = OleSaveToStream(pers_stream, ofile_stream);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Could not save capture filter \n");
+            goto error;
+        }
+
+        hr = IStream_Commit(ofile_stream, STGC_DEFAULT);
+        if (S_OK != hr) {
+            av_log(avctx, AV_LOG_ERROR, "Could not commit capture filter data to file.\n");
+            goto error;
+        }
+
+        if (sourcetype == AudioSourceDevice)
+            av_log(avctx, AV_LOG_INFO, "Audio-");
+        else
+            av_log(avctx, AV_LOG_INFO, "Video-");
+        av_log(avctx, AV_LOG_INFO, "Capture filter saved successfully to file \"%s\".\n", filename);
+    }
+
+    r = IGraphBuilder_AddFilter(graph, (IBaseFilter *) capture_filter,
+                                filter_name[devtype]);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not add capture filter to graph\n");
+        goto error;
+    }
+
+    libAVPin_AddRef(capture_filter->pin);
+    capture_pin = capture_filter->pin;
+    ctx->capture_pin[devtype] = capture_pin;
+
+    r = CoCreateInstance(&CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC_SERVER,
+                         &IID_ICaptureGraphBuilder2, (void **) &graph_builder2);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not create CaptureGraphBuilder2\n");
+        goto error;
+    }
+    ICaptureGraphBuilder2_SetFiltergraph(graph_builder2, graph);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not set graph for CaptureGraphBuilder2\n");
+        goto error;
+    }
+
+    r = ICaptureGraphBuilder2_RenderStream(graph_builder2, NULL, NULL, (IUnknown *) device_pin, NULL /* no intermediate filter */,
+        (IBaseFilter *) capture_filter); /* connect pins, optionally insert intermediate filters like crossbar if necessary */
+
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not RenderStream to connect pins\n");
+        goto error;
+    }
+
+    r = dshow_try_setup_crossbar_options(graph_builder2, device_filter, devtype, avctx);
+
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not setup CrossBar\n");
+        goto error;
+    }
+
+    ret = 0;
+
+error:
+    if (graph_builder2 != NULL)
+        ICaptureGraphBuilder2_Release(graph_builder2);
+
+    if (pers_stream)
+        IPersistStream_Release(pers_stream);
+
+    if (ifile_stream)
+        IStream_Release(ifile_stream);
+
+    if (ofile_stream)
+        IStream_Release(ofile_stream);
+
+    return ret;
+}
+
+static enum AVCodecID waveform_codec_id(enum AVSampleFormat sample_fmt)
+{
+    switch (sample_fmt) {
+    case AV_SAMPLE_FMT_U8:  return AV_CODEC_ID_PCM_U8;
+    case AV_SAMPLE_FMT_S16: return AV_CODEC_ID_PCM_S16LE;
+    case AV_SAMPLE_FMT_S32: return AV_CODEC_ID_PCM_S32LE;
+    default:                return AV_CODEC_ID_NONE; /* Should never happen. */
+    }
+}
+
+static enum AVSampleFormat sample_fmt_bits_per_sample(int bits)
+{
+    switch (bits) {
+    case 8:  return AV_SAMPLE_FMT_U8;
+    case 16: return AV_SAMPLE_FMT_S16;
+    case 32: return AV_SAMPLE_FMT_S32;
+    default: return AV_SAMPLE_FMT_NONE; /* Should never happen. */
+    }
+}
+
+static int
+dshow_add_device(AVFormatContext *avctx,
+                 enum dshowDeviceType devtype)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    AM_MEDIA_TYPE type;
+    AVCodecParameters *par;
+    AVStream *st;
+    int ret = AVERROR(EIO);
+
+    type.pbFormat = NULL;
+
+    st = avformat_new_stream(avctx, NULL);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+    st->id = devtype;
+
+    ctx->capture_filter[devtype]->stream_index = st->index;
+
+    libAVPin_ConnectionMediaType(ctx->capture_pin[devtype], &type);
+
+    par = st->codecpar;
+    if (devtype == VideoDevice) {
+        BITMAPINFOHEADER *bih = NULL;
+        AVRational time_base;
+
+        if (IsEqualGUID(&type.formattype, &FORMAT_VideoInfo)) {
+            VIDEOINFOHEADER *v = (void *) type.pbFormat;
+            time_base = (AVRational) { v->AvgTimePerFrame, 10000000 };
+            bih = &v->bmiHeader;
+        } else if (IsEqualGUID(&type.formattype, &FORMAT_VideoInfo2)) {
+            VIDEOINFOHEADER2 *v = (void *) type.pbFormat;
+            time_base = (AVRational) { v->AvgTimePerFrame, 10000000 };
+            bih = &v->bmiHeader;
+        }
+        if (!bih) {
+            av_log(avctx, AV_LOG_ERROR, "Could not get media type.\n");
+            goto error;
+        }
+
+        st->avg_frame_rate = av_inv_q(time_base);
+        st->r_frame_rate = av_inv_q(time_base);
+
+        par->codec_type = AVMEDIA_TYPE_VIDEO;
+        par->width      = bih->biWidth;
+        par->height     = bih->biHeight;
+        par->codec_tag  = bih->biCompression;
+        par->format     = dshow_pixfmt(bih->biCompression, bih->biBitCount);
+        if (bih->biCompression == MKTAG('H', 'D', 'Y', 'C')) {
+            av_log(avctx, AV_LOG_DEBUG, "attempt to use full range for HDYC...\n");
+            par->color_range = AVCOL_RANGE_MPEG; // just in case it needs this...
+        }
+        if (par->format == AV_PIX_FMT_NONE) {
+            const AVCodecTag *const tags[] = { avformat_get_riff_video_tags(), NULL };
+            par->codec_id = av_codec_get_id(tags, bih->biCompression);
+            if (par->codec_id == AV_CODEC_ID_NONE) {
+                av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
+                                 "Please report type 0x%X.\n", (int) bih->biCompression);
+                ret = AVERROR_PATCHWELCOME;
+                goto error;
+            }
+            par->bits_per_coded_sample = bih->biBitCount;
+        } else {
+            par->codec_id = AV_CODEC_ID_RAWVIDEO;
+            if (bih->biCompression == BI_RGB || bih->biCompression == BI_BITFIELDS) {
+                par->bits_per_coded_sample = bih->biBitCount;
+                if (par->height < 0) {
+                    par->height *= -1;
+                } else {
+                    par->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
+                    if (par->extradata) {
+                        par->extradata_size = 9;
+                        memcpy(par->extradata, "BottomUp", 9);
+                    }
+                }
+            }
+        }
+    } else {
+        WAVEFORMATEX *fx = NULL;
+
+        if (IsEqualGUID(&type.formattype, &FORMAT_WaveFormatEx)) {
+            fx = (void *) type.pbFormat;
+        }
+        if (!fx) {
+            av_log(avctx, AV_LOG_ERROR, "Could not get media type.\n");
+            goto error;
+        }
+
+        par->codec_type  = AVMEDIA_TYPE_AUDIO;
+        par->format      = sample_fmt_bits_per_sample(fx->wBitsPerSample);
+        par->codec_id    = waveform_codec_id(par->format);
+        par->sample_rate = fx->nSamplesPerSec;
+        par->channels    = fx->nChannels;
+    }
+
+    avpriv_set_pts_info(st, 64, 1, 10000000);
+
+    ret = 0;
+
+error:
+    if (type.pbFormat)
+        CoTaskMemFree(type.pbFormat);
+    return ret;
+}
+
+static int parse_device_name(AVFormatContext *avctx)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    char **device_name = ctx->device_name;
+    char *name = av_strdup(avctx->url);
+    char *tmp = name;
+    int ret = 1;
+    char *type;
+
+    while ((type = strtok(tmp, "="))) {
+        char *token = strtok(NULL, ":");
+        tmp = NULL;
+
+        if        (!strcmp(type, "video")) {
+            device_name[0] = token;
+        } else if (!strcmp(type, "audio")) {
+            device_name[1] = token;
+        } else {
+            device_name[0] = NULL;
+            device_name[1] = NULL;
+            break;
+        }
+    }
+
+    if (!device_name[0] && !device_name[1]) {
+        ret = 0;
+    } else {
+        if (device_name[0])
+            device_name[0] = av_strdup(device_name[0]);
+        if (device_name[1])
+            device_name[1] = av_strdup(device_name[1]);
+    }
+
+    av_free(name);
+    return ret;
+}
+
+static int dshow_read_header(AVFormatContext *avctx)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IGraphBuilder *graph = NULL;
+    ICreateDevEnum *devenum = NULL;
+    IMediaControl *control = NULL;
+    IMediaEvent *media_event = NULL;
+    HANDLE media_event_handle;
+    HANDLE proc;
+    int ret = AVERROR(EIO);
+    int r;
+
+    CoInitialize(0);
+
+    if (!ctx->list_devices && !parse_device_name(avctx)) {
+        av_log(avctx, AV_LOG_ERROR, "Malformed dshow input string.\n");
+        goto error;
+    }
+
+    ctx->video_codec_id = avctx->video_codec_id ? avctx->video_codec_id
+                                                : AV_CODEC_ID_RAWVIDEO;
+    if (ctx->pixel_format != AV_PIX_FMT_NONE) {
+        if (ctx->video_codec_id != AV_CODEC_ID_RAWVIDEO) {
+            av_log(avctx, AV_LOG_ERROR, "Pixel format may only be set when "
+                              "video codec is not set or set to rawvideo\n");
+            ret = AVERROR(EINVAL);
+            goto error;
+        }
+    }
+    if (ctx->framerate) {
+        r = av_parse_video_rate(&ctx->requested_framerate, ctx->framerate);
+        if (r < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", ctx->framerate);
+            goto error;
+        }
+    }
+
+    r = CoCreateInstance(&CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,
+                         &IID_IGraphBuilder, (void **) &graph);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not create capture graph.\n");
+        goto error;
+    }
+    ctx->graph = graph;
+
+    r = CoCreateInstance(&CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER,
+                         &IID_ICreateDevEnum, (void **) &devenum);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not enumerate system devices.\n");
+        goto error;
+    }
+
+    if (ctx->list_devices) {
+        av_log(avctx, AV_LOG_INFO, "DirectShow video devices (some may be both video and audio devices)\n");
+        dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, NULL, NULL);
+        av_log(avctx, AV_LOG_INFO, "DirectShow audio devices\n");
+        dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, NULL, NULL);
+        ret = AVERROR_EXIT;
+        goto error;
+    }
+    if (ctx->list_options) {
+        if (ctx->device_name[VideoDevice])
+            if ((r = dshow_list_device_options(avctx, devenum, VideoDevice, VideoSourceDevice))) {
+                ret = r;
+                goto error;
+            }
+        if (ctx->device_name[AudioDevice]) {
+            if (dshow_list_device_options(avctx, devenum, AudioDevice, AudioSourceDevice)) {
+                /* show audio options from combined video+audio sources as fallback */
+                if ((r = dshow_list_device_options(avctx, devenum, AudioDevice, VideoSourceDevice))) {
+                    ret = r;
+                    goto error;
+                }
+            }
+        }
+    }
+    if (ctx->device_name[VideoDevice]) {
+        if ((r = dshow_open_device(avctx, devenum, VideoDevice, VideoSourceDevice)) < 0 ||
+            (r = dshow_add_device(avctx, VideoDevice)) < 0) {
+            ret = r;
+            goto error;
+        }
+    }
+    if (ctx->device_name[AudioDevice]) {
+        if ((r = dshow_open_device(avctx, devenum, AudioDevice, AudioSourceDevice)) < 0 ||
+            (r = dshow_add_device(avctx, AudioDevice)) < 0) {
+            av_log(avctx, AV_LOG_INFO, "Searching for audio device within video devices for %s\n", ctx->device_name[AudioDevice]);
+            /* see if there's a video source with an audio pin with the given audio name */
+            if ((r = dshow_open_device(avctx, devenum, AudioDevice, VideoSourceDevice)) < 0 ||
+                (r = dshow_add_device(avctx, AudioDevice)) < 0) {
+                ret = r;
+                goto error;
+            }
+        }
+    }
+    if (ctx->list_options) {
+        /* allow it to list crossbar options in dshow_open_device */
+        ret = AVERROR_EXIT;
+        goto error;
+    }
+    ctx->curbufsize[0] = 0;
+    ctx->curbufsize[1] = 0;
+    ctx->mutex = CreateMutex(NULL, 0, NULL);
+    if (!ctx->mutex) {
+        av_log(avctx, AV_LOG_ERROR, "Could not create Mutex\n");
+        goto error;
+    }
+    ctx->event[1] = CreateEvent(NULL, 1, 0, NULL);
+    if (!ctx->event[1]) {
+        av_log(avctx, AV_LOG_ERROR, "Could not create Event\n");
+        goto error;
+    }
+
+    r = IGraphBuilder_QueryInterface(graph, &IID_IMediaControl, (void **) &control);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get media control.\n");
+        goto error;
+    }
+    ctx->control = control;
+
+    r = IGraphBuilder_QueryInterface(graph, &IID_IMediaEvent, (void **) &media_event);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get media event.\n");
+        goto error;
+    }
+    ctx->media_event = media_event;
+
+    r = IMediaEvent_GetEventHandle(media_event, (void *) &media_event_handle);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not get media event handle.\n");
+        goto error;
+    }
+    proc = GetCurrentProcess();
+    r = DuplicateHandle(proc, media_event_handle, proc, &ctx->event[0],
+                        0, 0, DUPLICATE_SAME_ACCESS);
+    if (!r) {
+        av_log(avctx, AV_LOG_ERROR, "Could not duplicate media event handle.\n");
+        goto error;
+    }
+
+    r = IMediaControl_Run(control);
+    if (r == S_FALSE) {
+        OAFilterState pfs;
+        r = IMediaControl_GetState(control, 0, &pfs);
+    }
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not run graph (sometimes caused by a device already in use by other application)\n");
+        goto error;
+    }
+
+    ret = 0;
+
+error:
+
+    if (devenum)
+        ICreateDevEnum_Release(devenum);
+
+    if (ret < 0)
+        dshow_read_close(avctx);
+
+    return ret;
+}
+
+/**
+ * Checks media events from DirectShow and returns -1 on error or EOF. Also
+ * purges all events that might be in the event queue to stop the trigger
+ * of event notification.
+ */
+static int dshow_check_event_queue(IMediaEvent *media_event)
+{
+    LONG_PTR p1, p2;
+    long code;
+    int ret = 0;
+
+    while (IMediaEvent_GetEvent(media_event, &code, &p1, &p2, 0) != E_ABORT) {
+        if (code == EC_COMPLETE || code == EC_DEVICE_LOST || code == EC_ERRORABORT)
+            ret = -1;
+        IMediaEvent_FreeEventParams(media_event, code, p1, p2);
+    }
+
+    return ret;
+}
+
+static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    struct dshow_ctx *ctx = s->priv_data;
+    AVPacketList *pktl = NULL;
+
+    while (!ctx->eof && !pktl) {
+        WaitForSingleObject(ctx->mutex, INFINITE);
+        pktl = ctx->pktl;
+        if (pktl) {
+            *pkt = pktl->pkt;
+            ctx->pktl = ctx->pktl->next;
+            av_free(pktl);
+            ctx->curbufsize[pkt->stream_index] -= pkt->size;
+        }
+        ResetEvent(ctx->event[1]);
+        ReleaseMutex(ctx->mutex);
+        if (!pktl) {
+            if (dshow_check_event_queue(ctx->media_event) < 0) {
+                ctx->eof = 1;
+            } else if (s->flags & AVFMT_FLAG_NONBLOCK) {
+                return AVERROR(EAGAIN);
+            } else {
+                WaitForMultipleObjects(2, ctx->event, 0, INFINITE);
+            }
+        }
+    }
+
+    return ctx->eof ? AVERROR(EIO) : pkt->size;
+}
+
+#define OFFSET(x) offsetof(struct dshow_ctx, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = 
+};
+
+static const AVClass dshow_class = {
+    .class_name = "dshow indev",
+    .item_name  = av_default_item_name,
+    .option     = (AVOption []){
+    { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(requested_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
+    { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, DEC },
+    { "framerate", "set video frame rate", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "sample_rate", "set audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "sample_size", "set audio sample size", OFFSET(sample_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC },
+    { "channels", "set number of audio channels, such as 1 or 2", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", OFFSET(audio_buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "list_devices", "list available devices",                      OFFSET(list_devices), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
+    { "list_options", "list available options for specified device", OFFSET(list_options), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
+    { "video_device_number", "set video device number for devices with same name (starts at 0)", OFFSET(video_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "audio_device_number", "set audio device number for devices with same name (starts at 0)", OFFSET(audio_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "video_pin_name", "select video capture pin by name", OFFSET(video_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "audio_pin_name", "select audio capture pin by name", OFFSET(audio_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "crossbar_video_input_pin_number", "set video input pin number for crossbar device", OFFSET(crossbar_video_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+    { "crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", OFFSET(crossbar_audio_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+    { "show_video_device_dialog",              "display property dialog for video capture device",                            OFFSET(show_video_device_dialog),              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_audio_device_dialog",              "display property dialog for audio capture device",                            OFFSET(show_audio_device_dialog),              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_video_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on video device", OFFSET(show_video_crossbar_connection_dialog), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_audio_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on audio device", OFFSET(show_audio_crossbar_connection_dialog), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_analog_tv_tuner_dialog",           "display property dialog for analog tuner filter",                             OFFSET(show_analog_tv_tuner_dialog),           AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_analog_tv_tuner_audio_dialog",     "display property dialog for analog tuner audio filter",                       OFFSET(show_analog_tv_tuner_audio_dialog),     AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "audio_device_load", "load audio capture filter device (and properties) from file", OFFSET(audio_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "audio_device_save", "save audio capture filter device (and properties) to file", OFFSET(audio_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_device_load", "load video capture filter device (and properties) from file", OFFSET(video_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_device_save", "save video capture filter device (and properties) to file", OFFSET(video_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { NULL },
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
+};
+
+AVInputFormat ff_dshow_demuxer = {
+    .name           = "dshow",
+    .long_name      = NULL_IF_CONFIG_SMALL("DirectShow capture"),
+    .priv_data_size = sizeof(struct dshow_ctx),
+    .read_header    = dshow_read_header,
+    .read_packet    = dshow_read_packet,
+    .read_close     = dshow_read_close,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &dshow_class,
+};
+
+static const AVInputFormat * const indev_list[] = {
+    &ff_dshow_demuxer,
+    // &ff_gdigrab_demuxer,
+    // &ff_lavfi_demuxer,
+    // &ff_vfwcap_demuxer,
+    // &ff_libcdio_demuxer,
+    NULL };
+
+
 void avdevice_register_all(void)
 {
     avpriv_register_devices(outdev_list, indev_list);
@@ -46712,7 +48345,6 @@ int av_compare_ts(int64_t ts_a, AVRational tb_a, int64_t ts_b, AVRational tb_b)
         return 1;
     return 0;
 }
-
 static void seek_chapter(VideoState *is, int incr)
 {
     int64_t pos = get_master_clock(is) * AV_TIME_BASE;
@@ -46721,7 +48353,6 @@ static void seek_chapter(VideoState *is, int incr)
     if (!is->ic->nb_chapters)
         return;
 
-    /* find the current chapter */
     for (i = 0; i < is->ic->nb_chapters; i++)
     {
         AVChapter *ch = is->ic->chapters[i];
@@ -46731,30 +48362,17 @@ static void seek_chapter(VideoState *is, int incr)
             break;
         }
     }
-
     i += incr;
     i = FFMAX(i, 0);
     if (i >= is->ic->nb_chapters)
         return;
-
-    av_log(NULL, AV_LOG_VERBOSE, "Seeking to chapter %d.\n", i);
+    // av_log(NULL, AV_LOG_VERBOSE, "Seeking to chapter %d.\n", i);
     stream_seek(is, av_rescale_q(is->ic->chapters[i]->start, is->ic->chapters[i]->time_base, AV_TIME_BASE_Q), 0, 0);
 }
-
-
-
-
-
-
-
-
-
-/* handle an event sent by the GUI */
 static void event_loop(VideoState *cur_stream)
 {
     SDL_Event event;
     double incr, pos, frac;
-
     for (;;)
     {
         double x;
@@ -46767,7 +48385,6 @@ static void event_loop(VideoState *cur_stream)
                 do_exit(cur_stream);
                 break;
             }
-            // If we don't yet have a window, skip all key events, because read_thread might still be initializing...
             if (!cur_stream->width)
                 continue;
             switch (event.key.keysym.sym)
@@ -46809,7 +48426,6 @@ static void event_loop(VideoState *cur_stream)
                 stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
                 break;
             case SDLK_w:
-                // #if CONFIG_AVFILTER
                 if (cur_stream->show_mode == SHOW_MODE_VIDEO && cur_stream->vfilter_idx < nb_vfilters - 1)
                 {
                     if (++cur_stream->vfilter_idx >= nb_vfilters)
@@ -46820,9 +48436,6 @@ static void event_loop(VideoState *cur_stream)
                     cur_stream->vfilter_idx = 0;
                     toggle_audio_display(cur_stream);
                 }
-                // #else
-                // toggle_audio_display(cur_stream);
-                // #endif
                 break;
             case SDLK_PAGEUP:
                 if (cur_stream->ic->nb_chapters <= 1)
@@ -46941,8 +48554,7 @@ static void event_loop(VideoState *cur_stream)
                 hh = ns / 3600;
                 mm = (ns % 3600) / 60;
                 ss = (ns % 60);
-                av_log(NULL, AV_LOG_INFO,
-                       "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac * 100,
+                av_log(NULL, AV_LOG_INFO, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac * 100,
                        hh, mm, ss, thh, tmm, tss);
                 ts = frac * cur_stream->ic->duration;
                 if (cur_stream->ic->start_time != AV_NOPTS_VALUE)
@@ -47013,8 +48625,6 @@ static int opt_height(void *optctx, const char *opt, const char *arg)
     screen_height = parse_number_or_die(opt, arg, OPT_INT64, 1, INT_MAX);
     return 0;
 }
-
-
 
 AVInputFormat *av_find_input_format(const char *short_name)
 {
@@ -48495,16 +50105,11 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     return !!(po->flags & HAS_ARG);
 }
 
-void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
-                   void (*parse_arg_function)(void *, const char *))
+void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,void (*parse_arg_function)(void *, const char *))
 {
     const char *opt;
     int optindex, handleoptions = 1, ret;
-
-    /* perform system-dependent conversions for arguments list */
     prepare_app_arguments(&argc, &argv);
-
-    /* parse options */
     optindex = 1;
     while (optindex < argc)
     {
@@ -50606,108 +52211,6 @@ fail:
 
 #endif
 
-
-
-int main(int argc, char **argv)
-{
-    int flags;
-    VideoState *is;
-
-    init_dynload();
-
-    av_log_set_flags(AV_LOG_SKIP_REPEATED);
-    parse_loglevel(argc, argv, options);
-
-    avdevice_register_all();
-    avformat_network_init();
-
-    init_opts();
-
-    signal(SIGINT, sigterm_handler);  /* Interrupt (ANSI).    */
-    signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
-
-    show_banner(argc, argv, options);
-
-    parse_options(NULL, argc, argv, options, opt_input_file);
-
-    if (!input_filename)
-    {
-        show_usage();
-        av_log(NULL, AV_LOG_FATAL, "An input file must be specified\n");
-        av_log(NULL, AV_LOG_FATAL,
-               "Use -h to get full help or, even better, run 'man %s'\n", program_name);
-        exit(1);
-    }
-
-    if (display_disable)
-    {
-        video_disable = 1;
-    }
-    flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
-    if (audio_disable)
-        flags &= ~SDL_INIT_AUDIO;
-    else
-    {
-        if (!SDL_getenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE"))
-            SDL_setenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE", "1", 1);
-    }
-    if (display_disable)
-        flags &= ~SDL_INIT_VIDEO;
-    if (SDL_Init(flags))
-    {
-        av_log(NULL, AV_LOG_FATAL, "Could not initialize SDL - %s\n", SDL_GetError());
-        av_log(NULL, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
-        exit(1);
-    }
-
-    SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
-    SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
-
-    av_init_packet(&flush_pkt);
-    flush_pkt.data = (uint8_t *)&flush_pkt;
-
-    if (!display_disable)
-    {
-        int flags = SDL_WINDOW_HIDDEN;
-        if (alwaysontop)
-            flags |= SDL_WINDOW_ALWAYS_ON_TOP;
-        if (borderless)
-            flags |= SDL_WINDOW_BORDERLESS;
-        else
-            flags |= SDL_WINDOW_RESIZABLE;
-        window = SDL_CreateWindow(program_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, default_width, default_height, flags);
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-        if (window)
-        {
-            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-            if (!renderer)
-            {
-                av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
-                renderer = SDL_CreateRenderer(window, -1, 0);
-            }
-            if (renderer)
-            {
-                if (!SDL_GetRendererInfo(renderer, &renderer_info))
-                    av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
-            }
-        }
-        if (!window || !renderer || !renderer_info.num_texture_formats)
-        {
-            av_log(NULL, AV_LOG_FATAL, "Failed to create window or renderer: %s", SDL_GetError());
-            do_exit(NULL);
-        }
-    }
-
-    is = stream_open(input_filename, file_iformat);
-    if (!is)
-    {
-        av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
-        do_exit(NULL);
-    }
-    event_loop(is);
-    return 0;
-}
-
 const uint8_t ff_mpeg4audio_channels[14] = {
     0,
     1, // mono (1/0)
@@ -50724,7 +52227,6 @@ const uint8_t ff_mpeg4audio_channels[14] = {
     8, // 3/2/2.1
     24 // 3/3/3 - 5/2/3 - 3/0/0.2
 };
-
 static  int get_bits_count(const GetBitContext *s)
 {
 #if CACHED_BITSTREAM_READER
@@ -50733,7 +52235,6 @@ static  int get_bits_count(const GetBitContext *s)
     return s->index;
 #endif
 }
-
 static  unsigned int get_bits(GetBitContext *s, int n)
 {
     register unsigned int tmp;
@@ -50774,7 +52275,6 @@ static inline int get_object_type(GetBitContext *gb)
         object_type = 32 + get_bits(gb, 6);
     return object_type;
 }
-
 const int avpriv_mpeg4audio_sample_rates[16] = {
     96000, 88200, 64000, 48000, 44100, 32000,
     24000, 22050, 16000, 12000, 11025, 8000, 7350
@@ -50842,8 +52342,6 @@ static inline int get_bits_left(GetBitContext *gb)
 {
     return gb->size_in_bits - get_bits_count(gb);
 }
-
-
 static inline unsigned int get_bits_long(GetBitContext *s, int n)
 {
     av_assert2(n>=0 && n<=32);
@@ -50866,8 +52364,6 @@ static inline unsigned int get_bits_long(GetBitContext *s, int n)
     }
 #endif
 }
-
-
 static  void skip_bits_long(GetBitContext *s, int n)
 {
 #if CACHED_BITSTREAM_READER
@@ -50906,7 +52402,6 @@ static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
 
     return 0;
 }
-
 static inline unsigned int get_bits1(GetBitContext *s)
 {
 #if CACHED_BITSTREAM_READER
@@ -50941,7 +52436,6 @@ static inline unsigned int get_bits1(GetBitContext *s)
     return result;
 #endif
 }
-
 int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
                                 int sync_extension, void *logctx)
 {
@@ -50986,7 +52480,6 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
         if (ret < 0)
             return ret;
     }
-
     if (c->ext_object_type != AOT_SBR && sync_extension) {
         while (get_bits_left(gb) > 15) {
             if (show_bits(gb, 11) == 0x2b7) { // sync extension
@@ -51001,21 +52494,16 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
                     c->ps = get_bits1(gb);
                 break;
             } else
-                get_bits1(gb); // skip 1 bit
+                get_bits1(gb);
         }
     }
-
-    //PS requires SBR
     if (!c->sbr)
         c->ps = 0;
-    //Limit implicit PS to the HE-AACv2 Profile
     if ((c->ps == -1 && c->object_type != AOT_AAC_LC) || c->channels & ~0x01)
         c->ps = 0;
 
     return specific_config_bitindex - start_bit_index;
 }
-
-
 static inline int init_get_bits_xe(GetBitContext *s, const uint8_t *buffer,
                                    int bit_size, int is_le)
 {
@@ -51076,176 +52564,89 @@ int avpriv_mpeg4audio_get_config2(MPEG4AudioConfig *c, const uint8_t *buf,
     return ff_mpeg4audio_get_config_gb(c, &gb, sync_extension, logctx);
 }
 
-
-
-
-
-
-
-
-static  void init_put_bits(PutBitContext *s, uint8_t *buffer,
-                                 int buffer_size)
+int main(int argc, char **argv)
 {
-    if (buffer_size < 0)
+    int flags;
+    VideoState *is;
+    init_dynload();
+    // av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    // parse_loglevel(argc, argv, options);
+    avdevice_register_all();
+    avformat_network_init();
+    init_opts();
+    signal(SIGINT, sigterm_handler);  
+    signal(SIGTERM, sigterm_handler);
+    show_banner(argc, argv, options);
+    parse_options(NULL, argc, argv, options, opt_input_file);
+    if (!input_filename)
     {
-        buffer_size = 0;
-        buffer = NULL;
+        show_usage();
+        // av_log(NULL, AV_LOG_FATAL, "An input file must be specified\n");
+        // av_log(NULL, AV_LOG_FATAL, "Use -h to get full help or, even better, run 'man %s'\n", program_name);
+        exit(1);
     }
-
-    s->size_in_bits = 8 * buffer_size;
-    s->buf = buffer;
-    s->buf_end = s->buf + buffer_size;
-    s->buf_ptr = s->buf;
-    s->bit_left = BUF_BITS;
-    s->bit_buf = 0;
-}
-
-static  void put_bits_no_assert(PutBitContext *s, int n, BitBuf value)
-{
-    BitBuf bit_buf;
-    int bit_left;
-
-    bit_buf = s->bit_buf;
-    bit_left = s->bit_left;
-
-    /* XXX: optimize */
-#ifdef BITSTREAM_WRITER_LE
-    bit_buf |= value << (BUF_BITS - bit_left);
-    if (n >= bit_left)
+    if (display_disable)
     {
-        if (s->buf_end - s->buf_ptr >= sizeof(BitBuf))
-        {
-            AV_WLBUF(s->buf_ptr, bit_buf);
-            s->buf_ptr += sizeof(BitBuf);
-        }
-        else
-        {
-            av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
-            av_assert2(0);
-        }
-        bit_buf = value >> bit_left;
-        bit_left += BUF_BITS;
+        video_disable = 1;
     }
-    bit_left -= n;
-#else
-    if (n < bit_left)
-    {
-        bit_buf = (bit_buf << n) | value;
-        bit_left -= n;
-    }
+    flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
+    if (audio_disable)
+        flags &= ~SDL_INIT_AUDIO;
     else
     {
-        bit_buf <<= bit_left;
-        bit_buf |= value >> (n - bit_left);
-        if (s->buf_end - s->buf_ptr >= sizeof(BitBuf))
-        {
-            AV_WBBUF(s->buf_ptr, bit_buf);
-            s->buf_ptr += sizeof(BitBuf);
-        }
-        else
-        {
-            av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
-            av_assert2(0);
-        }
-        bit_left += BUF_BITS - n;
-        bit_buf = value;
+        if (!SDL_getenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE"))
+            SDL_setenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE", "1", 1);
     }
-#endif
-
-    s->bit_buf = bit_buf;
-    s->bit_left = bit_left;
-}
-
-static  void put_bits(PutBitContext *s, int n, BitBuf value)
-{
-    av_assert2(n <= 31 && value < (1UL << n));
-    put_bits_no_assert(s, n, value);
-}
-
-static  int put_bits_count(PutBitContext *s)
-{
-    return (s->buf_ptr - s->buf) * 8 + BUF_BITS - s->bit_left;
-}
-
-static  unsigned int ff_pce_copy_bits(PutBitContext *pb,
-                                                      GetBitContext *gb,
-                                                      int bits)
-{
-    unsigned int el = get_bits(gb, bits);
-    put_bits(pb, bits, el);
-    return el;
-}
-
-
-
-static  const uint8_t *align_get_bits(GetBitContext *s)
-{
-    int n = -get_bits_count(s) & 7;
-    if (n)
-        skip_bits(s, n);
-    return s->buffer + (s->index >> 3);
-}
-
-
-void avpriv_align_put_bits(PutBitContext *s)
-{
-    put_bits(s, s->bit_left & 7, 0);
-}
-static  int ff_copy_pce_data(PutBitContext *pb, GetBitContext *gb)
-{
-    int five_bit_ch, four_bit_ch, comment_size, bits;
-    int offset = put_bits_count(pb);
-
-    ff_pce_copy_bits(pb, gb, 10);               // Tag, Object Type, Frequency
-    five_bit_ch = ff_pce_copy_bits(pb, gb, 4);  // Front
-    five_bit_ch += ff_pce_copy_bits(pb, gb, 4); // Side
-    five_bit_ch += ff_pce_copy_bits(pb, gb, 4); // Back
-    four_bit_ch = ff_pce_copy_bits(pb, gb, 2);  // LFE
-    four_bit_ch += ff_pce_copy_bits(pb, gb, 3); // Data
-    five_bit_ch += ff_pce_copy_bits(pb, gb, 4); // Coupling
-    if (ff_pce_copy_bits(pb, gb, 1))            // Mono Mixdown
-        ff_pce_copy_bits(pb, gb, 4);
-    if (ff_pce_copy_bits(pb, gb, 1)) // Stereo Mixdown
-        ff_pce_copy_bits(pb, gb, 4);
-    if (ff_pce_copy_bits(pb, gb, 1)) // Matrix Mixdown
-        ff_pce_copy_bits(pb, gb, 3);
-    for (bits = five_bit_ch * 5 + four_bit_ch * 4; bits > 16; bits -= 16)
-        ff_pce_copy_bits(pb, gb, 16);
-    if (bits)
-        ff_pce_copy_bits(pb, gb, bits);
-    avpriv_align_put_bits(pb);
-    align_get_bits(gb);
-    comment_size = ff_pce_copy_bits(pb, gb, 8);
-    for (; comment_size > 0; comment_size--)
-        ff_pce_copy_bits(pb, gb, 8);
-
-    return put_bits_count(pb) - offset;
-}
-
-static  void flush_put_bits(PutBitContext *s)
-{
-#ifndef BITSTREAM_WRITER_LE
-    if (s->bit_left < BUF_BITS)
-        s->bit_buf <<= s->bit_left;
-#endif
-    while (s->bit_left < BUF_BITS)
+    if (display_disable)
+        flags &= ~SDL_INIT_VIDEO;
+    if (SDL_Init(flags))
     {
-        av_assert0(s->buf_ptr < s->buf_end);
-#ifdef BITSTREAM_WRITER_LE
-        *s->buf_ptr++ = s->bit_buf;
-        s->bit_buf >>= 8;
-#else
-        *s->buf_ptr++ = s->bit_buf >> (BUF_BITS - 8);
-        s->bit_buf <<= 8;
-#endif
-        s->bit_left += 8;
+        // av_log(NULL, AV_LOG_FATAL, "Could not initialize SDL - %s\n", SDL_GetError());
+        // av_log(NULL, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
+        exit(1);
     }
-    s->bit_left = BUF_BITS;
-    s->bit_buf = 0;
+    SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
+    SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
+    av_init_packet(&flush_pkt);
+    flush_pkt.data = (uint8_t *)&flush_pkt;
+    if (!display_disable)
+    {
+        int flags = SDL_WINDOW_HIDDEN;
+        if (alwaysontop)
+            flags |= SDL_WINDOW_ALWAYS_ON_TOP;
+        if (borderless)
+            flags |= SDL_WINDOW_BORDERLESS;
+        else
+            flags |= SDL_WINDOW_RESIZABLE;
+        window = SDL_CreateWindow(program_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, default_width, default_height, flags);
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+        if (window)
+        {
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+            if (!renderer)
+            {
+                // av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
+                renderer = SDL_CreateRenderer(window, -1, 0);
+            }
+            if (renderer)
+            {
+                if (!SDL_GetRendererInfo(renderer, &renderer_info))
+                    // av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
+            }
+        }
+        if (!window || !renderer || !renderer_info.num_texture_formats)
+        {
+            // av_log(NULL, AV_LOG_FATAL, "Failed to create window or renderer: %s", SDL_GetError());
+            do_exit(NULL);
+        }
+    }
+    is = stream_open(input_filename, file_iformat);
+    if (!is)
+    {
+        // av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
+        do_exit(NULL);
+    }
+    event_loop(is);
+    return 0;
 }
-
-
-
-
-
 
