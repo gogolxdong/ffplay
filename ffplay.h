@@ -1397,372 +1397,373 @@ enum {
     AV_CODEC_HW_CONFIG_METHOD_AD_HOC        = 0x08,
 };
 
-// #if (defined(__GNUC__) || defined(__clang__)) && !defined(__INTEL_COMPILER)
-// #    define av_uninit(x) x=x
-// #else
-// #    define av_uninit(x) x
-// #endif
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(__INTEL_COMPILER)
+#    define av_uninit(x) x=x
+#else
+#    define av_uninit(x) x
+#endif
 
-// #ifdef __GNUC__
-// #    define AV_GCC_VERSION_AT_LEAST(x,y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
-// #    define AV_GCC_VERSION_AT_MOST(x,y)  (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
-// #else
-// #    define AV_GCC_VERSION_AT_LEAST(x,y) 0
-// #    define AV_GCC_VERSION_AT_MOST(x,y)  0
-// #endif
+#ifdef __GNUC__
+#    define AV_GCC_VERSION_AT_LEAST(x,y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
+#    define AV_GCC_VERSION_AT_MOST(x,y)  (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
+#else
+#    define AV_GCC_VERSION_AT_LEAST(x,y) 0
+#    define AV_GCC_VERSION_AT_MOST(x,y)  0
+#endif
 
-// #ifdef __has_builtin
-// #    define AV_HAS_BUILTIN(x) __has_builtin(x)
-// #else
-// #    define AV_HAS_BUILTIN(x) 0
-// #endif
+#ifdef __has_builtin
+#    define AV_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#    define AV_HAS_BUILTIN(x) 0
+#endif
 
-// #ifndef av_always_inline
-// #if AV_GCC_VERSION_AT_LEAST(3,1)
-// #define av_always_inline __attribute__((always_inline)) inline
-// #elif defined(_MSC_VER)
-// #define av_always_inline __forceinline
-// #else
-// #define av_always_inline inline
-// #endif
-// #endif
+#ifndef av_always_inline
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#define av_always_inline __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#define av_always_inline __forceinline
+#else
+#define av_always_inline inline
+#endif
+#endif
 
-// #ifndef av_extern_inline
-// #if defined(__ICL) && __ICL >= 1210 || defined(__GNUC_STDC_INLINE__)
-// #    define av_extern_inline extern inline
-// #else
-// #    define av_extern_inline inline
-// #endif
-// #endif
+#ifndef av_extern_inline
+#if defined(__ICL) && __ICL >= 1210 || defined(__GNUC_STDC_INLINE__)
+#    define av_extern_inline extern inline
+#else
+#    define av_extern_inline inline
+#endif
+#endif
 
-// #if AV_GCC_VERSION_AT_LEAST(3,4)
-// #    define av_warn_unused_result __attribute__((warn_unused_result))
-// #else
-// #    define av_warn_unused_result
-// #endif
+#if AV_GCC_VERSION_AT_LEAST(3,4)
+#    define av_warn_unused_result __attribute__((warn_unused_result))
+#else
+#    define av_warn_unused_result
+#endif
 
-// #if AV_GCC_VERSION_AT_LEAST(3,1)
-// #    define av_noinline __attribute__((noinline))
-// #elif defined(_MSC_VER)
-// #    define av_noinline __declspec(noinline)
-// #else
-// #    define av_noinline
-// #endif
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#    define av_noinline __attribute__((noinline))
+#elif defined(_MSC_VER)
+#    define av_noinline __declspec(noinline)
+#else
+#    define av_noinline
+#endif
 
-// #if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
-// #    define av_pure __attribute__((pure))
-// #else
-// #    define av_pure
-// #endif
+#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
+#    define av_pure __attribute__((pure))
+#else
+#    define av_pure
+#endif
 
-// #if AV_GCC_VERSION_AT_LEAST(2,6) || defined(__clang__)
-// #    define av_const __attribute__((const))
-// #else
-// #    define av_const
-// #endif
+#if AV_GCC_VERSION_AT_LEAST(2,6) || defined(__clang__)
+#    define av_const __attribute__((const))
+#else
+#    define av_const
+#endif
 
-// #if AV_GCC_VERSION_AT_LEAST(4,3) || defined(__clang__)
-// #    define av_cold __attribute__((cold))
-// #else
-// #    define av_cold
-// #endif
+#if AV_GCC_VERSION_AT_LEAST(4,3) || defined(__clang__)
+#    define av_cold __attribute__((cold))
+#else
+#    define av_cold
+#endif
 
-// #if AV_GCC_VERSION_AT_LEAST(4,1) && !defined(__llvm__)
-// #    define av_flatten __attribute__((flatten))
-// #else
-// #    define av_flatten
-// #endif
+#if AV_GCC_VERSION_AT_LEAST(4,1) && !defined(__llvm__)
+#    define av_flatten __attribute__((flatten))
+#else
+#    define av_flatten
+#endif
 
-// #if AV_GCC_VERSION_AT_LEAST(3,1)
-// #    define attribute_deprecated __attribute__((deprecated))
-// #elif defined(_MSC_VER)
-// #    define attribute_deprecated __declspec(deprecated)
-// #else
-// #    define attribute_deprecated
-// #endif
-
-
-// #if defined(__GNUC__) || defined(__clang__)
-// #    define av_unused __attribute__((unused))
-// #else
-// #    define av_unused
-// #endif
-
-// #if HAVE_XMM_CLOBBERS
-// #    define XMM_CLOBBERS(...)        __VA_ARGS__
-// #    define XMM_CLOBBERS_ONLY(...) : __VA_ARGS__
-// #else
-// #    define XMM_CLOBBERS(...)
-// #    define XMM_CLOBBERS_ONLY(...)
-// #endif
-// #if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
-// #    define av_used __attribute__((used))
-// #else
-// #    define av_used
-// #endif
-
-// #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
-// #define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
-// #define DECLARE_ASM_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
-// #define DECLARE_ASM_CONST(n, t, v) const t __attribute__((aligned(n))) v
-// #elif defined(__DJGPP__)
-// #define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(FFMIN(n, 16)))) v
-// #define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(FFMIN(n, 16)))) v
-// #define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(FFMIN(n, 16)))) v
-// #elif defined(__GNUC__) || defined(__clang__)
-// #define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
-// #define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(n))) v
-// #define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(n))) v
-// #elif defined(_MSC_VER)
-// #define DECLARE_ALIGNED(n, t, v) __declspec(align(n)) t v
-// #define DECLARE_ASM_ALIGNED(n, t, v) __declspec(align(n)) t v
-// #define DECLARE_ASM_CONST(n, t, v) __declspec(align(n)) static const t v
-// #else
-// #define DECLARE_ALIGNED(n, t, v) t v
-// #define DECLARE_ASM_ALIGNED(n, t, v) t v
-// #define DECLARE_ASM_CONST(n, t, v) static const t v
-// #endif
-
-// #if AV_GCC_VERSION_AT_LEAST(2, 6) || defined(__clang__)
-// #define av_const __attribute__((const))
-// #else
-// #define av_const
-// #endif
-
-// #if !HAVE_BIGENDIAN
-// #define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
-// static void shuffle_bytes_##name (const uint8_t *src,                   \
-//                                         uint8_t *dst, int src_size)     \
-// {                                                                       \
-//     int i;                                                              \
-//                                                                         \
-//     for (i = 0; i < src_size; i += 4) {                                 \
-//         dst[i + 0] = src[i + a];                                        \
-//         dst[i + 1] = src[i + b];                                        \
-//         dst[i + 2] = src[i + c];                                        \
-//         dst[i + 3] = src[i + d];                                        \
-//     }                                                                   \
-// }
-
-// DEFINE_SHUFFLE_BYTES(1230_c, 1, 2, 3, 0)
-// DEFINE_SHUFFLE_BYTES(3012_c, 3, 0, 1, 2)
-// DEFINE_SHUFFLE_BYTES(3210_c, 3, 2, 1, 0)
-// #endif
-
-// #define GET_SAMPLE_RATE_NAME(rate) \
-//     char name[16];                 \
-//     snprintf(name, sizeof(name), "%d", rate);
-
-// #define GET_CH_LAYOUT_NAME(ch_layout) \
-//     char name[16];                    \
-//     snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
-
-// #define GET_CH_LAYOUT_DESC(ch_layout) \
-//     char name[128];                   \
-//     av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
-
-// #define GROW_ARRAY(array, nb_elems) \
-//     array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
-
-// #define GET_PIX_FMT_NAME(pix_fmt) \
-//     const char *name = av_get_pix_fmt_name(pix_fmt);
-
-// #define GET_CODEC_NAME(id) \
-//     const char *name = avcodec_descriptor_get(id)->name;
-
-// #define GET_SAMPLE_FMT_NAME(sample_fmt) \
-//     const char *name = av_get_sample_fmt_name(sample_fmt)
-
-// #define LIBAVUTIL_VERSION_INT AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
-//                                              LIBAVUTIL_VERSION_MINOR, \
-//                                              LIBAVUTIL_VERSION_MICRO)
-// #define LIBAVUTIL_VERSION AV_VERSION(LIBAVUTIL_VERSION_MAJOR, \
-//                                      LIBAVUTIL_VERSION_MINOR, \
-//                                      LIBAVUTIL_VERSION_MICRO)
-// #define LIBAVCODEC_VERSION_INT AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
-//                                               LIBAVCODEC_VERSION_MINOR, \
-//                                               LIBAVCODEC_VERSION_MICRO)
-// #define LIBAVCODEC_VERSION AV_VERSION(LIBAVCODEC_VERSION_MAJOR, \
-//                                       LIBAVCODEC_VERSION_MINOR, \
-//                                       LIBAVCODEC_VERSION_MICRO)
-// #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
-//                                                LIBAVFORMAT_VERSION_MINOR, \
-//                                                LIBAVFORMAT_VERSION_MICRO)
-// #define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, \
-//                                        LIBAVFORMAT_VERSION_MINOR, \
-//                                        LIBAVFORMAT_VERSION_MICRO)
-// #define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
-//         LIBAVDEVICE_VERSION_MINOR, \
-//         LIBAVDEVICE_VERSION_MICRO)
-// #define LIBAVDEVICE_VERSION AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
-//                                        LIBAVDEVICE_VERSION_MINOR, \
-//                                        LIBAVDEVICE_VERSION_MICRO)
-
-// #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
-//                                         LIBAVFILTER_VERSION_MINOR, \
-//                                         LIBAVFILTER_VERSION_MICRO)
-// #define LIBAVFILTER_VERSION AV_VERSION(LIBAVFILTER_VERSION_MAJOR, \
-//                                        LIBAVFILTER_VERSION_MINOR, \
-//                                        LIBAVFILTER_VERSION_MICRO)
-
-// #define LIBAVRESAMPLE_VERSION_INT AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
-//                                                  LIBAVRESAMPLE_VERSION_MINOR, \
-//                                                  LIBAVRESAMPLE_VERSION_MICRO)
-// #define LIBAVRESAMPLE_VERSION AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
-//                                          LIBAVRESAMPLE_VERSION_MINOR, \
-//                                          LIBAVRESAMPLE_VERSION_MICRO)
-
-// #define LIBSWSCALE_VERSION_INT AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
-//                                               LIBSWSCALE_VERSION_MINOR, \
-//                                               LIBSWSCALE_VERSION_MICRO)
-// #define LIBSWSCALE_VERSION AV_VERSION(LIBSWSCALE_VERSION_MAJOR, \
-//                                       LIBSWSCALE_VERSION_MINOR, \
-//                                       LIBSWSCALE_VERSION_MICRO)
-
-// #define LIBSWRESAMPLE_VERSION_INT AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
-//                                                  LIBSWRESAMPLE_VERSION_MINOR, \
-//                                                  LIBSWRESAMPLE_VERSION_MICRO)
-// #define LIBSWRESAMPLE_VERSION AV_VERSION(LIBSWRESAMPLE_VERSION_MAJOR, \
-//                                          LIBSWRESAMPLE_VERSION_MINOR, \
-//                                          LIBSWRESAMPLE_VERSION_MICRO)
-// #define LIBPOSTPROC_VERSION_INT AV_VERSION_INT(LIBPOSTPROC_VERSION_MAJOR, \
-//                                                LIBPOSTPROC_VERSION_MINOR, \
-//                                                LIBPOSTPROC_VERSION_MICRO)
-// #define LIBPOSTPROC_VERSION AV_VERSION(LIBPOSTPROC_VERSION_MAJOR, \
-//                                        LIBPOSTPROC_VERSION_MINOR, \
-//                                        LIBPOSTPROC_VERSION_MICRO)
-
-// template GET_UTF8(val, GET_BYTE, ERROR) {.dirty.} = 
-//     val = GET_BYTE
-//     block:
-//         var top:uint32 = (val and 128) shr 1
-//         if ((val and 0xc0) == 0x80 or val >= 0xFE):
-//             ERROR
-//         while (val and top) > 0:
-//             var tmp:uint32 = (GET_BYTE) - 128.uint32
-//             if(tmp shr 6) > 0:
-//                 ERROR
-//             val= (val shl 6) + tmp
-//             top = top shl 5
-//         val = val and ((top shl 1) - 1)
-// #define GET_UTF8(val, GET_BYTE, ERROR)\
-//     val= (GET_BYTE);\
-//     {\
-//         uint32_t top = (val & 128) >> 1;\
-//         if ((val & 0xc0) == 0x80 || val >= 0xFE)\
-//             {ERROR}\
-//         while (val & top) {\
-//             unsigned int tmp = (GET_BYTE) - 128;\
-//             if(tmp>>6)\
-//                 {ERROR}\
-//             val= (val<<6) + tmp;\
-//             top <<= 5;\
-//         }\
-//         val &= (top << 1) - 1;\
-//     }
-
-// #define GET_UTF16(val, GET_16BIT, ERROR)\
-//     val = (GET_16BIT);\
-//     {\
-//         unsigned int hi = val - 0xD800;\
-//         if (hi < 0x800) {\
-//             val = (GET_16BIT) - 0xDC00;\
-//             if (val > 0x3FFU || hi > 0x3FFU)\
-//                 {ERROR}\
-//             val += (hi<<10) + 0x10000;\
-//         }\
-//     }\
+#if AV_GCC_VERSION_AT_LEAST(3,1)
+#    define attribute_deprecated __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#    define attribute_deprecated __declspec(deprecated)
+#else
+#    define attribute_deprecated
+#endif
 
 
-// #define PUT_UTF8(val, tmp, PUT_BYTE)\
-//     {\
-//         int bytes, shift;\
-//         uint32_t in = val;\
-//         if (in < 0x80) {\
-//             tmp = in;\
-//             PUT_BYTE\
-//         } else {\
-//             bytes = (av_log2(in) + 4) / 5;\
-//             shift = (bytes - 1) * 6;\
-//             tmp = (256 - (256 >> bytes)) | (in >> shift);\
-//             PUT_BYTE\
-//             while (shift >= 6) {\
-//                 shift -= 6;\
-//                 tmp = 0x80 | ((in >> shift) & 0x3f);\
-//                 PUT_BYTE\
-//             }\
-//         }\
-//     }
+#if defined(__GNUC__) || defined(__clang__)
+#    define av_unused __attribute__((unused))
+#else
+#    define av_unused
+#endif
 
-// #define PUT_UTF16(val, tmp, PUT_16BIT)\
-//     {\
-//         uint32_t in = val;\
-//         if (in < 0x10000) {\
-//             tmp = in;\
-//             PUT_16BIT\
-//         } else {\
-//             tmp = 0xD800 | ((in - 0x10000) >> 10);\
-//             PUT_16BIT\
-//             tmp = 0xDC00 | ((in - 0x10000) & 0x3FF);\
-//             PUT_16BIT\
-//         }\
-//     }\
+#if HAVE_XMM_CLOBBERS
+#    define XMM_CLOBBERS(...)        __VA_ARGS__
+#    define XMM_CLOBBERS_ONLY(...) : __VA_ARGS__
+#else
+#    define XMM_CLOBBERS(...)
+#    define XMM_CLOBBERS_ONLY(...)
+#endif
+#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
+#    define av_used __attribute__((used))
+#else
+#    define av_used
+#endif
+
+#if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
+#define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
+#define DECLARE_ASM_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
+#define DECLARE_ASM_CONST(n, t, v) const t __attribute__((aligned(n))) v
+#elif defined(__DJGPP__)
+#define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(FFMIN(n, 16)))) v
+#define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(FFMIN(n, 16)))) v
+#define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(FFMIN(n, 16)))) v
+#elif defined(__GNUC__) || defined(__clang__)
+#define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
+#define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(n))) v
+#define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(n))) v
+#elif defined(_MSC_VER)
+#define DECLARE_ALIGNED(n, t, v) __declspec(align(n)) t v
+#define DECLARE_ASM_ALIGNED(n, t, v) __declspec(align(n)) t v
+#define DECLARE_ASM_CONST(n, t, v) __declspec(align(n)) static const t v
+#else
+#define DECLARE_ALIGNED(n, t, v) t v
+#define DECLARE_ASM_ALIGNED(n, t, v) t v
+#define DECLARE_ASM_CONST(n, t, v) static const t v
+#endif
+
+#if AV_GCC_VERSION_AT_LEAST(2, 6) || defined(__clang__)
+#define av_const __attribute__((const))
+#else
+#define av_const
+#endif
+
+#if !HAVE_BIGENDIAN
+#define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
+static void shuffle_bytes_##name (const uint8_t *src,                   \
+                                        uint8_t *dst, int src_size)     \
+{                                                                       \
+    int i;                                                              \
+                                                                        \
+    for (i = 0; i < src_size; i += 4) {                                 \
+        dst[i + 0] = src[i + a];                                        \
+        dst[i + 1] = src[i + b];                                        \
+        dst[i + 2] = src[i + c];                                        \
+        dst[i + 3] = src[i + d];                                        \
+    }                                                                   \
+}
+
+DEFINE_SHUFFLE_BYTES(1230_c, 1, 2, 3, 0)
+DEFINE_SHUFFLE_BYTES(3012_c, 3, 0, 1, 2)
+DEFINE_SHUFFLE_BYTES(3210_c, 3, 2, 1, 0)
+#endif
+
+#define GET_SAMPLE_RATE_NAME(rate) \
+    char name[16];                 \
+    snprintf(name, sizeof(name), "%d", rate);
+
+#define GET_CH_LAYOUT_NAME(ch_layout) \
+    char name[16];                    \
+    snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
+
+#define GET_CH_LAYOUT_DESC(ch_layout) \
+    char name[128];                   \
+    av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
+
+#define GROW_ARRAY(array, nb_elems) \
+    array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
+
+#define GET_PIX_FMT_NAME(pix_fmt) \
+    const char *name = av_get_pix_fmt_name(pix_fmt);
+
+#define GET_CODEC_NAME(id) \
+    const char *name = avcodec_descriptor_get(id)->name;
+
+#define GET_SAMPLE_FMT_NAME(sample_fmt) \
+    const char *name = av_get_sample_fmt_name(sample_fmt)
+
+#define LIBAVUTIL_VERSION_INT AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
+                                             LIBAVUTIL_VERSION_MINOR, \
+                                             LIBAVUTIL_VERSION_MICRO)
+#define LIBAVUTIL_VERSION AV_VERSION(LIBAVUTIL_VERSION_MAJOR, \
+                                     LIBAVUTIL_VERSION_MINOR, \
+                                     LIBAVUTIL_VERSION_MICRO)
+#define LIBAVCODEC_VERSION_INT AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
+                                              LIBAVCODEC_VERSION_MINOR, \
+                                              LIBAVCODEC_VERSION_MICRO)
+#define LIBAVCODEC_VERSION AV_VERSION(LIBAVCODEC_VERSION_MAJOR, \
+                                      LIBAVCODEC_VERSION_MINOR, \
+                                      LIBAVCODEC_VERSION_MICRO)
+#define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
+                                               LIBAVFORMAT_VERSION_MINOR, \
+                                               LIBAVFORMAT_VERSION_MICRO)
+#define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, \
+                                       LIBAVFORMAT_VERSION_MINOR, \
+                                       LIBAVFORMAT_VERSION_MICRO)
+#define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
+        LIBAVDEVICE_VERSION_MINOR, \
+        LIBAVDEVICE_VERSION_MICRO)
+#define LIBAVDEVICE_VERSION AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, \
+                                       LIBAVDEVICE_VERSION_MINOR, \
+                                       LIBAVDEVICE_VERSION_MICRO)
+
+#define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
+                                        LIBAVFILTER_VERSION_MINOR, \
+                                        LIBAVFILTER_VERSION_MICRO)
+#define LIBAVFILTER_VERSION AV_VERSION(LIBAVFILTER_VERSION_MAJOR, \
+                                       LIBAVFILTER_VERSION_MINOR, \
+                                       LIBAVFILTER_VERSION_MICRO)
+
+#define LIBAVRESAMPLE_VERSION_INT AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
+                                                 LIBAVRESAMPLE_VERSION_MINOR, \
+                                                 LIBAVRESAMPLE_VERSION_MICRO)
+#define LIBAVRESAMPLE_VERSION AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
+                                         LIBAVRESAMPLE_VERSION_MINOR, \
+                                         LIBAVRESAMPLE_VERSION_MICRO)
+
+#define LIBSWSCALE_VERSION_INT AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
+                                              LIBSWSCALE_VERSION_MINOR, \
+                                              LIBSWSCALE_VERSION_MICRO)
+#define LIBSWSCALE_VERSION AV_VERSION(LIBSWSCALE_VERSION_MAJOR, \
+                                      LIBSWSCALE_VERSION_MINOR, \
+                                      LIBSWSCALE_VERSION_MICRO)
+
+#define LIBSWRESAMPLE_VERSION_INT AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
+                                                 LIBSWRESAMPLE_VERSION_MINOR, \
+                                                 LIBSWRESAMPLE_VERSION_MICRO)
+#define LIBSWRESAMPLE_VERSION AV_VERSION(LIBSWRESAMPLE_VERSION_MAJOR, \
+                                         LIBSWRESAMPLE_VERSION_MINOR, \
+                                         LIBSWRESAMPLE_VERSION_MICRO)
+#define LIBPOSTPROC_VERSION_INT AV_VERSION_INT(LIBPOSTPROC_VERSION_MAJOR, \
+                                               LIBPOSTPROC_VERSION_MINOR, \
+                                               LIBPOSTPROC_VERSION_MICRO)
+#define LIBPOSTPROC_VERSION AV_VERSION(LIBPOSTPROC_VERSION_MAJOR, \
+                                       LIBPOSTPROC_VERSION_MINOR, \
+                                       LIBPOSTPROC_VERSION_MICRO)
+
+template GET_UTF8(val, GET_BYTE, ERROR) {.dirty.} = 
+    val = GET_BYTE
+    block:
+        var top:uint32 = (val and 128) shr 1
+        if ((val and 0xc0) == 0x80 or val >= 0xFE):
+            ERROR
+        while (val and top) > 0:
+            var tmp:uint32 = (GET_BYTE) - 128.uint32
+            if(tmp shr 6) > 0:
+                ERROR
+            val= (val shl 6) + tmp
+            top = top shl 5
+        val = val and ((top shl 1) - 1)
+#define GET_UTF8(val, GET_BYTE, ERROR)\
+    val= (GET_BYTE);\
+    {\
+        uint32_t top = (val & 128) >> 1;\
+        if ((val & 0xc0) == 0x80 || val >= 0xFE)\
+            {ERROR}\
+        while (val & top) {\
+            unsigned int tmp = (GET_BYTE) - 128;\
+            if(tmp>>6)\
+                {ERROR}\
+            val= (val<<6) + tmp;\
+            top <<= 5;\
+        }\
+        val &= (top << 1) - 1;\
+    }
+
+#define GET_UTF16(val, GET_16BIT, ERROR)\
+    val = (GET_16BIT);\
+    {\
+        unsigned int hi = val - 0xD800;\
+        if (hi < 0x800) {\
+            val = (GET_16BIT) - 0xDC00;\
+            if (val > 0x3FFU || hi > 0x3FFU)\
+                {ERROR}\
+            val += (hi<<10) + 0x10000;\
+        }\
+    }\
+
+
+#define PUT_UTF8(val, tmp, PUT_BYTE)\
+    {\
+        int bytes, shift;\
+        uint32_t in = val;\
+        if (in < 0x80) {\
+            tmp = in;\
+            PUT_BYTE\
+        } else {\
+            bytes = (av_log2(in) + 4) / 5;\
+            shift = (bytes - 1) * 6;\
+            tmp = (256 - (256 >> bytes)) | (in >> shift);\
+            PUT_BYTE\
+            while (shift >= 6) {\
+                shift -= 6;\
+                tmp = 0x80 | ((in >> shift) & 0x3f);\
+                PUT_BYTE\
+            }\
+        }\
+    }
+
+#define PUT_UTF16(val, tmp, PUT_16BIT)\
+    {\
+        uint32_t in = val;\
+        if (in < 0x10000) {\
+            tmp = in;\
+            PUT_16BIT\
+        } else {\
+            tmp = 0xD800 | ((in - 0x10000) >> 10);\
+            PUT_16BIT\
+            tmp = 0xDC00 | ((in - 0x10000) & 0x3FF);\
+            PUT_16BIT\
+        }\
+    }\
+
 #define atomic_store(object, desired) \
     do                                \
     {                                 \
         *(object) = (desired);        \
     } while (0)
-// #define atomic_init(obj, value) \
-//     do                          \
-//     {                           \
-//         *(obj) = (value);       \
-//     } while (0)
-// #define SKIP_BITS(name, gb, num)     \
-//     do                               \
-//     {                                \
-//         SKIP_CACHE(name, gb, num);   \
-//         SKIP_COUNTER(name, gb, num); \
-//     } while (0)
+#define atomic_init(obj, value) \
+    do                          \
+    {                           \
+        *(obj) = (value);       \
+    } while (0)
+#define SKIP_BITS(name, gb, num)     \
+    do                               \
+    {                                \
+        SKIP_CACHE(name, gb, num);   \
+        SKIP_COUNTER(name, gb, num); \
+    } while (0)
 
-// #define av_assert0(cond)                                                 \
-//     do                                                                   \
-//     {                                                                    \
-//         if (!(cond))                                                     \
-//         {                                                                \
-//             av_log(NULL, AV_LOG_PANIC, "Assertion %s failed at %s:%d\n", \
-//                    AV_STRINGIFY(cond), __FILE__, __LINE__);              \
-//             abort();                                                     \
-//         }                                                                \
-//     } while (0)
-// #define AV_IS_INPUT_DEVICE(category)                         \
-//     (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
-//      ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
-//      ((category) == AV_CLASS_CATEGORY_DEVICE_INPUT))
+#define av_assert0(cond)                                                 \
+    do                                                                   \
+    {                                                                    \
+        if (!(cond))                                                     \
+        {                                                                \
+            av_log(NULL, AV_LOG_PANIC, "Assertion %s failed at %s:%d\n", \
+                   AV_STRINGIFY(cond), __FILE__, __LINE__);              \
+            abort();                                                     \
+        }                                                                \
+    } while (0)
+#define AV_IS_INPUT_DEVICE(category)                         \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_INPUT))
 
-// #define AV_IS_OUTPUT_DEVICE(category)                         \
-//     (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT) || \
-//      ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT) || \
-//      ((category) == AV_CLASS_CATEGORY_DEVICE_OUTPUT))
+#define AV_IS_OUTPUT_DEVICE(category)                         \
+    (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT) || \
+     ((category) == AV_CLASS_CATEGORY_DEVICE_OUTPUT))
 
-// #define FF_PAD_STRUCTURE(name, size, ...)                                  \
-//     struct ff_pad_helper_##name                                            \
-//     {                                                                      \
-//         __VA_ARGS__                                                        \
-//     };                                                                     \
-//     typedef struct name                                                    \
-//     {                                                                      \
-//         __VA_ARGS__                                                        \
-//         char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
-//     } name;
+#define FF_PAD_STRUCTURE(name, size, ...)                                  \
+    struct ff_pad_helper_##name                                            \
+    {                                                                      \
+        __VA_ARGS__                                                        \
+    };                                                                     \
+    typedef struct name                                                    \
+    {                                                                      \
+        __VA_ARGS__                                                        \
+        char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
+    } name;
 
-// #define FETCH_MODIFY(opname, op)                                            \
-// static intptr_t atomic_fetch_ ## opname(intptr_t *object, intptr_t operand) \
-// {                                                                    \
-//     intptr_t ret;                                                    \
-//     ret = *object;                                                   \
-//     *object = *object op operand;                                    \
-//     return ret;                                                      \
-// }
+#define FETCH_MODIFY(opname, op)                                            \
+static intptr_t atomic_fetch_ ## opname(intptr_t *object, intptr_t operand) \
+{                                                                    \
+    intptr_t ret;                                                    \
+    ret = *object;                                                   \
+    *object = *object op operand;                                    \
+    return ret;                                                      \
+}
 
 
 #define YUVRGB_TABLE_HEADROOM 512
@@ -10489,9 +10490,7 @@ typedef struct AVFilterFormats AVFilterFormats;
 
 
 #define FF_INTERNAL_FIELDS 1
-typedef struct FFFrameQueueGlobal {
-    char dummy; /* C does not allow empty structs */
-} FFFrameQueueGlobal;
+
 typedef struct FFFrameBucket {
     AVFrame *frame;
 } FFFrameBucket;
@@ -10514,6 +10513,12 @@ typedef struct AVFilterFormatsConfig {
 } AVFilterFormatsConfig;
 
 typedef struct AVFilterPad AVFilterPad;
+
+    enum AVlinkEnum {
+        AVLINK_UNINIT = 0,      ///< not started
+        AVLINK_STARTINIT,       ///< started, but incomplete
+        AVLINK_INIT             ///< complete
+    } AVlinkEnum
 struct AVFilterLink {
     AVFilterContext *src;       ///< source filter
     AVFilterPad *srcpad;        ///< output pad on the source filter
@@ -10529,11 +10534,7 @@ struct AVFilterLink {
     AVRational time_base;
     AVFilterFormatsConfig incfg;
     AVFilterFormatsConfig outcfg;
-    enum {
-        AVLINK_UNINIT = 0,      ///< not started
-        AVLINK_STARTINIT,       ///< started, but incomplete
-        AVLINK_INIT             ///< complete
-    } init_state;
+    AVlinkEnum init_state;
     struct AVFilterGraph *graph;
     int64_t current_pts;
     int64_t current_pts_us;
@@ -10554,7 +10555,6 @@ struct AVFilterLink {
     int status_in;
     int64_t status_in_pts;
     int status_out;
-
 };
 typedef struct AVFilterLink AVFilterLink;
 typedef struct AVFilterFormats AVFilterFormats;
@@ -10637,6 +10637,9 @@ typedef int(avfilter_action_func)(AVFilterContext *ctx, void *arg, int jobnr, in
 typedef int(avfilter_execute_func)(AVFilterContext *ctx, avfilter_action_func *func,
                                    void *arg, int *ret, int nb_jobs);
 
+typedef struct FFFrameQueueGlobal {
+    char dummy; /* C does not allow empty structs */
+} FFFrameQueueGlobal;
 struct AVFilterGraphInternal {
     void *thread;
     avfilter_execute_func *thread_execute;
@@ -11238,11 +11241,8 @@ typedef struct SwsFilterDescriptor
 {
     SwsSlice *src;  ///< Source slice
     SwsSlice *dst;  ///< Output slice
-
     int alpha;      ///< Flag for processing alpha channel
     void *instance; ///< Filter instance data
-
-    /// Function for processing input slice sliceH lines starting from line sliceY
     int (*process)(struct SwsContext *c, struct SwsFilterDescriptor *desc, int sliceY, int sliceH);
 } SwsFilterDescriptor;
 
@@ -11271,7 +11271,6 @@ typedef struct SwsContext
     int vChrDrop;         ///< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
     int sliceDir;         ///< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
     double param[2];      ///< Input parameters for scaling algorithms that need them.
-
     struct SwsContext *cascaded_context[3];
     int cascaded_tmpStride[4];
     uint8_t *cascaded_tmp[4];
@@ -11293,7 +11292,6 @@ typedef struct SwsContext
     float uint2float_lut[256];
     int lastInLumBuf; ///< Last scaled horizontal luma/alpha line from source in the ring buffer.
     int lastInChrBuf; ///< Last scaled horizontal chroma     line from source in the ring buffer.
-    //@}
     uint8_t *formatConvBuffer;
     int needAlpha;
     int16_t *hLumFilter;    ///< Array of horizontal filter coefficients for luma/alpha planes.
@@ -11308,7 +11306,6 @@ typedef struct SwsContext
     int hChrFilterSize;     ///< Horizontal filter size for chroma     pixels.
     int vLumFilterSize;     ///< Vertical   filter size for luma/alpha pixels.
     int vChrFilterSize;     ///< Vertical   filter size for chroma     pixels.
-    //@}
     int lumMmxextFilterCodeSize;  ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for luma/alpha planes.
     int chrMmxextFilterCodeSize;  ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for chroma planes.
     uint8_t *lumMmxextFilterCode; ///< Runtime-generated MMXEXT horizontal fast bilinear scaler code for luma/alpha planes.
@@ -11320,8 +11317,7 @@ typedef struct SwsContext
     void *yuvTable; // pointer to the yuv->rgb table start so it can be freed()
     // alignment ensures the offset can be added in a single
     // instruction on e.g. ARM
-    DECLARE_ALIGNED(16, int, table_gV)
-    [256 + 2 * YUVRGB_TABLE_HEADROOM];
+    DECLARE_ALIGNED(16, int, table_gV)[256 + 2 * YUVRGB_TABLE_HEADROOM];
     uint8_t *table_rV[256 + 2 * YUVRGB_TABLE_HEADROOM];
     uint8_t *table_gU[256 + 2 * YUVRGB_TABLE_HEADROOM];
     uint8_t *table_bU[256 + 2 * YUVRGB_TABLE_HEADROOM];
@@ -11347,11 +11343,9 @@ typedef struct SwsContext
     int yuv2rgb_v2g_coeff;
     int yuv2rgb_u2g_coeff;
     int yuv2rgb_u2b_coeff;
-
     DECLARE_ALIGNED(8, uint64_t, redDither);
     DECLARE_ALIGNED(8, uint64_t, greenDither);
     DECLARE_ALIGNED(8, uint64_t, blueDither);
-
     DECLARE_ALIGNED(8, uint64_t, yCoeff);
     DECLARE_ALIGNED(8, uint64_t, vrCoeff);
     DECLARE_ALIGNED(8, uint64_t, ubCoeff);
@@ -11362,38 +11356,21 @@ typedef struct SwsContext
     DECLARE_ALIGNED(8, uint64_t, vOffset);
     int32_t lumMmxFilter[4 * MAX_FILTER_SIZE];
     int32_t chrMmxFilter[4 * MAX_FILTER_SIZE];
-    int dstW; ///< Width  of destination luma/alpha planes.
+    int dstW; 
     DECLARE_ALIGNED(8, uint64_t, esp);
     DECLARE_ALIGNED(8, uint64_t, vRounder);
     DECLARE_ALIGNED(8, uint64_t, u_temp);
     DECLARE_ALIGNED(8, uint64_t, v_temp);
     DECLARE_ALIGNED(8, uint64_t, y_temp);
     int32_t alpMmxFilter[4 * MAX_FILTER_SIZE];
-    // alignment of these values is not necessary, but merely here
-    // to maintain the same offset across x8632 and x86-64. Once we
-    // use proper offset macros in the asm, they can be removed.
     DECLARE_ALIGNED(8, ptrdiff_t, uv_off);   ///< offset (in pixels) between u and v planes
     DECLARE_ALIGNED(8, ptrdiff_t, uv_offx2); ///< offset (in bytes) between u and v planes
     DECLARE_ALIGNED(8, uint16_t, dither16)
     [8];
     DECLARE_ALIGNED(8, uint32_t, dither32)
     [8];
-
     const uint8_t *chrDither8, *lumDither8;
-
-#if HAVE_ALTIVEC
-    vector signed short CY;
-    vector signed short CRV;
-    vector signed short CBU;
-    vector signed short CGU;
-    vector signed short CGV;
-    vector signed short OY;
-    vector unsigned short CSHIFT;
-    vector signed short *vYCoeffsBank, *vCCoeffsBank;
-#endif
-
     int use_mmx_vfilter;
-
     int16_t *xyzgamma;
     int16_t *rgbgamma;
     int16_t *xyzgammainv;
@@ -11407,7 +11384,6 @@ typedef struct SwsContext
     yuv2packed2_fn yuv2packed2;
     yuv2packedX_fn yuv2packedX;
     yuv2anyX_fn yuv2anyX;
-
     void (*lumToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
                       int width, uint32_t *pal);
     void (*alpToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,

@@ -1,4 +1,5 @@
 import posix,winim, sdl2
+import tables, parseopt
 
 type
   AVCodecID* = enum
@@ -165,6 +166,11 @@ const
   RAW_PACKET_BUFFER_SIZE = 2500000
   SWR_CH_MAX = 64
 
+const
+  AV_OPT_FLAG_DECODING_PARAM = 2
+  DEC* = AV_OPT_FLAG_DECODING_PARAM
+
+const YUVRGB_TABLE_HEADROOM = 512
 
 var program_name*: string = "ffplay"
 
@@ -172,6 +178,14 @@ var program_birth_year*: cint = 2003
 
 var var_names*: array[6,string] = ["t", "n", "pos", "w", "h", ""]
 const MAX_REORDER_DELAY = 16
+const
+  MAX_SLICE_PLANES* = 4
+
+const
+  YUVRGB_TABLE_LUMA_HEADROOM* = 512
+  SWS_MAX_FILTER_SIZE* = 256
+  MAX_FILTER_SIZE* = SWS_MAX_FILTER_SIZE
+  HWACCEL_CAP_ASYNC_SAFE* = (1 shl 0)
 
 const
   VAR_T* = 0
@@ -731,9 +745,6 @@ type
 
 const MAX_THREADS = 32
 
-
-
-  
 const
   AV_SYNC_AUDIO_MASTER* = 0     ##  default choice
   AV_SYNC_VIDEO_MASTER* = 1
@@ -756,86 +767,51 @@ const
   AV_CODEC_HW_CONFIG_METHOD_INTERNAL* = 0x00000004
   AV_CODEC_HW_CONFIG_METHOD_AD_HOC* = 0x00000008
 
-type
-  AVDictionaryEntry* {.bycopy.} = object
-    key*: cstring
-    value*: cstring
-
-  AVDictionary* {.bycopy.} = object
-    count*: cint
-    elems*: ptr AVDictionaryEntry
-
-  AVRational* {.bycopy.} = object
-    num*: cint                 ## /< Numerator
-    den*: cint                 ## /< Denominator
-
-var sws_dict*: ptr AVDictionary
-var swr_opts*: ptr AVDictionary
+var sws_dict*: Table[string,string]
+var swr_opts*: Table[string,string]
 var
-  format_opts*: ptr AVDictionary
-  codec_opts*: ptr AVDictionary
-  resample_opts*: ptr AVDictionary
-
+  format_opts*: Table[string,string]
+  codec_opts*: Table[string,string]
+  resample_opts*: Table[string,string]
 type
   AVDurationEstimationMethod* = enum
     AVFMT_DURATION_FROM_PTS,  ## /< Duration accurately estimated from PTSes
     AVFMT_DURATION_FROM_STREAM, ## /< Duration estimated from a stream with a known duration
     AVFMT_DURATION_FROM_BITRATE ## /< Duration estimated from bitrate (less accurate)
-
-
-type
   AVFieldOrder* = enum
     AV_FIELD_UNKNOWN, AV_FIELD_PROGRESSIVE, AV_FIELD_TT, ## < Top coded_first, top displayed first
     AV_FIELD_BB,              ## < Bottom coded first, bottom displayed first
     AV_FIELD_TB,              ## < Top coded first, bottom displayed first
     AV_FIELD_BT               ## < Bottom coded first, top displayed first
-
-
-type
   AVAudioServiceType* = enum
     AV_AUDIO_SERVICE_TYPE_MAIN = 0, AV_AUDIO_SERVICE_TYPE_EFFECTS = 1,
     AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED = 2,
     AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED = 3, AV_AUDIO_SERVICE_TYPE_DIALOGUE = 4,
     AV_AUDIO_SERVICE_TYPE_COMMENTARY = 5, AV_AUDIO_SERVICE_TYPE_EMERGENCY = 6,
     AV_AUDIO_SERVICE_TYPE_VOICE_OVER = 7, AV_AUDIO_SERVICE_TYPE_KARAOKE = 8, AV_AUDIO_SERVICE_TYPE_NB ## /< Not part of ABI
-
-
-type
   ShowMode* = enum
     SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT,
     SHOW_MODE_NB
-
-
-type
   AVIODataMarkerType* = enum
     AVIO_DATA_MARKER_HEADER, AVIO_DATA_MARKER_SYNC_POINT,
     AVIO_DATA_MARKER_BOUNDARY_POINT, AVIO_DATA_MARKER_UNKNOWN,
     AVIO_DATA_MARKER_TRAILER, AVIO_DATA_MARKER_FLUSH_POINT
-
-type
   AVStreamParseType* = enum
     AVSTREAM_PARSE_NONE, AVSTREAM_PARSE_FULL, 
     AVSTREAM_PARSE_HEADERS,  
     AVSTREAM_PARSE_TIMESTAMPS, 
     AVSTREAM_PARSE_FULL_ONCE, 
-    AVSTREAM_PARSE_FULL_RAW 
-                                                  
-type
+    AVSTREAM_PARSE_FULL_RAW                                           
   SwrDitherType* = enum
     SWR_DITHER_NONE = 0, SWR_DITHER_RECTANGULAR, SWR_DITHER_TRIANGULAR,
     SWR_DITHER_TRIANGULAR_HIGHPASS, SWR_DITHER_NS = 64, 
     SWR_DITHER_NS_LIPSHITZ, SWR_DITHER_NS_F_WEIGHTED,
     SWR_DITHER_NS_MODIFIED_E_WEIGHTED, SWR_DITHER_NS_IMPROVED_E_WEIGHTED,
     SWR_DITHER_NS_SHIBATA, SWR_DITHER_NS_LOW_SHIBATA, SWR_DITHER_NS_HIGH_SHIBATA, SWR_DITHER_NB
-
-
-type
   SwrEngine* = enum
     SWR_ENGINE_SWR,          
     SWR_ENGINE_SOXR,      
     SWR_ENGINE_NB        
-
-type
   SwrFilterType* = enum
     SWR_FILTER_TYPE_CUBIC,    ## *< Cubic
     SWR_FILTER_TYPE_BLACKMAN_NUTTALL, ## *< Blackman Nuttall windowed sinc
@@ -850,64 +826,66 @@ const
 
 const AV_NUM_DATA_POINTERS = 8
 
-
 type
-  AVCodecTag* {.bycopy.} = object
+  AVCodecTag* = ref object
     id*: AVCodecID
     tag*: cuint
-  AVOptionUnion* {.bycopy.} = object {.union.}
+  AVRational*  = ref object
+    num*: cint                 
+    den*: cint
+  AVOptionUnion* {.union.} = object 
     i64*: int64
     dbl*: cdouble
-    str*: cstring             
+    str*: string             
     q*: AVRational
-  AVOption* {.bycopy.} = object
-    name*: cstring
-    help*: cstring
+  AVOption* = ref object
+    name*: string
+    help*: string
     offset*: cint
     `type`*: AVOptionType
     default_val*: AVOptionUnion
     min*: cdouble              
     max*: cdouble           
     flags*: cint
-    unit*: cstring
-  AVOptionRange* {.bycopy.} = object
-    str*: cstring
+    unit*: string
+  AVOptionRange* = ref object
+    str*: string
     value_min*: cdouble
     value_max*: cdouble
     component_min*: cdouble
     component_max*: cdouble
     is_range*: cint
-  AVOptionRanges* {.bycopy.} = object
+  AVOptionRanges* = ref object
     range*: ref AVOptionRange
     nb_ranges*: cint
     nb_components*: cint
-  AVClass* {.bycopy.} = object
-    class_name*: cstring
-    item_name*: proc (ctx: pointer): cstring
+  AVClass* = ref object
+    class_name*: string
+    item_name*: proc (ctx: pointer): string
     option*: ptr AVOption
     version*: cint
     log_level_offset_offset*: cint
     parent_log_context_offset*: cint
     child_next*: proc (obj: pointer; prev: pointer): pointer
-    child_class_next*: proc (prev: ptr AVClass): ptr AVClass
+    child_class_next*: proc (prev: AVClass): AVClass
     category*: AVClassCategory
     get_category*: proc (ctx: pointer): AVClassCategory
-    query_ranges*: proc (a1: ptr ptr AVOptionRanges; obj: pointer; key: cstring;flags: cint): cint
-    child_class_iterate*: proc (iter: ptr pointer): ptr AVClass
-  AVProbeData* {.bycopy.} = object
-    filename*: cstring
+    query_ranges*: proc (a1: ptr ptr AVOptionRanges; obj: pointer; key: string;flags: cint): cint
+    child_class_iterate*: proc (iter: ptr pointer): AVClass
+  AVProbeData* = ref object
+    filename*: string
     buf*: ptr cuchar            
     buf_size*: cint            
-    mime_type*: cstring        
-  AVIOContext* {.bycopy.} = object
-    av_class*: ptr AVClass
+    mime_type*: string        
+  AVIOContext* = ref object
+    av_class*: AVClass
     buffer*: ptr cuchar         ## *< Start of the buffer.
     buffer_size*: cint         ## *< Maximum buffer size
     buf_ptr*: ptr cuchar        ## *< Current position in the buffer
     buf_end*: ptr cuchar 
     opaque*: pointer                            
-    read_packet*: proc (opaque: pointer; buf: ptr uint8; buf_size: cint): cint
-    write_packet*: proc (opaque: pointer; buf: ptr uint8; buf_size: cint): cint
+    read_packet*: proc (opaque: pointer; buf: uint8; buf_size: cint): cint
+    write_packet*: proc (opaque: pointer; buf: uint8; buf_size: cint): cint
     seek*: proc (opaque: pointer; offset: int64; whence: cint): int64
     pos*: int64              ## *< position in the file of the current buffer
     eof_reached*: cint         ## *< true if was unable to read due to error or eof
@@ -915,7 +893,7 @@ type
     max_packet_size*: cint
     checksum*: culong
     checksum_ptr*: ptr cuchar
-    update_checksum*: proc (checksum: culong; buf: ptr uint8; size: cuint): culong
+    update_checksum*: proc (checksum: culong; buf: uint8; size: cuint): culong
     error*: cint               
     read_pause*: proc (opaque: pointer; pause: cint): cint
     read_seek*: proc (opaque: pointer; stream_index: cint; timestamp: int64;flags: cint): int64
@@ -927,9 +905,9 @@ type
     writeout_count*: cint
     orig_buffer_size*: cint
     short_seek_threshold*: cint
-    protocol_whitelist*: cstring
-    protocol_blacklist*: cstring
-    write_data_type*: proc (opaque: pointer; buf: ptr uint8; buf_size: cint;`type`: AVIODataMarkerType; time: int64): cint
+    protocol_whitelist*: string
+    protocol_blacklist*: string
+    write_data_type*: proc (opaque: pointer; buf: uint8; buf_size: cint;`type`: AVIODataMarkerType; time: int64): cint
     ignore_boundary_point*: cint
     current_type*: AVIODataMarkerType
     last_time*: int64
@@ -940,25 +918,25 @@ type
   AVBufferRef = ref object
   AVBuffer* = object
     buffer*: ptr AVBuffer
-    data*: ptr uint8
+    data*: uint8
     size*: cint
-  AVPacketSideData* {.bycopy.} = object
-    data*: ptr uint8
+  AVPacketSideData* = ref object
+    data*: uint8
     size*: cint
     `type`*: AVPacketSideDataType
-  AVPacket* {.bycopy.} = object
-    buf*: ptr AVBufferRef
-    pts*: int64
+  AVPacket* = ref object
+    buf*: AVBufferRef
+    pts*: int64 
     dts*: int64
     data*: uint8
     size*: cint
     stream_index*: cint
     flags*: cint
-    side_data*: ptr AVPacketSideData
+    side_data*: AVPacketSideData
     side_data_elems*: cint
     duration*: int64
     pos*: int64   
-  AVCodecParameters* {.bycopy.} = object
+  AVCodecParameters* = ref object
     codec_type*: AVMediaType
     codec_id*: AVCodecID
     codec_tag*: uint32
@@ -988,7 +966,7 @@ type
     initial_padding*: cint
     trailing_padding*: cint
     seek_preroll*: cint
-  AVStreamInnerStruct* {.bycopy.} = object
+  AVStreamInnerStruct* = ref object
     last_dts*: int64
     duration_gcd*: int64
     duration_count*: cint
@@ -1003,41 +981,41 @@ type
     fps_first_dts_idx*: cint
     fps_last_dts*: int64
     fps_last_dts_idx*: cint
-  AVProfile* {.bycopy.} = object
+  AVProfile* = ref object
     profile*: cint
-    name*: cstring             
-  AVCodecDefault* {.bycopy.} = object
-    key*: ptr uint8
-    value*: ptr uint8
+    name*: string             
+  AVCodecDefault* = ref object
+    key*: uint8
+    value*: uint8
   AVSubtitleRect* = ref object
     x*: cint                   ## /< top left corner  of pict, undefined when pict is not set
     y*: cint                   ## /< top left corner  of pict, undefined when pict is not set
     w*: cint                   ## /< width            of pict, undefined when pict is not set
     h*: cint                   ## /< height           of pict, undefined when pict is not set
     nb_colors*: cint           ## /< number of colors in pict, undefined when pict is not set
-    data*: array[4, ptr uint8]
+    data*: array[4, uint8]
     linesize*: array[4, cint]
     `type`*: AVSubtitleType
-    text*: cstring             ## /< 0 terminated plain UTF-8 text
-    ass*: cstring
+    text*: string             ## /< 0 terminated plain UTF-8 text
+    ass*: string
     flags*: cint
-  AVSubtitle* {.bycopy.} = object
+  AVSubtitle* = ref object
     format*: uint16         ##  0 = graphics
     start_display_time*: uint32 ##  relative to packet pts, in ms
     end_display_time*: uint32 ##  relative to packet pts, in ms
     num_rects*: cuint
     rects*: AVSubtitleRect
     pts*: int64              
-  AVFrameSideData* {.bycopy.} = object
+  AVFrameSideData* = ref object
     `type`*: AVFrameSideDataType
-    data*: ptr uint8
+    data*: uint8
     size*: cint
-    metadata*: ptr AVDictionary
+    metadata*: Table[string,string]
     buf*: ptr AVBufferRef
-  AVFrame* {.bycopy.} = object
-    data*: array[8, ptr uint8]
+  AVFrame* = ref object
+    data*: array[8, uint8]
     linesize*: array[8, cint]
-    extended_data*: ptr ptr uint8
+    extended_data*: ptr uint8
     width*: cint
     height*: cint
     nb_samples*: cint
@@ -1072,7 +1050,7 @@ type
     best_effort_timestamp*: int64
     pkt_pos*: int64
     pkt_duration*: int64
-    metadata*: ptr AVDictionary
+    metadata*: Table[string,string]
     decode_error_flags*: cint
     channels*: cint
     pkt_size*: cint
@@ -1083,18 +1061,18 @@ type
     crop_left*: csize_t
     crop_right*: csize_t
     private_ref*: ptr AVBufferRef
-  ScanTable* {.bycopy.} = object
-    scantable*: ptr uint8
+  ScanTable* = ref object
+    scantable*: uint8
     permutated*: array[64, uint8]
     raster_end*: array[64, uint8]
 
 type
-  ThreadFrame* {.bycopy.} = object
+  ThreadFrame* = ref object
     f*: ptr AVFrame
     owner*: array[2, ptr AVCodecContext]
     progress*: ptr AVBufferRef
 
-  Picture* {.bycopy.} = object
+  Picture* = ref object
     f*: ptr AVFrame
     tf*: ThreadFrame
     qscale_table_buf*: ptr AVBufferRef
@@ -1103,7 +1081,7 @@ type
     mb_type_buf*: ptr AVBufferRef
     mb_type*: ptr uint32      ## /< types and macros are defined in mpegutils.h
     mbskip_table_buf*: ptr AVBufferRef
-    mbskip_table*: ptr uint8
+    mbskip_table*: uint8
     ref_index_buf*: array[2, ptr AVBufferRef]
     ref_index*: array[2, ptr int8]
     mb_var_buf*: ptr AVBufferRef
@@ -1113,7 +1091,7 @@ type
     alloc_mb_width*: cint      ## /< mb_width used to allocate tables
     alloc_mb_height*: cint     ## /< mb_height used to allocate tables
     mb_mean_buf*: ptr AVBufferRef
-    mb_mean*: ptr uint8       ## /< Table for MB luminance
+    mb_mean*: uint8       ## /< Table for MB luminance
     hwaccel_priv_buf*: ptr AVBufferRef
     hwaccel_picture_private*: pointer ## /< Hardware accelerator private data
     field_picture*: cint       ## /< whether or not the picture was encoded in separate fields
@@ -1125,7 +1103,7 @@ type
     shared*: cint
     encoding_error*: array[AV_NUM_DATA_POINTERS, uint64]
 
-  PutBitContext* {.bycopy.} = object
+  PutBitContext* = ref object
     bit_buf*: uint64
     bit_left*: cint
     buf*: ptr int8
@@ -1134,32 +1112,32 @@ type
     size_in_bits*: cint
 
 
-  ScratchpadContext* {.bycopy.} = object
-    edge_emu_buffer*: ptr uint8 
-    rd_scratchpad*: ptr uint8 
-    obmc_scratchpad*: ptr uint8
-    b_scratchpad*: ptr uint8  
+  ScratchpadContext* = ref object
+    edge_emu_buffer*: uint8 
+    rd_scratchpad*: uint8 
+    obmc_scratchpad*: uint8
+    b_scratchpad*: uint8  
 
 
-  op_fill_func* = proc (`block`: ptr uint8; ##  align width (8 or 16)
+  op_fill_func* = proc (`block`: uint8; ##  align width (8 or 16)
                      value: uint8; line_size: int64; h: cint)
-  BlockDSPContext* {.bycopy.} = object
+  BlockDSPContext* = ref object
     clear_block*: proc (`block`: ptr int16) ##  align 32
     clear_blocks*: proc (blocks: ptr int16) ##  align 32
     fill_block_tab*: array[2, op_fill_func]
 
-  FDCTDSPContext* {.bycopy.} = object
+  FDCTDSPContext* = ref object
     fdct*: proc (`block`: ptr int16)
     fdct248*: proc (`block`: ptr int16)
 
-  h264_chroma_mc_func* = proc (dst: ptr uint8; src: ptr uint8; srcStride: int64; h: cint;
+  h264_chroma_mc_func* = proc (dst: uint8; src: uint8; srcStride: int64; h: cint;
                             x: cint; y: cint)
-  H264ChromaContext* {.bycopy.} = object
+  H264ChromaContext* = ref object
     put_h264_chroma_pixels_tab*: array[4, h264_chroma_mc_func]
     avg_h264_chroma_pixels_tab*: array[4, h264_chroma_mc_func]
 
-  op_pixels_func* = proc (`block`: ptr uint8; pixels: ptr uint8; line_size: int64; h: cint)
-  HpelDSPContext* {.bycopy.} = object
+  op_pixels_func* = proc (`block`: uint8; pixels: uint8; line_size: int64; h: cint)
+  HpelDSPContext* = ref object
     put_pixels_tab*: array[4, array[4, op_pixels_func]]
     avg_pixels_tab*: array[4, array[4, op_pixels_func]]
     put_no_rnd_pixels_tab*: array[4, array[4, op_pixels_func]]
@@ -1169,24 +1147,24 @@ type
     FF_IDCT_PERM_NONE, FF_IDCT_PERM_LIBMPEG2, FF_IDCT_PERM_SIMPLE,
     FF_IDCT_PERM_TRANSPOSE, FF_IDCT_PERM_PARTTRANS, FF_IDCT_PERM_SSE2
 
-  IDCTDSPContext* {.bycopy.} = object
-    put_pixels_clamped*: proc (`block`: ptr int16; pixels: ptr uint8; line_size: int64)
-    put_signed_pixels_clamped*: proc (`block`: ptr int16; pixels: ptr uint8;
+  IDCTDSPContext* = ref object
+    put_pixels_clamped*: proc (`block`: ptr int16; pixels: uint8; line_size: int64)
+    put_signed_pixels_clamped*: proc (`block`: ptr int16; pixels: uint8;
                                     line_size: int64)
-    add_pixels_clamped*: proc (`block`: ptr int16; pixels: ptr uint8; line_size: int64)
+    add_pixels_clamped*: proc (`block`: ptr int16; pixels: uint8; line_size: int64)
     idct*: proc (`block`: ptr int16)
-    idct_put*: proc (dest: ptr uint8; line_size: int64; `block`: ptr int16)
-    idct_add*: proc (dest: ptr uint8; line_size: int64; `block`: ptr int16)
+    idct_put*: proc (dest: uint8; line_size: int64; `block`: ptr int16)
+    idct_add*: proc (dest: uint8; line_size: int64; `block`: ptr int16)
     idct_permutation*: array[64, uint8]
     perm_type*: idct_permutation_type
     mpeg4_studio_profile*: cint
 
-  MpegEncContext* {.bycopy.} = object
+  MpegEncContext* = ref object
 
-  me_cmp_func* = proc (c: ptr MpegEncContext; blk1: ptr uint8; ##  align width (8 or 16)
-                    blk2: ptr uint8; ##  align 1
+  me_cmp_func* = proc (c: ptr MpegEncContext; blk1: uint8; ##  align width (8 or 16)
+                    blk2: uint8; ##  align 1
                     stride: int64; h: cint): cint
-  MECmpContext* {.bycopy.} = object
+  MECmpContext* = ref object
     sum_abs_dctelem*: proc (`block`: ptr int16): cint ##  align 16
     sad*: array[6, me_cmp_func] ##  identical to pix_absAxA except additional void *
     sse*: array[6, me_cmp_func]
@@ -1212,14 +1190,14 @@ type
     median_sad*: array[6, me_cmp_func]
 
   atomic_int* = cint
-  ERPicture* {.bycopy.} = object
+  ERPicture* = ref object
     f*: ptr AVFrame
     tf*: ptr ThreadFrame        ##  int16 (*motion_val[2])[2];
     ref_index*: array[2, ptr int8]
     mb_type*: ptr uint32
     field_picture*: cint
 
-  ERContext* {.bycopy.} = object
+  ERContext* = ref object
     avctx*: ptr AVCodecContext
     mecc*: MECmpContext
     mecc_inited*: cint
@@ -1231,11 +1209,11 @@ type
     b8_stride*: int64
     error_count*: atomic_int
     error_occurred*: cint
-    error_status_table*: ptr uint8
-    er_temp_buffer*: ptr uint8
+    error_status_table*: uint8
+    er_temp_buffer*: uint8
     dc_val*: array[3, ptr int16]
-    mbskip_table*: ptr uint8
-    mbintra_table*: ptr uint8
+    mbskip_table*: uint8
+    mbintra_table*: uint8
     mv*: array[2, array[4, array[2, cint]]]
     cur_pic*: ERPicture
     last_pic*: ERPicture
@@ -1252,59 +1230,59 @@ type
                     mb_intra: cint; mb_skipped: cint)
     opaque*: pointer
 
-  AVTimecode* {.bycopy.} = object
+  AVTimecode* = ref object
     start*: cint               ## /< timecode frame start (first base frame number)
     flags*: uint32           ## /< flags such as drop frame, +24 hours support, ...
     rate*: AVRational          ## /< frame rate in rational form
     fps*: cuint                ## /< frame per second; must be consistent with the rate field
 
-  MpegVideoDSPContext* {.bycopy.} = object
-    gmc1*: proc (dst: ptr uint8;  src: ptr uint8; srcStride: cint; h: cint; x16: cint; y16: cint; rounder: cint)
-    gmc*: proc (dst: ptr uint8;src: ptr uint8;stride: cint; h: cint; ox: cint; oy: cint; dxx: cint; dxy: cint; dyx: cint;dyy: cint; shift: cint; r: cint; width: cint; height: cint)
+  MpegVideoDSPContext* = ref object
+    gmc1*: proc (dst: uint8;  src: uint8; srcStride: cint; h: cint; x16: cint; y16: cint; rounder: cint)
+    gmc*: proc (dst: uint8;src: uint8;stride: cint; h: cint; ox: cint; oy: cint; dxx: cint; dxy: cint; dyx: cint;dyy: cint; shift: cint; r: cint; width: cint; height: cint)
 
-  MpegvideoEncDSPContext* {.bycopy.} = object
+  MpegvideoEncDSPContext* = ref object
     try_8x8basis*: proc (rem: array[64, int16]; weight: array[64, int16];
                        basis: array[64, int16]; scale: cint): cint
     add_8x8basis*: proc (rem: array[64, int16]; basis: array[64, int16]; scale: cint)
-    pix_sum*: proc (pix: ptr uint8; line_size: cint): cint
-    pix_norm1*: proc (pix: ptr uint8; line_size: cint): cint
+    pix_sum*: proc (pix: uint8; line_size: cint): cint
+    pix_norm1*: proc (pix: uint8; line_size: cint): cint
     # void (*shrink[4])(uint8 *dst, int dst_wrap, const uint8 *src,int src_wrap, int width, int height);
-    draw_edges*: proc (buf: ptr uint8; wrap: cint; width: cint; height: cint; w: cint;h: cint; sides: cint)
+    draw_edges*: proc (buf: uint8; wrap: cint; width: cint; height: cint; w: cint;h: cint; sides: cint)
 
-  PixblockDSPContext* {.bycopy.} = object
-    get_pixels*: proc (`block`: ptr int16; pixels: ptr uint8; stride: int64)
-    get_pixels_unaligned*: proc (`block`: ptr int16; pixels: ptr uint8; stride: int64)
-    diff_pixels*: proc (`block`: ptr int16; s1: ptr uint8; s2: ptr uint8; stride: int64)
-    diff_pixels_unaligned*: proc (`block`: ptr int16; s1: ptr uint8; s2: ptr uint8;stride: int64)
+  PixblockDSPContext* = ref object
+    get_pixels*: proc (`block`: ptr int16; pixels: uint8; stride: int64)
+    get_pixels_unaligned*: proc (`block`: ptr int16; pixels: uint8; stride: int64)
+    diff_pixels*: proc (`block`: ptr int16; s1: uint8; s2: uint8; stride: int64)
+    diff_pixels_unaligned*: proc (`block`: ptr int16; s1: uint8; s2: uint8;stride: int64)
 
-  qpel_mc_func* = proc (dst: ptr uint8; src: ptr uint8; stride: int64)
-  QpelDSPContext* {.bycopy.} = object
+  qpel_mc_func* = proc (dst: uint8; src: uint8; stride: int64)
+  QpelDSPContext* = ref object
     put_qpel_pixels_tab*: array[2, array[16, qpel_mc_func]]
     avg_qpel_pixels_tab*: array[2, array[16, qpel_mc_func]]
     put_no_rnd_qpel_pixels_tab*: array[2, array[16, qpel_mc_func]]
 
-  VideoDSPContext* {.bycopy.} = object
-    emulated_edge_mc*: proc (dst: ptr uint8; src: ptr uint8; dst_linesize: int64;src_linesize: int64; block_w: cint; block_h: cint;src_x: cint; src_y: cint; w: cint; h: cint)
-    prefetch*: proc (buf: ptr uint8; stride: int64; h: cint)
+  VideoDSPContext* = ref object
+    emulated_edge_mc*: proc (dst: uint8; src: uint8; dst_linesize: int64;src_linesize: int64; block_w: cint; block_h: cint;src_x: cint; src_y: cint; w: cint; h: cint)
+    prefetch*: proc (buf: uint8; stride: int64; h: cint)
 
-  H263DSPContext* {.bycopy.} = object
-    h263_h_loop_filter*: proc (src: ptr uint8; stride: cint; qscale: cint)
-    h263_v_loop_filter*: proc (src: ptr uint8; stride: cint; qscale: cint)
-  AVCodecHWConfig* {.bycopy.} = object
+  H263DSPContext* = ref object
+    h263_h_loop_filter*: proc (src: uint8; stride: cint; qscale: cint)
+    h263_v_loop_filter*: proc (src: uint8; stride: cint; qscale: cint)
+  AVCodecHWConfig* = ref object
     pix_fmt*: AVPixelFormat
     methods*: cint
     device_type*: AVHWDeviceType
-  AVHWAccel* {.bycopy.} = object
-    name*: cstring
+  AVHWAccel* = ref object
+    name*: string
     `type`*: AVMediaType
     id*: AVCodecID
     pix_fmt*: AVPixelFormat
     capabilities*: cint
     alloc_frame*: proc (avctx: ptr AVCodecContext; frame: ptr AVFrame): cint
-    start_frame*: proc (avctx: ptr AVCodecContext; buf: ptr uint8; buf_size: uint32): cint
-    decode_params*: proc (avctx: ptr AVCodecContext; `type`: cint; buf: ptr uint8;
+    start_frame*: proc (avctx: ptr AVCodecContext; buf: uint8; buf_size: uint32): cint
+    decode_params*: proc (avctx: ptr AVCodecContext; `type`: cint; buf: uint8;
                         buf_size: uint32): cint
-    decode_slice*: proc (avctx: ptr AVCodecContext; buf: ptr uint8; buf_size: uint32): cint
+    decode_slice*: proc (avctx: ptr AVCodecContext; buf: uint8; buf_size: uint32): cint
     end_frame*: proc (avctx: ptr AVCodecContext): cint
     frame_priv_data_size*: cint
     decode_mb*: proc (s: ptr MpegEncContext)
@@ -1314,13 +1292,13 @@ type
     caps_internal*: cint
     frame_params*: proc (avctx: ptr AVCodecContext; hw_frames_ctx: ptr AVBufferRef): cint
 
-  AVCodecHWConfigInternal* {.bycopy.} = object
+  AVCodecHWConfigInternal* = ref object
     public*: AVCodecHWConfig
     hwaccel*: ptr AVHWAccel
   
-  AVCodec* {.bycopy.} = object
-    name*: cstring
-    long_name*: cstring
+  AVCodec* = ref object
+    name*: string
+    long_name*: string
     `type`*: AVMediaType
     id*: AVCodecID
     capabilities*: cint
@@ -1330,67 +1308,64 @@ type
     sample_fmts*: ptr AVSampleFormat ## /< array of supported sample formats, or NULL if unknown, array is terminated by -1
     channel_layouts*: ptr uint64 ## /< array of support channel layouts, or NULL if unknown. array is terminated by 0
     max_lowres*: uint8
-    priv_class*: ptr AVClass    ## /< AVClass for the private context
+    priv_class*: AVClass    ## /< AVClass for the private context
     profiles*: ptr AVProfile    ## /< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
-    wrapper_name*: cstring
+    wrapper_name*: string
     priv_data_size*: cint
-    next*: ptr AVCodec
+    next*: AVCodec
     init_thread_copy*: proc (a1: ptr AVCodecContext): cint
     update_thread_context*: proc (dst: ptr AVCodecContext; src: ptr AVCodecContext): cint
     defaults*: ptr AVCodecDefault
-    init_static_data*: proc (codec: ptr AVCodec)
+    init_static_data*: proc (codec: AVCodec)
     init*: proc (a1: ptr AVCodecContext): cint
-    encode_sub*: proc (a1: ptr AVCodecContext; buf: ptr uint8; buf_size: cint;
-                     sub: ptr AVSubtitle): cint
-    encode2*: proc (avctx: ptr AVCodecContext; avpkt: ptr AVPacket; frame: ptr AVFrame;
-                  got_packet_ptr: ptr cint): cint
-    decode*: proc (a1: ptr AVCodecContext; outdata: pointer; outdata_size: ptr cint;
-                 avpkt: ptr AVPacket): cint
+    encode_sub*: proc (a1: ptr AVCodecContext; buf: uint8; buf_size: cint;sub: ptr AVSubtitle): cint
+    encode2*: proc (avctx: ptr AVCodecContext; avpkt: AVPacket; frame: ptr AVFrame;got_packet_ptr: ptr cint): cint
+    decode*: proc (a1: ptr AVCodecContext; outdata: pointer; outdata_size: ptr cint;avpkt: AVPacket): cint
     close*: proc (a1: ptr AVCodecContext): cint
     send_frame*: proc (avctx: ptr AVCodecContext; frame: ptr AVFrame): cint
-    receive_packet*: proc (avctx: ptr AVCodecContext; avpkt: ptr AVPacket): cint
+    receive_packet*: proc (avctx: ptr AVCodecContext; avpkt: AVPacket): cint
     receive_frame*: proc (avctx: ptr AVCodecContext; frame: ptr AVFrame): cint
     flush*: proc (a1: ptr AVCodecContext)
     caps_internal*: cint
-    bsfs*: cstring
+    bsfs*: string
     hw_configs*: ptr ptr AVCodecHWConfigInternal
 
-  DecodeSimpleContext* {.bycopy.} = object
-    in_pkt*: ptr AVPacket
+  DecodeSimpleContext* = ref object
+    in_pkt*: AVPacket
 
-  AVPacketList* {.bycopy.} = object
+  AVPacketList* = ref object
     pkt*: AVPacket
-    next*: ptr AVPacketList
+    next*: AVPacketList
 
-  EncodeSimpleContext* {.bycopy.} = object
+  EncodeSimpleContext* = ref object
     in_frame*: ptr AVFrame
 
-  AVBitStreamFilter* {.bycopy.} = object
-    name*: cstring
+  AVBitStreamFilter* = ref object
+    name*: string
     codec_ids*: ptr AVCodecID
-    priv_class*: ptr AVClass
+    priv_class*: AVClass
     priv_data_size*: cint
     init*: proc (ctx: ptr AVBSFContext): cint
-    filter*: proc (ctx: ptr AVBSFContext; pkt: ptr AVPacket): cint
+    filter*: proc (ctx: ptr AVBSFContext; pkt: AVPacket): cint
     close*: proc (ctx: ptr AVBSFContext)
     flush*: proc (ctx: ptr AVBSFContext)
 
-  AVBSFInternal* {.bycopy.} = object
-    buffer_pkt*: ptr AVPacket
+  AVBSFInternal* = ref object
+    buffer_pkt*: AVPacket
     eof*: cint
 
-  AVBSFContext* {.bycopy.} = object
-    av_class*: ptr AVClass
+  AVBSFContext* = ref object
+    av_class*: AVClass
     filter*: ptr AVBitStreamFilter
     internal*: ptr AVBSFInternal
     priv_data*: pointer
-    par_in*: ptr AVCodecParameters
-    par_out*: ptr AVCodecParameters
+    par_in*: AVCodecParameters
+    par_out*: AVCodecParameters
     time_base_in*: AVRational
     time_base_out*: AVRational
 
 
-  AVCodecInternal* {.bycopy.} = object
+  AVCodecInternal* = ref object
     is_copy*: cint
     last_audio_frame*: cint
     to_free*: ptr AVFrame
@@ -1398,24 +1373,24 @@ type
     thread_ctx*: pointer
     ds*: DecodeSimpleContext
     bsf*: ptr AVBSFContext
-    last_pkt_props*: ptr AVPacket
-    pkt_props*: ptr AVPacketList
-    pkt_props_tail*: ptr AVPacketList
-    byte_buffer*: ptr uint8
+    last_pkt_props*: AVPacket
+    pkt_props*: AVPacketList
+    pkt_props_tail*: AVPacketList
+    byte_buffer*: uint8
     byte_buffer_size*: cuint
     frame_thread_encoder*: pointer
     es*: EncodeSimpleContext
     skip_samples*: cint
     hwaccel_priv_data*: pointer
     draining*: cint
-    buffer_pkt*: ptr AVPacket
+    buffer_pkt*: AVPacket
     buffer_frame*: ptr AVFrame
     draining_done*: cint
     compat_decode_warned*: cint
     compat_decode_consumed*: csize_t
     compat_decode_partial_size*: csize_t
     compat_decode_frame*: ptr AVFrame
-    compat_encode_packet*: ptr AVPacket
+    compat_encode_packet*: AVPacket
     showed_multi_packet_warning*: cint
     skip_samples_multiplier*: cint
     nb_draining_errors*: cint
@@ -1427,28 +1402,28 @@ type
     initial_channels*: cint
     initial_channel_layout*: uint64
 
-  RcOverride* {.bycopy.} = object
+  RcOverride* = ref object
     start_frame*: cint
     end_frame*: cint
     qscale*: cint              ##  If this is 0 then quality_factor will be used instead.
     quality_factor*: cfloat
 
-  AVCodecDescriptor* {.bycopy.} = object
+  AVCodecDescriptor* = ref object
     id*: AVCodecID
     `type`*: AVMediaType
-    name*: cstring
-    long_name*: cstring
+    name*: string
+    long_name*: string
     props*: cint
     mime_types*: cstringArray
     profiles*: ptr AVProfile
 
 
 
-  AVCodecContext* {.bycopy.} = object
-    av_class*: ptr AVClass
+  AVCodecContext* = ref object
+    av_class*: AVClass
     log_level_offset*: cint
     codec_type*: AVMediaType   ##  see AVMEDIA_TYPE_xxx
-    codec*: ptr AVCodec
+    codec*: AVCodec
     codec_id*: AVCodecID       ##  see AV_CODEC_ID_xxx
     codec_tag*: cuint
     priv_data*: pointer
@@ -1460,7 +1435,7 @@ type
     compression_level*: cint
     flags*: cint
     flags2*: cint
-    extradata*: ptr uint8
+    extradata*: uint8
     extradata_size*: cint
     time_base*: AVRational
     ticks_per_frame*: cint
@@ -1544,8 +1519,8 @@ type
     rc_min_vbv_overflow_use*: cfloat
     rc_initial_buffer_occupancy*: cint
     trellis*: cint
-    stats_out*: cstring
-    stats_in*: cstring
+    stats_out*: string
+    stats_in*: string
     workaround_bugs*: cint
     strict_std_compliance*: cint
     error_concealment*: cint
@@ -1576,7 +1551,7 @@ type
     skip_loop_filter*: AVDiscard
     skip_idct*: AVDiscard
     skip_frame*: AVDiscard
-    subtitle_header*: ptr uint8
+    subtitle_header*: uint8
     subtitle_header_size*: cint
     initial_padding*: cint
     framerate*: AVRational
@@ -1587,13 +1562,13 @@ type
     pts_correction_num_faulty_dts*: int64 ## / Number of incorrect DTS values so far
     pts_correction_last_pts*: int64 ## / PTS of the last frame
     pts_correction_last_dts*: int64 ## / DTS of the last frame
-    sub_charenc*: cstring
+    sub_charenc*: string
     sub_charenc_mode*: cint
     skip_alpha*: cint
     seek_preroll*: cint
     chroma_intra_matrix*: ptr uint16
-    dump_separator*: ptr uint8
-    codec_whitelist*: cstring
+    dump_separator*: uint8
+    codec_whitelist*: string
     properties*: cuint
     coded_side_data*: ptr AVPacketSideData
     nb_coded_side_data*: cint
@@ -1612,18 +1587,16 @@ type
   AVCodecParser* = ref object
     codec_ids*: array[5, cint]  ##  several codec IDs are permitted
     priv_data_size*: cint
-    parser_init*: proc (s: ptr AVCodecParserContext): cint
-    parser_parse*: proc (s: ptr AVCodecParserContext; avctx: ptr AVCodecContext;
-                       poutbuf: ptr ptr uint8; poutbuf_size: ptr cint;
-                       buf: ptr uint8; buf_size: cint): cint
-    parser_close*: proc (s: ptr AVCodecParserContext)
-    split*: proc (avctx: ptr AVCodecContext; buf: ptr uint8; buf_size: cint): cint
+    parser_init*: proc (s: AVCodecParserContext): cint
+    parser_parse*: proc (s: AVCodecParserContext; avctx: ptr AVCodecContext;
+                       poutbuf: ptr uint8; poutbuf_size: ptr cint;
+                       buf: uint8; buf_size: cint): cint
+    parser_close*: proc (s: AVCodecParserContext)
+    split*: proc (avctx: ptr AVCodecContext; buf: uint8; buf_size: cint): cint
     next*: AVCodecParser
 
 
-
-
-  AVCodecParserContext* {.bycopy.} = object
+  AVCodecParserContext* = ref object
     priv_data*: pointer
     parser*: AVCodecParser
     frame_offset*: int64     ##  offset of the current frame
@@ -1660,25 +1633,26 @@ type
     coded_width*: cint
     coded_height*: cint
     format*: cint
-  AVIndexEntry* {.bycopy.} = object
+
+  AVIndexEntry* = ref object
     pos*: int64
     timestamp*: int64
     flags* {.bitsize: 2.}: cint
     size* {.bitsize: 30.}: cint  ## Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
     min_distance*: cint  
 
-  AVStreamInternalInner* {.bycopy.} = object
+  AVStreamInternalInner* = ref object
     bsf*: ptr AVBSFContext
-    pkt*: ptr AVPacket
+    pkt*: AVPacket
     inited*: cint
 
-  FFFrac* {.bycopy.} = object
+  FFFrac* = ref object
     val*: int64
     num*: int64
     den*: int64
 
 
-  AVStreamInternal* {.bycopy.} = object
+  AVStreamInternal* = ref object
     reorder*: cint
     bsfc*: ptr AVBSFContext
     bitstream_checked*: cint
@@ -1688,29 +1662,29 @@ type
     extract_extradata*: AVStreamInternalInner
     need_context_update*: cint
     is_intra_only*: cint
-    priv_pts*: ptr FFFrac
+    priv_pts*: FFFrac
 
 
-  AVStream* {.bycopy.} = object
-    index*: cint               ## *< stream index in AVFormatContext
+  AVStream* = ref object
+    index*: cint               
     id*: cint
     priv_data*: pointer
     time_base*: AVRational
     start_time*: int64
     duration*: int64
-    nb_frames*: int64        ## /< number of frames in this stream if known or 0
-    disposition*: cint         ## *< AV_DISPOSITION_* bit field
-    `discard`*: AVDiscard      ## /< Selects which packets can be discarded at will and do not need to be demuxed.
+    nb_frames*: int64        
+    disposition*: cint         
+    `discard`*: AVDiscard      
     sample_aspect_ratio*: AVRational
-    metadata*: ptr AVDictionary
+    metadata*: Table[string,string]
     avg_frame_rate*: AVRational
     attached_pic*: AVPacket
     side_data*: ptr AVPacketSideData
     nb_side_data*: cint
     event_flags*: cint
     r_frame_rate*: AVRational
-    codecpar*: ptr AVCodecParameters
-    info*: ptr AVStreamInnerStruct
+    codecpar*: AVCodecParameters
+    info*: AVStreamInnerStruct
     pts_wrap_bits*: cint       
     first_dts*: int64
     cur_dts*: int64
@@ -1719,8 +1693,8 @@ type
     probe_packets*: cint
     codec_info_nb_frames*: cint
     need_parsing*: AVStreamParseType
-    parser*: ptr AVCodecParserContext
-    last_in_packet_buffer*: ptr AVPacketList
+    parser*: AVCodecParserContext
+    last_in_packet_buffer*: AVPacketList
     probe_data*: AVProbeData
     pts_buffer*: array[MAX_REORDER_DELAY + 1, int64]
     index_entries*: ptr AVIndexEntry 
@@ -1751,13 +1725,13 @@ type
     inject_global_side_data*: cint
     display_aspect_ratio*: AVRational
     internal*: ptr AVStreamInternal
-  AVProgram* {.bycopy.} = object
+  AVProgram* = ref object
     id*: cint
     flags*: cint
     `discard`*: AVDiscard      
     stream_index*: ptr cuint
     nb_stream_indexes*: cuint
-    metadata*: ptr AVDictionary
+    metadata*: Table[string,string]
     program_num*: cint
     pmt_pid*: cint
     pcr_pid*: cint
@@ -1766,28 +1740,26 @@ type
     end_time*: int64
     pts_wrap_reference*: int64 ## /< reference dts for wrap detection
     pts_wrap_behavior*: cint   ## /< behavior on wrap detection
-  AVChapter* {.bycopy.} = object
+  AVChapter* = ref object
     id*: cint                  ## /< unique ID to identify the chapter
     time_base*: AVRational     ## /< time base in which the start/end timestamps are specified
     start*: int64
     `end`*: int64            ## /< chapter start/end time in time_base units
-    metadata*: ptr AVDictionary
+    metadata*: Table[string,string]
 
-  AVIOInterruptCB* {.bycopy.} = object
+  AVIOInterruptCB* = ref object
     callback*: proc (a1: pointer): cint
     opaque*: pointer
 
-
-
-  AVFormatInternal* {.bycopy.} = object
+  AVFormatInternal* = ref object
     nb_interleaved_streams*: cint
-    packet_buffer*: ptr AVPacketList
-    packet_buffer_end*: ptr AVPacketList
-    data_offset*: int64      ## *< offset of the first packet
-    raw_packet_buffer*: ptr AVPacketList
-    raw_packet_buffer_end*: ptr AVPacketList
-    parse_queue*: ptr AVPacketList
-    parse_queue_end*: ptr AVPacketList
+    packet_buffer*: AVPacketList
+    packet_buffer_end*: AVPacketList
+    data_offset*: int64      
+    raw_packet_buffer*: AVPacketList
+    raw_packet_buffer_end*: AVPacketList
+    parse_queue*: AVPacketList
+    parse_queue_end*: AVPacketList
     raw_packet_buffer_remaining_size*: cint
     offset*: int64
     offset_timebase*: AVRational
@@ -1796,20 +1768,21 @@ type
     shortest_end*: int64
     initialized*: cint
     streams_initialized*: cint
-    id3v2_meta*: ptr AVDictionary
+    id3v2_meta*: Table[string,string]
     prefer_codec_framerate*: cint
 
-  av_format_control_message* = proc (s: ptr AVFormatContext; `type`: cint;data: pointer; data_size: csize_t): cint
-  AVFormatContext* {.bycopy.} = object
-    av_class*: ptr AVClass
-    iformat*: ptr AVInputFormat
-    oformat*: ptr AVOutputFormat
+  av_format_control_message* = proc (s: AVFormatContext; `type`: cint;data: pointer; data_size: csize_t): cint
+
+  AVFormatContext* = ref object
+    av_class*: AVClass
+    iformat*: AVInputFormat
+    oformat*: AVOutputFormat
     priv_data*: pointer
-    pb*: ptr AVIOContext
+    pb*: AVIOContext
     ctx_flags*: cint
     nb_streams*: cuint
-    streams*: ptr ptr AVStream
-    url*: cstring
+    streams*: AVStream
+    url*: string
     start_time*: int64
     duration*: int64
     bit_rate*: int64
@@ -1818,18 +1791,18 @@ type
     flags*: cint
     probesize*: int64
     max_analyze_duration*: int64
-    key*: ptr uint8
+    key*: uint8
     keylen*: cint
     nb_programs*: cuint
-    programs*: ptr ptr AVProgram
+    programs*: AVProgram
     video_codec_id*: AVCodecID
     audio_codec_id*: AVCodecID
     subtitle_codec_id*: AVCodecID
     max_index_size*: cuint
     max_picture_buffer*: cuint
     nb_chapters*: cuint
-    chapters*: ptr ptr AVChapter
-    metadata*: ptr AVDictionary
+    chapters*: AVChapter
+    metadata*: Table[string,string]
     start_time_realtime*: int64
     fps_probe_size*: cint
     error_recognition*: cint
@@ -1853,39 +1826,38 @@ type
     flush_packets*: cint
     probe_score*: cint
     format_probesize*: cint
-    codec_whitelist*: cstring
-    format_whitelist*: cstring
+    codec_whitelist*: string
+    format_whitelist*: string
     internal*: ptr AVFormatInternal
     io_repositioned*: cint
-    video_codec*: ptr AVCodec
-    audio_codec*: ptr AVCodec
-    subtitle_codec*: ptr AVCodec
-    data_codec*: ptr AVCodec
+    video_codec*: AVCodec
+    audio_codec*: AVCodec
+    subtitle_codec*: AVCodec
+    data_codec*: AVCodec
     metadata_header_padding*: cint
     opaque*: pointer
     control_message_cb*: av_format_control_message
     output_ts_offset*: int64
-    dump_separator*: ptr uint8
+    dump_separator*: uint8
     data_codec_id*: AVCodecID
-    protocol_whitelist*: cstring
-    io_open*: proc (s: ptr AVFormatContext; pb: ptr ptr AVIOContext; url: cstring;
-                  flags: cint; options: ptr ptr AVDictionary): cint
-    io_close*: proc (s: ptr AVFormatContext; pb: ptr AVIOContext)
-    protocol_blacklist*: cstring
+    protocol_whitelist*: string
+    io_open*: proc (s: AVFormatContext; pb: AVIOContext; url: string;flags: cint; options: TableRef[string,string]): cint
+    io_close*: proc (s: AVFormatContext; pb: AVIOContext)
+    protocol_blacklist*: string
     max_streams*: cint
     skip_estimate_duration_from_pts*: cint
     max_probe_packets*: cint
-  AVDeviceInfo* {.bycopy.} = object
-    device_name*: cstring      
-    device_description*: cstring 
-  AVDeviceInfoList* {.bycopy.} = object
-    devices*: ptr ptr AVDeviceInfo ## *< list of autodetected devices
-    nb_devices*: cint          ## *< number of autodetected devices
-    default_device*: cint      ## *< index of default device or -1 if no default
+  AVDeviceInfo* = ref object
+    device_name*: string      
+    device_description*: string 
+  AVDeviceInfoList* = ref object
+    devices*: AVDeviceInfo
+    nb_devices*: cint          
+    default_device*: cint      
 
-  AVDeviceCapabilitiesQuery* {.bycopy.} = object
-    av_class*: ptr AVClass
-    device_context*: ptr AVFormatContext
+  AVDeviceCapabilitiesQuery* = ref object
+    av_class*: AVClass
+    device_context*: AVFormatContext
     codec*: AVCodecID
     sample_format*: AVSampleFormat
     pixel_format*: AVPixelFormat
@@ -1899,70 +1871,70 @@ type
     fps*: AVRational
 
 
-  AVOutputFormat* {.bycopy.} = object
-    name*: cstring
-    long_name*: cstring
-    mime_type*: cstring
-    extensions*: cstring       ## *< comma-separated filename extensions
+  AVOutputFormat* = ref object
+    name*: string
+    long_name*: string
+    mime_type*: string
+    extensions*: string       ## *< comma-separated filename extensions
     audio_codec*: AVCodecID    ## *< default audio codec
     video_codec*: AVCodecID    ## *< default video codec
     subtitle_codec*: AVCodecID ## *< default subtitle codec
     flags*: cint
     codec_tag*: ptr ptr AVCodecTag
-    priv_class*: ptr AVClass    ## /< AVClass for the private context
-    next*: ptr AVOutputFormat
+    priv_class*: AVClass    ## /< AVClass for the private context
+    next*: AVOutputFormat
     priv_data_size*: cint
-    write_header*: proc (a1: ptr AVFormatContext): cint
-    write_packet*: proc (a1: ptr AVFormatContext; pkt: ptr AVPacket): cint
-    write_trailer*: proc (a1: ptr AVFormatContext): cint
-    interleave_packet*: proc (a1: ptr AVFormatContext; `out`: ptr AVPacket;
-                            `in`: ptr AVPacket; flush: cint): cint
+    write_header*: proc (a1: AVFormatContext): cint
+    write_packet*: proc (a1: AVFormatContext; pkt: AVPacket): cint
+    write_trailer*: proc (a1: AVFormatContext): cint
+    interleave_packet*: proc (a1: AVFormatContext; `out`: AVPacket;
+                            `in`: AVPacket; flush: cint): cint
     query_codec*: proc (id: AVCodecID; std_compliance: cint): cint
-    get_output_timestamp*: proc (s: ptr AVFormatContext; stream: cint;
+    get_output_timestamp*: proc (s: AVFormatContext; stream: cint;
                                dts: ptr int64; wall: ptr int64)
-    control_message*: proc (s: ptr AVFormatContext; `type`: cint; data: pointer;
+    control_message*: proc (s: AVFormatContext; `type`: cint; data: pointer;
                           data_size: csize_t): cint
-    write_uncoded_frame*: proc (a1: ptr AVFormatContext; stream_index: cint;
+    write_uncoded_frame*: proc (a1: AVFormatContext; stream_index: cint;
                               frame: ptr ptr AVFrame; flags: cuint): cint
-    get_device_list*: proc (s: ptr AVFormatContext; device_list: ptr AVDeviceInfoList): cint
-    create_device_capabilities*: proc (s: ptr AVFormatContext;
+    get_device_list*: proc (s: AVFormatContext; device_list: ptr AVDeviceInfoList): cint
+    create_device_capabilities*: proc (s: AVFormatContext;
                                      caps: ptr AVDeviceCapabilitiesQuery): cint
-    free_device_capabilities*: proc (s: ptr AVFormatContext;
+    free_device_capabilities*: proc (s: AVFormatContext;
                                    caps: ptr AVDeviceCapabilitiesQuery): cint
     data_codec*: AVCodecID     ## *< default data codec
-    init*: proc (a1: ptr AVFormatContext): cint
-    deinit*: proc (a1: ptr AVFormatContext)
-    check_bitstream*: proc (a1: ptr AVFormatContext; pkt: ptr AVPacket): cint
-  AVInputFormat* {.bycopy.} = object
-    name*: cstring
-    long_name*: cstring
+    init*: proc (a1: AVFormatContext): cint
+    deinit*: proc (a1: AVFormatContext)
+    check_bitstream*: proc (a1: AVFormatContext; pkt: AVPacket): cint
+  AVInputFormat* = ref object
+    name*: string
+    long_name*: string
     flags*: cint
-    extensions*: cstring
+    extensions*: string
     codec_tag*: ptr ptr AVCodecTag
-    priv_class*: ptr AVClass    
-    mime_type*: cstring
-    next*: ptr AVInputFormat
+    priv_class*: AVClass    
+    mime_type*: string
+    next*: AVInputFormat
     raw_codec_id*: cint
     priv_data_size*: cint
     read_probe*: proc (a1: ptr AVProbeData): cint
-    read_header*: proc (a1: ptr AVFormatContext): cint
-    read_packet*: proc (a1: ptr AVFormatContext; pkt: ptr AVPacket): cint
-    read_close*: proc (a1: ptr AVFormatContext): cint
-    read_seek*: proc (a1: ptr AVFormatContext; stream_index: cint; timestamp: int64;
+    read_header*: proc (a1: AVFormatContext): cint
+    read_packet*: proc (a1: AVFormatContext; pkt: AVPacket): cint
+    read_close*: proc (a1: AVFormatContext): cint
+    read_seek*: proc (a1: AVFormatContext; stream_index: cint; timestamp: int64;
                     flags: cint): cint
-    read_timestamp*: proc (s: ptr AVFormatContext; stream_index: cint;
+    read_timestamp*: proc (s: AVFormatContext; stream_index: cint;
                          pos: ptr int64; pos_limit: int64): int64
-    read_play*: proc (a1: ptr AVFormatContext): cint
-    read_pause*: proc (a1: ptr AVFormatContext): cint
-    read_seek2*: proc (s: ptr AVFormatContext; stream_index: cint; min_ts: int64;
+    read_play*: proc (a1: AVFormatContext): cint
+    read_pause*: proc (a1: AVFormatContext): cint
+    read_seek2*: proc (s: AVFormatContext; stream_index: cint; min_ts: int64;
                      ts: int64; max_ts: int64; flags: cint): cint
-    get_device_list*: proc (s: ptr AVFormatContext; device_list: ptr AVDeviceInfoList): cint
-    create_device_capabilities*: proc (s: ptr AVFormatContext;
+    get_device_list*: proc (s: AVFormatContext; device_list: ptr AVDeviceInfoList): cint
+    create_device_capabilities*: proc (s: AVFormatContext;
                                      caps: ptr AVDeviceCapabilitiesQuery): cint
-    free_device_capabilities*: proc (s: ptr AVFormatContext;
+    free_device_capabilities*: proc (s: AVFormatContext;
                                    caps: ptr AVDeviceCapabilitiesQuery): cint
 
-  Frame* {.bycopy.} = object
+  Frame* = ref object
     frame*: ptr AVFrame
     sub*: AVSubtitle
     serial*: cint
@@ -1976,12 +1948,12 @@ type
     uploaded*: cint
     flip_v*: cint
 
-  MyAVPacketList* {.bycopy.} = object
+  MyAVPacketList* = ref object
     pkt*: AVPacket
     next*: ptr MyAVPacketList
     serial*: cint
 
-  PacketQueue* {.bycopy.} = object
+  PacketQueue* = ref object
     first_pkt*: ptr MyAVPacketList
     last_pkt*: ptr MyAVPacketList
     nb_packets*: cint
@@ -1993,7 +1965,7 @@ type
     # cond*: ptr SDL_cond
 
 
-  FrameQueue* {.bycopy.} = object
+  FrameQueue* = ref object
     queue*: array[16, Frame]
     rindex*: cint
     windex*: cint
@@ -2005,7 +1977,7 @@ type
     # cond*: ptr SDL_cond
     pktq*: ptr PacketQueue
 
-  Decoder* {.bycopy.} = object
+  Decoder* = ref object
     pkt*: AVPacket
     queue*: ptr PacketQueue
     avctx*: ptr AVCodecContext
@@ -2019,7 +1991,7 @@ type
     next_pts_tb*: AVRational
     # decoder_tid*: ptr SDL_Thread
 
-  AudioParams* {.bycopy.} = object
+  AudioParams* = ref object
     freq*: cint
     channels*: cint
     channel_layout*: int64
@@ -2027,9 +1999,9 @@ type
     frame_size*: cint
     bytes_per_sec*: cint
 
-  AudioData* {.bycopy.} = object
-    ch*: array[64, ptr uint8] ## /< samples buffer per channel
-    data*: ptr uint8          ## /< samples buffer
+  AudioData* = ref object
+    ch*: array[64, uint8] ## /< samples buffer per channel
+    data*: uint8          ## /< samples buffer
     ch_count*: cint            ## /< number of channels
     bps*: cint                 ## /< bytes per sample
     count*: cint               ## /< number of samples
@@ -2037,7 +2009,7 @@ type
     fmt*: AVSampleFormat       ## /< sample format
 
 
-  DitherContext* {.bycopy.} = object
+  DitherContext* = ref object
     `method`*: cint
     noise_pos*: cint
     scale*: cfloat
@@ -2052,10 +2024,10 @@ type
     temp*: AudioData           ## /< temporary storage when writing into the input buffer isn't possible
     output_sample_bits*: cint  ## /< the number of used output bits, needed to scale dither correctly
 
-  conv_func_type* = proc (po: ptr uint8; pi: ptr uint8; `is`: cint; os: cint;`end`: ptr uint8)
-  simd_func_type* = proc (dst: ptr ptr uint8; src: ptr ptr uint8; len: cint)
+  conv_func_type* = proc (po: uint8; pi: uint8; videoState: cint; os: cint;`end`: uint8)
+  simd_func_type* = proc (dst: ptr uint8; src: ptr uint8; len: cint)
 
-  AudioConvert* {.bycopy.} = object
+  AudioConvert* = ref object
     channels*: cint
     in_simd_align_mask*: cint
     out_simd_align_mask*: cint
@@ -2065,14 +2037,14 @@ type
     silence*: array[8, uint8] ## /< silence input sample
 
 type
-  ResampleInner* {.bycopy.} = object
+  ResampleInner* = ref object
     resample_one*: proc (dst: pointer; src: pointer; n: cint; index: int64;incr: int64)
     resample_common*: proc (c: ptr ResampleContext; dst: pointer; src: pointer; n: cint;update_ctx: cint): cint
     resample_linear*: proc (c: ptr ResampleContext; dst: pointer; src: pointer; n: cint;update_ctx: cint): cint
 
-  ResampleContext* {.bycopy.} = object
-    av_class*: ptr AVClass
-    filter_bank*: ptr uint8
+  ResampleContext* = ref object
+    av_class*: AVClass
+    filter_bank*: uint8
     filter_length*: cint
     filter_alloc*: cint
     ideal_dst_incr*: cint
@@ -2113,7 +2085,7 @@ type
                                    dst_idx: ptr cint; dst_count: ptr cint): cint
   get_out_samples_func* = proc (s: ptr SwrContext; in_samples: cint): int64
 
-  Resampler* {.bycopy.} = object
+  Resampler* = ref object
     init*: resample_init_func
     free*: resample_free_func
     multiple_resample*: multiple_resample_func
@@ -2131,8 +2103,8 @@ type
                           len: int64)
 
 
-  SwrContext* {.bycopy.} = object
-    av_class*: ptr AVClass      ## /< AVClass used
+  SwrContext* = ref object
+    av_class*: AVClass      ## /< AVClass used
     log_level_offset*: cint    ## /< logging level offset
     log_ctx*: pointer          ## /< parent logging context
     in_sample_fmt*: AVSampleFormat ## /< input sample format
@@ -2201,10 +2173,10 @@ type
     resampler*: ptr Resampler   ## /< resampler virtual function table
     matrix*: array[SWR_CH_MAX, array[SWR_CH_MAX, cdouble]] ## /< floating point rematrixing coefficients
     matrix_flt*: array[SWR_CH_MAX, array[SWR_CH_MAX, cfloat]] ## /< single precision floating point rematrixing coefficients
-    native_matrix*: ptr uint8
-    native_one*: ptr uint8
-    native_simd_one*: ptr uint8
-    native_simd_matrix*: ptr uint8
+    native_matrix*: uint8
+    native_one*: uint8
+    native_simd_one*: uint8
+    native_simd_matrix*: uint8
     matrix32*: array[SWR_CH_MAX, array[SWR_CH_MAX, int32]] ## /< 17.15 fixed point rematrixing coefficients
     matrix_ch*: array[SWR_CH_MAX, array[SWR_CH_MAX + 1, uint8]] ## /< Lists of input channels per output channel that have non zero rematrixing coefficients
     mix_1_1_f*: ptr mix_1_1_func_type
@@ -2213,11 +2185,11 @@ type
     mix_2_1_simd*: ptr mix_2_1_func_type
     mix_any_f*: ptr mix_any_func_type
 
-  FFTComplex* {.bycopy.} = object
+  FFTComplex* = ref object
     re*: float
     im*: float
 
-  FFTContext* {.bycopy.} = object
+  FFTContext* = ref object
     nbits*: cint
     inverse*: cint
     revtab*: ptr uint16
@@ -2238,7 +2210,7 @@ type
 
 
 
-  RDFTContext* {.bycopy.} = object
+  RDFTContext* = ref object
     nbits*: cint
     inverse*: cint
     sign_convention*: cint     ##  pre/post rotation tables
@@ -2248,9 +2220,262 @@ type
     fft*: FFTContext
     rdft_calc*: proc (s: ptr RDFTContext; z: ptr float)
 
-  VideoState* {.bycopy.} = object
+
+  SwsFunc* = proc (context: ptr SwsContext; src: ptr uint8; srcStride: ptr cint;
+                srcSliceY: cint; srcSliceH: cint; dst: ptr uint8;
+                dstStride: ptr cint): cint
+  yuv2planar1_fn* = proc (src: ptr int16; dest: uint8; dstW: cint;
+                       dither: uint8; offset: cint)
+  yuv2planarX_fn* = proc (filter: ptr int16; filterSize: cint; src: ptr ptr int16;
+                       dest: uint8; dstW: cint; dither: uint8; offset: cint)
+  yuv2interleavedX_fn* = proc (dstFormat: AVPixelFormat; chrDither: uint8;
+                            chrFilter: ptr int16; chrFilterSize: cint;
+                            chrUSrc: ptr ptr int16; chrVSrc: ptr ptr int16;
+                            dest: uint8; dstW: cint)
+  yuv2packed1_fn* = proc (c: ptr SwsContext; lumSrc: ptr int16;
+                       chrUSrc: array[2, ptr int16];
+                       chrVSrc: array[2, ptr int16]; alpSrc: ptr int16;
+                       dest: uint8; dstW: cint; uvalpha: cint; y: cint)
+  yuv2packed2_fn* = proc (c: ptr SwsContext; lumSrc: array[2, ptr int16];
+                       chrUSrc: array[2, ptr int16];
+                       chrVSrc: array[2, ptr int16];
+                       alpSrc: array[2, ptr int16]; dest: uint8; dstW: cint;
+                       yalpha: cint; uvalpha: cint; y: cint)
+  yuv2packedX_fn* = proc (c: ptr SwsContext; lumFilter: ptr int16;
+                       lumSrc: ptr ptr int16; lumFilterSize: cint;
+                       chrFilter: ptr int16; chrUSrc: ptr ptr int16;
+                       chrVSrc: ptr ptr int16; chrFilterSize: cint;
+                       alpSrc: ptr ptr int16; dest: uint8; dstW: cint; y: cint)
+  yuv2anyX_fn* = proc (c: ptr SwsContext; lumFilter: ptr int16;
+                    lumSrc: ptr ptr int16; lumFilterSize: cint;
+                    chrFilter: ptr int16; chrUSrc: ptr ptr int16;
+                    chrVSrc: ptr ptr int16; chrFilterSize: cint;
+                    alpSrc: ptr ptr int16; dest: ptr uint8; dstW: cint; y: cint)
+
+
+
+  SwsPlane* = ref object
+    available_lines*: cint     ## /< max number of lines that can be hold by this plane
+    sliceY*: cint              ## /< index of first line
+    sliceH*: cint              ## /< number of lines
+    line*: ptr uint8       ## /< line buffer
+    tmp*: ptr uint8        ## /< Tmp line buffer used by mmx code
+
+  SwsSlice* = ref object
+    width*: cint               ## /< Slice line width
+    h_chr_sub_sample*: cint    ## /< horizontal chroma subsampling factor
+    v_chr_sub_sample*: cint    ## /< vertical chroma subsampling factor
+    is_ring*: cint             ## /< flag to identify if this slice is a ring buffer
+    should_free_lines*: cint   ## /< flag to identify if there are dynamic allocated lines
+    fmt*: AVPixelFormat        ## /< planes pixel format
+    plane*: array[MAX_SLICE_PLANES, SwsPlane] ## /< color planes
+
+
+
+  SwsFilterDescriptor* = ref object
+    src*: ptr SwsSlice          ## /< Source slice
+    dst*: ptr SwsSlice          ## /< Output slice
+    alpha*: cint               ## /< Flag for processing alpha channel
+    instance*: pointer         ## /< Filter instance data
+    process*: proc (c: ptr SwsContext; desc: ptr SwsFilterDescriptor; sliceY: cint;sliceH: cint): cint
+
+
+  SwsContext* = ref object
+    av_class*: AVClass
+    swscale*: SwsFunc
+    srcW*: cint                ## /< Width  of source      luma/alpha planes.
+    srcH*: cint                ## /< Height of source      luma/alpha planes.
+    dstH*: cint                ## /< Height of destination luma/alpha planes.
+    chrSrcW*: cint             ## /< Width  of source      chroma     planes.
+    chrSrcH*: cint             ## /< Height of source      chroma     planes.
+    chrDstW*: cint             ## /< Width  of destination chroma     planes.
+    chrDstH*: cint             ## /< Height of destination chroma     planes.
+    lumXInc*: cint
+    chrXInc*: cint
+    lumYInc*: cint
+    chrYInc*: cint
+    dstFormat*: AVPixelFormat  ## /< Destination pixel format.
+    srcFormat*: AVPixelFormat  ## /< Source      pixel format.
+    dstFormatBpp*: cint        ## /< Number of bits per pixel of the destination pixel format.
+    srcFormatBpp*: cint        ## /< Number of bits per pixel of the source      pixel format.
+    dstBpc*: cint
+    srcBpc*: cint
+    chrSrcHSubSample*: cint    ## /< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in source      image.
+    chrSrcVSubSample*: cint    ## /< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in source      image.
+    chrDstHSubSample*: cint    ## /< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in destination image.
+    chrDstVSubSample*: cint    ## /< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in destination image.
+    vChrDrop*: cint            ## /< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
+    sliceDir*: cint            ## /< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
+    param*: array[2, cdouble]   ## /< Input parameters for scaling algorithms that need them.
+    cascaded_context*: array[3, ptr SwsContext]
+    cascaded_tmpStride*: array[4, cint]
+    cascaded_tmp*: array[4, uint8]
+    cascaded1_tmpStride*: array[4, cint]
+    cascaded1_tmp*: array[4, uint8]
+    cascaded_mainindex*: cint
+    gamma_value*: cdouble
+    gamma_flag*: cint
+    is_internal_gamma*: cint
+    gamma*: ptr uint16
+    inv_gamma*: ptr uint16
+    numDesc*: cint
+    descIndex*: array[2, cint]
+    numSlice*: cint
+    slice*: ptr SwsSlice
+    desc*: ptr SwsFilterDescriptor
+    pal_yuv*: array[256, uint32]
+    pal_rgb*: array[256, uint32]
+    uint2float_lut*: array[256, cfloat]
+    lastInLumBuf*: cint        ## /< Last scaled horizontal luma/alpha line from source in the ring buffer.
+    lastInChrBuf*: cint        ## /< Last scaled horizontal chroma     line from source in the ring buffer.
+    formatConvBuffer*: uint8
+    needAlpha*: cint
+    hLumFilter*: ptr int16    ## /< Array of horizontal filter coefficients for luma/alpha planes.
+    hChrFilter*: ptr int16    ## /< Array of horizontal filter coefficients for chroma     planes.
+    vLumFilter*: ptr int16    ## /< Array of vertical   filter coefficients for luma/alpha planes.
+    vChrFilter*: ptr int16    ## /< Array of vertical   filter coefficients for chroma     planes.
+    hLumFilterPos*: ptr int32 ## /< Array of horizontal filter starting positions for each dst[i] for luma/alpha planes.
+    hChrFilterPos*: ptr int32 ## /< Array of horizontal filter starting positions for each dst[i] for chroma     planes.
+    vLumFilterPos*: ptr int32 ## /< Array of vertical   filter starting positions for each dst[i] for luma/alpha planes.
+    vChrFilterPos*: ptr int32 ## /< Array of vertical   filter starting positions for each dst[i] for chroma     planes.
+    hLumFilterSize*: cint      ## /< Horizontal filter size for luma/alpha pixels.
+    hChrFilterSize*: cint      ## /< Horizontal filter size for chroma     pixels.
+    vLumFilterSize*: cint      ## /< Vertical   filter size for luma/alpha pixels.
+    vChrFilterSize*: cint      ## /< Vertical   filter size for chroma     pixels.
+    lumMmxextFilterCodeSize*: cint ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for luma/alpha planes.
+    chrMmxextFilterCodeSize*: cint ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for chroma planes.
+    lumMmxextFilterCode*: uint8 ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code for luma/alpha planes.
+    chrMmxextFilterCode*: uint8 ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code for chroma planes.
+    canMMXEXTBeUsed*: cint
+    warned_unuseable_bilinear*: cint
+    dstY*: cint                ## /< Last destination vertical line output from last slice.
+    flags*: cint               ## /< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
+    yuvTable*: pointer ##  pointer to the yuv->rgb table start so it can be freed() alignment ensures the offset can be added in a single instruction on e.g. ARM
+    table_gV*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, cint]
+    table_rV*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
+    table_gU*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
+    table_bU*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
+    input_rgb2yuv_table*: array[16 + 40 * 4, int32] ##  This table can contain both C and SIMD formatted values, the C vales are always at the XY_IDX points
+    dither_error*: array[4, ptr cint]
+    contrast*: cint
+    brightness*: cint
+    saturation*: cint          ##  for sws_getColorspaceDetails
+    srcColorspaceTable*: array[4, cint]
+    dstColorspaceTable*: array[4, cint]
+    srcRange*: cint            ## /< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
+    dstRange*: cint            ## /< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
+    src0Alpha*: cint
+    dst0Alpha*: cint
+    srcXYZ*: cint
+    dstXYZ*: cint
+    src_h_chr_pos*: cint
+    dst_h_chr_pos*: cint
+    src_v_chr_pos*: cint
+    dst_v_chr_pos*: cint
+    yuv2rgb_y_offset*: cint
+    yuv2rgb_y_coeff*: cint
+    yuv2rgb_v2r_coeff*: cint
+    yuv2rgb_v2g_coeff*: cint
+    yuv2rgb_u2g_coeff*: cint
+    yuv2rgb_u2b_coeff*: cint
+    redDither*: uint64
+    greenDither*: uint64
+    blueDither*: uint64
+    yCoeff*: uint64
+    vrCoeff*: uint64
+    ubCoeff*: uint64
+    vgCoeff*: uint64
+    ugCoeff*: uint64
+    yOffset*: uint64
+    uOffset*: uint64
+    vOffset*: uint64
+    lumMmxFilter*: array[4 * MAX_FILTER_SIZE, int32]
+    chrMmxFilter*: array[4 * MAX_FILTER_SIZE, int32]
+    dstW*: cint
+    esp*: uint64
+    vRounder*: uint64
+    u_temp*: uint64
+    v_temp*: uint64
+    y_temp*: uint64
+    alpMmxFilter*: array[4 * MAX_FILTER_SIZE, int32]
+    uv_off*: int64         ## /< offset (in pixels) between u and v planes
+    uv_offx2*: int64       ## /< offset (in bytes) between u and v planes
+    dither16*: array[8, uint16]
+    dither32*: array[8, uint32]
+    chrDither8*: uint8
+    lumDither8*: uint8
+    use_mmx_vfilter*: cint
+    xyzgamma*: ptr int16
+    rgbgamma*: ptr int16
+    xyzgammainv*: ptr int16
+    rgbgammainv*: ptr int16
+    xyz2rgb_matrix*: array[3, array[4, int16]]
+    rgb2xyz_matrix*: array[3, array[4, int16]]
+    yuv2plane1*: yuv2planar1_fn
+    yuv2planeX*: yuv2planarX_fn
+    yuv2nv12cX*: yuv2interleavedX_fn
+    yuv2packed1*: yuv2packed1_fn
+    yuv2packed2*: yuv2packed2_fn
+    yuv2packedX*: yuv2packedX_fn
+    yuv2anyX*: yuv2anyX_fn
+    lumToYV12*: proc (dst: uint8; src: uint8; src2: uint8;
+                    src3: uint8; width: cint; pal: ptr uint32)
+    alpToYV12*: proc (dst: uint8; src: uint8; src2: uint8;
+                    src3: uint8; width: cint; pal: ptr uint32)
+    chrToYV12*: proc (dstU: uint8; dstV: uint8; src1: uint8;
+                    src2: uint8; src3: uint8; width: cint; pal: ptr uint32)
+    readLumPlanar*: proc (dst: uint8; src: array[4, uint8]; width: cint;
+                        rgb2yuv: ptr int32)
+    readChrPlanar*: proc (dstU: uint8; dstV: uint8;
+                        src: array[4, uint8]; width: cint; rgb2yuv: ptr int32)
+    readAlpPlanar*: proc (dst: uint8; src: array[4, uint8]; width: cint;
+                        rgb2yuv: ptr int32)
+    hyscale_fast*: proc (c: ptr SwsContext; dst: ptr int16; dstWidth: cint;
+                       src: uint8; srcW: cint; xInc: cint)
+    hcscale_fast*: proc (c: ptr SwsContext; dst1: ptr int16; dst2: ptr int16;
+                       dstWidth: cint; src1: uint8; src2: uint8; srcW: cint;
+                       xInc: cint)
+    hyScale*: proc (c: ptr SwsContext; dst: ptr int16; dstW: cint; src: uint8;
+                  filter: ptr int16; filterPos: ptr int32; filterSize: cint)
+    hcScale*: proc (c: ptr SwsContext; dst: ptr int16; dstW: cint; src: uint8;
+                  filter: ptr int16; filterPos: ptr int32; filterSize: cint)
+    lumConvertRange*: proc (dst: ptr int16; width: cint)
+    chrConvertRange*: proc (dst1: ptr int16; dst2: ptr int16; width: cint)
+    needs_hcscale*: cint       ## /< Set if there are chroma planes to be converted.
+    dither*: SwsDither
+    alphablend*: SwsAlphaBlend
+
+  avfilter_action_func* = proc (ctx: ptr AVFilterContext; arg: pointer; jobnr: cint;nb_jobs: cint): cint
+  avfilter_execute_func* = proc (ctx: ptr AVFilterContext;
+                              `func`: ptr avfilter_action_func; arg: pointer;ret: ptr cint; nb_jobs: cint): cint
+  FFFrameQueueGlobal* = ref object
+    dummy*: char               ##  C does not allow empty structs
+
+  AVFilterGraphInternal* = ref object
+    thread*: pointer
+    thread_execute*: ptr avfilter_execute_func
+    frame_queues*: FFFrameQueueGlobal
+
+  AVFilterGraph* = ref object
+    av_class*: AVClass
+    filters*: ptr ptr AVFilterContext
+    nb_filters*: cuint
+    scale_sws_opts*: string   ## /< sws options to use for the auto-inserted scale filters
+    thread_type*: cint
+    nb_threads*: cint
+    internal*: ptr AVFilterGraphInternal
+    opaque*: pointer
+    execute*: ptr avfilter_execute_func
+    aresample_swr_opts*: string ## /< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
+    sink_links*: ptr ptr AVFilterLink
+    sink_links_count*: cint
+    disable_auto_convert*: cuint
+
+
+
+  VideoState* = ref object
     # read_tid*: ptr SDL_Thread
-    iformat*: ptr AVInputFormat
+    iformat*: AVInputFormat
     abort_request*: cint
     force_refresh*: cint
     paused*: cint
@@ -2261,7 +2486,7 @@ type
     seek_pos*: int64
     seek_rel*: int64
     read_pause_return*: cint
-    ic*: ptr AVFormatContext
+    ic*: AVFormatContext
     realtime*: cint
     audclk*: Clock
     vidclk*: Clock
@@ -2283,8 +2508,8 @@ type
     audio_st*: ptr AVStream
     audioq*: PacketQueue
     audio_hw_buf_size*: cint
-    audio_buf*: ptr uint8
-    audio_buf1*: ptr uint8
+    audio_buf*: uint8
+    audio_buf1*: uint8
     audio_buf_size*: cuint     ##  in bytes
     audio_buf1_size*: cuint
     audio_buf_index*: cint     ##  in bytes
@@ -2322,7 +2547,7 @@ type
     img_convert_ctx*: ptr SwsContext
     sub_convert_ctx*: ptr SwsContext
     eof*: cint
-    filename*: cstring
+    filename*: string
     width*: cint
     height*: cint
     xleft*: cint
@@ -2339,9 +2564,88 @@ type
     last_subtitle_stream*: cint
     # continue_read_thread*: ptr SDL_cond
   
+  AVlinkEnum* = enum
+    AVLINK_UNINIT = 0,          ## /< not started
+    AVLINK_STARTINIT,         ## /< started, but incomplete
+    AVLINK_INIT               ## /< complete
 
-  AVFilterPad* {.bycopy.} = object
-    name*: cstring
+  AVFilterFormats* = ref object
+    nb_formats*: cuint         ## /< number of formats
+    formats*: ptr cint          ## /< list of media formats
+    refcount*: cuint           ## /< number of references to this list
+    refs*: ptr ptr ptr AVFilterFormats ## /< references to this list
+
+  AVFilterChannelLayouts* = ref object
+    channel_layouts*: ptr uint64 ## /< list of channel layouts
+    nb_channel_layouts*: cint  ## /< number of channel layouts
+    all_layouts*: char         ## /< accept any known channel layout
+    all_counts*: char          ## /< accept any channel layout or count
+    refcount*: cuint           ## /< number of references to this list
+    refs*: ptr ptr ptr AVFilterChannelLayouts ## /< references to this list
+
+
+  AVFilterFormatsConfig* = ref object
+    formats*: ptr AVFilterFormats
+    samplerates*: ptr AVFilterFormats
+    channel_layouts*: ptr AVFilterChannelLayouts
+
+  FFFrameBucket* = ref object
+    frame*: ptr AVFrame
+
+  FFFrameQueue* = ref object
+    queue*: ptr FFFrameBucket
+    allocated*: csize_t
+    tail*: csize_t
+    queued*: csize_t
+    first_bucket*: FFFrameBucket
+    total_frames_head*: uint64
+    total_frames_tail*: uint64
+    total_samples_head*: uint64
+    total_samples_tail*: uint64
+    samples_skipped*: cint
+
+
+
+  AVFilterLink* = ref object
+    src*: ptr AVFilterContext   ## /< source filter
+    srcpad*: ptr AVFilterPad    ## /< output pad on the source filter
+    dst*: ptr AVFilterContext   ## /< dest filter
+    dstpad*: ptr AVFilterPad    ## /< input pad on the dest filter
+    `type`*: AVMediaType       ## /< filter media type
+    w*: cint                   ## /< agreed upon image width
+    h*: cint                   ## /< agreed upon image height
+    sample_aspect_ratio*: AVRational ## /< agreed upon sample aspect ratio
+    channel_layout*: uint64  ## /< channel layout of current buffer (see libavutil/channel_layout.h)
+    sample_rate*: cint         ## /< samples per second
+    format*: cint              ## /< agreed upon media format
+    time_base*: AVRational
+    incfg*: AVFilterFormatsConfig
+    outcfg*: AVFilterFormatsConfig
+    init_state*: AVlinkEnum
+    graph*: ptr AVFilterGraph
+    current_pts*: int64
+    current_pts_us*: int64
+    age_index*: cint
+    frame_rate*: AVRational
+    partial_buf*: ptr AVFrame
+    partial_buf_size*: cint
+    min_samples*: cint
+    max_samples*: cint
+    channels*: cint
+    flags*: cuint
+    frame_count_in*: int64
+    frame_count_out*: int64
+    frame_pool*: pointer
+    frame_wanted_out*: cint
+    hw_frames_ctx*: ptr AVBufferRef
+    fifo*: FFFrameQueue
+    frame_blocked_in*: cint
+    status_in*: cint
+    status_in_pts*: int64
+    status_out*: cint
+
+  AVFilterPad* = ref object
+    name*: string
     `type`*: AVMediaType
     get_video_buffer*: proc (link: ptr AVFilterLink; w: cint; h: cint): ptr AVFrame
     get_audio_buffer*: proc (link: ptr AVFilterLink; nb_samples: cint): ptr AVFrame
@@ -2350,10 +2654,39 @@ type
     config_props*: proc (link: ptr AVFilterLink): cint
     needs_writable*: cint
 
-  AVFilterContext* {.bycopy.} = object
-    av_class*: ptr AVClass      ## /< needed for  and filters common options
+  AVFilter* = ref object
+    name*: string
+    description*: string
+    inputs*: ptr AVFilterPad
+    outputs*: ptr AVFilterPad
+    priv_class*: AVClass
+    flags*: cint
+    preinit*: proc (ctx: ptr AVFilterContext): cint
+    init*: proc (ctx: ptr AVFilterContext): cint
+    init_dict*: proc (ctx: ptr AVFilterContext; options: Table[string,string]): cint
+    uninit*: proc (ctx: ptr AVFilterContext)
+    query_formats*: proc (a1: ptr AVFilterContext): cint
+    priv_size*: cint           ## /< size of private data to allocate for the filter
+    flags_internal*: cint      ## /< Additional flags for avfilter internal use only.
+    next*: ptr AVFilter
+    process_command*: proc (a1: ptr AVFilterContext; cmd: string; arg: string;res: string; res_len: cint; flags: cint): cint
+    init_opaque*: proc (ctx: ptr AVFilterContext; opaque: pointer): cint
+    activate*: proc (ctx: ptr AVFilterContext): cint
+
+  AVFilterInternal* = ref object
+    execute*: ptr avfilter_execute_func
+
+  AVFilterCommand* = ref object
+    time*: cdouble             ## /< time expressed in seconds
+    command*: string          ## /< command
+    arg*: string              ## /< optional argument for the command
+    flags*: cint
+    next*: ptr AVFilterCommand
+
+  AVFilterContext* = ref object
+    av_class*: AVClass      ## /< needed for  and filters common options
     filter*: ptr AVFilter       ## /< the AVFilter of which this is an instance
-    name*: cstring             ## /< name of this filter instance
+    name*: string             ## /< name of this filter instance
     input_pads*: ptr AVFilterPad ## /< array of input pads
     inputs*: ptr ptr AVFilterLink ## /< array of pointers to input links
     nb_inputs*: cuint          ## /< number of input pads
@@ -2365,7 +2698,7 @@ type
     thread_type*: cint
     internal*: ptr AVFilterInternal
     command_queue*: ptr AVFilterCommand
-    enable_str*: cstring       ## /< enable expression string
+    enable_str*: string       ## /< enable expression string
     enable*: pointer           ## /< parsed expression (AVExpr*)
     var_values*: ptr cdouble    ## /< variable values for the enable expression
     is_disabled*: cint         ## /< the enabled state from the last expression evaluation
@@ -2375,61 +2708,810 @@ type
     extra_hw_frames*: cint
 
 
-
-
-
 proc init_dynload() = 
     echo SetDllDirectory("")
 
 
-var  flush_pkt:AVPacket
+
+
+var outdev_list*: ptr AVOutputFormat = nil
+var indev_list*: ptr AVInputFormat = nil
+
+# type
+#   dshow_ctx* = ref object
+#     class*: AVClass
+#     graph*: ptr IGraphBuilder
+#     device_name*: array[2, string]
+#     device_unique_name*: array[2, string]
+#     video_device_number*: cint
+#     audio_device_number*: cint
+#     list_options*: cint
+#     list_devices*: cint
+#     audio_buffer_size*: cint
+#     crossbar_video_input_pin_number*: cint
+#     crossbar_audio_input_pin_number*: cint
+#     video_pin_name*: string
+#     audio_pin_name*: string
+#     show_video_device_dialog*: cint
+#     show_audio_device_dialog*: cint
+#     show_video_crossbar_connection_dialog*: cint
+#     show_audio_crossbar_connection_dialog*: cint
+#     show_analog_tv_tuner_dialog*: cint
+#     show_analog_tv_tuner_audio_dialog*: cint
+#     audio_filter_load_file*: string
+#     audio_filter_save_file*: string
+#     video_filter_load_file*: string
+#     video_filter_save_file*: string
+#     device_filter*: array[2, ptr IBaseFilter]
+#     device_pin*: array[2, ptr IPin]
+#     capture_filter*: array[2, ptr libAVFilter]
+#     capture_pin*: array[2, ptr libAVPin]
+#     mutex*: HANDLE
+#     event*: array[2, HANDLE]    ##  event[0] is set by DirectShow
+#                           ##  event[1] is set by callback()
+#     pktl*: AVPacketList
+#     eof*: cint
+#     curbufsize*: array[2, int64_t]
+#     video_frame_num*: cuint
+#     control*: ptr IMediaControl
+#     media_event*: ptr IMediaEvent
+#     pixel_format*: AVPixelFormat
+#     video_codec_id*: AVCodecID
+#     framerate*: string
+#     requested_width*: cint
+#     requested_height*: cint
+#     requested_framerate*: AVRational
+#     sample_rate*: cint
+#     sample_size*: cint
+#     channels*: cint
+
+
+# proc dshow_read_header*(avctx: AVFormatContext): cint =
+#   var ctx: ptr dshow_ctx = avctx.priv_data
+#   var graph: ptr IGraphBuilder = nil
+#   var devenum: ptr ICreateDevEnum = nil
+#   var control: ptr IMediaControl = nil
+#   var media_event: ptr IMediaEvent = nil
+#   var media_event_handle: HANDLE
+#   var `proc`: HANDLE
+#   var ret: cint = AVERROR(EIO)
+#   var r: cint
+#   CoInitialize(0)
+#   if not ctx.list_devices and not parse_device_name(avctx):
+#     echo(avctx, AV_LOG_ERROR, "Malformed dshow input string.\n")
+#     break error
+#   ctx.video_codec_id = if avctx.video_codec_id: avctx.video_codec_id else: AV_CODEC_ID_RAWVIDEO
+#   if ctx.pixel_format != AV_PIX_FMT_NONE:
+#     if ctx.video_codec_id != AV_CODEC_ID_RAWVIDEO:
+#       echo(avctx, AV_LOG_ERROR, "Pixel format may only be set when video codec is not set or set to rawvideo\n")
+#       ret = AVERROR(EINVAL)
+#       break error
+#   if ctx.framerate:
+#     r = av_parse_video_rate(addr(ctx.requested_framerate), ctx.framerate)
+#     if r < 0:
+#       echo(avctx, AV_LOG_ERROR, "Could not parse framerate \'%s\'.\n",
+#              ctx.framerate)
+#       break error
+#   r = CoCreateInstance(addr(CLSID_FilterGraph), nil, CLSCTX_INPROC_SERVER,
+#                      addr(IID_IGraphBuilder), cast[ptr pointer](addr(graph)))
+#   if r != S_OK:
+#     echo(avctx, AV_LOG_ERROR, "Could not create capture graph.\n")
+#     break error
+#   ctx.graph = graph
+#   r = CoCreateInstance(addr(CLSID_SystemDeviceEnum), nil, CLSCTX_INPROC_SERVER,
+#                      addr(IID_ICreateDevEnum), cast[ptr pointer](addr(devenum)))
+#   if r != S_OK:
+#     echo(avctx, AV_LOG_ERROR, "Could not enumerate system devices.\n")
+#     break error
+#   if ctx.list_devices:
+#     echo(avctx, AV_LOG_INFO, "DirectShow video devices (some may be both video and audio devices)\n")
+#     dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, nil, nil)
+#     echo(avctx, AV_LOG_INFO, "DirectShow audio devices\n")
+#     dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, nil, nil)
+#     ret = AVERROR_EXIT
+#     break error
+#   if ctx.list_options:
+#     if ctx.device_name[VideoDevice]:
+#       if (r = dshow_list_device_options(avctx, devenum, VideoDevice, VideoSourceDevice)):
+#         ret = r
+#         break error
+#     if ctx.device_name[AudioDevice]:
+#       if dshow_list_device_options(avctx, devenum, AudioDevice, AudioSourceDevice):
+#         ##  show audio options from combined video+audio sources as fallback
+#         if (r = dshow_list_device_options(avctx, devenum, AudioDevice, VideoSourceDevice)):
+#           ret = r
+#           break error
+#   if ctx.device_name[VideoDevice]:
+#     if (r = dshow_open_device(avctx, devenum, VideoDevice, VideoSourceDevice)) < 0 or
+#         (r = dshow_add_device(avctx, VideoDevice)) < 0:
+#       ret = r
+#       break error
+#   if ctx.device_name[AudioDevice]:
+#     if (r = dshow_open_device(avctx, devenum, AudioDevice, AudioSourceDevice)) < 0 or
+#         (r = dshow_add_device(avctx, AudioDevice)) < 0:
+#       echo(avctx, AV_LOG_INFO,
+#              "Searching for audio device within video devices for %s\n",
+#              ctx.device_name[AudioDevice])
+#       ##  see if there's a video source with an audio pin with the given audio name
+#       if (r = dshow_open_device(avctx, devenum, AudioDevice, VideoSourceDevice)) < 0 or
+#           (r = dshow_add_device(avctx, AudioDevice)) < 0:
+#         ret = r
+#         break error
+#   if ctx.list_options:
+#     ##  allow it to list crossbar options in dshow_open_device
+#     ret = AVERROR_EXIT
+#     break error
+#   ctx.curbufsize[0] = 0
+#   ctx.curbufsize[1] = 0
+#   ctx.mutex = CreateMutex(nil, 0, nil)
+#   if not ctx.mutex:
+#     echo(avctx, AV_LOG_ERROR, "Could not create Mutex\n")
+#     break error
+#   ctx.event[1] = CreateEvent(nil, 1, 0, nil)
+#   if not ctx.event[1]:
+#     echo(avctx, AV_LOG_ERROR, "Could not create Event\n")
+#     break error
+#   r = IGraphBuilder_QueryInterface(graph, addr(IID_IMediaControl),
+#                                  cast[ptr pointer](addr(control)))
+#   if r != S_OK:
+#     echo(avctx, AV_LOG_ERROR, "Could not get media control.\n")
+#     break error
+#   ctx.control = control
+#   r = IGraphBuilder_QueryInterface(graph, addr(IID_IMediaEvent),
+#                                  cast[ptr pointer](addr(media_event)))
+#   if r != S_OK:
+#     echo(avctx, AV_LOG_ERROR, "Could not get media event.\n")
+#     break error
+#   ctx.media_event = media_event
+#   r = IMediaEvent_GetEventHandle(media_event,
+#                                cast[pointer](addr(media_event_handle)))
+#   if r != S_OK:
+#     echo(avctx, AV_LOG_ERROR, "Could not get media event handle.\n")
+#     break error
+#   `proc` = GetCurrentProcess()
+#   r = DuplicateHandle(`proc`, media_event_handle, `proc`, addr(ctx.event[0]), 0, 0,
+#                     DUPLICATE_SAME_ACCESS)
+#   if not r:
+#     echo(avctx, AV_LOG_ERROR, "Could not duplicate media event handle.\n")
+#     break error
+#   r = IMediaControl_Run(control)
+#   if r == S_FALSE:
+#     var pfs: OAFilterState
+#     r = IMediaControl_GetState(control, 0, addr(pfs))
+#   if r != S_OK:
+#     echo(avctx, AV_LOG_ERROR, "Could not run graph (sometimes caused by a device already in use by other application)\n")
+#     break error
+#   ret = 0
+#   if devenum:
+#     ICreateDevEnum_Release(devenum)
+#   if ret < 0:
+#     dshow_read_close(avctx)
+#   return ret
+
+# proc dshow_check_event_queue*(media_event: ptr IMediaEvent): cint =
+#   var
+#     p1: LONG_PTR
+#     p2: LONG_PTR
+#   var code: clong
+#   var ret: cint = 0
+#   while IMediaEvent_GetEvent(media_event, addr(code), addr(p1), addr(p2), 0) !=
+#       E_ABORT:
+#     if code == EC_COMPLETE or code == EC_DEVICE_LOST or code == EC_ERRORABORT:
+#       ret = -1
+#     IMediaEvent_FreeEventParams(media_event, code, p1, p2)
+#   return ret
+
+# proc dshow_read_packet*(s: AVFormatContext; pkt: AVPacket): cint =
+#   var ctx: ptr dshow_ctx = s.priv_data
+#   var pktl: AVPacketList = nil
+#   while not ctx.eof and not pktl:
+#     WaitForSingleObject(ctx.mutex, INFINITE)
+#     pktl = ctx.pktl
+#     if pktl:
+#       pkt[] = pktl.pkt
+#       ctx.pktl = ctx.pktl.next
+#       av_free(pktl)
+#       dec(ctx.curbufsize[pkt.stream_index], pkt.size)
+#     ResetEvent(ctx.event[1])
+#     ReleaseMutex(ctx.mutex)
+#     if not pktl:
+#       if dshow_check_event_queue(ctx.media_event) < 0:
+#         ctx.eof = 1
+#       elif s.flags and AVFMT_FLAG_NONBLOCK:
+#         return AVERROR(EAGAIN)
+#       else:
+#         WaitForMultipleObjects(2, ctx.event, 0, INFINITE)
+#   return if ctx.eof: AVERROR(EIO) else: pkt.size
+
+
+##  static const AVClass dshow_class = {
+##      .class_name = "dshow indev",
+##      .item_name  = av_default_item_name,
+##      .option     = (AVOption []){
+##      { "video_size", "set video size given a string such as 640x480 or hd720.", dshow_ctx->requested_width, AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
+##      { "pixel_format", "set video pixel format", dshow_ctx->pixel_format, AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, DEC },
+##      { "framerate", "set video frame rate", dshow_ctx->framerate, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+##      { "sample_rate", "set audio sample rate", dshow_ctx->sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+##      { "sample_size", "set audio sample size", dshow_ctx->sample_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC },
+##      { "channels", "set number of audio channels, such as 1 or 2", dshow_ctx->channels, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+##      { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", dshow_ctx->audio_buffer_size, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+##      { "list_devices", "list available devices",                      dshow_ctx->list_devices, AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
+##      { "list_options", "list available options for specified device", dshow_ctx->list_options, AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
+##      { "video_device_number", "set video device number for devices with same name (starts at 0)", dshow_ctx->video_device_number, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+##      { "audio_device_number", "set audio device number for devices with same name (starts at 0)", dshow_ctx->audio_device_number, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+##      { "video_pin_name", "select video capture pin by name", dshow_ctx->video_pin_name,AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+##      { "audio_pin_name", "select audio capture pin by name", dshow_ctx->audio_pin_name,AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+##      { "crossbar_video_input_pin_number", "set video input pin number for crossbar device", dshow_ctx->crossbar_video_input_pin_number, AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+##      { "crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", dshow_ctx->crossbar_audio_input_pin_number, AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+##      { "show_video_device_dialog",              "display property dialog for video capture device",                            dshow_ctx->show_video_device_dialog,              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+##      { "show_audio_device_dialog",              "display property dialog for audio capture device",                            dshow_ctx->show_audio_device_dialog,              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+##      { "show_video_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on video device", dshow_ctx->show_video_crossbar_connection_dialog, AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+##      { "show_audio_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on audio device", dshow_ctx->show_audio_crossbar_connection_dialog, AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+##      { "show_analog_tv_tuner_dialog",           "display property dialog for analog tuner filter",                             dshow_ctx->show_analog_tv_tuner_dialog,           AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+##      { "show_analog_tv_tuner_audio_dialog",     "display property dialog for analog tuner audio filter",                       dshow_ctx->show_analog_tv_tuner_audio_dialog,     AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+##      { "audio_device_load", "load audio capture filter device (and properties) from file", dshow_ctx->audio_filter_load_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+##      { "audio_device_save", "save audio capture filter device (and properties) to file", dshow_ctx->audio_filter_save_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+##      { "video_device_load", "load video capture filter device (and properties) from file", dshow_ctx->video_filter_load_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+##      { "video_device_save", "save video capture filter device (and properties) to file", dshow_ctx->video_filter_save_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+##      { NULL },
+##      .version    = LIBAVUTIL_VERSION_INT,
+##      .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
+##  };
+##  AVInputFormat ff_dshow_demuxer = {
+##      .name           = "dshow",
+##      .long_name      = NULL_IF_CONFIG_SMALL("DirectShow capture"),
+##      .priv_data_size = sizeof(struct dshow_ctx),
+##      .read_header    = dshow_read_header,
+##      .read_packet    = dshow_read_packet,
+##      .read_close     = dshow_read_close,
+##      .flags          = AVFMT_NOFILE,
+##      .priv_class     = &dshow_class,
+##  };
+
+# var indev_list*: UncheckedArray[AVInputFormat] = [addr(ff_dshow_demuxer), nil]
+# proc avpriv_register_devices*(o: ptr AVOutputFormat; i: ptr AVInputFormat) =
+#   outdev_list = o
+#   indev_list = i
+#   av_format_init_next()
+# proc init_opts*() =
+#   sws_dict), "flags", "bicubic", 0)
+const AV_NOPTS_VALUE = 0x8000000000000000
+
+
+proc io_open_default*(s: AVFormatContext; pb: AVIOContext; url: cstring;flags: cint; options: TableRef[string,string]): cint =
+  var loglevel: cint
+  if url == s.url or s.iformat and s.iformat.name == "image2" or s.oformat and s.oformat.name == "image2":
+    loglevel = AV_LOG_DEBUG
+  else:
+    loglevel = AV_LOG_INFO
+  echo(s, loglevel, "Opening \'%s\' for %s\n", url, if flags and AVIO_FLAG_WRITE: "writing" else: "reading")
+  return ffio_open_whitelist(pb, url, flags, addr(s.interrupt_callback), options, s.protocol_whitelist, s.protocol_blacklist)
+
+proc io_close_default*(s: AVFormatContext; pb: AVIOContext) =
+  avio_close(pb)
+
+##  static const AVOption avformat_options[] = {
+##  {"avioflags", NULL, offsetof(AVFormatContext,avio_flags), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "avioflags"},
+##  {"direct", "reduce buffering", 0, AV_OPT_TYPE_CONST, {.i64 = AVIO_FLAG_DIRECT }, INT_MIN, INT_MAX, D|E, "avioflags"},
+##  {"probesize", "set probing size", offsetof(AVFormatContext,probesize), AV_OPT_TYPE_INT64, {.i64 = 5000000 }, 32, INT64_MAX, D},
+##  {"formatprobesize", "number of bytes to probe file format", offsetof(AVFormatContext,format_probesize), AV_OPT_TYPE_INT, {.i64 = PROBE_BUF_MAX}, 0, INT_MAX-1, D},
+##  {"packetsize", "set packet size", offsetof(AVFormatContext,packet_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, E},
+##  {"fflags", NULL, offsetof(AVFormatContext,flags), AV_OPT_TYPE_FLAGS, {.i64 = AVFMT_FLAG_AUTO_BSF }, INT_MIN, INT_MAX, D|E, "fflags"},
+##  {"flush_packets", "reduce the latency by flushing out packets immediately", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_FLUSH_PACKETS }, INT_MIN, INT_MAX, E, "fflags"},
+##  {"ignidx", "ignore index", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_IGNIDX }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"genpts", "generate pts", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_GENPTS }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"nofillin", "do not fill in missing values that can be exactly calculated", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_NOFILLIN }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"noparse", "disable AVParsers, this needs nofillin too", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_NOPARSE }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"igndts", "ignore dts", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_IGNDTS }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"discardcorrupt", "discard corrupted frames", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_DISCARD_CORRUPT }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"sortdts", "try to interleave outputted packets by dts", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_SORT_DTS }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"fastseek", "fast but inaccurate seeks", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_FAST_SEEK }, INT_MIN, INT_MAX, D, "fflags"},
+##  {"nobuffer", "reduce the latency introduced by optional buffering", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_NOBUFFER }, 0, INT_MAX, D, "fflags"},
+##  {"bitexact", "do not write random/volatile data", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_BITEXACT }, 0, 0, E, "fflags" },
+##  {"shortest", "stop muxing with the shortest stream", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_SHORTEST }, 0, 0, E, "fflags" },
+##  {"autobsf", "add needed bsfs automatically", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_AUTO_BSF }, 0, 0, E, "fflags" },
+##  {"seek2any", "allow seeking to non-keyframes on demuxer level when supported", offsetof(AVFormatContext,seek2any), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, D},
+##  {"analyzeduration", "specify how many microseconds are analyzed to probe the input", offsetof(AVFormatContext,max_analyze_duration), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, D},
+##  {"cryptokey", "decryption key", offsetof(AVFormatContext,key), AV_OPT_TYPE_BINARY, {.dbl = 0}, 0, 0, D},
+##  {"indexmem", "max memory used for timestamp index (per stream)", offsetof(AVFormatContext,max_index_size), AV_OPT_TYPE_INT, {.i64 = 1<<20 }, 0, INT_MAX, D},
+##  {"rtbufsize", "max memory used for buffering real-time frames", offsetof(AVFormatContext,max_picture_buffer), AV_OPT_TYPE_INT, {.i64 = 3041280 }, 0, INT_MAX, D}, /* defaults to 1s of 15fps 352x288 YUYV422 video */
+##  {"fdebug", "print specific debug info", offsetof(AVFormatContext,debug), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, 0, INT_MAX, E|D, "fdebug"},
+##  {"ts", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_FDEBUG_TS }, INT_MIN, INT_MAX, E|D, "fdebug"},
+##  {"max_delay", "maximum muxing or demuxing delay in microseconds", offsetof(AVFormatContext,max_delay), AV_OPT_TYPE_INT, {.i64 = -1 }, -1, INT_MAX, E|D},
+##  {"start_time_realtime", "wall-clock time when stream begins (PTS==0)", offsetof(AVFormatContext,start_time_realtime), AV_OPT_TYPE_INT64, {.i64 = AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX, E},
+##  {"fpsprobesize", "number of frames used to probe fps", offsetof(AVFormatContext,fps_probe_size), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX-1, D},
+##  {"audio_preload", "microseconds by which audio packets should be interleaved earlier", offsetof(AVFormatContext,audio_preload), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, E},
+##  {"chunk_duration", "microseconds for each chunk", offsetof(AVFormatContext,max_chunk_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, E},
+##  {"chunk_size", "size in bytes for each chunk", offsetof(AVFormatContext,max_chunk_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, E},
+##  {"f_err_detect", "set error detection flags (deprecated; use err_detect, save via avconv)", offsetof(AVFormatContext,error_recognition), AV_OPT_TYPE_FLAGS, {.i64 = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"err_detect", "set error detection flags", offsetof(AVFormatContext,error_recognition), AV_OPT_TYPE_FLAGS, {.i64 = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"crccheck", "verify embedded CRCs", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"bitstream", "detect bitstream specification deviations", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"buffer", "detect improper bitstream length", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_BUFFER }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"explode", "abort decoding on minor error detection", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_EXPLODE }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"ignore_err", "ignore errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_IGNORE_ERR }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"careful",    "consider things that violate the spec, are fast to check and have not been seen in the wild as errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_CAREFUL }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"compliant",  "consider all spec non compliancies as errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_COMPLIANT | AV_EF_CAREFUL }, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"aggressive", "consider things that a sane encoder shouldn't do as an error", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_AGGRESSIVE | AV_EF_COMPLIANT | AV_EF_CAREFUL}, INT_MIN, INT_MAX, D, "err_detect"},
+##  {"use_wallclock_as_timestamps", "use wallclock as timestamps", offsetof(AVFormatContext,use_wallclock_as_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, D},
+##  {"skip_initial_bytes", "set number of bytes to skip before reading header and frames", offsetof(AVFormatContext,skip_initial_bytes), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX-1, D},
+##  {"correct_ts_overflow", "correct single timestamp overflows", offsetof(AVFormatContext,correct_ts_overflow), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, D},
+##  {"flush_packets", "enable flushing of the I/O context after each packet", offsetof(AVFormatContext,flush_packets), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, E},
+##  {"metadata_header_padding", "set number of bytes to be written as padding in a metadata header", offsetof(AVFormatContext,metadata_header_padding), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, E},
+##  {"output_ts_offset", "set output timestamp offset", offsetof(AVFormatContext,output_ts_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, -INT64_MAX, INT64_MAX, E},
+##  {"max_interleave_delta", "maximum buffering duration for interleaving", offsetof(AVFormatContext,max_interleave_delta), AV_OPT_TYPE_INT64, { .i64 = 10000000 }, 0, INT64_MAX, E },
+##  {"f_strict", "how strictly to follow the standards (deprecated; use strict, save via avconv)", offsetof(AVFormatContext,strict_std_compliance), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "strict"},
+##  {"strict", "how strictly to follow the standards", offsetof(AVFormatContext,strict_std_compliance), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "strict"},
+##  {"very", "strictly conform to a older more strict version of the spec or reference software", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_VERY_STRICT }, INT_MIN, INT_MAX, D|E, "strict"},
+##  {"strict", "strictly conform to all the things in the spec no matter what the consequences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_STRICT }, INT_MIN, INT_MAX, D|E, "strict"},
+##  {"normal", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_NORMAL }, INT_MIN, INT_MAX, D|E, "strict"},
+##  {"unofficial", "allow unofficial extensions", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_UNOFFICIAL }, INT_MIN, INT_MAX, D|E, "strict"},
+##  {"experimental", "allow non-standardized experimental variants", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_EXPERIMENTAL }, INT_MIN, INT_MAX, D|E, "strict"},
+##  {"max_ts_probe", "maximum number of packets to read while waiting for the first timestamp", offsetof(AVFormatContext,max_ts_probe), AV_OPT_TYPE_INT, { .i64 = 50 }, 0, INT_MAX, D },
+##  {"avoid_negative_ts", "shift timestamps so they start at 0", offsetof(AVFormatContext,avoid_negative_ts), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, E, "avoid_negative_ts"},
+##  {"auto",              "enabled when required by target format",    0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_AUTO },              INT_MIN, INT_MAX, E, "avoid_negative_ts"},
+##  {"disabled",          "do not change timestamps",                  0, AV_OPT_TYPE_CONST, {.i64 = 0 },                                    INT_MIN, INT_MAX, E, "avoid_negative_ts"},
+##  {"make_non_negative", "shift timestamps so they are non negative", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE }, INT_MIN, INT_MAX, E, "avoid_negative_ts"},
+##  {"make_zero",         "shift timestamps so they start at 0",       0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_MAKE_ZERO },         INT_MIN, INT_MAX, E, "avoid_negative_ts"},
+##  {"dump_separator", "set information dump field separator", offsetof(AVFormatContext,dump_separator), AV_OPT_TYPE_STRING, {.str = ", "}, 0, 0, D|E},
+##  {"codec_whitelist", "List of decoders that are allowed to be used", offsetof(AVFormatContext,codec_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
+##  {"format_whitelist", "List of demuxers that are allowed to be used", offsetof(AVFormatContext,format_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
+##  {"protocol_whitelist", "List of protocols that are allowed to be used", offsetof(AVFormatContext,protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
+##  {"protocol_blacklist", "List of protocols that are not allowed to be used", offsetof(AVFormatContext,protocol_blacklist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
+##  {"max_streams", "maximum number of streams", offsetof(AVFormatContext,max_streams), AV_OPT_TYPE_INT, { .i64 = 1000 }, 0, INT_MAX, D },
+##  {"skip_estimate_duration_from_pts", "skip duration calculation in estimate_timings_from_pts", offsetof(AVFormatContext,skip_estimate_duration_from_pts), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, D},
+##  {"max_probe_packets", "Maximum number of packets to probe a codec", offsetof(AVFormatContext,max_probe_packets), AV_OPT_TYPE_INT, { .i64 = 2500 }, 0, INT_MAX, D },
+##  {NULL},
+##  };
+
+proc av_demuxer_iterate*(opaque: ptr pointer): AVInputFormat =
+  var size: uintptr_t = sizeof((demuxer_list) div sizeof((demuxer_list[0]))) - 1
+  var i: uintptr_t = (uintptr_t) * opaque
+  var f: AVInputFormat = nil
+  if i < size:
+    f = demuxer_list[i]
+  elif outdev_list:
+    f = indev_list[i - size]
+  if f:
+    opaque[] = cast[pointer]((i + 1))
+  return f
+
+proc av_muxer_iterate*(opaque: ptr pointer): AVOutputFormat =
+  var size: uintptr_t = sizeof((muxer_list) div sizeof((muxer_list[0]))) - 1
+  var i: uintptr_t = (uintptr_t) * opaque
+  var f: AVOutputFormat = nil
+  if i < size:
+    f = muxer_list[i]
+  elif indev_list:
+    f = outdev_list[i - size]
+  if f:
+    opaque[] = cast[pointer]((i + 1))
+  return f
+
+proc format_child_class_iterate*(iter: ptr pointer): AVClass =
+  var val: pointer = cast[pointer]((((uintptr_t) * iter) and
+      ((1 shl ITER_STATE_SHIFT) - 1)))
+  var state: cuint = ((uintptr_t) * iter) shr ITER_STATE_SHIFT
+  var ret: AVClass = nil
+  if state == CHILD_CLASS_ITER_AVIO:
+    ret = addr(ff_avio_class)
+    inc(state)
+    break finish
+  if state == CHILD_CLASS_ITER_MUX:
+    var ofmt: AVOutputFormat
+    while (ofmt = av_muxer_iterate(addr(val))):
+      ret = ofmt.priv_class
+      if ret:
+        break finish
+    val = nil
+    inc(state)
+  if state == CHILD_CLASS_ITER_DEMUX:
+    var ifmt: AVInputFormat
+    while (ifmt = av_demuxer_iterate(addr(val))):
+      ret = ifmt.priv_class
+      if ret:
+        break finish
+    val = nil
+    inc(state)
+  av_assert0(not (cast[uintptr_t](val) shr ITER_STATE_SHIFT))
+  iter[] = cast[pointer]((cast[uintptr_t](val) or (state shl ITER_STATE_SHIFT)))
+  return ret
+
+proc format_child_next*(obj: pointer; prev: pointer): pointer =
+  var s: AVFormatContext = obj
+  if not prev and s.priv_data and
+      ((s.iformat and s.iformat.priv_class) or s.oformat and s.oformat.priv_class):
+    return s.priv_data
+  if s.pb and s.pb.av_class and prev != s.pb:
+    return s.pb
+  return nil
+
+proc AVClass_get_category*(`ptr`: pointer): AVClassCategory =
+  var avctx: ptr AVCodecContext = `ptr`
+  if avctx.codec and avctx.codec.decode:
+    return AV_CLASS_CATEGORY_DECODER
+  else:
+    return AV_CLASS_CATEGORY_ENCODER
+
+proc format_to_name*(`ptr`: pointer): cstring =
+  var fc: AVFormatContext = cast[AVFormatContext](`ptr`)
+  if fc.iformat:
+    return fc.iformat.name
+  elif fc.oformat:
+    return fc.oformat.name
+  else:
+    return "NULL"
+
+proc avformat_alloc_context*(): AVFormatContext =
+  var ic: AVFormatContext
+  var internal: AVFormatInternal
+  ic = av_malloc(sizeof((AVFormatContext)))
+  var av_format_context_class = AVClass(class_name:"AVFormatContext", item_name:format_to_name, option: avformat_options, version:LIBAVUTIL_VERSION_INT, child_next:format_child_next, child_class_iterate:format_child_class_iterate,category:AV_CLASS_CATEGORY_MUXER,get_category:AVClass_get_category)
+  s.av_class = av_format_context_class
+  s.io_open = io_open_default
+  s.io_close = io_close_default
+  av_opt_set_defaults(s)
+  ic.internal = internal
+  ic.internal.offset = AV_NOPTS_VALUE
+  ic.internal.raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE
+  ic.internal.shortest_end = AV_NOPTS_VALUE
+  return ic
+
+
+proc read_thread*(arg: pointer): cint =
+  var videoState: VideoState = arg
+  var ic: AVFormatContext
+  var
+    err: cint
+    i: cint
+    ret: cint
+  var st_index: array[AVMEDIA_TYPE_NB, cint]
+  var
+    pkt1: AVPacket
+    pkt: ptr AVPacket = addr(pkt1)
+  var stream_start_time: int64_t
+  var pkt_in_play_range: cint = 0
+  var t: string
+  var wait_mutex: ptr SDL_mutex = SDL_CreateMutex()
+  var scan_all_pmts_set: cint = 0
+  var pkt_ts: int64_t
+  if not wait_mutex:
+    echo(nil, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError())
+    ret = AVERROR(ENOMEM)
+    break fail
+  memset(st_index, -1, sizeof((st_index)))
+  videoState.eof = 0
+  ic = avformat_alloc_context()
+  if not ic:
+    echo(nil, AV_LOG_FATAL, "Could not allocate context.\n")
+    ret = AVERROR(ENOMEM)
+    break fail
+  ic.interrupt_callback.callback = decode_interrupt_cb
+  ic.interrupt_callback.opaque = videoState
+  if not av_dict_get(format_opts, "scan_all_pmts", nil, AV_DICT_MATCH_CASE):
+    format_opts["scan_all_pmts"], "1", AV_DICT_DONT_OVERWRITE)
+    scan_all_pmts_set = 1
+  err = avformat_open_input(addr(ic), videoState.filename, videoState.iformat, addr(format_opts))
+  if err < 0:
+    print_error(videoState.filename, err)
+    ret = -1
+    break fail
+  if scan_all_pmts_set:
+    format_opts["scan_all_pmts"], nil, AV_DICT_MATCH_CASE)
+  if (t = format_opts[""], nil, AV_DICT_IGNORE_SUFFIX)):
+    echo(nil, AV_LOG_ERROR, "Option %s not found.\n", t.key)
+    ret = AVERROR_OPTION_NOT_FOUND
+    break fail
+  videoState.ic = ic
+  if genpts:
+    ic.flags = ic.flags or AVFMT_FLAG_GENPTS
+  av_format_inject_global_side_data(ic)
+  if find_stream_info:
+    var opts: Table[string,string] = setup_find_stream_info_opts(ic, codec_opts)
+    var orig_nb_streams: cint = ic.nb_streams
+    err = avformat_find_stream_info(ic, opts)
+    i = 0
+    while i < orig_nb_streams:
+      inc(i)
+    av_freep(addr(opts))
+    if err < 0:
+      echo(nil, AV_LOG_WARNING, "%s: could not find codec parameters\n",videoState.filename)
+      ret = -1
+      break fail
+  if ic.pb:
+    ic.pb.eof_reached = 0
+  if seek_by_bytes < 0:
+    seek_by_bytes = not not (ic.iformat.flags and AVFMT_TS_DISCONT) and "ogg" == ic.iformat.name
+  videoState.max_frame_duration = if (ic.iformat.flags and AVFMT_TS_DISCONT): 10.0 else: 3600.0
+  if not window_title and (t = ic.metadata["title"]):
+    window_title = fmt"{t} - {input_filename}"
+  if start_time != AV_NOPTS_VALUE:
+    var timestamp: int64_t
+    timestamp = start_time
+    if ic.start_time != AV_NOPTS_VALUE:
+      inc(timestamp, ic.start_time)
+    ret = avformat_seek_file(ic, -1, INT64_MIN, timestamp, INT64_MAX, 0)
+    if ret < 0:
+      echo(nil, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",videoState.filename, cast[cdouble](timestamp div AV_TIME_BASE))
+  videoState.realtime = is_realtime(ic)
+  if show_status:
+    av_dump_format(ic, 0, videoState.filename, 0)
+  i = 0
+  while i < ic.nb_streams:
+    var st: ptr AVStream = ic.streams[i]
+    var `type`: AVMediaType = st.codecpar.codec_type
+    st.`discard` = AVDISCARD_ALL
+    if `type` >= 0 and wanted_stream_spec[`type`] and st_index[`type`] == -1:
+      if avformat_match_stream_specifier(ic, st, wanted_stream_spec[`type`]) > 0:
+        st_index[`type`] = i
+    inc(i)
+  i = 0
+  while i < AVMEDIA_TYPE_NB:
+    if wanted_stream_spec[i] and st_index[i] == -1:
+      echo(nil, AV_LOG_ERROR,
+             "Stream specifier %s does not match any %s stream\n",
+             wanted_stream_spec[i], av_get_media_type_string(i))
+      st_index[i] = INT_MAX
+    inc(i)
+  if not video_disable:
+    st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO,
+        st_index[AVMEDIA_TYPE_VIDEO], -1, nil, 0)
+  if not audio_disable:
+    st_index[AVMEDIA_TYPE_AUDIO] = av_find_best_stream(ic, AVMEDIA_TYPE_AUDIO,
+        st_index[AVMEDIA_TYPE_AUDIO], st_index[AVMEDIA_TYPE_VIDEO], nil, 0)
+  if not video_disable and not subtitle_disable:
+    st_index[AVMEDIA_TYPE_SUBTITLE] = av_find_best_stream(ic,
+        AVMEDIA_TYPE_SUBTITLE, st_index[AVMEDIA_TYPE_SUBTITLE], (if st_index[
+        AVMEDIA_TYPE_AUDIO] >= 0: st_index[AVMEDIA_TYPE_AUDIO] else: st_index[
+        AVMEDIA_TYPE_VIDEO]), nil, 0)
+  videoState.show_mode = show_mode
+  if st_index[AVMEDIA_TYPE_VIDEO] >= 0:
+    var st: ptr AVStream = ic.streams[st_index[AVMEDIA_TYPE_VIDEO]]
+    var codecpar: AVCodecParameters = st.codecpar
+    var sar: AVRational = av_guess_sample_aspect_ratio(ic, st, nil)
+    if codecpar.width:
+      set_default_window_size(codecpar.width, codecpar.height, sar)
+  if st_index[AVMEDIA_TYPE_AUDIO] >= 0:
+    stream_component_open(videoState, st_index[AVMEDIA_TYPE_AUDIO])
+  ret = -1
+  if st_index[AVMEDIA_TYPE_VIDEO] >= 0:
+    ret = stream_component_open(videoState, st_index[AVMEDIA_TYPE_VIDEO])
+  if videoState.show_mode == SHOW_MODE_NONE:
+    videoState.show_mode = if ret >= 0: SHOW_MODE_VIDEO else: SHOW_MODE_RDFT
+  if st_index[AVMEDIA_TYPE_SUBTITLE] >= 0:
+    stream_component_open(videoState, st_index[AVMEDIA_TYPE_SUBTITLE])
+  if videoState.video_stream < 0 and videoState.audio_stream < 0:
+    echo(nil, AV_LOG_FATAL,
+           "Failed to open file \'%s\' or configure filtergraph\n", videoState.filename)
+    ret = -1
+    break fail
+  if infinite_buffer < 0 and videoState.realtime:
+    infinite_buffer = 1
+  while true:
+    if videoState.abort_request:
+      break
+    if videoState.paused != videoState.last_paused:
+      videoState.last_paused = videoState.paused
+      if videoState.paused:
+        videoState.read_pause_return = av_read_pause(ic)
+      else:
+        av_read_play(ic)
+    if videoState.paused and ic.iformat.name == "rtsp" or (ic.pb and not strncmp(input_filename, "mmsh:", 5))):
+      ##  wait 10 ms to avoid trying to get another packet
+      ##  XXX: horrible
+      poll 10
+      # SDL_Delay(10)
+      continue
+    if videoState.seek_req:
+      var seek_target: int64_t = videoState.seek_pos
+      var seek_min: int64_t = if videoState.seek_rel > 0: seek_target - videoState.seek_rel + 2 else: INT64_MIN
+      var seek_max: int64_t = if videoState.seek_rel < 0: seek_target - videoState.seek_rel - 2 else: INT64_MAX
+      ##  FIXME the +-2 is due to rounding being not done in the correct direction in generation of the seek_pos/seek_rel variables
+      ret = avformat_seek_file(videoState.ic, -1, seek_min, seek_target, seek_max,videoState.seek_flags)
+      if ret < 0:
+        echo(nil, AV_LOG_ERROR, "%s: error while seeking\n", videoState.ic.url)
+      else:
+        if videoState.audio_stream >= 0:
+          packet_queue_flush(addr(videoState.audioq))
+          packet_queue_put(addr(videoState.audioq), addr(flush_pkt))
+        if videoState.subtitle_stream >= 0:
+          packet_queue_flush(addr(videoState.subtitleq))
+          packet_queue_put(addr(videoState.subtitleq), addr(flush_pkt))
+        if videoState.video_stream >= 0:
+          packet_queue_flush(addr(videoState.videoq))
+          packet_queue_put(addr(videoState.videoq), addr(flush_pkt))
+        if videoState.seek_flags and AVSEEK_FLAG_BYTE:
+          set_clock(addr(videoState.extclk), NAN, 0)
+        else:
+          set_clock(addr(videoState.extclk),
+                    seek_target div cast[cdouble](AV_TIME_BASE), 0)
+      videoState.seek_req = 0
+      videoState.queue_attachments_req = 1
+      videoState.eof = 0
+      if videoState.paused:
+        step_to_next_frame(videoState)
+    if videoState.queue_attachments_req:
+      if videoState.video_st and
+          (videoState.video_st.disposition and AV_DISPOSITION_ATTACHED_PIC):
+        var copy: AVPacket
+        if (ret = av_packet_ref(addr(copy), addr(videoState.video_st.attached_pic))) < 0:
+          break fail
+        packet_queue_put(addr(videoState.videoq), addr(copy))
+        packet_queue_put_nullpacket(addr(videoState.videoq), videoState.video_stream)
+      videoState.queue_attachments_req = 0
+    if infinite_buffer < 1 and
+        (videoState.audioq.size + videoState.videoq.size + videoState.subtitleq.size > MAX_QUEUE_SIZE or
+        (stream_has_enough_packets(videoState.audio_st, videoState.audio_stream,
+                                   addr(videoState.audioq)) and
+        stream_has_enough_packets(videoState.video_st, videoState.video_stream,
+                                  addr(videoState.videoq)) and
+        stream_has_enough_packets(videoState.subtitle_st, videoState.subtitle_stream,
+                                  addr(videoState.subtitleq)))):
+      ##  wait 10 ms
+      poll 10
+      # SDL_CondWaitTimeout(videoState.continue_read_thread, wait_mutex, 10)
+      continue
+    if not videoState.paused and
+        (not videoState.audio_st or
+        (videoState.auddec.finished == videoState.audioq.serial and
+        frame_queue_nb_remaining(addr(videoState.sampq)) == 0)) and
+        (not videoState.video_st or
+        (videoState.viddec.finished == videoState.videoq.serial and
+        frame_queue_nb_remaining(addr(videoState.pictq)) == 0)):
+      if loop != 1 and (not loop or dec(loop)):
+        stream_seek(videoState, if start_time != AV_NOPTS_VALUE: start_time else: 0, 0, 0)
+      elif autoexit:
+        ret = AVERROR_EOF
+        break fail
+    ret = av_read_frame(ic, pkt)
+    if ret < 0:
+      if (ret == AVERROR_EOF or avio_feof(ic.pb)) and not videoState.eof:
+        if videoState.video_stream >= 0:
+          packet_queue_put_nullpacket(addr(videoState.videoq), videoState.video_stream)
+        if videoState.audio_stream >= 0:
+          packet_queue_put_nullpacket(addr(videoState.audioq), videoState.audio_stream)
+        if videoState.subtitle_stream >= 0:
+          packet_queue_put_nullpacket(addr(videoState.subtitleq), videoState.subtitle_stream)
+        videoState.eof = 1
+      if ic.pb and ic.pb.error:
+        if autoexit:
+          break fail
+        else:
+          break
+      poll 10
+      continue
+    else:
+      videoState.eof = 0
+    stream_start_time = ic.streams[pkt.stream_index].start_time
+    pkt_ts = if pkt.pts == AV_NOPTS_VALUE: pkt.dts else: pkt.pts
+    pkt_in_play_range = duration == AV_NOPTS_VALUE or
+        (pkt_ts -
+        (if stream_start_time != AV_NOPTS_VALUE: stream_start_time else: 0)) *
+        av_q2d(ic.streams[pkt.stream_index].time_base) -
+        (double)(if start_time != AV_NOPTS_VALUE: start_time else: 0) div 1000000 <=
+        (cast[cdouble](duration div 1000000))
+    if pkt.stream_index == videoState.audio_stream and pkt_in_play_range:
+      packet_queue_put(addr(videoState.audioq), pkt)
+    elif pkt.stream_index == videoState.video_stream and pkt_in_play_range and
+        not (videoState.video_st.disposition and AV_DISPOSITION_ATTACHED_PIC):
+      packet_queue_put(addr(videoState.videoq), pkt)
+    elif pkt.stream_index == videoState.subtitle_stream and pkt_in_play_range:
+      packet_queue_put(addr(videoState.subtitleq), pkt)
+    else:
+      av_packet_unref(pkt)
+  ret = 0
+  if ic and not videoState.ic:
+    avformat_close_input(addr(ic))
+  if ret != 0:
+    var event: SDL_Event
+    event.`type` = FF_QUIT_EVENT
+    event.user.data1 = videoState
+    SDL_PushEvent(addr(event))
+  return 0
+
+proc frame_queue_init*(f: ptr FrameQueue; pktq: ptr PacketQueue; max_size: cint;
+                      keep_last: cint): cint =
+  var i: cint
+  memset(f, 0, sizeof((FrameQueue)))
+  if not (f.mutex = SDL_CreateMutex()):
+    echo(nil, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError())
+    return AVERROR(ENOMEM)
+  if not (f.cond = SDL_CreateCond()):
+    echo(nil, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError())
+    return AVERROR(ENOMEM)
+  f.pktq = pktq
+  f.max_size = FFMIN(max_size, FRAME_QUEUE_SIZE)
+  f.keep_last = not not keep_last
+  i = 0
+  while i < f.max_size:
+    if not (f.queue[i].frame = av_frame_alloc()):
+      return AVERROR(ENOMEM)
+    inc(i)
+  return 0
+
+
+proc stream_open*(filename: cstring; iformat: AVInputFormat): VideoState =
+  var videoState: VideoState
+  videoState = VideoState()
+  videoState.last_video_stream = videoState.video_stream = -1
+  videoState.last_audio_stream = videoState.audio_stream = -1
+  videoState.last_subtitle_stream = videoState.subtitle_stream = -1
+  videoState.filename = av_strdup(filename)
+  videoState.iformat = iformat
+  videoState.ytop = 0
+  videoState.xleft = 0
+  ##  start video display
+  if frame_queue_init(addr(videoState.pictq), addr(videoState.videoq),VIDEO_PICTURE_QUEUE_SIZE, 1) < 0:
+    break fail
+  if frame_queue_init(addr(videoState.subpq), addr(videoState.subtitleq),SUBPICTURE_QUEUE_SIZE, 0) < 0:
+    break fail
+  if frame_queue_init(addr(videoState.sampq), addr(videoState.audioq), SAMPLE_QUEUE_SIZE, 1) < 0:
+    break fail
+  if packet_queue_init(addr(videoState.videoq)) < 0 or
+      packet_queue_init(addr(videoState.audioq)) < 0 or
+      packet_queue_init(addr(videoState.subtitleq)) < 0:
+    break fail
+  if not (videoState.continue_read_thread = SDL_CreateCond()):
+    echo(nil, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError())
+    break fail
+  init_clock(addr(videoState.vidclk), addr(videoState.videoq.serial))
+  init_clock(addr(videoState.audclk), addr(videoState.audioq.serial))
+  init_clock(addr(videoState.extclk), addr(videoState.extclk.serial))
+  videoState.audio_clock_serial = -1
+  if startup_volume < 0:
+    echo(nil, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume)
+  if startup_volume > 100:
+    echo(nil, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n",
+           startup_volume)
+  startup_volume = av_clip(startup_volume, 0, 100)
+  startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume div 100, 0,
+                         SDL_MIX_MAXVOLUME)
+  videoState.audio_volume = startup_volume
+  videoState.muted = 0
+  videoState.av_sync_type = av_sync_type
+  videoState.read_tid = createThread(read_thread, "read_thread", videoState)
+  if not videoState.read_tid:
+    echo "SDL_CreateThread()"
+    stream_close(videoState)
+    return nil
+  return videoState
 
 proc main(): cint =
+    var  flush_pkt = AVPacket(pts: AV_NOPTS_VALUE,dts: AV_NOPTS_VALUE,pos: -1)
     var flags: cint
-    var `is`: ptr VideoState
+    var videoState: VideoState
     init_dynload()
-    avdevice_register_all()
+    # avpriv_register_devices(outev_list ,indev_list)
     # avformat_network_init()
-    init_opts()
-    signal(SIGINT, sigterm_handler)
-    signal(SIGTERM, sigterm_handler)
+    # init_opts()
+    # signal(SIGINT, sigterm_handler)
+    # signal(SIGTERM, sigterm_handler)
     #   show_banner(argc, argv, options)
-    parse_options(nil, argc, argv, options, opt_input_file)
     # if not input_filename:
     #     show_usage()
     #     exit(1)
+    var input_filename: string
+    for kind, key, val in getopt():
+      if kind == cmdArgument:
+        input_filename = key
+        break
     flags = INIT_VIDEO or INIT_AUDIO or INIT_TIMER
-    if init(flags):
-        exit(1)
-    eventState(SDL_SYSWMEVENT, SDL_IGNORE)
-    eventState(SDL_USEREVENT, SDL_IGNORE)
-    av_init_packet(addr(flush_pkt))
-    flush_pkt.data = cast[ptr uint8](addr(flush_pkt))
-    if not display_disable:
-        var flags: cint = SDL_WINDOW_HIDDEN
-        if alwaysontop:
-        flags = flags or SDL_WINDOW_ALWAYS_ON_TOP
-        if borderless:
-        flags = flags or SDL_WINDOW_BORDERLESS
-        else:
-        flags = flags or SDL_WINDOW_RESIZABLE
-        window = createWindow(program_name, SDL_WINDOWPOS_UNDEFINED,
-                                SDL_WINDOWPOS_UNDEFINED, default_width,
-                                default_height, flags)
-        setHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear")
-        if window:
-        renderer = createRenderer(window, -1, SDL_RENDERER_ACCELERATED or
-            SDL_RENDERER_PRESENTVSYNC)
-        if not renderer:
-            renderer = createRenderer(window, -1, 0)
-        if renderer:
-            if not getRendererInfo(renderer, addr(renderer_info)):
-            av_log(nil, AV_LOG_VERBOSE, "Initialized %s renderer.\n",
-                    renderer_info.name)
-        if not window or not renderer or not renderer_info.num_texture_formats:
-        do_exit(nil)
-    `is` = stream_open(input_filename, file_iformat)
-    if not `is`:
-        do_exit(nil)
-    event_loop(`is`)
+    # eventState(SDL_SYSWMEVENT, SDL_IGNORE)
+    # eventState(SDL_USEREVENT, SDL_IGNORE)
+    # flush_pkt.data = cast[uint8](addr(flush_pkt))
+    var flags: cint = SDL_WINDOW_HIDDEN
+    flags = flags or SDL_WINDOW_RESIZABLE
+    window = createWindow(program_name, SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED, default_width,default_height, flags)
+    setHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear")
+    if window:
+      renderer = createRenderer(window, -1, SDL_RENDERER_ACCELERATED or SDL_RENDERER_PRESENTVSYNC)
+    if not renderer:
+        renderer = createRenderer(window, -1, 0)
+    if renderer:
+        if not getRendererInfo(renderer, addr(renderer_info)):
+          echo renderer_info.name
+    if not window or not renderer or not renderer_info.num_texture_formats:
+      return
+    s = stream_open(input_filename, file_iformat)
+    event_loop(s)
     return 0

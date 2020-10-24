@@ -473,11 +473,6 @@ void av_init_packet(AVPacket *pkt)
     pkt->dts = AV_NOPTS_VALUE;
     pkt->pos = -1;
     pkt->duration = 0;
-// #if FF_API_CONVERGENCE_DURATION
-//     FF_DISABLE_DEPRECATION_WARNINGS
-//     pkt->convergence_duration = 0;
-//     FF_ENABLE_DEPRECATION_WARNINGS
-// #endif
     pkt->flags = 0;
     pkt->stream_index = 0;
     pkt->buf = NULL;
@@ -4463,8 +4458,7 @@ static inline av_const int av_tolower(int c)
     return c;
 }
 
-AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
-                               const AVDictionaryEntry *prev, int flags)
+AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)
 {
     unsigned int i, j;
 
@@ -24017,11 +24011,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, double 
 {
     Frame *vp;
 
-    // #if defined(DEBUG_SYNC)
-    //     printf("frame_type=%c pts=%0.3f\n",
-    //            av_get_picture_type_char(src_frame->pict_type), pts);
-    // #endif
-
     if (!(vp = frame_queue_peek_writable(&is->pictq)))
         return -1;
 
@@ -33951,12 +33940,6 @@ static const AVOption avcodec_options[] = {
 };
 
 
-static AVClassCategory AVClass_get_category(void *ptr)
-{
-    AVCodecContext* avctx = ptr;
-    if(avctx->codec && avctx->codec->decode) return AV_CLASS_CATEGORY_DECODER;
-    else                                     return AV_CLASS_CATEGORY_ENCODER;
-}
 
 static const AVClass av_codec_context_class = {
     .class_name              = "AVCodecContext",
@@ -38808,10 +38791,6 @@ AVInputFormat ff_dshow_demuxer = {
 
 static const AVInputFormat * const indev_list[] = {
     &ff_dshow_demuxer,
-    // &ff_gdigrab_demuxer,
-    // &ff_lavfi_demuxer,
-    // &ff_vfwcap_demuxer,
-    // &ff_libcdio_demuxer,
     NULL };
 
 
@@ -39683,19 +39662,6 @@ int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
     return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 static int io_open_default(AVFormatContext *s, AVIOContext **pb,
                            const char *url, int flags, AVDictionary **options)
 {
@@ -39725,15 +39691,6 @@ static void io_close_default(AVFormatContext *s, AVIOContext *pb)
 {
     avio_close(pb);
 }
-
-static const char* format_to_name(void* ptr)
-{
-    AVFormatContext* fc = (AVFormatContext*) ptr;
-    if(fc->iformat) return fc->iformat->name;
-    else if(fc->oformat) return fc->oformat->name;
-    else return "NULL";
-}
-
 static const AVOption avformat_options[] = {
 {"avioflags", NULL, offsetof(AVFormatContext,avio_flags), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "avioflags"},
 {"direct", "reduce buffering", 0, AV_OPT_TYPE_CONST, {.i64 = AVIO_FLAG_DIRECT }, INT_MIN, INT_MAX, D|E, "avioflags"},
@@ -39815,22 +39772,6 @@ static const AVOption avformat_options[] = {
 {"max_probe_packets", "Maximum number of packets to probe a codec", offsetof(AVFormatContext,max_probe_packets), AV_OPT_TYPE_INT, { .i64 = 2500 }, 0, INT_MAX, D },
 {NULL},
 };
-
-static void *format_child_next(void *obj, void *prev)
-{
-    AVFormatContext *s = obj;
-    if (!prev && s->priv_data &&
-        ((s->iformat && s->iformat->priv_class) ||
-          s->oformat && s->oformat->priv_class))
-        return s->priv_data;
-    if (s->pb && s->pb->av_class && prev != s->pb)
-        return s->pb;
-    return NULL;
-}
-
-
-
-
 const AVInputFormat *av_demuxer_iterate(void **opaque)
 {
     static const uintptr_t size = sizeof(demuxer_list)/sizeof(demuxer_list[0]) - 1;
@@ -39868,11 +39809,9 @@ const AVOutputFormat *av_muxer_iterate(void **opaque)
     return f;
 }
 
-
 static const AVClass *format_child_class_iterate(void **iter)
 {
-    // we use the low 16 bits of iter as the value to be passed to
-    // av_(de)muxer_iterate()
+
     void *val = (void*)(((uintptr_t)*iter) & ((1 << ITER_STATE_SHIFT) - 1));
     unsigned int state = ((uintptr_t)*iter) >> ITER_STATE_SHIFT;
     const AVClass *ret = NULL;
@@ -39907,42 +39846,54 @@ static const AVClass *format_child_class_iterate(void **iter)
         val = NULL;
         state++;
     }
-
 finish:
     // make sure none av_(de)muxer_iterate does not set the high bits of val
     av_assert0(!((uintptr_t)val >> ITER_STATE_SHIFT));
     *iter = (void*)((uintptr_t)val | (state << ITER_STATE_SHIFT));
     return ret;
 }
-
+static void *format_child_next(void *obj, void *prev)
+{
+    AVFormatContext *s = obj;
+    if (!prev && s->priv_data &&
+        ((s->iformat && s->iformat->priv_class) ||
+          s->oformat && s->oformat->priv_class))
+        return s->priv_data;
+    if (s->pb && s->pb->av_class && prev != s->pb)
+        return s->pb;
+    return NULL;
+}
+static AVClassCategory AVClass_get_category(void *ptr)
+{
+    AVCodecContext* avctx = ptr;
+    if(avctx->codec && avctx->codec->decode) return AV_CLASS_CATEGORY_DECODER;
+    else                                     return AV_CLASS_CATEGORY_ENCODER;
+}
+static const char* format_to_name(void* ptr)
+{
+    AVFormatContext* fc = (AVFormatContext*) ptr;
+    if(fc->iformat) return fc->iformat->name;
+    else if(fc->oformat) return fc->oformat->name;
+    else return "NULL";
+}
 static const AVClass av_format_context_class = {
     .class_name     = "AVFormatContext",
     .item_name      = format_to_name,
     .option         = avformat_options,
     .version        = LIBAVUTIL_VERSION_INT,
     .child_next     = format_child_next,
-#if FF_API_CHILD_CLASS_NEXT
-    .child_class_next = format_child_class_next,
-#endif
     .child_class_iterate = format_child_class_iterate,
     .category       = AV_CLASS_CATEGORY_MUXER,
     .get_category   = AVClass_get_category,
 };
-
-
 static void avformat_get_context_defaults(AVFormatContext *s)
 {
     memset(s, 0, sizeof(AVFormatContext));
-
     s->av_class = &av_format_context_class;
-
     s->io_open  = io_open_default;
     s->io_close = io_close_default;
-
     av_opt_set_defaults(s);
 }
-
-
 AVFormatContext *avformat_alloc_context(void)
 {
     AVFormatContext *ic;
@@ -39960,7 +39911,6 @@ AVFormatContext *avformat_alloc_context(void)
     ic->internal->offset = AV_NOPTS_VALUE;
     ic->internal->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
     ic->internal->shortest_end = AV_NOPTS_VALUE;
-
     return ic;
 }
 
@@ -47776,6 +47726,7 @@ void print_error(const char *filename, int err)
         errbuf_ptr = strerror(AVUNERROR(err));
     av_log(NULL, AV_LOG_ERROR, "%s: %s\n", filename, errbuf_ptr);
 }
+
 static int read_thread(void *arg)
 {
     VideoState *is = arg;
@@ -48706,9 +48657,7 @@ static void opt_input_file(void *optctx, const char *filename)
 {
     if (input_filename)
     {
-        av_log(NULL, AV_LOG_FATAL,
-               "Argument '%s' provided as input filename, but '%s' was already specified.\n",
-               filename, input_filename);
+        av_log(NULL, AV_LOG_FATAL, "Argument '%s' provided as input filename, but '%s' was already specified.\n", filename, input_filename);
         exit(1);
     }
     if (!strcmp(filename, "-"))
@@ -50594,9 +50543,7 @@ void uninit_parse_context(OptionParseContext *octx)
     uninit_opts();
 }
 
-int split_commandline(OptionParseContext *octx, int argc, char *argv[],
-                      const OptionDef *options,
-                      const OptionGroupDef *groups, int nb_groups)
+int split_commandline(OptionParseContext *octx, int argc, char *argv[],const OptionDef *options,const OptionGroupDef *groups, int nb_groups)
 {
     int optindex = 1;
     int dashdash = -2;
