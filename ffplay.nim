@@ -1,5 +1,7 @@
 import posix,winim, sdl2
-import tables, parseopt
+import tables, parseopt,sequtils,strutils
+when defined(windows):
+  import winim
 
 type
   AVCodecID* = enum
@@ -169,6 +171,11 @@ const
 const
   AV_OPT_FLAG_DECODING_PARAM = 2
   DEC* = AV_OPT_FLAG_DECODING_PARAM
+
+const AVFMT_NOFILE = 0x0001
+  
+const AVIO_FLAG_READ = 1                                     
+const AVIO_FLAG_WRITE = 2 
 
 const YUVRGB_TABLE_HEADROOM = 512
 
@@ -1069,7 +1076,7 @@ type
 type
   ThreadFrame* = ref object
     f*: ptr AVFrame
-    owner*: array[2, ptr AVCodecContext]
+    owner*: array[2, AVCodecContext]
     progress*: ptr AVBufferRef
 
   Picture* = ref object
@@ -1198,10 +1205,10 @@ type
     field_picture*: cint
 
   ERContext* = ref object
-    avctx*: ptr AVCodecContext
+    avctx*: AVCodecContext
     mecc*: MECmpContext
     mecc_inited*: cint
-    mb_index2xy*: ptr cint
+    mb_index2xy*: cint
     mb_num*: cint
     mb_width*: cint
     mb_height*: cint
@@ -1278,19 +1285,19 @@ type
     id*: AVCodecID
     pix_fmt*: AVPixelFormat
     capabilities*: cint
-    alloc_frame*: proc (avctx: ptr AVCodecContext; frame: ptr AVFrame): cint
-    start_frame*: proc (avctx: ptr AVCodecContext; buf: uint8; buf_size: uint32): cint
-    decode_params*: proc (avctx: ptr AVCodecContext; `type`: cint; buf: uint8;
+    alloc_frame*: proc (avctx: AVCodecContext; frame: ptr AVFrame): cint
+    start_frame*: proc (avctx: AVCodecContext; buf: uint8; buf_size: uint32): cint
+    decode_params*: proc (avctx: AVCodecContext; `type`: cint; buf: uint8;
                         buf_size: uint32): cint
-    decode_slice*: proc (avctx: ptr AVCodecContext; buf: uint8; buf_size: uint32): cint
-    end_frame*: proc (avctx: ptr AVCodecContext): cint
+    decode_slice*: proc (avctx: AVCodecContext; buf: uint8; buf_size: uint32): cint
+    end_frame*: proc (avctx: AVCodecContext): cint
     frame_priv_data_size*: cint
     decode_mb*: proc (s: ptr MpegEncContext)
-    init*: proc (avctx: ptr AVCodecContext): cint
-    uninit*: proc (avctx: ptr AVCodecContext): cint
+    init*: proc (avctx: AVCodecContext): cint
+    uninit*: proc (avctx: AVCodecContext): cint
     priv_data_size*: cint
     caps_internal*: cint
-    frame_params*: proc (avctx: ptr AVCodecContext; hw_frames_ctx: ptr AVBufferRef): cint
+    frame_params*: proc (avctx: AVCodecContext; hw_frames_ctx: ptr AVBufferRef): cint
 
   AVCodecHWConfigInternal* = ref object
     public*: AVCodecHWConfig
@@ -1304,7 +1311,7 @@ type
     capabilities*: cint
     supported_framerates*: ptr AVRational ## /< array of supported framerates, or NULL if any, array is terminated by {0,0}
     pix_fmts*: ptr AVPixelFormat ## /< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-    supported_samplerates*: ptr cint ## /< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
+    supported_samplerates*: cint ## /< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
     sample_fmts*: ptr AVSampleFormat ## /< array of supported sample formats, or NULL if unknown, array is terminated by -1
     channel_layouts*: ptr uint64 ## /< array of support channel layouts, or NULL if unknown. array is terminated by 0
     max_lowres*: uint8
@@ -1313,19 +1320,19 @@ type
     wrapper_name*: string
     priv_data_size*: cint
     next*: AVCodec
-    init_thread_copy*: proc (a1: ptr AVCodecContext): cint
-    update_thread_context*: proc (dst: ptr AVCodecContext; src: ptr AVCodecContext): cint
+    init_thread_copy*: proc (a1: AVCodecContext): cint
+    update_thread_context*: proc (dst: AVCodecContext; src: AVCodecContext): cint
     defaults*: ptr AVCodecDefault
     init_static_data*: proc (codec: AVCodec)
-    init*: proc (a1: ptr AVCodecContext): cint
-    encode_sub*: proc (a1: ptr AVCodecContext; buf: uint8; buf_size: cint;sub: ptr AVSubtitle): cint
-    encode2*: proc (avctx: ptr AVCodecContext; avpkt: AVPacket; frame: ptr AVFrame;got_packet_ptr: ptr cint): cint
-    decode*: proc (a1: ptr AVCodecContext; outdata: pointer; outdata_size: ptr cint;avpkt: AVPacket): cint
-    close*: proc (a1: ptr AVCodecContext): cint
-    send_frame*: proc (avctx: ptr AVCodecContext; frame: ptr AVFrame): cint
-    receive_packet*: proc (avctx: ptr AVCodecContext; avpkt: AVPacket): cint
-    receive_frame*: proc (avctx: ptr AVCodecContext; frame: ptr AVFrame): cint
-    flush*: proc (a1: ptr AVCodecContext)
+    init*: proc (a1: AVCodecContext): cint
+    encode_sub*: proc (a1: AVCodecContext; buf: uint8; buf_size: cint;sub: ptr AVSubtitle): cint
+    encode2*: proc (avctx: AVCodecContext; avpkt: AVPacket; frame: ptr AVFrame;got_packet_ptr: cint): cint
+    decode*: proc (a1: AVCodecContext; outdata: pointer; outdata_size: cint;avpkt: AVPacket): cint
+    close*: proc (a1: AVCodecContext): cint
+    send_frame*: proc (avctx: AVCodecContext; frame: ptr AVFrame): cint
+    receive_packet*: proc (avctx: AVCodecContext; avpkt: AVPacket): cint
+    receive_frame*: proc (avctx: AVCodecContext; frame: ptr AVFrame): cint
+    flush*: proc (a1: AVCodecContext)
     caps_internal*: cint
     bsfs*: string
     hw_configs*: ptr ptr AVCodecHWConfigInternal
@@ -1446,8 +1453,8 @@ type
     coded_height*: cint
     gop_size*: cint
     pix_fmt*: AVPixelFormat
-    draw_horiz_band*: proc (s: ptr AVCodecContext; src: ptr AVFrame;offset: array[8, cint]; y: cint;`type`: cint; height: cint)
-    get_format*: proc (s: ptr AVCodecContext; fmt: ptr AVPixelFormat): AVPixelFormat
+    draw_horiz_band*: proc (s: AVCodecContext; src: ptr AVFrame;offset: array[8, cint]; y: cint;`type`: cint; height: cint)
+    get_format*: proc (s: AVCodecContext; fmt: ptr AVPixelFormat): AVPixelFormat
     max_b_frames*: cint
     b_quant_factor*: cfloat
     b_quant_offset*: cfloat
@@ -1460,7 +1467,7 @@ type
     p_masking*: cfloat
     dark_masking*: cfloat
     slice_count*: cint
-    slice_offset*: ptr cint
+    slice_offset*: cint
     sample_aspect_ratio*: AVRational
     me_cmp*: cint
     me_sub_cmp*: cint
@@ -1503,7 +1510,7 @@ type
     request_channel_layout*: uint64
     audio_service_type*: AVAudioServiceType
     request_sample_fmt*: AVSampleFormat
-    get_buffer2*: proc (s: ptr AVCodecContext; frame: ptr AVFrame; flags: cint): cint
+    get_buffer2*: proc (s: AVCodecContext; frame: ptr AVFrame; flags: cint): cint
     refcounted_frames*: cint
     qcompress*: cfloat         ## /< amount of qscale change between easy & hard scenes (0.0-1.0)
     qblur*: cfloat             ## /< amount of qscale smoothing over time (0.0-1.0)
@@ -1539,11 +1546,11 @@ type
     thread_type*: cint
     active_thread_type*: cint
     thread_safe_callbacks*: cint
-    execute*: proc (c: ptr AVCodecContext;
-                  `func`: proc (c2: ptr AVCodecContext; arg: pointer): cint;
-                  arg2: pointer; ret: ptr cint; count: cint; size: cint): cint
-    execute2*: proc (c: ptr AVCodecContext; `func`: proc (c2: ptr AVCodecContext;
-        arg: pointer; jobnr: cint; threadnr: cint): cint; arg2: pointer; ret: ptr cint;
+    execute*: proc (c: AVCodecContext;
+                  `func`: proc (c2: AVCodecContext; arg: pointer): cint;
+                  arg2: pointer; ret: cint; count: cint; size: cint): cint
+    execute2*: proc (c: AVCodecContext; `func`: proc (c2: AVCodecContext;
+        arg: pointer; jobnr: cint; threadnr: cint): cint; arg2: pointer; ret: cint;
                    count: cint): cint
     nsse_weight*: cint
     profile*: cint
@@ -1588,11 +1595,11 @@ type
     codec_ids*: array[5, cint]  ##  several codec IDs are permitted
     priv_data_size*: cint
     parser_init*: proc (s: AVCodecParserContext): cint
-    parser_parse*: proc (s: AVCodecParserContext; avctx: ptr AVCodecContext;
-                       poutbuf: ptr uint8; poutbuf_size: ptr cint;
+    parser_parse*: proc (s: AVCodecParserContext; avctx: AVCodecContext;
+                       poutbuf: ptr uint8; poutbuf_size: cint;
                        buf: uint8; buf_size: cint): cint
     parser_close*: proc (s: AVCodecParserContext)
-    split*: proc (avctx: ptr AVCodecContext; buf: uint8; buf_size: cint): cint
+    split*: proc (avctx: AVCodecContext; buf: uint8; buf_size: cint): cint
     next*: AVCodecParser
 
 
@@ -1656,7 +1663,7 @@ type
     reorder*: cint
     bsfc*: ptr AVBSFContext
     bitstream_checked*: cint
-    avctx*: ptr AVCodecContext
+    avctx*: AVCodecContext
     avctx_inited*: cint
     orig_codec_id*: AVCodecID
     extract_extradata*: AVStreamInternalInner
@@ -1828,7 +1835,7 @@ type
     format_probesize*: cint
     codec_whitelist*: string
     format_whitelist*: string
-    internal*: ptr AVFormatInternal
+    internal*: AVFormatInternal
     io_repositioned*: cint
     video_codec*: AVCodec
     audio_codec*: AVCodec
@@ -1980,7 +1987,7 @@ type
   Decoder* = ref object
     pkt*: AVPacket
     queue*: ptr PacketQueue
-    avctx*: ptr AVCodecContext
+    avctx*: AVCodecContext
     pkt_serial*: cint
     finished*: cint
     packet_pending*: cint
@@ -2033,7 +2040,7 @@ type
     out_simd_align_mask*: cint
     conv_f*: conv_func_type
     simd_f*: simd_func_type
-    ch_map*: ptr cint
+    ch_map*: cint
     silence*: array[8, uint8] ## /< silence input sample
 
 type
@@ -2075,14 +2082,14 @@ type
   resample_free_func* = proc (c: ptr ptr ResampleContext)
   multiple_resample_func* = proc (c: ptr ResampleContext; dst: ptr AudioData;
                                dst_size: cint; src: ptr AudioData; src_size: cint;
-                               consumed: ptr cint): cint
+                               consumed: cint): cint
   resample_flush_func* = proc (c: ptr SwrContext): cint
   set_compensation_func* = proc (c: ptr ResampleContext; sample_delta: cint;
                               compensation_distance: cint): cint
   get_delay_func* = proc (s: ptr SwrContext; base: int64): int64
   invert_initial_buffer_func* = proc (c: ptr ResampleContext; dst: ptr AudioData;
                                    src: ptr AudioData; src_size: cint;
-                                   dst_idx: ptr cint; dst_count: ptr cint): cint
+                                   dst_idx: cint; dst_count: cint): cint
   get_out_samples_func* = proc (s: ptr SwrContext; in_samples: cint): int64
 
   Resampler* = ref object
@@ -2121,7 +2128,7 @@ type
     rematrix_volume*: cfloat   ## /< rematrixing volume coefficient
     rematrix_maxval*: cfloat   ## /< maximum value for rematrixing output
     matrix_encoding*: cint     ## *< matrixed stereo encoding
-    channel_map*: ptr cint      ## /< channel index (or -1 if muted channel) map
+    channel_map*: cint      ## /< channel index (or -1 if muted channel) map
     used_ch_count*: cint       ## /< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
     engine*: cint
     user_in_ch_count*: cint    ## /< User set input channel count
@@ -2221,9 +2228,9 @@ type
     rdft_calc*: proc (s: ptr RDFTContext; z: ptr float)
 
 
-  SwsFunc* = proc (context: ptr SwsContext; src: ptr uint8; srcStride: ptr cint;
+  SwsFunc* = proc (context: ptr SwsContext; src: ptr uint8; srcStride: cint;
                 srcSliceY: cint; srcSliceH: cint; dst: ptr uint8;
-                dstStride: ptr cint): cint
+                dstStride: cint): cint
   yuv2planar1_fn* = proc (src: ptr int16; dest: uint8; dstW: cint;
                        dither: uint8; offset: cint)
   yuv2planarX_fn* = proc (filter: ptr int16; filterSize: cint; src: ptr ptr int16;
@@ -2356,7 +2363,7 @@ type
     table_gU*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
     table_bU*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
     input_rgb2yuv_table*: array[16 + 40 * 4, int32] ##  This table can contain both C and SIMD formatted values, the C vales are always at the XY_IDX points
-    dither_error*: array[4, ptr cint]
+    dither_error*: array[4, cint]
     contrast*: cint
     brightness*: cint
     saturation*: cint          ##  for sws_getColorspaceDetails
@@ -2447,7 +2454,7 @@ type
 
   avfilter_action_func* = proc (ctx: ptr AVFilterContext; arg: pointer; jobnr: cint;nb_jobs: cint): cint
   avfilter_execute_func* = proc (ctx: ptr AVFilterContext;
-                              `func`: ptr avfilter_action_func; arg: pointer;ret: ptr cint; nb_jobs: cint): cint
+                              `func`: ptr avfilter_action_func; arg: pointer;ret: cint; nb_jobs: cint): cint
   FFFrameQueueGlobal* = ref object
     dummy*: char               ##  C does not allow empty structs
 
@@ -2571,7 +2578,7 @@ type
 
   AVFilterFormats* = ref object
     nb_formats*: cuint         ## /< number of formats
-    formats*: ptr cint          ## /< list of media formats
+    formats*: cint          ## /< list of media formats
     refcount*: cuint           ## /< number of references to this list
     refs*: ptr ptr ptr AVFilterFormats ## /< references to this list
 
@@ -2707,180 +2714,191 @@ type
     ready*: cuint
     extra_hw_frames*: cint
 
+  URLContext* {.bycopy.} = object
+    av_class*: AVClass      ## *< information for . Set by url_open().
+    prot*: URLProtocol
+    priv_data*: pointer
+    filename*: string         ## *< specified URL
+    flags*: cint
+    max_packet_size*: cint     ## *< if non zero, the stream is packetized with this max packet size
+    is_streamed*: cint         ## *< true if streamed (no seek possible), default = false
+    is_connected*: cint
+    interrupt_callback*: AVIOInterruptCB
+    rw_timeout*: int64       ## *< maximum time to wait for (network) read/write operation completion, in mcs
+    protocol_whitelist*: string
+    protocol_blacklist*: string
+    min_packet_size*: cint     ## *< if non zero, the stream is packetized with this min packet size
+
+
+  AVIODirEntry* = ref object
+    name*: cstring             ## *< Filename
+    `type`*: cint              ## *< Type of the entry
+    utf8*: cint ## *< Set to 1 when name is encoded with UTF-8, 0 otherwise.Name can be encoded with UTF-8 even though 0 is set.
+    size*: int64             ## *< File size in bytes, -1 if unknown.
+    modification_timestamp*: int64 ## *< Time of last modification in microseconds since unix epoch, -1 if unknown.
+    access_timestamp*: int64 ## *< Time of last access in microseconds since unix epoch,-1 if unknown.
+    status_change_timestamp*: int64 ## *< Time of last status change in microseconds since unix epoch, -1 if unknown.
+    user_id*: int64          ## *< User ID of owner, -1 if unknown.
+    group_id*: int64         ## *< Group ID of owner, -1 if unknown.
+    filemode*: int64         ## *< Unix file mode, -1 if unknown.
+
+
+  URLProtocol* = ref object
+    name*: string
+    url_open*: proc (h: URLContext; url: string; flags: cint): cint
+    url_open2*: proc (h: URLContext; url: string; flags: cint; options: TableRef[string,string]): cint
+    url_accept*: proc (s: URLContext; c: URLContext): cint
+    url_handshake*: proc (c: URLContext): cint
+    url_read*: proc (h: URLContext; buf: ptr cuchar; size: cint): cint
+    url_write*: proc (h: URLContext; buf: ptr cuchar; size: cint): cint
+    url_seek*: proc (h: URLContext; pos: int64; whence: cint): int64
+    url_close*: proc (h: URLContext): cint
+    url_read_pause*: proc (h: URLContext; pause: cint): cint
+    url_read_seek*: proc (h: URLContext; stream_index: cint; timestamp: int64;flags: cint): int64
+    url_get_file_handle*: proc (h: URLContext): cint
+    url_get_multi_file_handle*: proc (h: URLContext; handles: cint;numhandles: cint): cint
+    url_get_short_seek*: proc (h: URLContext): cint
+    url_shutdown*: proc (h: URLContext; flags: cint): cint
+    priv_data_size*: cint
+    priv_data_class*: AVClass
+    flags*: cint
+    url_check*: proc (h: URLContext; mask: cint): cint
+    url_open_dir*: proc (h: URLContext): cint
+    url_read_dir*: proc (h: URLContext; next: AVIODirEntry): cint
+    url_close_dir*: proc (h: URLContext): cint
+    url_delete*: proc (h: URLContext): cint
+    url_move*: proc (h_src: URLContext; h_dst: URLContext): cint
+    default_whitelist*: string
+
 
 proc init_dynload() = 
     echo SetDllDirectory("")
 
 
 
-
-var outdev_list*: ptr AVOutputFormat = nil
-var indev_list*: ptr AVInputFormat = nil
-
-# type
-#   dshow_ctx* = ref object
-#     class*: AVClass
-#     graph*: ptr IGraphBuilder
-#     device_name*: array[2, string]
-#     device_unique_name*: array[2, string]
-#     video_device_number*: cint
-#     audio_device_number*: cint
-#     list_options*: cint
-#     list_devices*: cint
-#     audio_buffer_size*: cint
-#     crossbar_video_input_pin_number*: cint
-#     crossbar_audio_input_pin_number*: cint
-#     video_pin_name*: string
-#     audio_pin_name*: string
-#     show_video_device_dialog*: cint
-#     show_audio_device_dialog*: cint
-#     show_video_crossbar_connection_dialog*: cint
-#     show_audio_crossbar_connection_dialog*: cint
-#     show_analog_tv_tuner_dialog*: cint
-#     show_analog_tv_tuner_audio_dialog*: cint
-#     audio_filter_load_file*: string
-#     audio_filter_save_file*: string
-#     video_filter_load_file*: string
-#     video_filter_save_file*: string
-#     device_filter*: array[2, ptr IBaseFilter]
-#     device_pin*: array[2, ptr IPin]
-#     capture_filter*: array[2, ptr libAVFilter]
-#     capture_pin*: array[2, ptr libAVPin]
-#     mutex*: HANDLE
-#     event*: array[2, HANDLE]    ##  event[0] is set by DirectShow
-#                           ##  event[1] is set by callback()
-#     pktl*: AVPacketList
-#     eof*: cint
-#     curbufsize*: array[2, int64_t]
-#     video_frame_num*: cuint
-#     control*: ptr IMediaControl
-#     media_event*: ptr IMediaEvent
-#     pixel_format*: AVPixelFormat
-#     video_codec_id*: AVCodecID
-#     framerate*: string
-#     requested_width*: cint
-#     requested_height*: cint
-#     requested_framerate*: AVRational
-#     sample_rate*: cint
-#     sample_size*: cint
-#     channels*: cint
+type
+  DirectShowCtx* = ref object
+    class*: AVClass
+    # graph*: IGraphBuilder
+    device_name*: array[2, string]
+    device_unique_name*: array[2, string]
+    video_device_number*: cint
+    audio_device_number*: cint
+    list_options*: cint
+    list_devices*: cint
+    audio_buffer_size*: cint
+    crossbar_video_input_pin_number*: cint
+    crossbar_audio_input_pin_number*: cint
+    video_pin_name*: string
+    audio_pin_name*: string
+    show_video_device_dialog*: cint
+    show_audio_device_dialog*: cint
+    show_video_crossbar_connection_dialog*: cint
+    show_audio_crossbar_connection_dialog*: cint
+    show_analog_tv_tuner_dialog*: cint
+    show_analog_tv_tuner_audio_dialog*: cint
+    audio_filter_load_file*: string
+    audio_filter_save_file*: string
+    video_filter_load_file*: string
+    video_filter_save_file*: string
+    # device_filter*: array[2, ptr IBaseFilter]
+    # device_pin*: array[2, ptr IPin]
+    # capture_filter*: array[2, ptr libAVFilter]
+    # capture_pin*: array[2, ptr libAVPin]
+    mutex*: HANDLE
+    event*: array[2, HANDLE]    ##  event[0] is set by DirectShow event[1] is set by callback()
+    pktl*: AVPacketList
+    eof*: cint
+    curbufsize*: array[2, int64]
+    video_frame_num*: cuint
+    # control*: ptr IMediaControl
+    # media_event*: ptr IMediaEvent
+    pixel_format*: AVPixelFormat
+    video_codec_id*: AVCodecID
+    framerate*: string
+    requested_width*: cint
+    requested_height*: cint
+    requested_framerate*: AVRational
+    sample_rate*: cint
+    sample_size*: cint
+    channels*: cint
 
 
 # proc dshow_read_header*(avctx: AVFormatContext): cint =
-#   var ctx: ptr dshow_ctx = avctx.priv_data
-#   var graph: ptr IGraphBuilder = nil
-#   var devenum: ptr ICreateDevEnum = nil
-#   var control: ptr IMediaControl = nil
-#   var media_event: ptr IMediaEvent = nil
+#   var ctx: DirectShowCtx = cast[DirectShowCtx](avctx.priv_data)
+#   var graph: IGraphBuilder
+#   var devenum: ICreateDevEnum
+#   var control: IMediaControl
+#   var media_event: IMediaEvent
 #   var media_event_handle: HANDLE
 #   var `proc`: HANDLE
-#   var ret: cint = AVERROR(EIO)
+#   var ret: cint = EIO
 #   var r: cint
 #   CoInitialize(0)
 #   if not ctx.list_devices and not parse_device_name(avctx):
-#     echo(avctx, AV_LOG_ERROR, "Malformed dshow input string.\n")
-#     break error
+#     echo("Malformed dshow input string.\n")
+#     goto error
 #   ctx.video_codec_id = if avctx.video_codec_id: avctx.video_codec_id else: AV_CODEC_ID_RAWVIDEO
 #   if ctx.pixel_format != AV_PIX_FMT_NONE:
 #     if ctx.video_codec_id != AV_CODEC_ID_RAWVIDEO:
-#       echo(avctx, AV_LOG_ERROR, "Pixel format may only be set when video codec is not set or set to rawvideo\n")
-#       ret = AVERROR(EINVAL)
-#       break error
+#       echo("Pixel format may only be set when video codec is not set or set to rawvideo\n")
+#       ret = EINVAL
+#       goto error
 #   if ctx.framerate:
 #     r = av_parse_video_rate(addr(ctx.requested_framerate), ctx.framerate)
-#     if r < 0:
-#       echo(avctx, AV_LOG_ERROR, "Could not parse framerate \'%s\'.\n",
-#              ctx.framerate)
-#       break error
-#   r = CoCreateInstance(addr(CLSID_FilterGraph), nil, CLSCTX_INPROC_SERVER,
-#                      addr(IID_IGraphBuilder), cast[ptr pointer](addr(graph)))
-#   if r != S_OK:
-#     echo(avctx, AV_LOG_ERROR, "Could not create capture graph.\n")
-#     break error
+#   r = CoCreateInstance(addr(CLSID_FilterGraph), nil, CLSCTX_INPROC_SERVER,addr(IID_IGraphBuilder), cast[ptr pointer](addr(graph)))
 #   ctx.graph = graph
-#   r = CoCreateInstance(addr(CLSID_SystemDeviceEnum), nil, CLSCTX_INPROC_SERVER,
-#                      addr(IID_ICreateDevEnum), cast[ptr pointer](addr(devenum)))
-#   if r != S_OK:
-#     echo(avctx, AV_LOG_ERROR, "Could not enumerate system devices.\n")
-#     break error
+#   r = CoCreateInstance(addr(CLSID_SystemDeviceEnum), nil, CLSCTX_INPROC_SERVER,addr(IID_ICreateDevEnum), cast[ptr pointer](addr(devenum)))
 #   if ctx.list_devices:
 #     echo(avctx, AV_LOG_INFO, "DirectShow video devices (some may be both video and audio devices)\n")
 #     dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, nil, nil)
 #     echo(avctx, AV_LOG_INFO, "DirectShow audio devices\n")
 #     dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, nil, nil)
 #     ret = AVERROR_EXIT
-#     break error
+#     goto error
 #   if ctx.list_options:
 #     if ctx.device_name[VideoDevice]:
 #       if (r = dshow_list_device_options(avctx, devenum, VideoDevice, VideoSourceDevice)):
 #         ret = r
-#         break error
+#         goto error
 #     if ctx.device_name[AudioDevice]:
 #       if dshow_list_device_options(avctx, devenum, AudioDevice, AudioSourceDevice):
-#         ##  show audio options from combined video+audio sources as fallback
 #         if (r = dshow_list_device_options(avctx, devenum, AudioDevice, VideoSourceDevice)):
 #           ret = r
-#           break error
+#           goto error
 #   if ctx.device_name[VideoDevice]:
 #     if (r = dshow_open_device(avctx, devenum, VideoDevice, VideoSourceDevice)) < 0 or
 #         (r = dshow_add_device(avctx, VideoDevice)) < 0:
 #       ret = r
-#       break error
+#       goto error
 #   if ctx.device_name[AudioDevice]:
 #     if (r = dshow_open_device(avctx, devenum, AudioDevice, AudioSourceDevice)) < 0 or
 #         (r = dshow_add_device(avctx, AudioDevice)) < 0:
 #       echo(avctx, AV_LOG_INFO,
 #              "Searching for audio device within video devices for %s\n",
 #              ctx.device_name[AudioDevice])
-#       ##  see if there's a video source with an audio pin with the given audio name
 #       if (r = dshow_open_device(avctx, devenum, AudioDevice, VideoSourceDevice)) < 0 or
 #           (r = dshow_add_device(avctx, AudioDevice)) < 0:
 #         ret = r
-#         break error
+#         goto error
 #   if ctx.list_options:
-#     ##  allow it to list crossbar options in dshow_open_device
 #     ret = AVERROR_EXIT
-#     break error
+#     goto error
 #   ctx.curbufsize[0] = 0
 #   ctx.curbufsize[1] = 0
 #   ctx.mutex = CreateMutex(nil, 0, nil)
-#   if not ctx.mutex:
-#     echo(avctx, AV_LOG_ERROR, "Could not create Mutex\n")
-#     break error
 #   ctx.event[1] = CreateEvent(nil, 1, 0, nil)
-#   if not ctx.event[1]:
-#     echo(avctx, AV_LOG_ERROR, "Could not create Event\n")
-#     break error
-#   r = IGraphBuilder_QueryInterface(graph, addr(IID_IMediaControl),
-#                                  cast[ptr pointer](addr(control)))
-#   if r != S_OK:
-#     echo(avctx, AV_LOG_ERROR, "Could not get media control.\n")
-#     break error
+#   r = IGraphBuilder_QueryInterface(graph, addr(IID_IMediaControl), cast[ptr pointer](addr(control)))
 #   ctx.control = control
-#   r = IGraphBuilder_QueryInterface(graph, addr(IID_IMediaEvent),
-#                                  cast[ptr pointer](addr(media_event)))
-#   if r != S_OK:
-#     echo(avctx, AV_LOG_ERROR, "Could not get media event.\n")
-#     break error
+#   r = IGraphBuilder_QueryInterface(graph, addr(IID_IMediaEvent), cast[ptr pointer](addr(media_event)))
 #   ctx.media_event = media_event
-#   r = IMediaEvent_GetEventHandle(media_event,
-#                                cast[pointer](addr(media_event_handle)))
-#   if r != S_OK:
-#     echo(avctx, AV_LOG_ERROR, "Could not get media event handle.\n")
-#     break error
+#   r = IMediaEvent_GetEventHandle(media_event, cast[pointer](addr(media_event_handle)))
 #   `proc` = GetCurrentProcess()
-#   r = DuplicateHandle(`proc`, media_event_handle, `proc`, addr(ctx.event[0]), 0, 0,
-#                     DUPLICATE_SAME_ACCESS)
-#   if not r:
-#     echo(avctx, AV_LOG_ERROR, "Could not duplicate media event handle.\n")
-#     break error
+#   r = DuplicateHandle(`proc`, media_event_handle, `proc`, addr(ctx.event[0]), 0, 0, DUPLICATE_SAME_ACCESS)
 #   r = IMediaControl_Run(control)
 #   if r == S_FALSE:
 #     var pfs: OAFilterState
 #     r = IMediaControl_GetState(control, 0, addr(pfs))
-#   if r != S_OK:
-#     echo(avctx, AV_LOG_ERROR, "Could not run graph (sometimes caused by a device already in use by other application)\n")
-#     break error
 #   ret = 0
 #   if devenum:
 #     ICreateDevEnum_Release(devenum)
@@ -2902,15 +2920,14 @@ var indev_list*: ptr AVInputFormat = nil
 #   return ret
 
 # proc dshow_read_packet*(s: AVFormatContext; pkt: AVPacket): cint =
-#   var ctx: ptr dshow_ctx = s.priv_data
-#   var pktl: AVPacketList = nil
+#   var ctx: DirectShowCtx = cast[DirectShowCtx](s.priv_data)
+#   var pktl: AVPacketList 
 #   while not ctx.eof and not pktl:
 #     WaitForSingleObject(ctx.mutex, INFINITE)
 #     pktl = ctx.pktl
 #     if pktl:
 #       pkt[] = pktl.pkt
 #       ctx.pktl = ctx.pktl.next
-#       av_free(pktl)
 #       dec(ctx.curbufsize[pkt.stream_index], pkt.size)
 #     ResetEvent(ctx.event[1])
 #     ReleaseMutex(ctx.mutex)
@@ -2918,73 +2935,508 @@ var indev_list*: ptr AVInputFormat = nil
 #       if dshow_check_event_queue(ctx.media_event) < 0:
 #         ctx.eof = 1
 #       elif s.flags and AVFMT_FLAG_NONBLOCK:
-#         return AVERROR(EAGAIN)
+#         return EAGAIN
 #       else:
 #         WaitForMultipleObjects(2, ctx.event, 0, INFINITE)
-#   return if ctx.eof: AVERROR(EIO) else: pkt.size
+#   return if ctx.eof: EIO else: pkt.size
+
+# var dshow_class_option: seq[AVOption] = @[
+#   AVOption("video_size", "set video size given a string such as 640x480 or hd720.", DirectShowCtx.requested_width, AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC ),
+#   AVOption("pixel_format", "set video pixel format", DirectShowCtx.pixel_format, AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, DEC),
+#   AVOption("framerate", "set video frame rate", DirectShowCtx.framerate, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC),
+#   AVOption("sample_rate", "set audio sample rate", DirectShowCtx.sample_rate, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC),
+#   AVOption("sample_size", "set audio sample size", DirectShowCtx.sample_size, AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC),
+#   AVOption("channels", "set number of audio channels, such as 1 or 2", DirectShowCtx.channels, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC),
+#   AVOption("audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", DirectShowCtx.audio_buffer_size, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC),
+#   AVOption("list_devices", "list available devices",                      DirectShowCtx.list_devices, AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC),
+#   AVOption("list_options", "list available options for specified device", DirectShowCtx.list_options, AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC),
+#   AVOption("video_device_number", "set video device number for devices with same name (starts at 0)", DirectShowCtx.video_device_number, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC),
+#   AVOption("audio_device_number", "set audio device number for devices with same name (starts at 0)", DirectShowCtx.audio_device_number, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC),
+#   AVOption("video_pin_name", "select video capture pin by name", DirectShowCtx.video_pin_name,AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM }),
+#   AVOption("audio_pin_name", "select audio capture pin by name", DirectShowCtx.audio_pin_name,AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM }),
+#   AVOption("crossbar_video_input_pin_number", "set video input pin number for crossbar device", DirectShowCtx.crossbar_video_input_pin_number, AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC),
+#   AVOption("crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", DirectShowCtx.crossbar_audio_input_pin_number, AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC),
+#   AVOption("show_video_device_dialog",              "display property dialog for video capture device",                            DirectShowCtx.show_video_device_dialog,              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC),
+#   AVOption("show_audio_device_dialog",              "display property dialog for audio capture device",                            DirectShowCtx.show_audio_device_dialog,              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC),
+#   AVOption("show_video_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on video device", DirectShowCtx.show_video_crossbar_connection_dialog, AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC),
+#   AVOption("show_audio_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on audio device", DirectShowCtx.show_audio_crossbar_connection_dialog, AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC),
+#   AVOption("show_analog_tv_tuner_dialog",           "display property dialog for analog tuner filter",                             DirectShowCtx.show_analog_tv_tuner_dialog,           AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC),
+#   AVOption("show_analog_tv_tuner_audio_dialog",     "display property dialog for analog tuner audio filter",                       DirectShowCtx.show_analog_tv_tuner_audio_dialog,     AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC),
+#   AVOption("audio_device_load", "load audio capture filter device (and properties) from file", DirectShowCtx.audio_filter_load_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC),
+#   AVOption("audio_device_save", "save audio capture filter device (and properties) to file", DirectShowCtx.audio_filter_save_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC),
+#   AVOption("video_device_load", "load video capture filter device (and properties) from file", DirectShowCtx.video_filter_load_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC),
+#   AVOption("video_device_save", "save video capture filter device (and properties) to file", DirectShowCtx.video_filter_save_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC),
+# ]
+
+# var dshow_class = AVClass(class_name:"dshow indev",item_name:av_default_item_name,option:dshow_class_option,
+#   version:LIBAVUTIL_VERSION_INT, category:AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT)
+
+# var ff_dshow_demuxer = AVInputFormat(name:"dshow",long_name:"DirectShow capture",priv_data_size:sizeof DirectShowCtx
+#   read_header:dshow_read_header, read_packet:dshow_read_packet,read_close:dshow_read_close,flags:AVFMT_NOFILE,priv_class:dshow_class)
+
+var indev_list*: seq[AVInputFormat] 
+var outdev_list*: seq[AVOutputFormat]
+
+var  muxer_list: seq[AVOutputFormat]
+
+proc av_format_init_next*() =
+  var prevout: AVOutputFormat
+  var previn: AVInputFormat
+  for o in muxer_list:
+    if prevout != nil:
+      prevout.next = o
+    prevout = o
+  if outdev_list != nil:
+    for o in outdev_list:
+      if prevout:
+        prevout.next = o
+      prevout = o
+  for i in demuxer_list:
+    if previn:
+      previn.next = i
+    previn = i
+  if indev_list:
+    for i in indev_list:
+      if previn:
+        previn.next = i
+      previn = i
+      
 
 
-##  static const AVClass dshow_class = {
-##      .class_name = "dshow indev",
-##      .item_name  = av_default_item_name,
-##      .option     = (AVOption []){
-##      { "video_size", "set video size given a string such as 640x480 or hd720.", dshow_ctx->requested_width, AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
-##      { "pixel_format", "set video pixel format", dshow_ctx->pixel_format, AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, DEC },
-##      { "framerate", "set video frame rate", dshow_ctx->framerate, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-##      { "sample_rate", "set audio sample rate", dshow_ctx->sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-##      { "sample_size", "set audio sample size", dshow_ctx->sample_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC },
-##      { "channels", "set number of audio channels, such as 1 or 2", dshow_ctx->channels, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-##      { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", dshow_ctx->audio_buffer_size, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-##      { "list_devices", "list available devices",                      dshow_ctx->list_devices, AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
-##      { "list_options", "list available options for specified device", dshow_ctx->list_options, AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
-##      { "video_device_number", "set video device number for devices with same name (starts at 0)", dshow_ctx->video_device_number, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-##      { "audio_device_number", "set audio device number for devices with same name (starts at 0)", dshow_ctx->audio_device_number, AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-##      { "video_pin_name", "select video capture pin by name", dshow_ctx->video_pin_name,AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-##      { "audio_pin_name", "select audio capture pin by name", dshow_ctx->audio_pin_name,AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-##      { "crossbar_video_input_pin_number", "set video input pin number for crossbar device", dshow_ctx->crossbar_video_input_pin_number, AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
-##      { "crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", dshow_ctx->crossbar_audio_input_pin_number, AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
-##      { "show_video_device_dialog",              "display property dialog for video capture device",                            dshow_ctx->show_video_device_dialog,              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-##      { "show_audio_device_dialog",              "display property dialog for audio capture device",                            dshow_ctx->show_audio_device_dialog,              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-##      { "show_video_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on video device", dshow_ctx->show_video_crossbar_connection_dialog, AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-##      { "show_audio_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on audio device", dshow_ctx->show_audio_crossbar_connection_dialog, AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-##      { "show_analog_tv_tuner_dialog",           "display property dialog for analog tuner filter",                             dshow_ctx->show_analog_tv_tuner_dialog,           AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-##      { "show_analog_tv_tuner_audio_dialog",     "display property dialog for analog tuner audio filter",                       dshow_ctx->show_analog_tv_tuner_audio_dialog,     AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-##      { "audio_device_load", "load audio capture filter device (and properties) from file", dshow_ctx->audio_filter_load_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-##      { "audio_device_save", "save audio capture filter device (and properties) to file", dshow_ctx->audio_filter_save_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-##      { "video_device_load", "load video capture filter device (and properties) from file", dshow_ctx->video_filter_load_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-##      { "video_device_save", "save video capture filter device (and properties) to file", dshow_ctx->video_filter_save_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-##      { NULL },
-##      .version    = LIBAVUTIL_VERSION_INT,
-##      .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
-##  };
-##  AVInputFormat ff_dshow_demuxer = {
-##      .name           = "dshow",
-##      .long_name      = NULL_IF_CONFIG_SMALL("DirectShow capture"),
-##      .priv_data_size = sizeof(struct dshow_ctx),
-##      .read_header    = dshow_read_header,
-##      .read_packet    = dshow_read_packet,
-##      .read_close     = dshow_read_close,
-##      .flags          = AVFMT_NOFILE,
-##      .priv_class     = &dshow_class,
-##  };
+proc avpriv_register_devices*(o: seq[AVOutputFormat]; i: seq[AVInputFormat]) =
+  outdev_list = o
+  indev_list = i
+  av_format_init_next()
 
-# var indev_list*: UncheckedArray[AVInputFormat] = [addr(ff_dshow_demuxer), nil]
-# proc avpriv_register_devices*(o: ptr AVOutputFormat; i: ptr AVInputFormat) =
-#   outdev_list = o
-#   indev_list = i
-#   av_format_init_next()
-# proc init_opts*() =
-#   sws_dict), "flags", "bicubic", 0)
+proc init_opts*() =
+  sws_dict["flags"] = "bicubic"
+
 const AV_NOPTS_VALUE = 0x8000000000000000
 
+var url_protocols: seq[URLProtocol]
 
-proc io_open_default*(s: AVFormatContext; pb: AVIOContext; url: cstring;flags: cint; options: TableRef[string,string]): cint =
+const URL_SCHEME_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-."
+
+proc url_find_protocol*(filename: string): seq[URLProtocol] =
+  var protocols: URLProtocol
+  var
+    proto_str = newString(128)
+    proto_nested = newStringOfCap(128)
+  var proto_len = len filename.filterIt(it in URL_SCHEME_CHARS)
+  if filename[proto_len] != ':' and filename == "subfile," or ':' notin filename or filename[1] == ':':
+    copyMem(proto_str[0].addr, "file".cstring, 4)
+  else:
+    copyMem(proto_str[0].addr, filename[0].unsafeAddr, min(proto_len + 1, proto_str.len))
+  copyMem(proto_nested[0].addr, proto_str[0].addr, sizeof((proto_nested)))
+  proto_nested[proto_nested.find '+'] = '\0'
+  result = url_protocols.filterIt(it.name in [proto_str,proto_nested])
+  if startsWith(filename, "https:") or startsWith(filename, "tls"):
+    echo ("https protocol not found, recompile FFmpeg with openssl, gnutls or securetransport enabled.\n")
+  
+var ffurl_context_class*: AVClass
+
+proc av_opt_set_defaults2*(s: pointer; mask: cint; flags: cint) =
+  var opt: AVOption
+  while (opt = av_opt_next(s, opt)):
+    var dst: pointer = (cast[ptr uint8_t](s)) + opt.offset
+    if (opt.flags and mask) != flags:
+      continue
+    if opt.flags and AV_OPT_FLAG_READONLY:
+      continue
+    case opt.`type`
+    of AV_OPT_TYPE_CONST:      ##  Nothing to be done here
+      nil
+    of AV_OPT_TYPE_BOOL, AV_OPT_TYPE_FLAGS, AV_OPT_TYPE_INT, AV_OPT_TYPE_INT64,
+      AV_OPT_TYPE_UINT64, AV_OPT_TYPE_DURATION, AV_OPT_TYPE_CHANNEL_LAYOUT,
+      AV_OPT_TYPE_PIXEL_FMT, AV_OPT_TYPE_SAMPLE_FMT:
+      write_number(s, opt, dst, 1, 1, opt.default_val.i64)
+    of AV_OPT_TYPE_DOUBLE, AV_OPT_TYPE_FLOAT:
+      var val: cdouble
+      val = opt.default_val.dbl
+      write_number(s, opt, dst, val, 1, 1)
+    of AV_OPT_TYPE_RATIONAL:
+      var val: AVRational
+      val = av_d2q(opt.default_val.dbl, INT_MAX)
+      write_number(s, opt, dst, 1, val.den, val.num)
+    of AV_OPT_TYPE_COLOR:
+      set_string_color(s, opt, opt.default_val.str, dst)
+    of AV_OPT_TYPE_STRING:
+      set_string(s, opt, opt.default_val.str, dst)
+    of AV_OPT_TYPE_IMAGE_SIZE:
+      set_string_image_size(s, opt, opt.default_val.str, dst)
+    of AV_OPT_TYPE_VIDEO_RATE:
+      set_string_video_rate(s, opt, opt.default_val.str, dst)
+    of AV_OPT_TYPE_BINARY:
+      set_string_binary(s, opt, opt.default_val.str, dst)
+    of AV_OPT_TYPE_DICT:
+      set_string_dict(s, opt, opt.default_val.str, dst)
+    else:
+      echo(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt.`type`,opt.name)
+
+proc url_alloc_for_protocol*(puc: URLContext; up: URLProtocol;filename: string; flags: cint;int_cb: AVIOInterruptCB): cint =
+  var uc: URLContext
+  var err: cint
+
+  if (flags and AVIO_FLAG_READ) and not up.url_read:
+    echo ("Impossible to open the \'%s\' protocol for reading\n")
+    return EIO
+  if (flags and AVIO_FLAG_WRITE) and not up.url_write:
+    echo ("Impossible to open the \'%s\' protocol for writing\n")
+    return EIO
+  uc = av_mallocz(sizeof((URLContext)) + strlen(filename) + 1)
+  uc.av_class = addr(ffurl_context_class)
+  uc.filename == filename
+  uc.prot = up
+  uc.flags = flags
+  uc.is_streamed = 0
+  uc.max_packet_size = 0
+  var proto_len: cint = strlen(up.name)
+  var start: string = strchr(uc.filename, ',')
+  uc.priv_data = up.priv_data_class
+  av_opt_set_defaults2(uc.priv_data,0,0)
+  if not up.name == uc.filename and uc.filename + proto_len == start:
+    var ret: cint = 0
+    var p: string = start
+    var sep: char = inc(p)[]
+    var
+      key: string
+      val: string
+    inc(p)
+    if up.name == "subfile":
+      ret = EINVAL
+    while ret >= 0 and (key = strchr(p, sep)) and p < key and
+        (val = strchr(key + 1, sep)):
+      val[] = key[] = 0
+      if p == "start" and p == "end":
+        ret = AVERROR_OPTION_NOT_FOUND
+      else:
+        ret = av_opt_set(uc.priv_data, p, key + 1, 0)
+      if ret == AVERROR_OPTION_NOT_FOUND:
+        echo ("Key \'%s\' not found.\n", p)
+      val[] = key[] = sep
+      p = val + 1
+    if ret < 0 or p != key:
+      echo("Error parsing options string",start )
+      err = EINVAL
+      break fail
+    memmove(start, key + 1, strlen(key))
+  uc.interrupt_callback = int_cb[]
+  puc = uc
+  return err
+
+proc ffurl_alloc*(puc: URLContext; filename: string; flags: cint; int_cb: AVIOInterruptCB): cint =
+  var p: URLProtocol 
+  p = url_find_protocol(filename)
+  return url_alloc_for_protocol(puc, p, filename, flags, int_cb)
+  return AVERROR_PROTOCOL_NOT_FOUND
+
+proc ffurl_connect*(uc: URLContext; options: TableRef[string,string]): cint =
+  var err: cint
+  var tmp_opts: TableRef[string,string]
+  var e: AVDictionaryEntry
+  if options.len == 0:
+    options = tmp_opts
+  av_assert0(not (e = options["protocol_whitelist"])) or (uc.protocol_whitelist and uc.protocol_whitelist == e.value))
+  av_assert0(not (e = options["protocol_blacklist"])) or (uc.protocol_blacklist and uc.protocol_blacklist == e.value))
+  if uc.protocol_whitelist and av_match_list(uc.prot.name, uc.protocol_whitelist, ',') <= 0:
+    echo (uc, AV_LOG_ERROR, "Protocol \'%s\' not on whitelist \'%s\'!\n",uc.prot.name, uc.protocol_whitelist)
+    return EINVAL
+  if uc.protocol_blacklist and av_match_list(uc.prot.name, uc.protocol_blacklist, ',') > 0:
+    echo (uc, AV_LOG_ERROR, "Protocol \'%s\' on blacklist \'%s\'!\n",uc.prot.name, uc.protocol_blacklist)
+    return EINVAL
+  if not uc.protocol_whitelist and uc.prot.default_whitelist:
+    echo (uc, AV_LOG_DEBUG, "Setting default whitelist \'%s\'\n", uc.prot.default_whitelist)
+    uc.protocol_whitelist = av_strdup(uc.prot.default_whitelist)
+    if not uc.protocol_whitelist:
+      return ENOMEM
+  elif not uc.protocol_whitelist: ##  This should be an error once all declare a default whitelist
+    echo (uc, AV_LOG_DEBUG, "No default whitelist set\n")
+  options["protocol_whitelist"] = uc.protocol_whitelist
+  options["protocol_blacklist"] = uc.protocol_blacklist
+  err = if uc.prot.url_open2: uc.prot.url_open2(uc, uc.filename, uc.flags, options) 
+        else: uc.prot.url_open(uc, uc.filename, uc.flags)
+  options["protocol_whitelist"].clear
+  options["protocol_blacklist"].clear
+  uc.is_connected = 1
+  if (uc.flags and AVIO_FLAG_WRITE) or uc.prot.name, "file"):
+    if not uc.is_streamed and ffurl_seek(uc, 0, SEEK_SET) < 0:
+      uc.is_streamed = 1
+  return 0
+
+proc ffurl_open_whitelist*(puc: URLContext; filename: string; flags: cint;
+                          int_cb: AVIOInterruptCB;
+                          options: TableRef[string,string]; whitelist: string;
+                          blacklist: string; parent: URLContext): cint =
+  var tmp_opts: ptr TableRef[string,string] 
+  var e: AVDictionaryEntry
+  var ret: cint = ffurl_alloc(puc, filename, flags, int_cb)
+  if ret < 0:
+    return ret
+  if parent:
+    av_opt_copy(puc[], parent)
+  if options and (ret = av_opt_set_dict(puc[], options)) < 0:
+    break fail
+  if options and (puc[]).prot.priv_data_class and
+      (ret = av_opt_set_dict((puc[]).priv_data, options)) < 0:
+    break fail
+  if not options:
+    options = addr(tmp_opts)
+  av_assert0(not whitelist or
+      not (e = av_dict_get(options[], "protocol_whitelist", nil, 0)) or
+      whitelist, e.value))
+  av_assert0(not blacklist or
+      not (e = av_dict_get(options[], "protocol_blacklist", nil, 0)) or
+      blacklist, e.value))
+  if (ret = av_dict_set(options, "protocol_whitelist", whitelist, 0)) < 0:
+    break fail
+  if (ret = av_dict_set(options, "protocol_blacklist", blacklist, 0)) < 0:
+    break fail
+  if (ret = av_opt_set_dict(puc[], options)) < 0:
+    break fail
+  ret = ffurl_connect(puc[], options)
+  if not ret:
+    return 0
+  ffurl_closep(puc)
+  return ret
+
+proc ffurl_size*(h: ptr URLContext): int64_t =
+  var
+    pos: int64_t
+    size: int64_t
+  size = ffurl_seek(h, 0, AVSEEK_SIZE)
+  if size < 0:
+    pos = ffurl_seek(h, 0, SEEK_CUR)
+    if (size = ffurl_seek(h, -1, SEEK_END)) < 0:
+      return size
+    inc(size)
+    ffurl_seek(h, pos, SEEK_SET)
+  return size
+
+proc ring_destroy*(ring: ptr RingBuffer) =
+  av_fifo_freep(addr(ring.fifo))
+
+proc async_open*(h: ptr URLContext; arg: cstring; flags: cint;
+                options: ptr ptr AVDictionary): cint =
+  var c: ptr Context = h.priv_data
+  var ret: cint
+  ##  AVIOInterruptCB  interrupt_callback = {.callback = async_check_interrupt, .opaque = h};
+  av_strstart(arg, "async:", addr(arg))
+  ret = ring_init(addr(c.ring), BUFFER_CAPACITY, READ_BACK_CAPACITY)
+  if ret < 0:
+    break fifo_fail
+  c.interrupt_callback = h.interrupt_callback
+  ret = ffurl_open_whitelist(addr(c.inner), arg, flags, addr(interrupt_callback),
+                           options, h.protocol_whitelist, h.protocol_blacklist, h)
+  if ret != 0:
+    echo(h, AV_LOG_ERROR, "ffurl_open failed : %s, %s\n", av_err2str(ret), arg)
+    break url_fail
+  c.logical_size = ffurl_size(c.inner)
+  h.is_streamed = c.inner.is_streamed
+  ret = pthread_mutex_init(addr(c.mutex), nil)
+  if ret != 0:
+    echo(h, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n", av_err2str(ret))
+    break mutex_fail
+  ret = pthread_cond_init(addr(c.cond_wakeup_main), nil)
+  if ret != 0:
+    echo(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", av_err2str(ret))
+    break cond_wakeup_main_fail
+  ret = pthread_cond_init(addr(c.cond_wakeup_background), nil)
+  if ret != 0:
+    echo(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", av_err2str(ret))
+    break cond_wakeup_background_fail
+  ret = pthread_create(addr(c.async_buffer_thread), nil, async_buffer_task, h)
+  if ret:
+    echo(h, AV_LOG_ERROR, "pthread_create failed : %s\n", av_err2str(ret))
+    break thread_fail
+  return 0
+  pthread_cond_destroy(addr(c.cond_wakeup_background))
+  pthread_cond_destroy(addr(c.cond_wakeup_main))
+  pthread_mutex_destroy(addr(c.mutex))
+  ffurl_closep(addr(c.inner))
+  ring_destroy(addr(c.ring))
+  return ret
+
+proc async_close*(h: ptr URLContext): cint =
+  var c: ptr Context = h.priv_data
+  var ret: cint
+  pthread_mutex_lock(addr(c.mutex))
+  c.abort_request = 1
+  pthread_cond_signal(addr(c.cond_wakeup_background))
+  pthread_mutex_unlock(addr(c.mutex))
+  ret = pthread_join(c.async_buffer_thread, nil)
+  if ret != 0:
+    echo(h, AV_LOG_ERROR, "pthread_join(): %s\n", av_err2str(ret))
+  pthread_cond_destroy(addr(c.cond_wakeup_background))
+  pthread_cond_destroy(addr(c.cond_wakeup_main))
+  pthread_mutex_destroy(addr(c.mutex))
+  ffurl_closep(addr(c.inner))
+  ring_destroy(addr(c.ring))
+  return 0
+
+proc ring_size*(ring: ptr RingBuffer): cint =
+  return av_fifo_size(ring.fifo) - ring.read_pos
+
+proc av_fifo_generic_peek_at*(f: ptr AVFifoBuffer; dest: pointer; offset: cint;
+                             buf_size: cint;
+                             `func`: proc (a1: pointer; a2: pointer; a3: cint)): cint =
+  var rptr: ptr uint8_t = f.rptr
+  av_assert2(offset >= 0)
+  av_assert2(buf_size + cast[cuint](offset) <= f.wndx - f.rndx)
+  if offset >= f.`end` - rptr:
+    inc(rptr, offset - (f.`end` - f.buffer))
+  else:
+    inc(rptr, offset)
+  while buf_size > 0:
+    var len: cint
+    if rptr >= f.`end`:
+      dec(rptr, f.`end` - f.buffer)
+    len = FFMIN(f.`end` - rptr, buf_size)
+    if `func`:
+      `func`(dest, rptr, len)
+    else:
+      memcpy(dest, rptr, len)
+      dest = cast[ptr uint8_t](dest) + len
+    dec(buf_size, len)
+    inc(rptr, len)
+  return 0
+
+proc ring_generic_read*(ring: ptr RingBuffer; dest: pointer; buf_size: cint;
+                       `func`: proc (a1: pointer; a2: pointer; a3: cint)): cint =
+  var ret: cint
+  av_assert2(buf_size <= ring_size(ring))
+  ret = av_fifo_generic_peek_at(ring.fifo, dest, ring.read_pos, buf_size, `func`)
+  inc(ring.read_pos, buf_size)
+  if ring.read_pos > ring.read_back_capacity:
+    av_fifo_drain(ring.fifo, ring.read_pos - ring.read_back_capacity)
+    ring.read_pos = ring.read_back_capacity
+  return ret
+
+proc async_read_internal*(h: ptr URLContext; dest: pointer; size: cint;
+                         read_complete: cint;
+                         `func`: proc (a1: pointer; a2: pointer; a3: cint)): cint =
+  var c: ptr Context = h.priv_data
+  var ring: ptr RingBuffer = addr(c.ring)
+  var to_read: cint = size
+  var ret: cint = 0
+  pthread_mutex_lock(addr(c.mutex))
+  while to_read > 0:
+    var
+      fifo_size: cint
+      to_copy: cint
+    if async_check_interrupt(h):
+      ret = AVERROR_EXIT
+      break
+    fifo_size = ring_size(ring)
+    to_copy = FFMIN(to_read, fifo_size)
+    if to_copy > 0:
+      ring_generic_read(ring, dest, to_copy, `func`)
+      if not `func`:
+        dest = cast[ptr uint8_t](dest) + to_copy
+      inc(c.logical_pos, to_copy)
+      dec(to_read, to_copy)
+      ret = size - to_read
+      if to_read <= 0 or not read_complete:
+        break
+    elif c.io_eof_reached:
+      if ret <= 0:
+        if c.io_error:
+          ret = c.io_error
+        else:
+          ret = AVERROR_EOF
+      break
+    pthread_cond_signal(addr(c.cond_wakeup_background))
+    pthread_cond_wait(addr(c.cond_wakeup_main), addr(c.mutex))
+  pthread_cond_signal(addr(c.cond_wakeup_background))
+  pthread_mutex_unlock(addr(c.mutex))
+  return ret
+
+proc async_read*(h: ptr URLContext; buf: ptr cuchar; size: cint): cint =
+  return async_read_internal(h, buf, size, 0, nil)
+
+proc fifo_do_not_copy_func*(dest: pointer; src: pointer; size: cint) =
+  discard
+
+proc ring_size_of_read_back*(ring: ptr RingBuffer): cint =
+  return ring.read_pos
+
+proc ring_drain*(ring: ptr RingBuffer; offset: cint): cint =
+  av_assert2(offset >= -ring_size_of_read_back(ring))
+  av_assert2(offset <= ring_size(ring))
+  inc(ring.read_pos, offset)
+  return 0
+
+proc async_seek*(h: ptr URLContext; pos: int64_t; whence: cint): int64_t =
+  var c: ptr Context = h.priv_data
+  var ring: ptr RingBuffer = addr(c.ring)
+  var ret: int64_t
+  var new_logical_pos: int64_t
+  var fifo_size: cint
+  var fifo_size_of_read_back: cint
+  if whence == AVSEEK_SIZE:
+    echo(h, AV_LOG_TRACE, "async_seek: AVSEEK_SIZE: %", PRId64, "\n",
+           cast[int64_t](c.logical_size))
+    return c.logical_size
+  elif whence == SEEK_CUR:
+    echo(h, AV_LOG_TRACE, "async_seek: %", PRId64, "\n", pos)
+    new_logical_pos = pos + c.logical_pos
+  elif whence == SEEK_SET:
+    echo(h, AV_LOG_TRACE, "async_seek: %", PRId64, "\n", pos)
+    new_logical_pos = pos
+  else:
+    return EINVAL
+  if new_logical_pos < 0:
+    return EINVAL
+  fifo_size = ring_size(ring)
+  fifo_size_of_read_back = ring_size_of_read_back(ring)
+  if new_logical_pos == c.logical_pos:
+    return c.logical_pos
+  elif (new_logical_pos >= (c.logical_pos - fifo_size_of_read_back)) and
+      (new_logical_pos < (c.logical_pos + fifo_size + SHORT_SEEK_THRESHOLD)):
+    var pos_delta: cint = (int)(new_logical_pos - c.logical_pos)
+    echo(h, AV_LOG_TRACE, "async_seek: fask_seek %", PRId64,
+           " from %d dist:%d/%d\n", new_logical_pos, cast[cint](c.logical_pos),
+           (int)(new_logical_pos - c.logical_pos), fifo_size)
+    if pos_delta > 0:
+      async_read_internal(h, nil, pos_delta, 1, fifo_do_not_copy_func)
+    else:
+      ring_drain(ring, pos_delta)
+      c.logical_pos = new_logical_pos
+    return c.logical_pos
+  elif c.logical_size <= 0:
+    return EINVAL
+  elif new_logical_pos > c.logical_size:
+    return EINVAL
+  pthread_mutex_lock(addr(c.mutex))
+  c.seek_request = 1
+  c.seek_pos = new_logical_pos
+  c.seek_whence = SEEK_SET
+  c.seek_completed = 0
+  c.seek_ret = 0
+  while 1:
+    if async_check_interrupt(h):
+      ret = AVERROR_EXIT
+      break
+    if c.seek_completed:
+      if c.seek_ret >= 0:
+        c.logical_pos = c.seek_ret
+      ret = c.seek_ret
+      break
+    pthread_cond_signal(addr(c.cond_wakeup_background))
+    pthread_cond_wait(addr(c.cond_wakeup_main), addr(c.mutex))
+  pthread_mutex_unlock(addr(c.mutex))
+  return ret
+
+var  ff_async_protocol = URLProtocol(name:"async",url_open2:async_open,url_read:async_read,
+  url_seek:async_seek,url_close:async_close,priv_data_size:sizeof(Context),priv_data_class:async_context_class)
+
+
+proc io_open_default*(s: AVFormatContext; pb: AVIOContext; url: string;flags: cint; options: TableRef[string,string]): cint =
   var loglevel: cint
-  if url == s.url or s.iformat and s.iformat.name == "image2" or s.oformat and s.oformat.name == "image2":
+  if url == s.url or s.iformat.name == "image2" or  s.oformat.name == "image2":
     loglevel = AV_LOG_DEBUG
   else:
     loglevel = AV_LOG_INFO
-  echo(s, loglevel, "Opening \'%s\' for %s\n", url, if flags and AVIO_FLAG_WRITE: "writing" else: "reading")
+  echo "Opening \'%s\' for %s\n", "writing" else: "reading"
   return ffio_open_whitelist(pb, url, flags, addr(s.interrupt_callback), options, s.protocol_whitelist, s.protocol_blacklist)
 
 proc io_close_default*(s: AVFormatContext; pb: AVIOContext) =
@@ -3067,7 +3519,7 @@ proc io_close_default*(s: AVFormatContext; pb: AVIOContext) =
 proc av_demuxer_iterate*(opaque: ptr pointer): AVInputFormat =
   var size: uintptr_t = sizeof((demuxer_list) div sizeof((demuxer_list[0]))) - 1
   var i: uintptr_t = (uintptr_t) * opaque
-  var f: AVInputFormat = nil
+  var f: AVInputFormat
   if i < size:
     f = demuxer_list[i]
   elif outdev_list:
@@ -3079,7 +3531,7 @@ proc av_demuxer_iterate*(opaque: ptr pointer): AVInputFormat =
 proc av_muxer_iterate*(opaque: ptr pointer): AVOutputFormat =
   var size: uintptr_t = sizeof((muxer_list) div sizeof((muxer_list[0]))) - 1
   var i: uintptr_t = (uintptr_t) * opaque
-  var f: AVOutputFormat = nil
+  var f: AVOutputFormat
   if i < size:
     f = muxer_list[i]
   elif indev_list:
@@ -3092,26 +3544,26 @@ proc format_child_class_iterate*(iter: ptr pointer): AVClass =
   var val: pointer = cast[pointer]((((uintptr_t) * iter) and
       ((1 shl ITER_STATE_SHIFT) - 1)))
   var state: cuint = ((uintptr_t) * iter) shr ITER_STATE_SHIFT
-  var ret: AVClass = nil
+  var ret: AVClass
   if state == CHILD_CLASS_ITER_AVIO:
     ret = addr(ff_avio_class)
     inc(state)
-    break finish
+    goto finish
   if state == CHILD_CLASS_ITER_MUX:
     var ofmt: AVOutputFormat
     while (ofmt = av_muxer_iterate(addr(val))):
       ret = ofmt.priv_class
       if ret:
-        break finish
-    val = nil
+        goto finish
+    val 
     inc(state)
   if state == CHILD_CLASS_ITER_DEMUX:
     var ifmt: AVInputFormat
     while (ifmt = av_demuxer_iterate(addr(val))):
       ret = ifmt.priv_class
       if ret:
-        break finish
-    val = nil
+        goto finish
+    val 
     inc(state)
   av_assert0(not (cast[uintptr_t](val) shr ITER_STATE_SHIFT))
   iter[] = cast[pointer]((cast[uintptr_t](val) or (state shl ITER_STATE_SHIFT)))
@@ -3127,13 +3579,13 @@ proc format_child_next*(obj: pointer; prev: pointer): pointer =
   return nil
 
 proc AVClass_get_category*(`ptr`: pointer): AVClassCategory =
-  var avctx: ptr AVCodecContext = `ptr`
+  var avctx: AVCodecContext = `ptr`
   if avctx.codec and avctx.codec.decode:
     return AV_CLASS_CATEGORY_DECODER
   else:
     return AV_CLASS_CATEGORY_ENCODER
 
-proc format_to_name*(`ptr`: pointer): cstring =
+proc format_to_name*(`ptr`: pointer): string =
   var fc: AVFormatContext = cast[AVFormatContext](`ptr`)
   if fc.iformat:
     return fc.iformat.name
@@ -3169,22 +3621,22 @@ proc read_thread*(arg: pointer): cint =
   var
     pkt1: AVPacket
     pkt: ptr AVPacket = addr(pkt1)
-  var stream_start_time: int64_t
+  var stream_start_time: int64
   var pkt_in_play_range: cint = 0
   var t: string
   var wait_mutex: ptr SDL_mutex = SDL_CreateMutex()
   var scan_all_pmts_set: cint = 0
-  var pkt_ts: int64_t
+  var pkt_ts: int64
   if not wait_mutex:
     echo(nil, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError())
-    ret = AVERROR(ENOMEM)
+    ret = ENOMEM
     break fail
   memset(st_index, -1, sizeof((st_index)))
   videoState.eof = 0
   ic = avformat_alloc_context()
   if not ic:
     echo(nil, AV_LOG_FATAL, "Could not allocate context.\n")
-    ret = AVERROR(ENOMEM)
+    ret = ENOMEM
     break fail
   ic.interrupt_callback.callback = decode_interrupt_cb
   ic.interrupt_callback.opaque = videoState
@@ -3226,7 +3678,7 @@ proc read_thread*(arg: pointer): cint =
   if not window_title and (t = ic.metadata["title"]):
     window_title = fmt"{t} - {input_filename}"
   if start_time != AV_NOPTS_VALUE:
-    var timestamp: int64_t
+    var timestamp: int64
     timestamp = start_time
     if ic.start_time != AV_NOPTS_VALUE:
       inc(timestamp, ic.start_time)
@@ -3303,9 +3755,9 @@ proc read_thread*(arg: pointer): cint =
       # SDL_Delay(10)
       continue
     if videoState.seek_req:
-      var seek_target: int64_t = videoState.seek_pos
-      var seek_min: int64_t = if videoState.seek_rel > 0: seek_target - videoState.seek_rel + 2 else: INT64_MIN
-      var seek_max: int64_t = if videoState.seek_rel < 0: seek_target - videoState.seek_rel - 2 else: INT64_MAX
+      var seek_target: int64 = videoState.seek_pos
+      var seek_min: int64 = if videoState.seek_rel > 0: seek_target - videoState.seek_rel + 2 else: INT64_MIN
+      var seek_max: int64 = if videoState.seek_rel < 0: seek_target - videoState.seek_rel - 2 else: INT64_MAX
       ##  FIXME the +-2 is due to rounding being not done in the correct direction in generation of the seek_pos/seek_rel variables
       ret = avformat_seek_file(videoState.ic, -1, seek_min, seek_target, seek_max,videoState.seek_flags)
       if ret < 0:
@@ -3415,22 +3867,22 @@ proc frame_queue_init*(f: ptr FrameQueue; pktq: ptr PacketQueue; max_size: cint;
   memset(f, 0, sizeof((FrameQueue)))
   if not (f.mutex = SDL_CreateMutex()):
     echo(nil, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError())
-    return AVERROR(ENOMEM)
+    return ENOMEM
   if not (f.cond = SDL_CreateCond()):
     echo(nil, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError())
-    return AVERROR(ENOMEM)
+    return ENOMEM
   f.pktq = pktq
   f.max_size = FFMIN(max_size, FRAME_QUEUE_SIZE)
   f.keep_last = not not keep_last
   i = 0
   while i < f.max_size:
     if not (f.queue[i].frame = av_frame_alloc()):
-      return AVERROR(ENOMEM)
+      return ENOMEM
     inc(i)
   return 0
 
 
-proc stream_open*(filename: cstring; iformat: AVInputFormat): VideoState =
+proc stream_open*(filename: string; iformat: AVInputFormat): VideoState =
   var videoState: VideoState
   videoState = VideoState()
   videoState.last_video_stream = videoState.video_stream = -1

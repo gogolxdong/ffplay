@@ -4527,8 +4527,7 @@ size_t av_strlcat(char *dst, const char *src, size_t size)
     return len + av_strlcpy(dst + len, src, size - len);
 }
 
-int av_dict_set(AVDictionary **pm, const char *key, const char *value,
-                int flags)
+int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags)
 {
     AVDictionary *m = *pm;
     AVDictionaryEntry *tag = NULL;
@@ -38816,7 +38815,7 @@ static void *urlcontext_child_next(void *obj, void *prev)
     return NULL;
 }
 
-static URLProtocol * url_protocols[] = {
+static URLProtocol * url_protocols[] = 
     // &ff_async_protocol,
     // &ff_bluray_protocol,
     // &ff_cache_protocol,
@@ -39641,7 +39640,7 @@ fail:
     av_freep(&buffer);
     return AVERROR(ENOMEM);
 }
-int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags,
+int ffio_open_whitelist(AVIOContext **s, const char *filename, int flags, 
                          const AVIOInterruptCB *int_cb, AVDictionary **options,
                          const char *whitelist, const char *blacklist
                         )
