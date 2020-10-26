@@ -5,8 +5,8 @@ when defined(windows):
 
 type
   AVCodecID* = enum
-    AV_CODEC_ID_NONE,         ##  video codecs
-    AV_CODEC_ID_MPEG1VIDEO, AV_CODEC_ID_MPEG2VIDEO, ## /< preferred ID for MPEG-1/2 video decoding
+    AV_CODEC_ID_NONE,         
+    AV_CODEC_ID_MPEG1VIDEO, AV_CODEC_ID_MPEG2VIDEO, 
     AV_CODEC_ID_H261, AV_CODEC_ID_H263, AV_CODEC_ID_RV10, AV_CODEC_ID_RV20,
     AV_CODEC_ID_MJPEG, AV_CODEC_ID_MJPEGB, AV_CODEC_ID_LJPEG, AV_CODEC_ID_SP5X,
     AV_CODEC_ID_JPEGLS, AV_CODEC_ID_MPEG4, AV_CODEC_ID_RAWVIDEO,
@@ -73,8 +73,8 @@ type
     AV_CODEC_ID_ARBC, AV_CODEC_ID_AGM, AV_CODEC_ID_LSCR, AV_CODEC_ID_VP4,
     AV_CODEC_ID_IMM5, AV_CODEC_ID_MVDV, AV_CODEC_ID_MVHA, AV_CODEC_ID_CDTOONS,
     AV_CODEC_ID_MV30, AV_CODEC_ID_NOTCHLC, AV_CODEC_ID_PFM, AV_CODEC_ID_MOBICLIP,
-    AV_CODEC_ID_PHOTOCD, AV_CODEC_ID_IPU, AV_CODEC_ID_ARGO, AV_CODEC_ID_CRI, ##  various PCM "codecs"
-    AV_CODEC_ID_FIRST_AUDIO = 0x00010000, ## /< A dummy id pointing at the start of audio codecs
+    AV_CODEC_ID_PHOTOCD, AV_CODEC_ID_IPU, AV_CODEC_ID_ARGO, AV_CODEC_ID_CRI, 
+    AV_CODEC_ID_FIRST_AUDIO = 0x00010000, 
     AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_U16LE, AV_CODEC_ID_PCM_U16BE,
     AV_CODEC_ID_PCM_S8, AV_CODEC_ID_PCM_U8, AV_CODEC_ID_PCM_MULAW,
     AV_CODEC_ID_PCM_ALAW, AV_CODEC_ID_PCM_S32LE, AV_CODEC_ID_PCM_S32BE,
@@ -86,7 +86,7 @@ type
     AV_CODEC_ID_PCM_LXF, AV_CODEC_ID_S302M, AV_CODEC_ID_PCM_S8_PLANAR,
     AV_CODEC_ID_PCM_S24LE_PLANAR, AV_CODEC_ID_PCM_S32LE_PLANAR,
     AV_CODEC_ID_PCM_S16BE_PLANAR, AV_CODEC_ID_PCM_S64LE = 0x00010800,
-    AV_CODEC_ID_PCM_S64BE, AV_CODEC_ID_PCM_F16LE, AV_CODEC_ID_PCM_F24LE, AV_CODEC_ID_PCM_VIDC, ##  various ADPCM codecs
+    AV_CODEC_ID_PCM_S64BE, AV_CODEC_ID_PCM_F16LE, AV_CODEC_ID_PCM_F24LE, AV_CODEC_ID_PCM_VIDC, 
     AV_CODEC_ID_ADPCM_IMA_QT = 0x00011000, AV_CODEC_ID_ADPCM_IMA_WAV,
     AV_CODEC_ID_ADPCM_IMA_DK3, AV_CODEC_ID_ADPCM_IMA_DK4,
     AV_CODEC_ID_ADPCM_IMA_WS, AV_CODEC_ID_ADPCM_IMA_SMJPEG, AV_CODEC_ID_ADPCM_MS,
@@ -105,22 +105,22 @@ type
     AV_CODEC_ID_ADPCM_IMA_DAT4, AV_CODEC_ID_ADPCM_MTAF, AV_CODEC_ID_ADPCM_AGM,
     AV_CODEC_ID_ADPCM_ARGO, AV_CODEC_ID_ADPCM_IMA_SSI, AV_CODEC_ID_ADPCM_ZORK,
     AV_CODEC_ID_ADPCM_IMA_APM, AV_CODEC_ID_ADPCM_IMA_ALP,
-    AV_CODEC_ID_ADPCM_IMA_MTF, AV_CODEC_ID_ADPCM_IMA_CUNNING, AV_CODEC_ID_ADPCM_IMA_MOFLEX, ##  AMR
-    AV_CODEC_ID_AMR_NB = 0x00012000, AV_CODEC_ID_AMR_WB, ##  RealAudio codecs
-    AV_CODEC_ID_RA_144 = 0x00013000, AV_CODEC_ID_RA_288, ##  various DPCM codecs
+    AV_CODEC_ID_ADPCM_IMA_MTF, AV_CODEC_ID_ADPCM_IMA_CUNNING, AV_CODEC_ID_ADPCM_IMA_MOFLEX, 
+    AV_CODEC_ID_AMR_NB = 0x00012000, AV_CODEC_ID_AMR_WB,
+    AV_CODEC_ID_RA_144 = 0x00013000, AV_CODEC_ID_RA_288, 
     AV_CODEC_ID_ROQ_DPCM = 0x00014000, AV_CODEC_ID_INTERPLAY_DPCM,
     AV_CODEC_ID_XAN_DPCM, AV_CODEC_ID_SOL_DPCM,
-    AV_CODEC_ID_SDX2_DPCM = 0x00014800, AV_CODEC_ID_GREMLIN_DPCM, AV_CODEC_ID_DERF_DPCM, ##  audio codecs
-    AV_CODEC_ID_MP2 = 0x00015000, AV_CODEC_ID_MP3, ## /< preferred ID for decoding MPEG audio layer 1, 2 or 3
+    AV_CODEC_ID_SDX2_DPCM = 0x00014800, AV_CODEC_ID_GREMLIN_DPCM, AV_CODEC_ID_DERF_DPCM, 
+    AV_CODEC_ID_MP2 = 0x00015000, AV_CODEC_ID_MP3,
     AV_CODEC_ID_AAC, AV_CODEC_ID_AC3, AV_CODEC_ID_DTS, AV_CODEC_ID_VORBIS,
     AV_CODEC_ID_DVAUDIO, AV_CODEC_ID_WMAV1, AV_CODEC_ID_WMAV2, AV_CODEC_ID_MACE3,
     AV_CODEC_ID_MACE6, AV_CODEC_ID_VMDAUDIO, AV_CODEC_ID_FLAC, AV_CODEC_ID_MP3ADU,
     AV_CODEC_ID_MP3ON4, AV_CODEC_ID_SHORTEN, AV_CODEC_ID_ALAC,
-    AV_CODEC_ID_WESTWOOD_SND1, AV_CODEC_ID_GSM, ## /< as in Berlin toast format
+    AV_CODEC_ID_WESTWOOD_SND1, AV_CODEC_ID_GSM, 
     AV_CODEC_ID_QDM2, AV_CODEC_ID_COOK, AV_CODEC_ID_TRUESPEECH, AV_CODEC_ID_TTA,
     AV_CODEC_ID_SMACKAUDIO, AV_CODEC_ID_QCELP, AV_CODEC_ID_WAVPACK,
     AV_CODEC_ID_DSICINAUDIO, AV_CODEC_ID_IMC, AV_CODEC_ID_MUSEPACK7,
-    AV_CODEC_ID_MLP, AV_CODEC_ID_GSM_MS, ##  as found in WAV
+    AV_CODEC_ID_MLP, AV_CODEC_ID_GSM_MS, 
     AV_CODEC_ID_ATRAC3, AV_CODEC_ID_APE, AV_CODEC_ID_NELLYMOSER,
     AV_CODEC_ID_MUSEPACK8, AV_CODEC_ID_SPEEX, AV_CODEC_ID_WMAVOICE,
     AV_CODEC_ID_WMAPRO, AV_CODEC_ID_WMALOSSLESS, AV_CODEC_ID_ATRAC3P,
@@ -140,26 +140,33 @@ type
     AV_CODEC_ID_ATRAC3PAL, AV_CODEC_ID_DOLBY_E, AV_CODEC_ID_APTX,
     AV_CODEC_ID_APTX_HD, AV_CODEC_ID_SBC, AV_CODEC_ID_ATRAC9, AV_CODEC_ID_HCOM,
     AV_CODEC_ID_ACELP_KELVIN, AV_CODEC_ID_MPEGH_3D_AUDIO, AV_CODEC_ID_SIREN,
-    AV_CODEC_ID_HCA, AV_CODEC_ID_FASTAUDIO, ##  subtitle codecs
-    AV_CODEC_ID_FIRST_SUBTITLE = 0x00017000, ## /< A dummy ID pointing at the start of subtitle codecs.
-    AV_CODEC_ID_DVB_SUBTITLE, AV_CODEC_ID_TEXT, ## /< raw UTF-8 text
+    AV_CODEC_ID_HCA, AV_CODEC_ID_FASTAUDIO, 
+    AV_CODEC_ID_FIRST_SUBTITLE = 0x00017000, 
+    AV_CODEC_ID_DVB_SUBTITLE, AV_CODEC_ID_TEXT, 
     AV_CODEC_ID_XSUB, AV_CODEC_ID_SSA, AV_CODEC_ID_MOV_TEXT,
     AV_CODEC_ID_HDMV_PGS_SUBTITLE, AV_CODEC_ID_DVB_TELETEXT, AV_CODEC_ID_SRT,
     AV_CODEC_ID_MICRODVD = 0x00017800, AV_CODEC_ID_EIA_608, AV_CODEC_ID_JACOSUB,
     AV_CODEC_ID_SAMI, AV_CODEC_ID_REALTEXT, AV_CODEC_ID_STL,
     AV_CODEC_ID_SUBVIEWER1, AV_CODEC_ID_SUBVIEWER, AV_CODEC_ID_SUBRIP,
     AV_CODEC_ID_WEBVTT, AV_CODEC_ID_MPL2, AV_CODEC_ID_VPLAYER, AV_CODEC_ID_PJS,
-    AV_CODEC_ID_ASS, AV_CODEC_ID_HDMV_TEXT_SUBTITLE, AV_CODEC_ID_TTML, AV_CODEC_ID_ARIB_CAPTION, ##  other specific kind of codecs (generally used for attachments)
-    AV_CODEC_ID_FIRST_UNKNOWN = 0x00018000, ## /< A dummy ID pointing at the start of various fake codecs.
-    AV_CODEC_ID_SCTE_35,      ## /< Contain timestamp estimated through PCR of program stream.
+    AV_CODEC_ID_ASS, AV_CODEC_ID_HDMV_TEXT_SUBTITLE, AV_CODEC_ID_TTML, AV_CODEC_ID_ARIB_CAPTION, 
+    AV_CODEC_ID_FIRST_UNKNOWN = 0x00018000, 
+    AV_CODEC_ID_SCTE_35,      
     AV_CODEC_ID_EPG, AV_CODEC_ID_BINTEXT = 0x00018800, AV_CODEC_ID_XBIN,
     AV_CODEC_ID_IDF, AV_CODEC_ID_OTF, AV_CODEC_ID_SMPTE_KLV, AV_CODEC_ID_DVD_NAV,
     AV_CODEC_ID_TIMED_ID3, AV_CODEC_ID_BIN_DATA, AV_CODEC_ID_PROBE = 0x00019000, 
     AV_CODEC_ID_MPEG2TS = 0x00020000, 
     AV_CODEC_ID_MPEG4SYSTEMS = 0x00020001, 
-                                        
     AV_CODEC_ID_FFMETADATA = 0x00021000, 
     AV_CODEC_ID_WRAPPED_AVFRAME = 0x00021001 
+
+template MKTAG*(a, b, c, d: untyped): untyped =
+  (a.int or (b.int shl 8) or (c.int shl 16) or (d.int shl 24))
+
+template MKBETAG*(a, b, c, d: untyped): untyped =
+  (d or (c shl 8) or (b shl 16) or (a shl 24))
+
+template FFERRTAG*(a, b, c, d: untyped): untyped = (-cast[cint](MKTAG(a, b, c, d)))
 
 const
   AV_CODEC_ID_PCM_S16LE = AV_CODEC_ID_FIRST_AUDIO
@@ -167,112 +174,175 @@ const
   AV_CODEC_ID_TTF = AV_CODEC_ID_FIRST_UNKNOWN
   RAW_PACKET_BUFFER_SIZE = 2500000
   SWR_CH_MAX = 64
-
-const
+  AV_PARSER_PTS_NB* = 4
+  PARSER_FLAG_COMPLETE_FRAMES* = 0x00000001
+  PARSER_FLAG_ONCE* = 0x00000002
+  PARSER_FLAG_FETCHED_OFFSET* = 0x00000004
+  PARSER_FLAG_USE_CODEC_TS* = 0x00001000
+  AV_NUM_DATA_POINTERS = 8
   AV_OPT_FLAG_DECODING_PARAM = 2
   DEC* = AV_OPT_FLAG_DECODING_PARAM
-
-const AVFMT_NOFILE = 0x0001
-  
-const AVIO_FLAG_READ = 1                                     
-const AVIO_FLAG_WRITE = 2 
-
-const YUVRGB_TABLE_HEADROOM = 512
-
-var program_name*: string = "ffplay"
-
-var program_birth_year*: cint = 2003
-
-var var_names*: array[6,string] = ["t", "n", "pos", "w", "h", ""]
-const MAX_REORDER_DELAY = 16
-const
-  MAX_SLICE_PLANES* = 4
-
-const
+  AVIO_FLAG_READ = 1                                     
+  AVIO_FLAG_WRITE = 2 
+  YUVRGB_TABLE_HEADROOM = 512
   YUVRGB_TABLE_LUMA_HEADROOM* = 512
   SWS_MAX_FILTER_SIZE* = 256
   MAX_FILTER_SIZE* = SWS_MAX_FILTER_SIZE
   HWACCEL_CAP_ASYNC_SAFE* = (1 shl 0)
-
-const
+  MAX_STD_TIMEBASES* = (30 * 12 + 30 + 3 + 6)
   VAR_T* = 0
   VAR_N* = 1
   VAR_POS* = 2
   VAR_W* = 3
   VAR_H* = 4
   VAR_VARS_NB* = 5
+  MAX_REORDER_DELAY = 16
+  MAX_SLICE_PLANES* = 4
+  AV_NOPTS_VALUE = 0x8000000000000000
+  RAW_PACKET_SIZE* = 1024
+  AVPROBE_SCORE_MAX* = 100
+  AVPROBE_SCORE_RETRY* = (AVPROBE_SCORE_MAX div 4)
+  AVPROBE_SCORE_STREAM_RETRY* = (AVPROBE_SCORE_MAX div 4 - 1)
+  AVPROBE_SCORE_EXTENSION* = 50
+  AVPROBE_SCORE_MIME* = 75
+  AVPROBE_PADDING_SIZE* = 32
+  AVFMT_NOFILE* = 0x00000001
+  AVFMT_NEEDNUMBER* = 0x00000002
+  AVFMT_SHOW_IDS* = 0x00000008
+  AVFMT_GLOBALHEADER* = 0x00000040
+  AVFMT_NOTIMESTAMPS* = 0x00000080
+  AVFMT_GENERIC_INDEX* = 0x00000100
+  AVFMT_TS_DISCONT* = 0x00000200
+  AVFMT_VARIABLE_FPS* = 0x00000400
+  AVFMT_NODIMENSIONS* = 0x00000800
+  AVFMT_NOSTREAMS* = 0x00001000
+  AVFMT_NOBINSEARCH* = 0x00002000
+  AVFMT_NOGENSEARCH* = 0x00004000
+  AVFMT_NO_BYTE_SEEK* = 0x00008000
+  AVFMT_ALLOW_FLUSH* = 0x00010000
+  AVFMT_TS_NONSTRICT* = 0x00020000
+  AVFMT_TS_NEGATIVE* = 0x00040000
+  AVFMT_SEEK_TO_PTS* = 0x04000000
+  MAX_SPS_COUNT* = 32
+  MAX_PPS_COUNT* = 256
+  MAX_LOG2_MAX_FRAME_NUM* = (12 + 4)
+  MB_LEN_MAX* = 5
+  SHRT_MIN* = (-32768)          ##  minimum (signed) short value
+  SHRT_MAX* = 32767
+  USHRT_MAX* = 0x0000FFFF
+  INT_MIN* = (-2147483647 - 1)    ##  minimum (signed) int value
+  INT_MAX* = 2147483647
+  UINT_MAX* = 0xFFFFFFFF
+  LONG_MIN* = (-2147483647 - 1)   ##  minimum (signed) long value
+  LONG_MAX* = 2147483647
+  ULONG_MAX* = 0xFFFFFFFF
+  LLONG_MAX* = 9223372036854775807'i64
+  LLONG_MIN* = (-9223372036854775807'i64 - 1)
+  ULLONG_MAX* = 0x0000000000000000'i64
+  I8_MIN* = (-127 - 1)           ##  minimum signed 8 bit value
+  I8_MAX* = 127
+  UI8_MAX* = 0x000000FF
+  I16_MIN* = (-32767 - 1)        ##  minimum signed 16 bit value
+  I16_MAX* = 32767
+  UI16_MAX* = 0x0000FFFF
+  I32_MIN* = (-2147483647 - 1)   ##  minimum signed 32 bit value
+  I32_MAX* = 2147483647
+  UI32_MAX* = 0xFFFFFFFF
+  I64_MIN* = (-9223372036854775807'i64 - 1)
+  I64_MAX* = 9223372036854775807'i64
+  UI64_MAX* = 0x0000000000000000'i64
+  AV_INPUT_BUFFER_PADDING_SIZE = 64
+
+
+  AVERROR_BSF_NOT_FOUND* = FFERRTAG(0x000000F8, 'B', 'S', 'F') ## /< Bitstream filter not found
+  AVERROR_BUG* = FFERRTAG('B', 'U', 'G', '!') ## /< Internal bug, also see AVERROR_BUG2
+  AVERROR_BUFFER_TOO_SMALL* = FFERRTAG('B', 'U', 'F', 'S') ## /< Buffer too small
+  AVERROR_DECODER_NOT_FOUND* = FFERRTAG(0x000000F8, 'D', 'E', 'C') ## /< Decoder not found
+  AVERROR_DEMUXER_NOT_FOUND* = FFERRTAG(0x000000F8, 'D', 'E', 'M') ## /< Demuxer not found
+  AVERROR_ENCODER_NOT_FOUND* = FFERRTAG(0x000000F8, 'E', 'N', 'C') ## /< Encoder not found
+  AVERROR_EOF* = FFERRTAG('E', 'O', 'F', ' ') ## /< End of file
+  AVERROR_EXIT* = FFERRTAG('E', 'X', 'I', 'T') ## /< Immediate exit was requested; the called function should not be restarted
+  AVERROR_EXTERNAL* = FFERRTAG('E', 'X', 'T', ' ') ## /< Generic error in an external library
+  AVERROR_FILTER_NOT_FOUND* = FFERRTAG(0x000000F8, 'F', 'I', 'L') ## /< Filter not found
+  AVERROR_INVALIDDATA* = FFERRTAG('I', 'N', 'D', 'A') ## /< Invalid data found when processing input
+  AVERROR_MUXER_NOT_FOUND* = FFERRTAG(0x000000F8, 'M', 'U', 'X') ## /< Muxer not found
+  AVERROR_OPTION_NOT_FOUND* = FFERRTAG(0x000000F8, 'O', 'P', 'T') ## /< Option not found
+  AVERROR_PATCHWELCOME* = FFERRTAG('P', 'A', 'W', 'E') ## /< Not yet implemented in FFmpeg, patches welcome
+  AVERROR_PROTOCOL_NOT_FOUND* = FFERRTAG(0x000000F8, 'P', 'R', 'O') ## /< Protocol not found
+  AVERROR_STREAM_NOT_FOUND* = FFERRTAG(0x000000F8, 'S', 'T', 'R') ## /< Stream not found
+                                                            ## *
+                                                            ##  This is semantically identical to AVERROR_BUG
+                                                            ##  it has been introduced in Libav after our AVERROR_BUG and with a modified value.
+                                                            ##
+  AVERROR_BUG2* = FFERRTAG('B', 'U', 'G', ' ')
+  AVERROR_UNKNOWN* = FFERRTAG('U', 'N', 'K', 'N') ## /< Unknown error, typically from an external library
+  AVERROR_EXPERIMENTAL* = (-0x2BB2AFA8) ## /< Requested feature is flagged experimental. Set strict_std_compliance if you really want to use it.
+  AVERROR_INPUT_CHANGED* = (-0x636E6701) ## /< Input changed between calls. Reconfiguration is required. (can be OR-ed with AVERROR_OUTPUT_CHANGED)
+  AVERROR_OUTPUT_CHANGED* = (-0x636E6702) ## /< Output changed between calls. Reconfiguration is required. (can be OR-ed with AVERROR_INPUT_CHANGED)
+                                       ##  HTTP & RTSP errors
+  AVERROR_HTTP_BAD_REQUEST* = FFERRTAG(0x000000F8, '4', '0', '0')
+  AVERROR_HTTP_UNAUTHORIZED* = FFERRTAG(0x000000F8, '4', '0', '1')
+  AVERROR_HTTP_FORBIDDEN* = FFERRTAG(0x000000F8, '4', '0', '3')
+  AVERROR_HTTP_NOT_FOUND* = FFERRTAG(0x000000F8, '4', '0', '4')
+  AVERROR_HTTP_OTHER_4XX* = FFERRTAG(0x000000F8, '4', 'X', 'X')
+  AVERROR_HTTP_SERVER_ERROR* = FFERRTAG(0x000000F8, '5', 'X', 'X')
+  AV_ERROR_MAX_STRING_SIZE* = 64
+
+var program_name*: string = "ffplay"
+
+var var_names*: array[6, string] = ["t", "n", "pos", "w", "h", ""]
 
 type
   AVStereo3DType* = enum
     AV_STEREO3D_2D, AV_STEREO3D_SIDEBYSIDE, AV_STEREO3D_TOPBOTTOM,
     AV_STEREO3D_FRAMESEQUENCE, AV_STEREO3D_CHECKERBOARD,
     AV_STEREO3D_SIDEBYSIDE_QUINCUNX, AV_STEREO3D_LINES, AV_STEREO3D_COLUMNS
-
   AVPictureStructure* = enum
-    AV_PICTURE_STRUCTURE_UNKNOWN, ## < unknown
-    AV_PICTURE_STRUCTURE_TOP_FIELD, ## < coded as top field
-    AV_PICTURE_STRUCTURE_BOTTOM_FIELD, ## < coded as bottom field
-    AV_PICTURE_STRUCTURE_FRAME ## < coded as frame
-
-type
+    AV_PICTURE_STRUCTURE_UNKNOWN, 
+    AV_PICTURE_STRUCTURE_TOP_FIELD, 
+    AV_PICTURE_STRUCTURE_BOTTOM_FIELD, 
+    AV_PICTURE_STRUCTURE_FRAME 
   AVStereo3DView* = enum
     AV_STEREO3D_VIEW_PACKED, AV_STEREO3D_VIEW_LEFT, AV_STEREO3D_VIEW_RIGHT
-
-type
   fft_permutation_type* = enum
     FF_FFT_PERM_DEFAULT, FF_FFT_PERM_SWAP_LSBS, FF_FFT_PERM_AVX
-
-
-type
   mdct_permutation_type* = enum
     FF_MDCT_PERM_NONE, FF_MDCT_PERM_INTERLEAVE
-type
   H264_SEI_Type* = enum
-    H264_SEI_TYPE_BUFFERING_PERIOD = 0, ## /< buffering period (H.264, D.1.1)
-    H264_SEI_TYPE_PIC_TIMING = 1, ## /< picture timing
-    H264_SEI_TYPE_PAN_SCAN_RECT = 2, ## /< pan-scan rectangle
-    H264_SEI_TYPE_FILLER_PAYLOAD = 3, ## /< filler data
-    H264_SEI_TYPE_USER_DATA_REGISTERED = 4, ## /< registered user data as specified by Rec. ITU-T T.35
-    H264_SEI_TYPE_USER_DATA_UNREGISTERED = 5, ## /< unregistered user data
-    H264_SEI_TYPE_RECOVERY_POINT = 6, ## /< recovery point (frame # to decoder sync)
-    H264_SEI_TYPE_FRAME_PACKING = 45, ## /< frame packing arrangement
-    H264_SEI_TYPE_DISPLAY_ORIENTATION = 47, ## /< display orientation
-    H264_SEI_TYPE_GREEN_METADATA = 56, ## /< GreenMPEG information
-    H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME = 137, ## /< mastering display properties
-    H264_SEI_TYPE_ALTERNATIVE_TRANSFER = 147 ## /< alternative transfer
+    H264_SEI_TYPE_BUFFERING_PERIOD = 0, 
+    H264_SEI_TYPE_PIC_TIMING = 1, 
+    H264_SEI_TYPE_PAN_SCAN_RECT = 2, 
+    H264_SEI_TYPE_FILLER_PAYLOAD = 3, 
+    H264_SEI_TYPE_USER_DATA_REGISTERED = 4, 
+    H264_SEI_TYPE_USER_DATA_UNREGISTERED = 5, 
+    H264_SEI_TYPE_RECOVERY_POINT = 6,
+    H264_SEI_TYPE_FRAME_PACKING = 45, 
+    H264_SEI_TYPE_DISPLAY_ORIENTATION = 47, 
+    H264_SEI_TYPE_GREEN_METADATA = 56, 
+    H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME = 137, 
+    H264_SEI_TYPE_ALTERNATIVE_TRANSFER = 147 
   H264_SEI_PicStructType* = enum
-    H264_SEI_PIC_STRUCT_FRAME = 0, ## /<  0: %frame
-    H264_SEI_PIC_STRUCT_TOP_FIELD = 1, ## /<  1: top field
-    H264_SEI_PIC_STRUCT_BOTTOM_FIELD = 2, ## /<  2: bottom field
-    H264_SEI_PIC_STRUCT_TOP_BOTTOM = 3, ## /<  3: top field, bottom field, in that order
-    H264_SEI_PIC_STRUCT_BOTTOM_TOP = 4, ## /<  4: bottom field, top field, in that order
-    H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP = 5, ## /<  5: top field, bottom field, top field repeated, in that order
-    H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM = 6, ## /<  6: bottom field, top field, bottom field repeated, in that order
-    H264_SEI_PIC_STRUCT_FRAME_DOUBLING = 7, ## /<  7: %frame doubling
+    H264_SEI_PIC_STRUCT_FRAME = 0, 
+    H264_SEI_PIC_STRUCT_TOP_FIELD = 1, 
+    H264_SEI_PIC_STRUCT_BOTTOM_FIELD = 2, 
+    H264_SEI_PIC_STRUCT_TOP_BOTTOM = 3, 
+    H264_SEI_PIC_STRUCT_BOTTOM_TOP = 4, 
+    H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP = 5, 
+    H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM = 6, 
+    H264_SEI_PIC_STRUCT_FRAME_DOUBLING = 7, 
     H264_SEI_PIC_STRUCT_FRAME_TRIPLING = 8
   H264_SEI_FpaType* = enum
     H264_SEI_FPA_TYPE_CHECKERBOARD = 0, H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN = 1,
     H264_SEI_FPA_TYPE_INTERLEAVE_ROW = 2, H264_SEI_FPA_TYPE_SIDE_BY_SIDE = 3,
     H264_SEI_FPA_TYPE_TOP_BOTTOM = 4, H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL = 5,
     H264_SEI_FPA_TYPE_2D = 6
-
-
-
-
-type
   ID3v2Encoding* = enum
     ID3v2_ENCODING_ISO8859 = 0, ID3v2_ENCODING_UTF16BOM = 1,
     ID3v2_ENCODING_UTF16BE = 2, ID3v2_ENCODING_UTF8 = 3
-
-
-type
   AVEscapeMode* = enum
-    AV_ESCAPE_MODE_AUTO,      ## /< Use auto-selected escaping mode.
-    AV_ESCAPE_MODE_BACKSLASH, ## /< Use backslash escaping.
-    AV_ESCAPE_MODE_QUOTE      ## /< Use single-quote escaping.
-
-
-type
+    AV_ESCAPE_MODE_AUTO,      
+    AV_ESCAPE_MODE_BACKSLASH, 
+    AV_ESCAPE_MODE_QUOTE      
   AVPacketSideDataType* = enum
     AV_PKT_DATA_PALETTE, AV_PKT_DATA_NEW_EXTRADATA, AV_PKT_DATA_PARAM_CHANGE,
     AV_PKT_DATA_H263_MB_INFO, AV_PKT_DATA_REPLAYGAIN, AV_PKT_DATA_DISPLAYMATRIX,
@@ -287,74 +357,59 @@ type
     AV_PKT_DATA_ENCRYPTION_INIT_INFO, AV_PKT_DATA_ENCRYPTION_INFO,
     AV_PKT_DATA_AFD, AV_PKT_DATA_PRFT, AV_PKT_DATA_ICC_PROFILE,
     AV_PKT_DATA_DOVI_CONF, AV_PKT_DATA_S12M_TIMECODE, AV_PKT_DATA_NB
-
-
-type
   AVSideDataParamChangeFlags* = enum
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT = 0x00000001,
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT = 0x00000002,
     AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE = 0x00000004,
     AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS = 0x00000008
-
-
-type
   AudioObjectType* = enum
-    AOT_NULL,                 ##  Support?                Name
-    AOT_AAC_MAIN,             ## /< Y                       Main
-    AOT_AAC_LC,               ## /< Y                       Low Complexity
-    AOT_AAC_SSR,              ## /< N (code in SoC repo)    Scalable Sample Rate
-    AOT_AAC_LTP,              ## /< Y                       Long Term Prediction
-    AOT_SBR,                  ## /< Y                       Spectral Band Replication
-    AOT_AAC_SCALABLE,         ## /< N                       Scalable
-    AOT_TWINVQ,               ## /< N                       Twin Vector Quantizer
-    AOT_CELP,                 ## /< N                       Code Excited Linear Prediction
-    AOT_HVXC,                 ## /< N                       Harmonic Vector eXcitation Coding
-    AOT_TTSI = 12,              ## /< N                       Text-To-Speech Interface
-    AOT_MAINSYNTH,            ## /< N                       Main Synthesis
-    AOT_WAVESYNTH,            ## /< N                       Wavetable Synthesis
-    AOT_MIDI,                 ## /< N                       General MIDI
-    AOT_SAFX,                 ## /< N                       Algorithmic Synthesis and Audio Effects
-    AOT_ER_AAC_LC,            ## /< N                       Error Resilient Low Complexity
-    AOT_ER_AAC_LTP = 19,        ## /< N                       Error Resilient Long Term Prediction
-    AOT_ER_AAC_SCALABLE,      ## /< N                       Error Resilient Scalable
-    AOT_ER_TWINVQ,            ## /< N                       Error Resilient Twin Vector Quantizer
-    AOT_ER_BSAC,              ## /< N                       Error Resilient Bit-Sliced Arithmetic Coding
-    AOT_ER_AAC_LD,            ## /< N                       Error Resilient Low Delay
-    AOT_ER_CELP,              ## /< N                       Error Resilient Code Excited Linear Prediction
-    AOT_ER_HVXC,              ## /< N                       Error Resilient Harmonic Vector eXcitation Coding
-    AOT_ER_HILN,              ## /< N                       Error Resilient Harmonic and Individual Lines plus Noise
-    AOT_ER_PARAM,             ## /< N                       Error Resilient Parametric
-    AOT_SSC,                  ## /< N                       SinuSoidal Coding
-    AOT_PS,                   ## /< N                       Parametric Stereo
-    AOT_SURROUND,             ## /< N                       MPEG Surround
-    AOT_ESCAPE,               ## /< Y                       Escape Value
-    AOT_L1,                   ## /< Y                       Layer 1
-    AOT_L2,                   ## /< Y                       Layer 2
-    AOT_L3,                   ## /< Y                       Layer 3
-    AOT_DST,                  ## /< N                       Direct Stream Transfer
-    AOT_ALS,                  ## /< Y                       Audio LosslesS
-    AOT_SLS,                  ## /< N                       Scalable LosslesS
-    AOT_SLS_NON_CORE,         ## /< N                       Scalable LosslesS (non core)
-    AOT_ER_AAC_ELD,           ## /< N                       Error Resilient Enhanced Low Delay
-    AOT_SMR_SIMPLE,           ## /< N                       Symbolic Music Representation Simple
-    AOT_SMR_MAIN,             ## /< N                       Symbolic Music Representation Main
-    AOT_USAC_NOSBR,           ## /< N                       Unified Speech and Audio Coding (no SBR)
-    AOT_SAOC,                 ## /< N                       Spatial Audio Object Coding
-    AOT_LD_SURROUND,          ## /< N                       Low Delay MPEG Surround
-    AOT_USAC                  ## /< N                       Unified Speech and Audio Coding
-
-
-type
+    AOT_NULL,                
+    AOT_AAC_MAIN,             
+    AOT_AAC_LC,               
+    AOT_AAC_SSR,              
+    AOT_AAC_LTP,              
+    AOT_SBR,                 
+    AOT_AAC_SCALABLE,         
+    AOT_TWINVQ,              
+    AOT_CELP,                 
+    AOT_HVXC,                 
+    AOT_TTSI = 12,             
+    AOT_MAINSYNTH,            
+    AOT_WAVESYNTH,            
+    AOT_MIDI,                 
+    AOT_SAFX,                
+    AOT_ER_AAC_LC,            
+    AOT_ER_AAC_LTP = 19,        
+    AOT_ER_AAC_SCALABLE,      
+    AOT_ER_TWINVQ,            
+    AOT_ER_BSAC,             
+    AOT_ER_AAC_LD,            
+    AOT_ER_CELP,              
+    AOT_ER_HVXC,              
+    AOT_ER_HILN,              
+    AOT_ER_PARAM,             
+    AOT_SSC,                  
+    AOT_PS,                   
+    AOT_SURROUND,             
+    AOT_ESCAPE,               
+    AOT_L1,                   
+    AOT_L2,                   
+    AOT_L3,                   
+    AOT_DST,                  
+    AOT_ALS,                 
+    AOT_SLS,                  
+    AOT_SLS_NON_CORE,         
+    AOT_ER_AAC_ELD,           
+    AOT_SMR_SIMPLE,           
+    AOT_SMR_MAIN,             
+    AOT_USAC_NOSBR,           
+    AOT_SAOC,                 
+    AOT_LD_SURROUND,          
+    AOT_USAC                  
   BenchAction* = enum
     ACTION_START, ACTION_STOP, NB_ACTION
-
-
-type
   show_muxdemuxers* = enum
     SHOW_DEFAULT, SHOW_DEMUXERS, SHOW_MUXERS
-
-
-type
   memory_order* = enum
     memory_order_relaxed, memory_order_consume, memory_order_acquire,
     memory_order_release, memory_order_acq_rel, memory_order_seq_cst
@@ -364,132 +419,94 @@ type
   SwsAlphaBlend* = enum
     SWS_ALPHA_BLEND_NONE = 0, SWS_ALPHA_BLEND_UNIFORM, SWS_ALPHA_BLEND_CHECKERBOARD,
     SWS_ALPHA_BLEND_NB
-
-
-type
   AVRounding* = enum
-    AV_ROUND_ZERO = 0,          ## /< Round toward zero.
-    AV_ROUND_INF = 1,           ## /< Round away from zero.
-    AV_ROUND_DOWN = 2,          ## /< Round toward -infinity.
-    AV_ROUND_UP = 3,            ## /< Round toward +infinity.
-    AV_ROUND_NEAR_INF = 5,      ## /< Round to nearest and halfway cases away from zero.
+    AV_ROUND_ZERO = 0,         
+    AV_ROUND_INF = 1,           
+    AV_ROUND_DOWN = 2,          
+    AV_ROUND_UP = 3,            
+    AV_ROUND_NEAR_INF = 5,      
     AV_ROUND_PASS_MINMAX = 8192
-
-
-type
   AVColorRange* = enum
-    AVCOL_RANGE_UNSPECIFIED = 0, AVCOL_RANGE_MPEG = 1, ## /< the normal 219*2^(n-8) "MPEG" YUV ranges
-    AVCOL_RANGE_JPEG = 2,       ## /< the normal     2^n-1   "JPEG" YUV ranges
-    AVCOL_RANGE_NB            ## /< Not part of ABI
-
-
-type
+    AVCOL_RANGE_UNSPECIFIED = 0, AVCOL_RANGE_MPEG = 1, 
+    AVCOL_RANGE_JPEG = 2,       
+    AVCOL_RANGE_NB           
   AVColorPrimaries* = enum
-    AVCOL_PRI_RESERVED0 = 0, AVCOL_PRI_BT709 = 1, ## /< also ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B
-    AVCOL_PRI_UNSPECIFIED = 2, AVCOL_PRI_RESERVED = 3, AVCOL_PRI_BT470M = 4, ## /< also FCC Title 47 Code of Federal Regulations 73.682 (a)(20)
-    AVCOL_PRI_BT470BG = 5,      ## /< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM
-    AVCOL_PRI_SMPTE170M = 6,    ## /< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC
-    AVCOL_PRI_SMPTE240M = 7,    ## /< functionally identical to above
-    AVCOL_PRI_FILM = 8,         ## /< colour filters using Illuminant C
-    AVCOL_PRI_BT2020 = 9,       ## /< ITU-R BT2020
-    AVCOL_PRI_SMPTE428 = 10,    ## /< SMPTE ST 428-1 (CIE 1931 XYZ)
-    AVCOL_PRI_SMPTE431 = 11,    ## /< SMPTE ST 431-2 (2011) / DCI P3
-    AVCOL_PRI_SMPTE432 = 12,    ## /< SMPTE ST 432-1 (2010) / P3 D65 / Display P3
-    AVCOL_PRI_EBU3213 = 22,     ## /< EBU Tech. 3213-E / JEDEC P22 phosphors
-    AVCOL_PRI_NB              ## /< Not part of ABI
-
-const
-  AVCOL_PRI_SMPTEST428_1 = AVCOL_PRI_SMPTE428
-  AVCOL_PRI_JEDEC_P22 = AVCOL_PRI_EBU3213
-
-type
+    AVCOL_PRI_RESERVED0 = 0, AVCOL_PRI_BT709 = 1, 
+    AVCOL_PRI_UNSPECIFIED = 2, AVCOL_PRI_RESERVED = 3, AVCOL_PRI_BT470M = 4, 
+    AVCOL_PRI_BT470BG = 5,      
+    AVCOL_PRI_SMPTE170M = 6,    
+    AVCOL_PRI_SMPTE240M = 7,    
+    AVCOL_PRI_FILM = 8,         
+    AVCOL_PRI_BT2020 = 9,       
+    AVCOL_PRI_SMPTE428 = 10,    
+    AVCOL_PRI_SMPTE431 = 11,    
+    AVCOL_PRI_SMPTE432 = 12,    
+    AVCOL_PRI_EBU3213 = 22,     
+    AVCOL_PRI_NB              
   AVColorTransferCharacteristic* = enum
-    AVCOL_TRC_RESERVED0 = 0, AVCOL_TRC_BT709 = 1, ## /< also ITU-R BT1361
-    AVCOL_TRC_UNSPECIFIED = 2, AVCOL_TRC_RESERVED = 3, AVCOL_TRC_GAMMA22 = 4, ## /< also ITU-R BT470M / ITU-R BT1700 625 PAL & SECAM
-    AVCOL_TRC_GAMMA28 = 5,      ## /< also ITU-R BT470BG
-    AVCOL_TRC_SMPTE170M = 6,    ## /< also ITU-R BT601-6 525 or 625 / ITU-R BT1358 525 or 625 / ITU-R BT1700 NTSC
-    AVCOL_TRC_SMPTE240M = 7, AVCOL_TRC_LINEAR = 8, ## /< "Linear transfer characteristics"
-    AVCOL_TRC_LOG = 9,          ## /< "Logarithmic transfer characteristic (100:1 range)"
-    AVCOL_TRC_LOG_SQRT = 10,    ## /< "Logarithmic transfer characteristic (100 * Sqrt(10) : 1 range)"
-    AVCOL_TRC_IEC61966_2_4 = 11, ## /< IEC 61966-2-4
-    AVCOL_TRC_BT1361_ECG = 12,  ## /< ITU-R BT1361 Extended Colour Gamut
-    AVCOL_TRC_IEC61966_2_1 = 13, ## /< IEC 61966-2-1 (sRGB or sYCC)
-    AVCOL_TRC_BT2020_10 = 14,   ## /< ITU-R BT2020 for 10-bit system
-    AVCOL_TRC_BT2020_12 = 15,   ## /< ITU-R BT2020 for 12-bit system
-    AVCOL_TRC_SMPTE2084 = 16,   ## /< SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems
-    AVCOL_TRC_SMPTE428 = 17,    ## /< SMPTE ST 428-1
-    AVCOL_TRC_ARIB_STD_B67 = 18, ## /< ARIB STD-B67, known as "Hybrid log-gamma"
-    AVCOL_TRC_NB              ## /< Not part of ABI
-
-const
-  AVCOL_TRC_SMPTEST2084 = AVCOL_TRC_SMPTE2084
-  AVCOL_TRC_SMPTEST428_1 = AVCOL_TRC_SMPTE428
-
-type
+    AVCOL_TRC_RESERVED0 = 0, AVCOL_TRC_BT709 = 1, 
+    AVCOL_TRC_UNSPECIFIED = 2, AVCOL_TRC_RESERVED = 3, AVCOL_TRC_GAMMA22 = 4, 
+    AVCOL_TRC_GAMMA28 = 5,      
+    AVCOL_TRC_SMPTE170M = 6,    
+    AVCOL_TRC_SMPTE240M = 7, AVCOL_TRC_LINEAR = 8, 
+    AVCOL_TRC_LOG = 9,          
+    AVCOL_TRC_LOG_SQRT = 10,    
+    AVCOL_TRC_IEC61966_2_4 = 11, 
+    AVCOL_TRC_BT1361_ECG = 12,  
+    AVCOL_TRC_IEC61966_2_1 = 13, 
+    AVCOL_TRC_BT2020_10 = 14,   
+    AVCOL_TRC_BT2020_12 = 15,   
+    AVCOL_TRC_SMPTE2084 = 16,   
+    AVCOL_TRC_SMPTE428 = 17,    
+    AVCOL_TRC_ARIB_STD_B67 = 18, 
+    AVCOL_TRC_NB              
   AVColorSpace* = enum
-    AVCOL_SPC_RGB = 0,          ## /< order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)
-    AVCOL_SPC_BT709 = 1,        ## /< also ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B
-    AVCOL_SPC_UNSPECIFIED = 2, AVCOL_SPC_RESERVED = 3, AVCOL_SPC_FCC = 4, ## /< FCC Title 47 Code of Federal Regulations 73.682 (a)(20)
-    AVCOL_SPC_BT470BG = 5,      ## /< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM / IEC 61966-2-4 xvYCC601
-    AVCOL_SPC_SMPTE170M = 6,    ## /< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC
-    AVCOL_SPC_SMPTE240M = 7,    ## /< functionally identical to above
-    AVCOL_SPC_YCGCO = 8,        ## /< Used by Dirac / VC-2 and H.264 FRext, see ITU-T SG16
-    AVCOL_SPC_BT2020_NCL = 9,   ## /< ITU-R BT2020 non-constant luminance system
-    AVCOL_SPC_BT2020_CL = 10,   ## /< ITU-R BT2020 constant luminance system
-    AVCOL_SPC_SMPTE2085 = 11,   ## /< SMPTE 2085, Y'D'zD'x
-    AVCOL_SPC_CHROMA_DERIVED_NCL = 12, ## /< Chromaticity-derived non-constant luminance system
-    AVCOL_SPC_CHROMA_DERIVED_CL = 13, ## /< Chromaticity-derived constant luminance system
-    AVCOL_SPC_ICTCP = 14,       ## /< ITU-R BT.2100-0, ICtCp
-    AVCOL_SPC_NB              ## /< Not part of ABI
-
-const
-  AVCOL_SPC_YCOCG = AVCOL_SPC_YCGCO
-
-type
+    AVCOL_SPC_RGB = 0,          
+    AVCOL_SPC_BT709 = 1,        
+    AVCOL_SPC_UNSPECIFIED = 2, AVCOL_SPC_RESERVED = 3, AVCOL_SPC_FCC = 4, 
+    AVCOL_SPC_BT470BG = 5,     
+    AVCOL_SPC_SMPTE170M = 6,    
+    AVCOL_SPC_SMPTE240M = 7,   
+    AVCOL_SPC_YCGCO = 8,        
+    AVCOL_SPC_BT2020_NCL = 9,   
+    AVCOL_SPC_BT2020_CL = 10,   
+    AVCOL_SPC_SMPTE2085 = 11,   
+    AVCOL_SPC_CHROMA_DERIVED_NCL = 12, 
+    AVCOL_SPC_CHROMA_DERIVED_CL = 13, 
+    AVCOL_SPC_ICTCP = 14,       
+    AVCOL_SPC_NB              
   AVChromaLocation* = enum
-    AVCHROMA_LOC_UNSPECIFIED = 0, AVCHROMA_LOC_LEFT = 1, ## /< MPEG-2/4 4:2:0, H.264 default for 4:2:0
-    AVCHROMA_LOC_CENTER = 2,    ## /< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
-    AVCHROMA_LOC_TOPLEFT = 3,   ## /< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
-    AVCHROMA_LOC_TOP = 4, AVCHROMA_LOC_BOTTOMLEFT = 5, AVCHROMA_LOC_BOTTOM = 6, AVCHROMA_LOC_NB ## /< Not part of ABI
-
-
-type
+    AVCHROMA_LOC_UNSPECIFIED = 0, AVCHROMA_LOC_LEFT = 1, 
+    AVCHROMA_LOC_CENTER = 2,    
+    AVCHROMA_LOC_TOPLEFT = 3,   
+    AVCHROMA_LOC_TOP = 4, AVCHROMA_LOC_BOTTOMLEFT = 5, AVCHROMA_LOC_BOTTOM = 6, AVCHROMA_LOC_NB 
   AVSampleFormat* = enum
-    AV_SAMPLE_FMT_NONE = -1, AV_SAMPLE_FMT_U8, ## /< unsigned 8 bits
-    AV_SAMPLE_FMT_S16,        ## /< signed 16 bits
-    AV_SAMPLE_FMT_S32,        ## /< signed 32 bits
-    AV_SAMPLE_FMT_FLT,        ## /< float
-    AV_SAMPLE_FMT_DBL,        ## /< double
-    AV_SAMPLE_FMT_U8P,        ## /< unsigned 8 bits, planar
-    AV_SAMPLE_FMT_S16P,       ## /< signed 16 bits, planar
-    AV_SAMPLE_FMT_S32P,       ## /< signed 32 bits, planar
-    AV_SAMPLE_FMT_FLTP,       ## /< float, planar
-    AV_SAMPLE_FMT_DBLP,       ## /< double, planar
-    AV_SAMPLE_FMT_S64,        ## /< signed 64 bits
-    AV_SAMPLE_FMT_S64P,       ## /< signed 64 bits, planar
-    AV_SAMPLE_FMT_NB          ## /< Number of sample formats. DO NOT USE if linking dynamically
-
-
-type
-  AVDiscard* = enum ##  We leave some space between them for extensions (drop some
-                 ##  keyframes for intra-only or drop just some bidir frames).
-    AVDISCARD_NONE = -16,       ## /< discard nothing
-    AVDISCARD_DEFAULT = 0,      ## /< discard useless packets like 0 size packets in avi
-    AVDISCARD_NONREF = 8,       ## /< discard all non reference
-    AVDISCARD_BIDIR = 16,       ## /< discard all bidirectional frames
-    AVDISCARD_NONINTRA = 24,    ## /< discard all non intra frames
-    AVDISCARD_NONKEY = 32,      ## /< discard all frames except keyframes
-    AVDISCARD_ALL = 48          ## /< discard all
-
-
-type
+    AV_SAMPLE_FMT_NONE = -1, AV_SAMPLE_FMT_U8, 
+    AV_SAMPLE_FMT_S16,        
+    AV_SAMPLE_FMT_S32,        
+    AV_SAMPLE_FMT_FLT,        
+    AV_SAMPLE_FMT_DBL,       
+    AV_SAMPLE_FMT_U8P,        
+    AV_SAMPLE_FMT_S16P,      
+    AV_SAMPLE_FMT_S32P,       
+    AV_SAMPLE_FMT_FLTP,       
+    AV_SAMPLE_FMT_DBLP,       
+    AV_SAMPLE_FMT_S64,        
+    AV_SAMPLE_FMT_S64P,       
+    AV_SAMPLE_FMT_NB          
+  AVDiscard* = enum 
+    AVDISCARD_NONE = -16,       
+    AVDISCARD_DEFAULT = 0,      
+    AVDISCARD_NONREF = 8,       
+    AVDISCARD_BIDIR = 16,       
+    AVDISCARD_NONINTRA = 24,    
+    AVDISCARD_NONKEY = 32,      
+    AVDISCARD_ALL = 48          
   AVHWDeviceType* = enum
     AV_HWDEVICE_TYPE_NONE, AV_HWDEVICE_TYPE_VDPAU, AV_HWDEVICE_TYPE_CUDA,
     AV_HWDEVICE_TYPE_VAAPI, AV_HWDEVICE_TYPE_DXVA2, AV_HWDEVICE_TYPE_QSV,
     AV_HWDEVICE_TYPE_VIDEOTOOLBOX, AV_HWDEVICE_TYPE_D3D11VA, AV_HWDEVICE_TYPE_DRM,
     AV_HWDEVICE_TYPE_OPENCL, AV_HWDEVICE_TYPE_MEDIACODEC
-
-
   AVFrameSideDataType* = enum
     AV_FRAME_DATA_PANSCAN, AV_FRAME_DATA_A53_CC, AV_FRAME_DATA_STEREO3D,
     AV_FRAME_DATA_MATRIXENCODING, AV_FRAME_DATA_DOWNMIX_INFO,
@@ -497,29 +514,25 @@ type
     AV_FRAME_DATA_MOTION_VECTORS, AV_FRAME_DATA_SKIP_SAMPLES,
     AV_FRAME_DATA_AUDIO_SERVICE_TYPE, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
     AV_FRAME_DATA_GOP_TIMECODE, AV_FRAME_DATA_SPHERICAL,
-    AV_FRAME_DATA_CONTENT_LIGHT_LEVEL, AV_FRAME_DATA_ICC_PROFILE, ##  #if FF_API_FRAME_QP
-    AV_FRAME_DATA_QP_TABLE_PROPERTIES, AV_FRAME_DATA_QP_TABLE_DATA, ##  #endif
+    AV_FRAME_DATA_CONTENT_LIGHT_LEVEL, AV_FRAME_DATA_ICC_PROFILE, 
+    AV_FRAME_DATA_QP_TABLE_PROPERTIES, AV_FRAME_DATA_QP_TABLE_DATA, 
     AV_FRAME_DATA_S12M_TIMECODE, AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
     AV_FRAME_DATA_REGIONS_OF_INTEREST, AV_FRAME_DATA_VIDEO_ENC_PARAMS,
     AV_FRAME_DATA_SEI_UNREGISTERED
-
   AVPictureType* = enum
-    AV_PICTURE_TYPE_NONE = 0,   ## /< Undefined
-    AV_PICTURE_TYPE_I,        ## /< Intra
-    AV_PICTURE_TYPE_P,        ## /< Predicted
-    AV_PICTURE_TYPE_B,        ## /< Bi-dir predicted
-    AV_PICTURE_TYPE_S,        ## /< S(GMC)-VOP MPEG-4
-    AV_PICTURE_TYPE_SI,       ## /< Switching Intra
-    AV_PICTURE_TYPE_SP,       ## /< Switching Predicted
-    AV_PICTURE_TYPE_BI        ## /< BI type
-
+    AV_PICTURE_TYPE_NONE = 0,   
+    AV_PICTURE_TYPE_I,        
+    AV_PICTURE_TYPE_P,        
+    AV_PICTURE_TYPE_B,        
+    AV_PICTURE_TYPE_S,       
+    AV_PICTURE_TYPE_SI,       
+    AV_PICTURE_TYPE_SP,       
+    AV_PICTURE_TYPE_BI        
   RDFTransformType* = enum
     DFT_R2C, IDFT_C2R, IDFT_R2C, DFT_C2R
-
   AVSubtitleType* = enum
     SUBTITLE_NONE, SUBTITLE_BITMAP, 
     SUBTITLE_TEXT, SUBTITLE_ASS
-
   AVClassCategory* = enum
     AV_CLASS_CATEGORY_NA = 0, AV_CLASS_CATEGORY_INPUT, AV_CLASS_CATEGORY_OUTPUT,
     AV_CLASS_CATEGORY_MUXER, AV_CLASS_CATEGORY_DEMUXER, AV_CLASS_CATEGORY_ENCODER,
@@ -528,274 +541,229 @@ type
     AV_CLASS_CATEGORY_SWRESAMPLER, AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT = 40,
     AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT, AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
     AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT, AV_CLASS_CATEGORY_DEVICE_OUTPUT,
-    AV_CLASS_CATEGORY_DEVICE_INPUT, AV_CLASS_CATEGORY_NB ## /< not part of ABI/API
-
-
+    AV_CLASS_CATEGORY_DEVICE_INPUT, AV_CLASS_CATEGORY_NB 
   AVOptionType* = enum
     AV_OPT_TYPE_FLAGS, AV_OPT_TYPE_INT, AV_OPT_TYPE_INT64, AV_OPT_TYPE_DOUBLE,
-    AV_OPT_TYPE_FLOAT, AV_OPT_TYPE_STRING, AV_OPT_TYPE_RATIONAL, AV_OPT_TYPE_BINARY, ## /< offset must point to a pointer immediately followed by an int for the length
-    AV_OPT_TYPE_DICT, AV_OPT_TYPE_UINT64, AV_OPT_TYPE_CONST, AV_OPT_TYPE_IMAGE_SIZE, ## /< offset must point to two consecutive integers
-    AV_OPT_TYPE_PIXEL_FMT, AV_OPT_TYPE_SAMPLE_FMT, AV_OPT_TYPE_VIDEO_RATE, ## /< offset must point to AVRational
+    AV_OPT_TYPE_FLOAT, AV_OPT_TYPE_STRING, AV_OPT_TYPE_RATIONAL, AV_OPT_TYPE_BINARY, 
+    AV_OPT_TYPE_DICT, AV_OPT_TYPE_UINT64, AV_OPT_TYPE_CONST, AV_OPT_TYPE_IMAGE_SIZE, 
+    AV_OPT_TYPE_PIXEL_FMT, AV_OPT_TYPE_SAMPLE_FMT, AV_OPT_TYPE_VIDEO_RATE, 
     AV_OPT_TYPE_DURATION, AV_OPT_TYPE_COLOR, AV_OPT_TYPE_CHANNEL_LAYOUT,
     AV_OPT_TYPE_BOOL
-
-
   AVMediaType* = enum
-    AVMEDIA_TYPE_UNKNOWN = -1,  ## /< Usually treated as AVMEDIA_TYPE_DATA
-    AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA, ## /< Opaque data information usually continuous
-    AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_ATTACHMENT, ## /< Opaque data information usually sparse
+    AVMEDIA_TYPE_UNKNOWN = -1,  
+    AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA, 
+    AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_ATTACHMENT, 
     AVMEDIA_TYPE_NB
-
-const
-  MAX_STD_TIMEBASES* = (30 * 12 + 30 + 3 + 6)
-
-type
   AVPixelFormat* = enum
-    AV_PIX_FMT_NONE = -1, AV_PIX_FMT_YUV420P, ## /< planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
-    AV_PIX_FMT_YUYV422,       ## /< packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
-    AV_PIX_FMT_RGB24,         ## /< packed RGB 8:8:8, 24bpp, RGBRGB...
-    AV_PIX_FMT_BGR24,         ## /< packed RGB 8:8:8, 24bpp, BGRBGR...
-    AV_PIX_FMT_YUV422P,       ## /< planar YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
-    AV_PIX_FMT_YUV444P,       ## /< planar YUV 4:4:4, 24bpp, (1 Cr & Cb sample per 1x1 Y samples)
-    AV_PIX_FMT_YUV410P,       ## /< planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
-    AV_PIX_FMT_YUV411P,       ## /< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
-    AV_PIX_FMT_GRAY8,         ## /<        Y        ,  8bpp
-    AV_PIX_FMT_MONOWHITE,     ## /<        Y        ,  1bpp, 0 is white, 1 is black, in each byte pixels are ordered from the msb to the lsb
-    AV_PIX_FMT_MONOBLACK,     ## /<        Y        ,  1bpp, 0 is black, 1 is white, in each byte pixels are ordered from the msb to the lsb
-    AV_PIX_FMT_PAL8,          ## /< 8 bits with AV_PIX_FMT_RGB32 palette
-    AV_PIX_FMT_YUVJ420P,      ## /< planar YUV 4:2:0, 12bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV420P and setting color_range
-    AV_PIX_FMT_YUVJ422P,      ## /< planar YUV 4:2:2, 16bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV422P and setting color_range
-    AV_PIX_FMT_YUVJ444P,      ## /< planar YUV 4:4:4, 24bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV444P and setting color_range
-    AV_PIX_FMT_UYVY422,       ## /< packed YUV 4:2:2, 16bpp, Cb Y0 Cr Y1
-    AV_PIX_FMT_UYYVYY411,     ## /< packed YUV 4:1:1, 12bpp, Cb Y0 Y1 Cr Y2 Y3
-    AV_PIX_FMT_BGR8,          ## /< packed RGB 3:3:2,  8bpp, (msb)2B 3G 3R(lsb)
-    AV_PIX_FMT_BGR4,          ## /< packed RGB 1:2:1 bitstream,  4bpp, (msb)1B 2G 1R(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
-    AV_PIX_FMT_BGR4_BYTE,     ## /< packed RGB 1:2:1,  8bpp, (msb)1B 2G 1R(lsb)
-    AV_PIX_FMT_RGB8,          ## /< packed RGB 3:3:2,  8bpp, (msb)2R 3G 3B(lsb)
-    AV_PIX_FMT_RGB4,          ## /< packed RGB 1:2:1 bitstream,  4bpp, (msb)1R 2G 1B(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
-    AV_PIX_FMT_RGB4_BYTE,     ## /< packed RGB 1:2:1,  8bpp, (msb)1R 2G 1B(lsb)
-    AV_PIX_FMT_NV12,          ## /< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
-    AV_PIX_FMT_NV21,          ## /< as above, but U and V bytes are swapped
-    AV_PIX_FMT_ARGB,          ## /< packed ARGB 8:8:8:8, 32bpp, ARGBARGB...
-    AV_PIX_FMT_RGBA,          ## /< packed RGBA 8:8:8:8, 32bpp, RGBARGBA...
-    AV_PIX_FMT_ABGR,          ## /< packed ABGR 8:8:8:8, 32bpp, ABGRABGR...
-    AV_PIX_FMT_BGRA,          ## /< packed BGRA 8:8:8:8, 32bpp, BGRABGRA...
-    AV_PIX_FMT_GRAY16BE,      ## /<        Y        , 16bpp, big-endian
-    AV_PIX_FMT_GRAY16LE,      ## /<        Y        , 16bpp, little-endian
-    AV_PIX_FMT_YUV440P,       ## /< planar YUV 4:4:0 (1 Cr & Cb sample per 1x2 Y samples)
-    AV_PIX_FMT_YUVJ440P,      ## /< planar YUV 4:4:0 full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV440P and setting color_range
-    AV_PIX_FMT_YUVA420P,      ## /< planar YUV 4:2:0, 20bpp, (1 Cr & Cb sample per 2x2 Y & A samples)
-    AV_PIX_FMT_RGB48BE,       ## /< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
-    AV_PIX_FMT_RGB48LE,       ## /< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
-    AV_PIX_FMT_RGB565BE,      ## /< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), big-endian
-    AV_PIX_FMT_RGB565LE,      ## /< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), little-endian
-    AV_PIX_FMT_RGB555BE,      ## /< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), big-endian   , X=unused/undefined
-    AV_PIX_FMT_RGB555LE,      ## /< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_BGR565BE,      ## /< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), big-endian
-    AV_PIX_FMT_BGR565LE,      ## /< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), little-endian
-    AV_PIX_FMT_BGR555BE,      ## /< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), big-endian   , X=unused/undefined
-    AV_PIX_FMT_BGR555LE, ## /< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), little-endian, X=unused/undefined
-                        ##  #if FF_API_VAAPI
-    AV_PIX_FMT_VAAPI_MOCO,    ## /< HW acceleration through VA API at motion compensation entry-point, Picture.data[3] contains a vaapi_render_state struct which contains macroblocks as well as various fields extracted from headers
-    AV_PIX_FMT_VAAPI_IDCT,    ## /< HW acceleration through VA API at IDCT entry-point, Picture.data[3] contains a vaapi_render_state struct which contains fields extracted from headers
-    AV_PIX_FMT_VAAPI_VLD,     ## /< HW decoding through VA API, Picture.data[3] contains a VASurfaceID
-    AV_PIX_FMT_VAAPI,         ##  #endif
-    AV_PIX_FMT_YUV420P16LE,   ## /< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV420P16BE,   ## /< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV422P16LE,   ## /< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV422P16BE,   ## /< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P16LE,   ## /< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P16BE,   ## /< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_DXVA2_VLD,     ## /< HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
-    AV_PIX_FMT_RGB444LE,      ## /< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_RGB444BE,      ## /< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), big-endian,    X=unused/undefined
-    AV_PIX_FMT_BGR444LE,      ## /< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_BGR444BE,      ## /< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), big-endian,    X=unused/undefined
-    AV_PIX_FMT_YA8,           ## /< 8 bits gray, 8 bits alpha
-    AV_PIX_FMT_BGR48BE,       ## /< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
-    AV_PIX_FMT_BGR48LE,       ## /< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
-    AV_PIX_FMT_YUV420P9BE,    ## /< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P9LE,    ## /< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV420P10BE,   ## /< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P10LE,   ## /< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV422P10BE,   ## /< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P10LE,   ## /< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P9BE,    ## /< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P9LE,    ## /< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P10BE,   ## /< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P10LE,   ## /< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV422P9BE,    ## /< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P9LE,    ## /< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_GBRP,          ## /< planar GBR 4:4:4 24bpp
-    AV_PIX_FMT_GBRP9BE,       ## /< planar GBR 4:4:4 27bpp, big-endian
-    AV_PIX_FMT_GBRP9LE,       ## /< planar GBR 4:4:4 27bpp, little-endian
-    AV_PIX_FMT_GBRP10BE,      ## /< planar GBR 4:4:4 30bpp, big-endian
-    AV_PIX_FMT_GBRP10LE,      ## /< planar GBR 4:4:4 30bpp, little-endian
-    AV_PIX_FMT_GBRP16BE,      ## /< planar GBR 4:4:4 48bpp, big-endian
-    AV_PIX_FMT_GBRP16LE,      ## /< planar GBR 4:4:4 48bpp, little-endian
-    AV_PIX_FMT_YUVA422P,      ## /< planar YUV 4:2:2 24bpp, (1 Cr & Cb sample per 2x1 Y & A samples)
-    AV_PIX_FMT_YUVA444P,      ## /< planar YUV 4:4:4 32bpp, (1 Cr & Cb sample per 1x1 Y & A samples)
-    AV_PIX_FMT_YUVA420P9BE,   ## /< planar YUV 4:2:0 22.5bpp, (1 Cr & Cb sample per 2x2 Y & A samples), big-endian
-    AV_PIX_FMT_YUVA420P9LE,   ## /< planar YUV 4:2:0 22.5bpp, (1 Cr & Cb sample per 2x2 Y & A samples), little-endian
-    AV_PIX_FMT_YUVA422P9BE,   ## /< planar YUV 4:2:2 27bpp, (1 Cr & Cb sample per 2x1 Y & A samples), big-endian
-    AV_PIX_FMT_YUVA422P9LE,   ## /< planar YUV 4:2:2 27bpp, (1 Cr & Cb sample per 2x1 Y & A samples), little-endian
-    AV_PIX_FMT_YUVA444P9BE,   ## /< planar YUV 4:4:4 36bpp, (1 Cr & Cb sample per 1x1 Y & A samples), big-endian
-    AV_PIX_FMT_YUVA444P9LE,   ## /< planar YUV 4:4:4 36bpp, (1 Cr & Cb sample per 1x1 Y & A samples), little-endian
-    AV_PIX_FMT_YUVA420P10BE,  ## /< planar YUV 4:2:0 25bpp, (1 Cr & Cb sample per 2x2 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA420P10LE,  ## /< planar YUV 4:2:0 25bpp, (1 Cr & Cb sample per 2x2 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA422P10BE,  ## /< planar YUV 4:2:2 30bpp, (1 Cr & Cb sample per 2x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA422P10LE,  ## /< planar YUV 4:2:2 30bpp, (1 Cr & Cb sample per 2x1 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA444P10BE,  ## /< planar YUV 4:4:4 40bpp, (1 Cr & Cb sample per 1x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA444P10LE,  ## /< planar YUV 4:4:4 40bpp, (1 Cr & Cb sample per 1x1 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA420P16BE,  ## /< planar YUV 4:2:0 40bpp, (1 Cr & Cb sample per 2x2 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA420P16LE,  ## /< planar YUV 4:2:0 40bpp, (1 Cr & Cb sample per 2x2 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA422P16BE,  ## /< planar YUV 4:2:2 48bpp, (1 Cr & Cb sample per 2x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA422P16LE,  ## /< planar YUV 4:2:2 48bpp, (1 Cr & Cb sample per 2x1 Y & A samples, little-endian)
-    AV_PIX_FMT_YUVA444P16BE,  ## /< planar YUV 4:4:4 64bpp, (1 Cr & Cb sample per 1x1 Y & A samples, big-endian)
-    AV_PIX_FMT_YUVA444P16LE,  ## /< planar YUV 4:4:4 64bpp, (1 Cr & Cb sample per 1x1 Y & A samples, little-endian)
-    AV_PIX_FMT_VDPAU,         ## /< HW acceleration through VDPAU, Picture.data[3] contains a VdpVideoSurface
-    AV_PIX_FMT_XYZ12LE,       ## /< packed XYZ 4:4:4, 36 bpp, (msb) 12X, 12Y, 12Z (lsb), the 2-byte value for each X/Y/Z is stored as little-endian, the 4 lower bits are set to 0
-    AV_PIX_FMT_XYZ12BE,       ## /< packed XYZ 4:4:4, 36 bpp, (msb) 12X, 12Y, 12Z (lsb), the 2-byte value for each X/Y/Z is stored as big-endian, the 4 lower bits are set to 0
-    AV_PIX_FMT_NV16,          ## /< interleaved chroma YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
-    AV_PIX_FMT_NV20LE,        ## /< interleaved chroma YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_NV20BE,        ## /< interleaved chroma YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_RGBA64BE,      ## /< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
-    AV_PIX_FMT_RGBA64LE,      ## /< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
-    AV_PIX_FMT_BGRA64BE,      ## /< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
-    AV_PIX_FMT_BGRA64LE,      ## /< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
-    AV_PIX_FMT_YVYU422,       ## /< packed YUV 4:2:2, 16bpp, Y0 Cr Y1 Cb
-    AV_PIX_FMT_YA16BE,        ## /< 16 bits gray, 16 bits alpha (big-endian)
-    AV_PIX_FMT_YA16LE,        ## /< 16 bits gray, 16 bits alpha (little-endian)
-    AV_PIX_FMT_GBRAP,         ## /< planar GBRA 4:4:4:4 32bpp
-    AV_PIX_FMT_GBRAP16BE,     ## /< planar GBRA 4:4:4:4 64bpp, big-endian
-    AV_PIX_FMT_GBRAP16LE,     ## /< planar GBRA 4:4:4:4 64bpp, little-endian
-    AV_PIX_FMT_QSV, AV_PIX_FMT_MMAL, AV_PIX_FMT_D3D11VA_VLD, ## /< HW decoding through Direct3D11 via old API, Picture.data[3] contains a ID3D11VideoDecoderOutputView pointer
-    AV_PIX_FMT_CUDA, AV_PIX_FMT_0RGB, ## /< packed RGB 8:8:8, 32bpp, XRGBXRGB...   X=unused/undefined
-    AV_PIX_FMT_RGB0,          ## /< packed RGB 8:8:8, 32bpp, RGBXRGBX...   X=unused/undefined
-    AV_PIX_FMT_0BGR,          ## /< packed BGR 8:8:8, 32bpp, XBGRXBGR...   X=unused/undefined
-    AV_PIX_FMT_BGR0,          ## /< packed BGR 8:8:8, 32bpp, BGRXBGRX...   X=unused/undefined
-    AV_PIX_FMT_YUV420P12BE,   ## /< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P12LE,   ## /< planar YUV 4:2:0,18bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV420P14BE,   ## /< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV420P14LE,   ## /< planar YUV 4:2:0,21bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV422P12BE,   ## /< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P12LE,   ## /< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV422P14BE,   ## /< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV422P14LE,   ## /< planar YUV 4:2:2,28bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P12BE,   ## /< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P12LE,   ## /< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P14BE,   ## /< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P14LE,   ## /< planar YUV 4:4:4,42bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_GBRP12BE,      ## /< planar GBR 4:4:4 36bpp, big-endian
-    AV_PIX_FMT_GBRP12LE,      ## /< planar GBR 4:4:4 36bpp, little-endian
-    AV_PIX_FMT_GBRP14BE,      ## /< planar GBR 4:4:4 42bpp, big-endian
-    AV_PIX_FMT_GBRP14LE,      ## /< planar GBR 4:4:4 42bpp, little-endian
-    AV_PIX_FMT_YUVJ411P,      ## /< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples) full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV411P and setting color_range
-    AV_PIX_FMT_BAYER_BGGR8,   ## /< bayer, BGBG..(odd line), GRGR..(even line), 8-bit samples */
-    AV_PIX_FMT_BAYER_RGGB8,   ## /< bayer, RGRG..(odd line), GBGB..(even line), 8-bit samples */
-    AV_PIX_FMT_BAYER_GBRG8,   ## /< bayer, GBGB..(odd line), RGRG..(even line), 8-bit samples */
-    AV_PIX_FMT_BAYER_GRBG8,   ## /< bayer, GRGR..(odd line), BGBG..(even line), 8-bit samples */
-    AV_PIX_FMT_BAYER_BGGR16LE, ## /< bayer, BGBG..(odd line), GRGR..(even line), 16-bit samples, little-endian */
-    AV_PIX_FMT_BAYER_BGGR16BE, ## /< bayer, BGBG..(odd line), GRGR..(even line), 16-bit samples, big-endian */
-    AV_PIX_FMT_BAYER_RGGB16LE, ## /< bayer, RGRG..(odd line), GBGB..(even line), 16-bit samples, little-endian */
-    AV_PIX_FMT_BAYER_RGGB16BE, ## /< bayer, RGRG..(odd line), GBGB..(even line), 16-bit samples, big-endian */
-    AV_PIX_FMT_BAYER_GBRG16LE, ## /< bayer, GBGB..(odd line), RGRG..(even line), 16-bit samples, little-endian */
-    AV_PIX_FMT_BAYER_GBRG16BE, ## /< bayer, GBGB..(odd line), RGRG..(even line), 16-bit samples, big-endian */
-    AV_PIX_FMT_BAYER_GRBG16LE, ## /< bayer, GRGR..(odd line), BGBG..(even line), 16-bit samples, little-endian */
-    AV_PIX_FMT_BAYER_GRBG16BE, ## /< bayer, GRGR..(odd line), BGBG..(even line), 16-bit samples, big-endian */
-    AV_PIX_FMT_XVMC,          ## /< XVideo Motion Acceleration via common packet passing
-    AV_PIX_FMT_YUV440P10LE,   ## /< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), little-endian
-    AV_PIX_FMT_YUV440P10BE,   ## /< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), big-endian
-    AV_PIX_FMT_YUV440P12LE,   ## /< planar YUV 4:4:0,24bpp, (1 Cr & Cb sample per 1x2 Y samples), little-endian
-    AV_PIX_FMT_YUV440P12BE,   ## /< planar YUV 4:4:0,24bpp, (1 Cr & Cb sample per 1x2 Y samples), big-endian
-    AV_PIX_FMT_AYUV64LE,      ## /< packed AYUV 4:4:4,64bpp (1 Cr & Cb sample per 1x1 Y & A samples), little-endian
-    AV_PIX_FMT_AYUV64BE,      ## /< packed AYUV 4:4:4,64bpp (1 Cr & Cb sample per 1x1 Y & A samples), big-endian
-    AV_PIX_FMT_VIDEOTOOLBOX,  ## /< hardware decoding through Videotoolbox
-    AV_PIX_FMT_P010LE,        ## /< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, little-endian
-    AV_PIX_FMT_P010BE,        ## /< like NV12, with 10bpp per component, data in the high bits, zeros in the low bits, big-endian
-    AV_PIX_FMT_GBRAP12BE,     ## /< planar GBR 4:4:4:4 48bpp, big-endian
-    AV_PIX_FMT_GBRAP12LE,     ## /< planar GBR 4:4:4:4 48bpp, little-endian
-    AV_PIX_FMT_GBRAP10BE,     ## /< planar GBR 4:4:4:4 40bpp, big-endian
-    AV_PIX_FMT_GBRAP10LE,     ## /< planar GBR 4:4:4:4 40bpp, little-endian
-    AV_PIX_FMT_MEDIACODEC,    ## /< hardware decoding through MediaCodec
-    AV_PIX_FMT_GRAY12BE,      ## /<        Y        , 12bpp, big-endian
-    AV_PIX_FMT_GRAY12LE,      ## /<        Y        , 12bpp, little-endian
-    AV_PIX_FMT_GRAY10BE,      ## /<        Y        , 10bpp, big-endian
-    AV_PIX_FMT_GRAY10LE,      ## /<        Y        , 10bpp, little-endian
-    AV_PIX_FMT_P016LE,        ## /< like NV12, with 16bpp per component, little-endian
-    AV_PIX_FMT_P016BE,        ## /< like NV12, with 16bpp per component, big-endian
-    AV_PIX_FMT_D3D11, AV_PIX_FMT_GRAY9BE, ## /<        Y        , 9bpp, big-endian
-    AV_PIX_FMT_GRAY9LE,       ## /<        Y        , 9bpp, little-endian
-    AV_PIX_FMT_GBRPF32BE,     ## /< IEEE-754 single precision planar GBR 4:4:4,     96bpp, big-endian
-    AV_PIX_FMT_GBRPF32LE,     ## /< IEEE-754 single precision planar GBR 4:4:4,     96bpp, little-endian
-    AV_PIX_FMT_GBRAPF32BE,    ## /< IEEE-754 single precision planar GBRA 4:4:4:4, 128bpp, big-endian
-    AV_PIX_FMT_GBRAPF32LE,    ## /< IEEE-754 single precision planar GBRA 4:4:4:4, 128bpp, little-endian
-    AV_PIX_FMT_DRM_PRIME, AV_PIX_FMT_OPENCL, AV_PIX_FMT_GRAY14BE, ## /<        Y        , 14bpp, big-endian
-    AV_PIX_FMT_GRAY14LE,      ## /<        Y        , 14bpp, little-endian
-    AV_PIX_FMT_GRAYF32BE,     ## /< IEEE-754 single precision Y, 32bpp, big-endian
-    AV_PIX_FMT_GRAYF32LE,     ## /< IEEE-754 single precision Y, 32bpp, little-endian
-    AV_PIX_FMT_YUVA422P12BE,  ## /< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), 12b alpha, big-endian
-    AV_PIX_FMT_YUVA422P12LE,  ## /< planar YUV 4:2:2,24bpp, (1 Cr & Cb sample per 2x1 Y samples), 12b alpha, little-endian
-    AV_PIX_FMT_YUVA444P12BE,  ## /< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), 12b alpha, big-endian
-    AV_PIX_FMT_YUVA444P12LE,  ## /< planar YUV 4:4:4,36bpp, (1 Cr & Cb sample per 1x1 Y samples), 12b alpha, little-endian
-    AV_PIX_FMT_NV24,          ## /< planar YUV 4:4:4, 24bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
-    AV_PIX_FMT_NV42,          ## /< as above, but U and V bytes are swapped
-    AV_PIX_FMT_VULKAN, AV_PIX_FMT_Y210BE, ## /< packed YUV 4:2:2 like YUYV422, 20bpp, data in the high bits, big-endian
-    AV_PIX_FMT_Y210LE,        ## /< packed YUV 4:2:2 like YUYV422, 20bpp, data in the high bits, little-endian
-    AV_PIX_FMT_X2RGB10LE,     ## /< packed RGB 10:10:10, 30bpp, (msb)2X 10R 10G 10B(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_X2RGB10BE,     ## /< packed RGB 10:10:10, 30bpp, (msb)2X 10R 10G 10B(lsb), big-endian, X=unused/undefined
+    AV_PIX_FMT_NONE = -1, AV_PIX_FMT_YUV420P, 
+    AV_PIX_FMT_YUYV422,       
+    AV_PIX_FMT_RGB24,         
+    AV_PIX_FMT_BGR24,         
+    AV_PIX_FMT_YUV422P,       
+    AV_PIX_FMT_YUV444P,       
+    AV_PIX_FMT_YUV410P,       
+    AV_PIX_FMT_YUV411P,       
+    AV_PIX_FMT_GRAY8,         
+    AV_PIX_FMT_MONOWHITE,     
+    AV_PIX_FMT_MONOBLACK,     
+    AV_PIX_FMT_PAL8,          
+    AV_PIX_FMT_YUVJ420P,      
+    AV_PIX_FMT_YUVJ422P,      
+    AV_PIX_FMT_YUVJ444P,      
+    AV_PIX_FMT_UYVY422,       
+    AV_PIX_FMT_UYYVYY411,     
+    AV_PIX_FMT_BGR8,          
+    AV_PIX_FMT_BGR4,          
+    AV_PIX_FMT_BGR4_BYTE,     
+    AV_PIX_FMT_RGB8,         
+    AV_PIX_FMT_RGB4,          
+    AV_PIX_FMT_RGB4_BYTE,     
+    AV_PIX_FMT_NV12,          
+    AV_PIX_FMT_NV21,          
+    AV_PIX_FMT_ARGB,         
+    AV_PIX_FMT_RGBA,          
+    AV_PIX_FMT_ABGR,          
+    AV_PIX_FMT_BGRA,          
+    AV_PIX_FMT_GRAY16BE,      
+    AV_PIX_FMT_GRAY16LE,      
+    AV_PIX_FMT_YUV440P,       
+    AV_PIX_FMT_YUVJ440P,      
+    AV_PIX_FMT_YUVA420P,      
+    AV_PIX_FMT_RGB48BE,      
+    AV_PIX_FMT_RGB48LE,       
+    AV_PIX_FMT_RGB565BE,      
+    AV_PIX_FMT_RGB565LE,      
+    AV_PIX_FMT_RGB555BE,      
+    AV_PIX_FMT_RGB555LE,      
+    AV_PIX_FMT_BGR565BE,      
+    AV_PIX_FMT_BGR565LE,      
+    AV_PIX_FMT_BGR555BE,     
+    AV_PIX_FMT_BGR555LE, 
+                        
+    AV_PIX_FMT_VAAPI_MOCO,    
+    AV_PIX_FMT_VAAPI_IDCT,    
+    AV_PIX_FMT_VAAPI_VLD,     
+    AV_PIX_FMT_VAAPI,         
+    AV_PIX_FMT_YUV420P16LE,   
+    AV_PIX_FMT_YUV420P16BE,   
+    AV_PIX_FMT_YUV422P16LE,   
+    AV_PIX_FMT_YUV422P16BE,   
+    AV_PIX_FMT_YUV444P16LE,   
+    AV_PIX_FMT_YUV444P16BE,   
+    AV_PIX_FMT_DXVA2_VLD,     
+    AV_PIX_FMT_RGB444LE,      
+    AV_PIX_FMT_RGB444BE,      
+    AV_PIX_FMT_BGR444LE,      
+    AV_PIX_FMT_BGR444BE,      
+    AV_PIX_FMT_YA8,           
+    AV_PIX_FMT_BGR48BE,       
+    AV_PIX_FMT_BGR48LE,       
+    AV_PIX_FMT_YUV420P9BE,    
+    AV_PIX_FMT_YUV420P9LE,    
+    AV_PIX_FMT_YUV420P10BE,   
+    AV_PIX_FMT_YUV420P10LE,   
+    AV_PIX_FMT_YUV422P10BE,   
+    AV_PIX_FMT_YUV422P10LE,   
+    AV_PIX_FMT_YUV444P9BE,    
+    AV_PIX_FMT_YUV444P9LE,    
+    AV_PIX_FMT_YUV444P10BE,   
+    AV_PIX_FMT_YUV444P10LE,   
+    AV_PIX_FMT_YUV422P9BE,    
+    AV_PIX_FMT_YUV422P9LE,    
+    AV_PIX_FMT_GBRP,          
+    AV_PIX_FMT_GBRP9BE,       
+    AV_PIX_FMT_GBRP9LE,       
+    AV_PIX_FMT_GBRP10BE,      
+    AV_PIX_FMT_GBRP10LE,      
+    AV_PIX_FMT_GBRP16BE,      
+    AV_PIX_FMT_GBRP16LE,      
+    AV_PIX_FMT_YUVA422P,      
+    AV_PIX_FMT_YUVA444P,      
+    AV_PIX_FMT_YUVA420P9BE,   
+    AV_PIX_FMT_YUVA420P9LE,   
+    AV_PIX_FMT_YUVA422P9BE,   
+    AV_PIX_FMT_YUVA422P9LE,   
+    AV_PIX_FMT_YUVA444P9BE,   
+    AV_PIX_FMT_YUVA444P9LE,   
+    AV_PIX_FMT_YUVA420P10BE,  
+    AV_PIX_FMT_YUVA420P10LE,  
+    AV_PIX_FMT_YUVA422P10BE,  
+    AV_PIX_FMT_YUVA422P10LE,  
+    AV_PIX_FMT_YUVA444P10BE,  
+    AV_PIX_FMT_YUVA444P10LE,  
+    AV_PIX_FMT_YUVA420P16BE,  
+    AV_PIX_FMT_YUVA420P16LE,  
+    AV_PIX_FMT_YUVA422P16BE,  
+    AV_PIX_FMT_YUVA422P16LE,  
+    AV_PIX_FMT_YUVA444P16BE,  
+    AV_PIX_FMT_YUVA444P16LE,  
+    AV_PIX_FMT_VDPAU,         
+    AV_PIX_FMT_XYZ12LE,       
+    AV_PIX_FMT_XYZ12BE,       
+    AV_PIX_FMT_NV16,          
+    AV_PIX_FMT_NV20LE,        
+    AV_PIX_FMT_NV20BE,        
+    AV_PIX_FMT_RGBA64BE,      
+    AV_PIX_FMT_RGBA64LE,      
+    AV_PIX_FMT_BGRA64BE,      
+    AV_PIX_FMT_BGRA64LE,      
+    AV_PIX_FMT_YVYU422,       
+    AV_PIX_FMT_YA16BE,        
+    AV_PIX_FMT_YA16LE,        
+    AV_PIX_FMT_GBRAP,         
+    AV_PIX_FMT_GBRAP16BE,     
+    AV_PIX_FMT_GBRAP16LE,     
+    AV_PIX_FMT_QSV, AV_PIX_FMT_MMAL, AV_PIX_FMT_D3D11VA_VLD, 
+    AV_PIX_FMT_CUDA, AV_PIX_FMT_0RGB, 
+    AV_PIX_FMT_RGB0,          
+    AV_PIX_FMT_0BGR,          
+    AV_PIX_FMT_BGR0,          
+    AV_PIX_FMT_YUV420P12BE,   
+    AV_PIX_FMT_YUV420P12LE,   
+    AV_PIX_FMT_YUV420P14BE,   
+    AV_PIX_FMT_YUV420P14LE,   
+    AV_PIX_FMT_YUV422P12BE,   
+    AV_PIX_FMT_YUV422P12LE,   
+    AV_PIX_FMT_YUV422P14BE,   
+    AV_PIX_FMT_YUV422P14LE,   
+    AV_PIX_FMT_YUV444P12BE,   
+    AV_PIX_FMT_YUV444P12LE,   
+    AV_PIX_FMT_YUV444P14BE,   
+    AV_PIX_FMT_YUV444P14LE,   
+    AV_PIX_FMT_GBRP12BE,      
+    AV_PIX_FMT_GBRP12LE,      
+    AV_PIX_FMT_GBRP14BE,      
+    AV_PIX_FMT_GBRP14LE,      
+    AV_PIX_FMT_YUVJ411P,      
+    AV_PIX_FMT_BAYER_BGGR8,   
+    AV_PIX_FMT_BAYER_RGGB8,   
+    AV_PIX_FMT_BAYER_GBRG8,   
+    AV_PIX_FMT_BAYER_GRBG8,   
+    AV_PIX_FMT_BAYER_BGGR16LE, 
+    AV_PIX_FMT_BAYER_BGGR16BE, 
+    AV_PIX_FMT_BAYER_RGGB16LE, 
+    AV_PIX_FMT_BAYER_RGGB16BE, 
+    AV_PIX_FMT_BAYER_GBRG16LE, 
+    AV_PIX_FMT_BAYER_GBRG16BE, 
+    AV_PIX_FMT_BAYER_GRBG16LE, 
+    AV_PIX_FMT_BAYER_GRBG16BE, 
+    AV_PIX_FMT_XVMC,          
+    AV_PIX_FMT_YUV440P10LE,   
+    AV_PIX_FMT_YUV440P10BE,   
+    AV_PIX_FMT_YUV440P12LE,   
+    AV_PIX_FMT_YUV440P12BE,   
+    AV_PIX_FMT_AYUV64LE,      
+    AV_PIX_FMT_AYUV64BE,      
+    AV_PIX_FMT_VIDEOTOOLBOX,  
+    AV_PIX_FMT_P010LE,        
+    AV_PIX_FMT_P010BE,        
+    AV_PIX_FMT_GBRAP12BE,     
+    AV_PIX_FMT_GBRAP12LE,     
+    AV_PIX_FMT_GBRAP10BE,     
+    AV_PIX_FMT_GBRAP10LE,     
+    AV_PIX_FMT_MEDIACODEC,    
+    AV_PIX_FMT_GRAY12BE,      
+    AV_PIX_FMT_GRAY12LE,      
+    AV_PIX_FMT_GRAY10BE,      
+    AV_PIX_FMT_GRAY10LE,      
+    AV_PIX_FMT_P016LE,        
+    AV_PIX_FMT_P016BE,        
+    AV_PIX_FMT_D3D11, AV_PIX_FMT_GRAY9BE, 
+    AV_PIX_FMT_GRAY9LE,       
+    AV_PIX_FMT_GBRPF32BE,     
+    AV_PIX_FMT_GBRPF32LE,     
+    AV_PIX_FMT_GBRAPF32BE,    
+    AV_PIX_FMT_GBRAPF32LE,    
+    AV_PIX_FMT_DRM_PRIME, AV_PIX_FMT_OPENCL, AV_PIX_FMT_GRAY14BE, 
+    AV_PIX_FMT_GRAY14LE,      
+    AV_PIX_FMT_GRAYF32BE,     
+    AV_PIX_FMT_GRAYF32LE,     
+    AV_PIX_FMT_YUVA422P12BE,  
+    AV_PIX_FMT_YUVA422P12LE,  
+    AV_PIX_FMT_YUVA444P12BE,  
+    AV_PIX_FMT_YUVA444P12LE,  
+    AV_PIX_FMT_NV24,          
+    AV_PIX_FMT_NV42,          
+    AV_PIX_FMT_VULKAN, AV_PIX_FMT_Y210BE, 
+    AV_PIX_FMT_Y210LE,        
+    AV_PIX_FMT_X2RGB10LE,     
+    AV_PIX_FMT_X2RGB10BE,     
     AV_PIX_FMT_NB
-
-type
-  OutputFormat* = enum
-    FMT_MPEG1, FMT_H261, FMT_H263, FMT_MJPEG
-
-const MAX_THREADS = 32
-
-const
-  AV_SYNC_AUDIO_MASTER* = 0     ##  default choice
-  AV_SYNC_VIDEO_MASTER* = 1
-  AV_SYNC_EXTERNAL_CLOCK* = 2   ##  synchronize to an external clock
-  AV_PIX_FMT_Y400A = AV_PIX_FMT_YA8
-  AV_PIX_FMT_GRAY8A = AV_PIX_FMT_YA8
-  AV_PIX_FMT_GBR24P = AV_PIX_FMT_GBRP
-  AV_FRAME_CROP_UNALIGNED* = 1 shl 0
-  STATE_INPUT_READY* = 0
-  STATE_SETTING_UP* = 1
-  STATE_GET_BUFFER* = 2
-  STATE_GET_FORMAT* = 3
-  STATE_SETUP_FINISHED* = 4
-  AV_OPT_FLAG_IMPLICIT_KEY* = 1
-  AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT* = 1
-  AV_BUFFERSRC_FLAG_PUSH* = 4
-  AV_BUFFERSRC_FLAG_KEEP_REF* = 8
-  AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX* = 0x00000001
-  AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX* = 0x00000002
-  AV_CODEC_HW_CONFIG_METHOD_INTERNAL* = 0x00000004
-  AV_CODEC_HW_CONFIG_METHOD_AD_HOC* = 0x00000008
-
-var sws_dict*: Table[string,string]
-var swr_opts*: Table[string,string]
-var
-  format_opts*: Table[string,string]
-  codec_opts*: Table[string,string]
-  resample_opts*: Table[string,string]
-type
   AVDurationEstimationMethod* = enum
-    AVFMT_DURATION_FROM_PTS,  ## /< Duration accurately estimated from PTSes
-    AVFMT_DURATION_FROM_STREAM, ## /< Duration estimated from a stream with a known duration
-    AVFMT_DURATION_FROM_BITRATE ## /< Duration estimated from bitrate (less accurate)
+    AVFMT_DURATION_FROM_PTS,  
+    AVFMT_DURATION_FROM_STREAM, 
+    AVFMT_DURATION_FROM_BITRATE 
   AVFieldOrder* = enum
-    AV_FIELD_UNKNOWN, AV_FIELD_PROGRESSIVE, AV_FIELD_TT, ## < Top coded_first, top displayed first
-    AV_FIELD_BB,              ## < Bottom coded first, bottom displayed first
-    AV_FIELD_TB,              ## < Top coded first, bottom displayed first
-    AV_FIELD_BT               ## < Bottom coded first, top displayed first
+    AV_FIELD_UNKNOWN, AV_FIELD_PROGRESSIVE, AV_FIELD_TT, 
+    AV_FIELD_BB,             
+    AV_FIELD_TB,              
+    AV_FIELD_BT               
   AVAudioServiceType* = enum
     AV_AUDIO_SERVICE_TYPE_MAIN = 0, AV_AUDIO_SERVICE_TYPE_EFFECTS = 1,
     AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED = 2,
     AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED = 3, AV_AUDIO_SERVICE_TYPE_DIALOGUE = 4,
     AV_AUDIO_SERVICE_TYPE_COMMENTARY = 5, AV_AUDIO_SERVICE_TYPE_EMERGENCY = 6,
-    AV_AUDIO_SERVICE_TYPE_VOICE_OVER = 7, AV_AUDIO_SERVICE_TYPE_KARAOKE = 8, AV_AUDIO_SERVICE_TYPE_NB ## /< Not part of ABI
+    AV_AUDIO_SERVICE_TYPE_VOICE_OVER = 7, AV_AUDIO_SERVICE_TYPE_KARAOKE = 8, AV_AUDIO_SERVICE_TYPE_NB 
   ShowMode* = enum
     SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT,
     SHOW_MODE_NB
@@ -820,18 +788,46 @@ type
     SWR_ENGINE_SOXR,      
     SWR_ENGINE_NB        
   SwrFilterType* = enum
-    SWR_FILTER_TYPE_CUBIC,    ## *< Cubic
-    SWR_FILTER_TYPE_BLACKMAN_NUTTALL, ## *< Blackman Nuttall windowed sinc
-    SWR_FILTER_TYPE_KAISER    ## *< Kaiser windowed sinc
+    SWR_FILTER_TYPE_CUBIC,    
+    SWR_FILTER_TYPE_BLACKMAN_NUTTALL, 
+    SWR_FILTER_TYPE_KAISER    
+  OutputFormat* = enum
+    FMT_MPEG1, FMT_H261, FMT_H263, FMT_MJPEG
+
 
 const
-  AV_PARSER_PTS_NB* = 4
-  PARSER_FLAG_COMPLETE_FRAMES* = 0x00000001
-  PARSER_FLAG_ONCE* = 0x00000002
-  PARSER_FLAG_FETCHED_OFFSET* = 0x00000004
-  PARSER_FLAG_USE_CODEC_TS* = 0x00001000
+  AV_SYNC_AUDIO_MASTER* = 0     
+  AV_SYNC_VIDEO_MASTER* = 1
+  AV_SYNC_EXTERNAL_CLOCK* = 2 
+  AV_PIX_FMT_Y400A = AV_PIX_FMT_YA8
+  AV_PIX_FMT_GRAY8A = AV_PIX_FMT_YA8
+  AV_PIX_FMT_GBR24P = AV_PIX_FMT_GBRP
+  AV_FRAME_CROP_UNALIGNED* = 1 shl 0
+  STATE_INPUT_READY* = 0
+  STATE_SETTING_UP* = 1
+  STATE_GET_BUFFER* = 2
+  STATE_GET_FORMAT* = 3
+  STATE_SETUP_FINISHED* = 4
+  AV_OPT_FLAG_IMPLICIT_KEY* = 1
+  AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT* = 1
+  AV_BUFFERSRC_FLAG_PUSH* = 4
+  AV_BUFFERSRC_FLAG_KEEP_REF* = 8
+  AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX* = 0x00000001
+  AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX* = 0x00000002
+  AV_CODEC_HW_CONFIG_METHOD_INTERNAL* = 0x00000004
+  AV_CODEC_HW_CONFIG_METHOD_AD_HOC* = 0x00000008
+  AVCOL_SPC_YCOCG = AVCOL_SPC_YCGCO
+  AVCOL_PRI_SMPTEST428_1 = AVCOL_PRI_SMPTE428
+  AVCOL_PRI_JEDEC_P22 = AVCOL_PRI_EBU3213
+  AVCOL_TRC_SMPTEST2084 = AVCOL_TRC_SMPTE2084
+  AVCOL_TRC_SMPTEST428_1 = AVCOL_TRC_SMPTE428
+  MAX_THREADS = 32
 
-const AV_NUM_DATA_POINTERS = 8
+
+
+  
+
+
 
 type
   AVCodecTag* = ref object
@@ -849,7 +845,7 @@ type
     name*: string
     help*: string
     offset*: cint
-    `type`*: AVOptionType
+    t*: AVOptionType
     default_val*: AVOptionUnion
     min*: cdouble              
     max*: cdouble           
@@ -886,17 +882,17 @@ type
     mime_type*: string        
   AVIOContext* = ref object
     av_class*: AVClass
-    buffer*: ptr cuchar         ## *< Start of the buffer.
-    buffer_size*: cint         ## *< Maximum buffer size
-    buf_ptr*: ptr cuchar        ## *< Current position in the buffer
+    buffer*: ptr cuchar         
+    buffer_size*: cint         
+    buf_ptr*: ptr cuchar        
     buf_end*: ptr cuchar 
     opaque*: pointer                            
     read_packet*: proc (opaque: pointer; buf: uint8; buf_size: cint): cint
     write_packet*: proc (opaque: pointer; buf: uint8; buf_size: cint): cint
     seek*: proc (opaque: pointer; offset: int64; whence: cint): int64
-    pos*: int64              ## *< position in the file of the current buffer
-    eof_reached*: cint         ## *< true if was unable to read due to error or eof
-    write_flag*: cint          ## *< true if open for writing
+    pos*: int64              
+    eof_reached*: cint         
+    write_flag*: cint          
     max_packet_size*: cint
     checksum*: culong
     checksum_ptr*: ptr cuchar
@@ -914,7 +910,7 @@ type
     short_seek_threshold*: cint
     protocol_whitelist*: string
     protocol_blacklist*: string
-    write_data_type*: proc (opaque: pointer; buf: uint8; buf_size: cint;`type`: AVIODataMarkerType; time: int64): cint
+    write_data_type*: proc (opaque: pointer; buf: uint8; buf_size: cint;t: AVIODataMarkerType; time: int64): cint
     ignore_boundary_point*: cint
     current_type*: AVIODataMarkerType
     last_time*: int64
@@ -930,7 +926,7 @@ type
   AVPacketSideData* = ref object
     data*: uint8
     size*: cint
-    `type`*: AVPacketSideDataType
+    t*: AVPacketSideDataType
   AVPacket* = ref object
     buf*: AVBufferRef
     pts*: int64 
@@ -973,21 +969,7 @@ type
     initial_padding*: cint
     trailing_padding*: cint
     seek_preroll*: cint
-  AVStreamInnerStruct* = ref object
-    last_dts*: int64
-    duration_gcd*: int64
-    duration_count*: cint
-    rfps_duration_sum*: int64
-    duration_error*: array[2, array[MAX_STD_TIMEBASES, cdouble]]
-    codec_info_duration*: int64
-    codec_info_duration_fields*: int64
-    frame_delay_evidence*: cint
-    found_decoder*: cint
-    last_duration*: int64
-    fps_first_dts*: int64
-    fps_first_dts_idx*: cint
-    fps_last_dts*: int64
-    fps_last_dts_idx*: cint
+
   AVProfile* = ref object
     profile*: cint
     name*: string             
@@ -995,34 +977,34 @@ type
     key*: uint8
     value*: uint8
   AVSubtitleRect* = ref object
-    x*: cint                   ## /< top left corner  of pict, undefined when pict is not set
-    y*: cint                   ## /< top left corner  of pict, undefined when pict is not set
-    w*: cint                   ## /< width            of pict, undefined when pict is not set
-    h*: cint                   ## /< height           of pict, undefined when pict is not set
-    nb_colors*: cint           ## /< number of colors in pict, undefined when pict is not set
+    x*: cint                   
+    y*: cint                   
+    w*: cint                   
+    h*: cint                   
+    nb_colors*: cint           
     data*: array[4, uint8]
     linesize*: array[4, cint]
-    `type`*: AVSubtitleType
-    text*: string             ## /< 0 terminated plain UTF-8 text
+    t*: AVSubtitleType
+    text*: string             
     ass*: string
     flags*: cint
   AVSubtitle* = ref object
-    format*: uint16         ##  0 = graphics
-    start_display_time*: uint32 ##  relative to packet pts, in ms
-    end_display_time*: uint32 ##  relative to packet pts, in ms
+    format*: uint16         
+    start_display_time*: uint32 
+    end_display_time*: uint32 
     num_rects*: cuint
     rects*: AVSubtitleRect
     pts*: int64              
   AVFrameSideData* = ref object
-    `type`*: AVFrameSideDataType
+    t*: AVFrameSideDataType
     data*: uint8
     size*: cint
     metadata*: Table[string,string]
-    buf*: ptr AVBufferRef
+    buf*: AVBufferRef
   AVFrame* = ref object
     data*: array[8, uint8]
     linesize*: array[8, cint]
-    extended_data*: ptr uint8
+    extended_data*: uint8
     width*: cint
     height*: cint
     nb_samples*: cint
@@ -1043,8 +1025,8 @@ type
     reordered_opaque*: int64
     sample_rate*: cint
     channel_layout*: uint64
-    buf*: array[8, ptr AVBufferRef]
-    extended_buf*: ptr ptr AVBufferRef
+    buf*: array[8, AVBufferRef]
+    extended_buf*: ptr AVBufferRef
     nb_extended_buf*: cint
     side_data*: ptr ptr AVFrameSideData
     nb_side_data*: cint
@@ -1061,13 +1043,13 @@ type
     decode_error_flags*: cint
     channels*: cint
     pkt_size*: cint
-    hw_frames_ctx*: ptr AVBufferRef
-    opaque_ref*: ptr AVBufferRef
+    hw_frames_ctx*: AVBufferRef
+    opaque_ref*: AVBufferRef
     crop_top*: csize_t
     crop_bottom*: csize_t
     crop_left*: csize_t
     crop_right*: csize_t
-    private_ref*: ptr AVBufferRef
+    private_ref*: AVBufferRef
   ScanTable* = ref object
     scantable*: uint8
     permutated*: array[64, uint8]
@@ -1075,37 +1057,37 @@ type
 
 type
   ThreadFrame* = ref object
-    f*: ptr AVFrame
+    f*: AVFrame
     owner*: array[2, AVCodecContext]
-    progress*: ptr AVBufferRef
+    progress*: AVBufferRef
 
   Picture* = ref object
-    f*: ptr AVFrame
+    f*: AVFrame
     tf*: ThreadFrame
-    qscale_table_buf*: ptr AVBufferRef
+    qscale_table_buf*: AVBufferRef
     qscale_table*: ptr int8
-    motion_val_buf*: array[2, ptr AVBufferRef] ##  int16 (*motion_val[2])[2];
-    mb_type_buf*: ptr AVBufferRef
-    mb_type*: ptr uint32      ## /< types and macros are defined in mpegutils.h
-    mbskip_table_buf*: ptr AVBufferRef
+    motion_val_buf*: array[2, AVBufferRef] 
+    mb_type_buf*: AVBufferRef
+    mb_type*: ptr uint32      
+    mbskip_table_buf*: AVBufferRef
     mbskip_table*: uint8
-    ref_index_buf*: array[2, ptr AVBufferRef]
+    ref_index_buf*: array[2, AVBufferRef]
     ref_index*: array[2, ptr int8]
-    mb_var_buf*: ptr AVBufferRef
-    mb_var*: ptr uint16       ## /< Table for MB variances
-    mc_mb_var_buf*: ptr AVBufferRef
-    mc_mb_var*: ptr uint16    ## /< Table for motion compensated MB variances
-    alloc_mb_width*: cint      ## /< mb_width used to allocate tables
-    alloc_mb_height*: cint     ## /< mb_height used to allocate tables
-    mb_mean_buf*: ptr AVBufferRef
-    mb_mean*: uint8       ## /< Table for MB luminance
-    hwaccel_priv_buf*: ptr AVBufferRef
-    hwaccel_picture_private*: pointer ## /< Hardware accelerator private data
-    field_picture*: cint       ## /< whether or not the picture was encoded in separate fields
-    mb_var_sum*: int64       ## /< sum of MB variance for current frame
-    mc_mb_var_sum*: int64    ## /< motion compensated MB variance for current frame
+    mb_var_buf*: AVBufferRef
+    mb_var*: ptr uint16       
+    mc_mb_var_buf*: AVBufferRef
+    mc_mb_var*: ptr uint16    
+    alloc_mb_width*: cint      
+    alloc_mb_height*: cint     
+    mb_mean_buf*: AVBufferRef
+    mb_mean*: uint8       
+    hwaccel_priv_buf*: AVBufferRef
+    hwaccel_picture_private*: pointer 
+    field_picture*: cint       
+    mb_var_sum*: int64       
+    mc_mb_var_sum*: int64    
     b_frame_score*: cint
-    needs_realloc*: cint       ## /< Picture needs to be reallocated (eg due to a frame size change)
+    needs_realloc*: cint       
     reference*: cint
     shared*: cint
     encoding_error*: array[AV_NUM_DATA_POINTERS, uint64]
@@ -1126,19 +1108,17 @@ type
     b_scratchpad*: uint8  
 
 
-  op_fill_func* = proc (`block`: uint8; ##  align width (8 or 16)
-                     value: uint8; line_size: int64; h: cint)
+  op_fill_func* = proc (`block`: uint8; value: uint8; line_size: int64; h: cint)
   BlockDSPContext* = ref object
-    clear_block*: proc (`block`: ptr int16) ##  align 32
-    clear_blocks*: proc (blocks: ptr int16) ##  align 32
+    clear_block*: proc (`block`: ptr int16) 
+    clear_blocks*: proc (blocks: ptr int16) 
     fill_block_tab*: array[2, op_fill_func]
 
   FDCTDSPContext* = ref object
     fdct*: proc (`block`: ptr int16)
     fdct248*: proc (`block`: ptr int16)
 
-  h264_chroma_mc_func* = proc (dst: uint8; src: uint8; srcStride: int64; h: cint;
-                            x: cint; y: cint)
+  h264_chroma_mc_func* = proc (dst: uint8; src: uint8; srcStride: int64; h: cint; x: cint; y: cint)
   H264ChromaContext* = ref object
     put_h264_chroma_pixels_tab*: array[4, h264_chroma_mc_func]
     avg_h264_chroma_pixels_tab*: array[4, h264_chroma_mc_func]
@@ -1168,12 +1148,12 @@ type
 
   MpegEncContext* = ref object
 
-  me_cmp_func* = proc (c: ptr MpegEncContext; blk1: uint8; ##  align width (8 or 16)
-                    blk2: uint8; ##  align 1
+  me_cmp_func* = proc (c: ptr MpegEncContext; blk1: uint8; 
+                    blk2: uint8; 
                     stride: int64; h: cint): cint
   MECmpContext* = ref object
-    sum_abs_dctelem*: proc (`block`: ptr int16): cint ##  align 16
-    sad*: array[6, me_cmp_func] ##  identical to pix_absAxA except additional void *
+    sum_abs_dctelem*: proc (`block`: ptr int16): cint 
+    sad*: array[6, me_cmp_func] 
     sse*: array[6, me_cmp_func]
     hadamard8_diff*: array[6, me_cmp_func]
     dct_sad*: array[6, me_cmp_func]
@@ -1191,15 +1171,15 @@ type
     me_cmp*: array[6, me_cmp_func]
     me_sub_cmp*: array[6, me_cmp_func]
     mb_cmp*: array[6, me_cmp_func]
-    ildct_cmp*: array[6, me_cmp_func] ##  only width 16 used
-    frame_skip_cmp*: array[6, me_cmp_func] ##  only width 8 used
+    ildct_cmp*: array[6, me_cmp_func] 
+    frame_skip_cmp*: array[6, me_cmp_func] 
     pix_abs*: array[2, array[4, me_cmp_func]]
     median_sad*: array[6, me_cmp_func]
 
   atomic_int* = cint
   ERPicture* = ref object
-    f*: ptr AVFrame
-    tf*: ptr ThreadFrame        ##  int16 (*motion_val[2])[2];
+    f*: AVFrame
+    tf*: ptr ThreadFrame        
     ref_index*: array[2, ptr int8]
     mb_type*: ptr uint32
     field_picture*: cint
@@ -1225,8 +1205,8 @@ type
     cur_pic*: ERPicture
     last_pic*: ERPicture
     next_pic*: ERPicture
-    ref_index_buf*: array[2, ptr AVBufferRef]
-    motion_val_buf*: array[2, ptr AVBufferRef]
+    ref_index_buf*: array[2, AVBufferRef]
+    motion_val_buf*: array[2, AVBufferRef]
     pp_time*: uint16
     pb_time*: uint16
     quarter_sample*: cint
@@ -1238,10 +1218,10 @@ type
     opaque*: pointer
 
   AVTimecode* = ref object
-    start*: cint               ## /< timecode frame start (first base frame number)
-    flags*: uint32           ## /< flags such as drop frame, +24 hours support, ...
-    rate*: AVRational          ## /< frame rate in rational form
-    fps*: cuint                ## /< frame per second; must be consistent with the rate field
+    start*: cint               
+    flags*: uint32           
+    rate*: AVRational          
+    fps*: cuint                
 
   MpegVideoDSPContext* = ref object
     gmc1*: proc (dst: uint8;  src: uint8; srcStride: cint; h: cint; x16: cint; y16: cint; rounder: cint)
@@ -1281,13 +1261,13 @@ type
     device_type*: AVHWDeviceType
   AVHWAccel* = ref object
     name*: string
-    `type`*: AVMediaType
+    t*: AVMediaType
     id*: AVCodecID
     pix_fmt*: AVPixelFormat
     capabilities*: cint
-    alloc_frame*: proc (avctx: AVCodecContext; frame: ptr AVFrame): cint
+    alloc_frame*: proc (avctx: AVCodecContext; frame: AVFrame): cint
     start_frame*: proc (avctx: AVCodecContext; buf: uint8; buf_size: uint32): cint
-    decode_params*: proc (avctx: AVCodecContext; `type`: cint; buf: uint8;
+    decode_params*: proc (avctx: AVCodecContext; t: cint; buf: uint8;
                         buf_size: uint32): cint
     decode_slice*: proc (avctx: AVCodecContext; buf: uint8; buf_size: uint32): cint
     end_frame*: proc (avctx: AVCodecContext): cint
@@ -1297,7 +1277,7 @@ type
     uninit*: proc (avctx: AVCodecContext): cint
     priv_data_size*: cint
     caps_internal*: cint
-    frame_params*: proc (avctx: AVCodecContext; hw_frames_ctx: ptr AVBufferRef): cint
+    frame_params*: proc (avctx: AVCodecContext; hw_frames_ctx: AVBufferRef): cint
 
   AVCodecHWConfigInternal* = ref object
     public*: AVCodecHWConfig
@@ -1306,17 +1286,17 @@ type
   AVCodec* = ref object
     name*: string
     long_name*: string
-    `type`*: AVMediaType
+    t*: AVMediaType
     id*: AVCodecID
     capabilities*: cint
-    supported_framerates*: ptr AVRational ## /< array of supported framerates, or NULL if any, array is terminated by {0,0}
-    pix_fmts*: ptr AVPixelFormat ## /< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-    supported_samplerates*: cint ## /< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
-    sample_fmts*: ptr AVSampleFormat ## /< array of supported sample formats, or NULL if unknown, array is terminated by -1
-    channel_layouts*: ptr uint64 ## /< array of support channel layouts, or NULL if unknown. array is terminated by 0
+    supported_framerates*: ptr AVRational 
+    pix_fmts*: ptr AVPixelFormat 
+    supported_samplerates*: cint 
+    sample_fmts*: ptr AVSampleFormat 
+    channel_layouts*: uint64 
     max_lowres*: uint8
-    priv_class*: AVClass    ## /< AVClass for the private context
-    profiles*: ptr AVProfile    ## /< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
+    priv_class*: AVClass    
+    profiles*: ptr AVProfile    
     wrapper_name*: string
     priv_data_size*: cint
     next*: AVCodec
@@ -1326,12 +1306,12 @@ type
     init_static_data*: proc (codec: AVCodec)
     init*: proc (a1: AVCodecContext): cint
     encode_sub*: proc (a1: AVCodecContext; buf: uint8; buf_size: cint;sub: ptr AVSubtitle): cint
-    encode2*: proc (avctx: AVCodecContext; avpkt: AVPacket; frame: ptr AVFrame;got_packet_ptr: cint): cint
+    encode2*: proc (avctx: AVCodecContext; avpkt: AVPacket; frame: AVFrame;got_packet_ptr: cint): cint
     decode*: proc (a1: AVCodecContext; outdata: pointer; outdata_size: cint;avpkt: AVPacket): cint
     close*: proc (a1: AVCodecContext): cint
-    send_frame*: proc (avctx: AVCodecContext; frame: ptr AVFrame): cint
+    send_frame*: proc (avctx: AVCodecContext; frame: AVFrame): cint
     receive_packet*: proc (avctx: AVCodecContext; avpkt: AVPacket): cint
-    receive_frame*: proc (avctx: AVCodecContext; frame: ptr AVFrame): cint
+    receive_frame*: proc (avctx: AVCodecContext; frame: AVFrame): cint
     flush*: proc (a1: AVCodecContext)
     caps_internal*: cint
     bsfs*: string
@@ -1345,7 +1325,7 @@ type
     next*: AVPacketList
 
   EncodeSimpleContext* = ref object
-    in_frame*: ptr AVFrame
+    in_frame*: AVFrame
 
   AVBitStreamFilter* = ref object
     name*: string
@@ -1375,8 +1355,8 @@ type
   AVCodecInternal* = ref object
     is_copy*: cint
     last_audio_frame*: cint
-    to_free*: ptr AVFrame
-    pool*: ptr AVBufferRef
+    to_free*: AVFrame
+    pool*: AVBufferRef
     thread_ctx*: pointer
     ds*: DecodeSimpleContext
     bsf*: ptr AVBSFContext
@@ -1391,12 +1371,12 @@ type
     hwaccel_priv_data*: pointer
     draining*: cint
     buffer_pkt*: AVPacket
-    buffer_frame*: ptr AVFrame
+    buffer_frame*: AVFrame
     draining_done*: cint
     compat_decode_warned*: cint
     compat_decode_consumed*: csize_t
     compat_decode_partial_size*: csize_t
-    compat_decode_frame*: ptr AVFrame
+    compat_decode_frame*: AVFrame
     compat_encode_packet*: AVPacket
     showed_multi_packet_warning*: cint
     skip_samples_multiplier*: cint
@@ -1412,12 +1392,12 @@ type
   RcOverride* = ref object
     start_frame*: cint
     end_frame*: cint
-    qscale*: cint              ##  If this is 0 then quality_factor will be used instead.
+    qscale*: cint              
     quality_factor*: cfloat
 
   AVCodecDescriptor* = ref object
     id*: AVCodecID
-    `type`*: AVMediaType
+    t*: AVMediaType
     name*: string
     long_name*: string
     props*: cint
@@ -1429,9 +1409,9 @@ type
   AVCodecContext* = ref object
     av_class*: AVClass
     log_level_offset*: cint
-    codec_type*: AVMediaType   ##  see AVMEDIA_TYPE_xxx
+    codec_type*: AVMediaType   
     codec*: AVCodec
-    codec_id*: AVCodecID       ##  see AV_CODEC_ID_xxx
+    codec_id*: AVCodecID       
     codec_tag*: cuint
     priv_data*: pointer
     internal*: ptr AVCodecInternal
@@ -1453,7 +1433,7 @@ type
     coded_height*: cint
     gop_size*: cint
     pix_fmt*: AVPixelFormat
-    draw_horiz_band*: proc (s: AVCodecContext; src: ptr AVFrame;offset: array[8, cint]; y: cint;`type`: cint; height: cint)
+    draw_horiz_band*: proc (s: AVCodecContext; src: AVFrame;offset: array[8, cint]; y: cint;t: cint; height: cint)
     get_format*: proc (s: AVCodecContext; fmt: ptr AVPixelFormat): AVPixelFormat
     max_b_frames*: cint
     b_quant_factor*: cfloat
@@ -1499,9 +1479,9 @@ type
     chroma_sample_location*: AVChromaLocation
     slices*: cint
     field_order*: AVFieldOrder
-    sample_rate*: cint         ## /< samples per second
-    channels*: cint            ## /< number of audio channels
-    sample_fmt*: AVSampleFormat ## /< sample format
+    sample_rate*: cint         
+    channels*: cint            
+    sample_fmt*: AVSampleFormat 
     frame_size*: cint
     frame_number*: cint
     block_align*: cint
@@ -1510,10 +1490,10 @@ type
     request_channel_layout*: uint64
     audio_service_type*: AVAudioServiceType
     request_sample_fmt*: AVSampleFormat
-    get_buffer2*: proc (s: AVCodecContext; frame: ptr AVFrame; flags: cint): cint
+    get_buffer2*: proc (s: AVCodecContext; frame: AVFrame; flags: cint): cint
     refcounted_frames*: cint
-    qcompress*: cfloat         ## /< amount of qscale change between easy & hard scenes (0.0-1.0)
-    qblur*: cfloat             ## /< amount of qscale smoothing over time (0.0-1.0)
+    qcompress*: cfloat         
+    qblur*: cfloat             
     qmin*: cint
     qmax*: cint
     max_qdiff*: cint
@@ -1546,12 +1526,8 @@ type
     thread_type*: cint
     active_thread_type*: cint
     thread_safe_callbacks*: cint
-    execute*: proc (c: AVCodecContext;
-                  `func`: proc (c2: AVCodecContext; arg: pointer): cint;
-                  arg2: pointer; ret: cint; count: cint; size: cint): cint
-    execute2*: proc (c: AVCodecContext; `func`: proc (c2: AVCodecContext;
-        arg: pointer; jobnr: cint; threadnr: cint): cint; arg2: pointer; ret: cint;
-                   count: cint): cint
+    execute*: proc (c: AVCodecContext;`func`: proc (c2: AVCodecContext; arg: pointer): cint;arg2: pointer; ret: cint; count: cint; size: cint): cint
+    execute2*: proc (c: AVCodecContext; `func`: proc (c2: AVCodecContext;arg: pointer; jobnr: cint; threadnr: cint): cint; arg2: pointer; ret: cint;count: cint): cint
     nsse_weight*: cint
     profile*: cint
     level*: cint
@@ -1565,10 +1541,10 @@ type
     sw_pix_fmt*: AVPixelFormat
     pkt_timebase*: AVRational
     codec_descriptor*: ptr AVCodecDescriptor
-    pts_correction_num_faulty_pts*: int64 ## / Number of incorrect PTS values so far
-    pts_correction_num_faulty_dts*: int64 ## / Number of incorrect DTS values so far
-    pts_correction_last_pts*: int64 ## / PTS of the last frame
-    pts_correction_last_dts*: int64 ## / DTS of the last frame
+    pts_correction_num_faulty_pts*: int64 
+    pts_correction_num_faulty_dts*: int64 
+    pts_correction_last_pts*: int64 
+    pts_correction_last_dts*: int64 
     sub_charenc*: string
     sub_charenc_mode*: cint
     skip_alpha*: cint
@@ -1579,11 +1555,11 @@ type
     properties*: cuint
     coded_side_data*: ptr AVPacketSideData
     nb_coded_side_data*: cint
-    hw_frames_ctx*: ptr AVBufferRef
+    hw_frames_ctx*: AVBufferRef
     sub_text_format*: cint
     trailing_padding*: cint
     max_pixels*: int64
-    hw_device_ctx*: ptr AVBufferRef
+    hw_device_ctx*: AVBufferRef
     hwaccel_flags*: cint
     apply_cropping*: cint
     extra_hw_frames*: cint
@@ -1592,12 +1568,10 @@ type
     export_side_data*: cint
 
   AVCodecParser* = ref object
-    codec_ids*: array[5, cint]  ##  several codec IDs are permitted
+    codec_ids*: array[5, cint]  
     priv_data_size*: cint
     parser_init*: proc (s: AVCodecParserContext): cint
-    parser_parse*: proc (s: AVCodecParserContext; avctx: AVCodecContext;
-                       poutbuf: ptr uint8; poutbuf_size: cint;
-                       buf: uint8; buf_size: cint): cint
+    parser_parse*: proc (s: AVCodecParserContext; avctx: AVCodecContext;poutbuf: uint8; poutbuf_size: cint;buf: uint8; buf_size: cint): cint
     parser_close*: proc (s: AVCodecParserContext)
     split*: proc (avctx: AVCodecContext; buf: uint8; buf_size: cint): cint
     next*: AVCodecParser
@@ -1606,13 +1580,13 @@ type
   AVCodecParserContext* = ref object
     priv_data*: pointer
     parser*: AVCodecParser
-    frame_offset*: int64     ##  offset of the current frame
-    cur_offset*: int64       ##  current offset (incremented by each av_parser_parse())
-    next_frame_offset*: int64 ##  offset of the next frame
+    frame_offset*: int64     
+    cur_offset*: int64       
+    next_frame_offset*: int64 
     pict_type*: cint          
     repeat_pict*: cint         
-    pts*: int64              ##  pts of the current frame
-    dts*: int64              ##  dts of the current frame
+    pts*: int64              
+    dts*: int64              
     last_pts*: int64
     last_dts*: int64
     fetch_timestamp*: cint
@@ -1621,7 +1595,7 @@ type
     cur_frame_pts*: array[AV_PARSER_PTS_NB, int64]
     cur_frame_dts*: array[AV_PARSER_PTS_NB, int64]
     flags*: cint
-    offset*: int64           ## /< byte offset from starting packet start
+    offset*: int64           
     cur_frame_end*: array[AV_PARSER_PTS_NB, int64]
     key_frame*: cint
     convergence_duration*: int64
@@ -1645,7 +1619,7 @@ type
     pos*: int64
     timestamp*: int64
     flags* {.bitsize: 2.}: cint
-    size* {.bitsize: 30.}: cint  ## Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
+    size* {.bitsize: 30.}: cint  
     min_distance*: cint  
 
   AVStreamInternalInner* = ref object
@@ -1657,11 +1631,9 @@ type
     val*: int64
     num*: int64
     den*: int64
-
-
   AVStreamInternal* = ref object
     reorder*: cint
-    bsfc*: ptr AVBSFContext
+    bsfc*: AVBSFContext
     bitstream_checked*: cint
     avctx*: AVCodecContext
     avctx_inited*: cint
@@ -1670,8 +1642,21 @@ type
     need_context_update*: cint
     is_intra_only*: cint
     priv_pts*: FFFrac
-
-
+  AVStreamInnerStruct* = ref object
+    last_dts*: int64
+    duration_gcd*: int64
+    duration_count*: cint
+    rfps_duration_sum*: int64
+    duration_error*: array[2, array[MAX_STD_TIMEBASES, cdouble]]
+    codec_info_duration*: int64
+    codec_info_duration_fields*: int64
+    frame_delay_evidence*: cint
+    found_decoder*: cint
+    last_duration*: int64
+    fps_first_dts*: int64
+    fps_first_dts_idx*: cint
+    fps_last_dts*: int64
+    fps_last_dts_idx*: cint
   AVStream* = ref object
     index*: cint               
     id*: cint
@@ -1731,7 +1716,7 @@ type
     dts_misordered*: uint8
     inject_global_side_data*: cint
     display_aspect_ratio*: AVRational
-    internal*: ptr AVStreamInternal
+    internal*: AVStreamInternal
   AVProgram* = ref object
     id*: cint
     flags*: cint
@@ -1745,13 +1730,13 @@ type
     pmt_version*: cint
     start_time*: int64
     end_time*: int64
-    pts_wrap_reference*: int64 ## /< reference dts for wrap detection
-    pts_wrap_behavior*: cint   ## /< behavior on wrap detection
+    pts_wrap_reference*: int64 
+    pts_wrap_behavior*: cint   
   AVChapter* = ref object
-    id*: cint                  ## /< unique ID to identify the chapter
-    time_base*: AVRational     ## /< time base in which the start/end timestamps are specified
+    id*: cint                  
+    time_base*: AVRational     
     start*: int64
-    `end`*: int64            ## /< chapter start/end time in time_base units
+    `end`*: int64            
     metadata*: Table[string,string]
 
   AVIOInterruptCB* = ref object
@@ -1778,7 +1763,7 @@ type
     id3v2_meta*: Table[string,string]
     prefer_codec_framerate*: cint
 
-  av_format_control_message* = proc (s: AVFormatContext; `type`: cint;data: pointer; data_size: csize_t): cint
+  av_format_control_message* = proc (s: AVFormatContext; t: cint;data: pointer; data_size: csize_t): cint
 
   AVFormatContext* = ref object
     av_class*: AVClass
@@ -1788,7 +1773,7 @@ type
     pb*: AVIOContext
     ctx_flags*: cint
     nb_streams*: cuint
-    streams*: AVStream
+    streams*: seq[AVStream]
     url*: string
     start_time*: int64
     duration*: int64
@@ -1882,33 +1867,27 @@ type
     name*: string
     long_name*: string
     mime_type*: string
-    extensions*: string       ## *< comma-separated filename extensions
-    audio_codec*: AVCodecID    ## *< default audio codec
-    video_codec*: AVCodecID    ## *< default video codec
-    subtitle_codec*: AVCodecID ## *< default subtitle codec
+    extensions*: string       
+    audio_codec*: AVCodecID    
+    video_codec*: AVCodecID    
+    subtitle_codec*: AVCodecID 
     flags*: cint
     codec_tag*: ptr ptr AVCodecTag
-    priv_class*: AVClass    ## /< AVClass for the private context
+    priv_class*: AVClass    
     next*: AVOutputFormat
     priv_data_size*: cint
     write_header*: proc (a1: AVFormatContext): cint
     write_packet*: proc (a1: AVFormatContext; pkt: AVPacket): cint
     write_trailer*: proc (a1: AVFormatContext): cint
-    interleave_packet*: proc (a1: AVFormatContext; `out`: AVPacket;
-                            `in`: AVPacket; flush: cint): cint
+    interleave_packet*: proc (a1: AVFormatContext; `out`: AVPacket;`in`: AVPacket; flush: cint): cint
     query_codec*: proc (id: AVCodecID; std_compliance: cint): cint
-    get_output_timestamp*: proc (s: AVFormatContext; stream: cint;
-                               dts: ptr int64; wall: ptr int64)
-    control_message*: proc (s: AVFormatContext; `type`: cint; data: pointer;
-                          data_size: csize_t): cint
-    write_uncoded_frame*: proc (a1: AVFormatContext; stream_index: cint;
-                              frame: ptr ptr AVFrame; flags: cuint): cint
-    get_device_list*: proc (s: AVFormatContext; device_list: ptr AVDeviceInfoList): cint
-    create_device_capabilities*: proc (s: AVFormatContext;
-                                     caps: ptr AVDeviceCapabilitiesQuery): cint
-    free_device_capabilities*: proc (s: AVFormatContext;
-                                   caps: ptr AVDeviceCapabilitiesQuery): cint
-    data_codec*: AVCodecID     ## *< default data codec
+    get_output_timestamp*: proc (s: AVFormatContext; stream: cint;dts: ptr int64; wall: ptr int64)
+    control_message*: proc (s: AVFormatContext; t: cint; data: pointer;data_size: csize_t): cint
+    write_uncoded_frame*: proc (a1: AVFormatContext; stream_index: cint;frame: ptr AVFrame; flags: cuint): cint
+    get_device_list*: proc (s: AVFormatContext; device_list: AVDeviceInfoList): cint
+    create_device_capabilities*: proc (s: AVFormatContext;caps: AVDeviceCapabilitiesQuery): cint
+    free_device_capabilities*: proc (s: AVFormatContext;caps: AVDeviceCapabilitiesQuery): cint
+    data_codec*: AVCodecID     
     init*: proc (a1: AVFormatContext): cint
     deinit*: proc (a1: AVFormatContext)
     check_bitstream*: proc (a1: AVFormatContext; pkt: AVPacket): cint
@@ -1917,7 +1896,7 @@ type
     long_name*: string
     flags*: cint
     extensions*: string
-    codec_tag*: ptr ptr AVCodecTag
+    codec_tag*: AVCodecTag
     priv_class*: AVClass    
     mime_type*: string
     next*: AVInputFormat
@@ -1927,27 +1906,22 @@ type
     read_header*: proc (a1: AVFormatContext): cint
     read_packet*: proc (a1: AVFormatContext; pkt: AVPacket): cint
     read_close*: proc (a1: AVFormatContext): cint
-    read_seek*: proc (a1: AVFormatContext; stream_index: cint; timestamp: int64;
-                    flags: cint): cint
-    read_timestamp*: proc (s: AVFormatContext; stream_index: cint;
-                         pos: ptr int64; pos_limit: int64): int64
+    read_seek*: proc (a1: AVFormatContext; stream_index: cint; timestamp: int64;flags: cint): cint
+    read_timestamp*: proc (s: AVFormatContext; stream_index: cint;pos: int64; pos_limit: int64): int64
     read_play*: proc (a1: AVFormatContext): cint
     read_pause*: proc (a1: AVFormatContext): cint
-    read_seek2*: proc (s: AVFormatContext; stream_index: cint; min_ts: int64;
-                     ts: int64; max_ts: int64; flags: cint): cint
-    get_device_list*: proc (s: AVFormatContext; device_list: ptr AVDeviceInfoList): cint
-    create_device_capabilities*: proc (s: AVFormatContext;
-                                     caps: ptr AVDeviceCapabilitiesQuery): cint
-    free_device_capabilities*: proc (s: AVFormatContext;
-                                   caps: ptr AVDeviceCapabilitiesQuery): cint
+    read_seek2*: proc (s: AVFormatContext; stream_index: cint; min_ts: int64;ts: int64; max_ts: int64; flags: cint): cint
+    get_device_list*: proc (s: AVFormatContext; device_list: AVDeviceInfoList): cint
+    create_device_capabilities*: proc (s: AVFormatContext;caps: AVDeviceCapabilitiesQuery): cint
+    free_device_capabilities*: proc (s: AVFormatContext;caps: AVDeviceCapabilitiesQuery): cint
 
   Frame* = ref object
-    frame*: ptr AVFrame
+    frame*: AVFrame
     sub*: AVSubtitle
     serial*: cint
-    pts*: cdouble              ##  presentation timestamp for the frame
-    duration*: cdouble         ##  estimated duration of the frame
-    pos*: int64             ##  byte position of the frame in the input file
+    pts*: cdouble              
+    duration*: cdouble         
+    pos*: int64             
     width*: cint
     height*: cint
     format*: cint
@@ -2007,32 +1981,31 @@ type
     bytes_per_sec*: cint
 
   AudioData* = ref object
-    ch*: array[64, uint8] ## /< samples buffer per channel
-    data*: uint8          ## /< samples buffer
-    ch_count*: cint            ## /< number of channels
-    bps*: cint                 ## /< bytes per sample
-    count*: cint               ## /< number of samples
-    planar*: cint              ## /< 1 if planar audio, 0 otherwise
-    fmt*: AVSampleFormat       ## /< sample format
+    ch*: array[64, uint8] 
+    data*: uint8          
+    ch_count*: cint            
+    bps*: cint                 
+    count*: cint               
+    planar*: cint              
+    fmt*: AVSampleFormat       
 
 
   DitherContext* = ref object
     `method`*: cint
     noise_pos*: cint
     scale*: cfloat
-    noise_scale*: cfloat       ## /< Noise scale
-    ns_taps*: cint             ## /< Noise shaping dither taps
-    ns_scale*: cfloat          ## /< Noise shaping dither scale
-    ns_scale_1*: cfloat        ## /< Noise shaping dither scale^-1
-    ns_pos*: cint              ## /< Noise shaping dither position
-    ns_coeffs*: array[20, cfloat] ## /< Noise shaping filter coefficients
+    noise_scale*: cfloat       
+    ns_taps*: cint             
+    ns_scale*: cfloat          
+    ns_scale_1*: cfloat        
+    ns_pos*: cint              
+    ns_coeffs*: array[20, cfloat] 
     ns_errors*: array[64, array[2 * 20, cfloat]]
-    noise*: AudioData          ## /< noise used for dithering
-    temp*: AudioData           ## /< temporary storage when writing into the input buffer isn't possible
-    output_sample_bits*: cint  ## /< the number of used output bits, needed to scale dither correctly
-
+    noise*: AudioData          
+    temp*: AudioData           
+    output_sample_bits*: cint  
   conv_func_type* = proc (po: uint8; pi: uint8; videoState: cint; os: cint;`end`: uint8)
-  simd_func_type* = proc (dst: ptr uint8; src: ptr uint8; len: cint)
+  simd_func_type* = proc (dst: uint8; src: uint8; len: cint)
 
   AudioConvert* = ref object
     channels*: cint
@@ -2041,7 +2014,7 @@ type
     conv_f*: conv_func_type
     simd_f*: simd_func_type
     ch_map*: cint
-    silence*: array[8, uint8] ## /< silence input sample
+    silence*: array[8, uint8] 
 
 type
   ResampleInner* = ref object
@@ -2072,24 +2045,13 @@ type
     filter_shift*: cint
     phase_count_compensation*: cint 
     dsp*: ResampleInner
-
-  resample_init_func* = proc (c: ptr ResampleContext; out_rate: cint; in_rate: cint;
-                           filter_size: cint; phase_shift: cint; linear: cint;
-                           cutoff: cdouble; format: AVSampleFormat;
-                           filter_type: SwrFilterType; kaiser_beta: cdouble;
-                           precision: cdouble; cheby: cint; exact_rational: cint): ptr ResampleContext
-
-  resample_free_func* = proc (c: ptr ptr ResampleContext)
-  multiple_resample_func* = proc (c: ptr ResampleContext; dst: ptr AudioData;
-                               dst_size: cint; src: ptr AudioData; src_size: cint;
-                               consumed: cint): cint
-  resample_flush_func* = proc (c: ptr SwrContext): cint
-  set_compensation_func* = proc (c: ptr ResampleContext; sample_delta: cint;
-                              compensation_distance: cint): cint
-  get_delay_func* = proc (s: ptr SwrContext; base: int64): int64
-  invert_initial_buffer_func* = proc (c: ptr ResampleContext; dst: ptr AudioData;
-                                   src: ptr AudioData; src_size: cint;
-                                   dst_idx: cint; dst_count: cint): cint
+  resample_init_func* = proc (c: ResampleContext; out_rate: cint; in_rate: cint;filter_size: cint; phase_shift: cint; linear: cint;cutoff: cdouble; format: AVSampleFormat;filter_type: SwrFilterType; kaiser_beta: cdouble;precision: cdouble; cheby: cint; exact_rational: cint): ResampleContext
+  resample_free_func* = proc (c: ResampleContext)
+  multiple_resample_func* = proc (c: ResampleContext; dst: AudioData;dst_size: cint; src: AudioData; src_size: cint;consumed: cint): cint
+  resample_flush_func* = proc (c: SwrContext): cint
+  set_compensation_func* = proc (c: ptr ResampleContext; sample_delta: cint;compensation_distance: cint): cint
+  get_delay_func* = proc (s: SwrContext; base: int64): int64
+  invert_initial_buffer_func* = proc (c: ResampleContext; dst: AudioData;src: AudioData; src_size: cint;dst_idx: cint; dst_count: cint): cint
   get_out_samples_func* = proc (s: ptr SwrContext; in_samples: cint): int64
 
   Resampler* = ref object
@@ -2102,90 +2064,87 @@ type
     invert_initial_buffer*: invert_initial_buffer_func
     get_out_samples*: get_out_samples_func
 
-  mix_1_1_func_type* = proc (`out`: pointer; `in`: pointer; coeffp: pointer;
-                          index: int64; len: int64)
-  mix_2_1_func_type* = proc (`out`: pointer; in1: pointer; in2: pointer; coeffp: pointer;
-                          index1: int64; index2: int64; len: int64)
-  mix_any_func_type* = proc (`out`: ptr ptr int8; in1: ptr ptr int8; coeffp: pointer;
-                          len: int64)
+  mix_1_1_func_type* = proc (`out`: pointer; `in`: pointer; coeffp: pointer;index: int64; len: int64)
+  mix_2_1_func_type* = proc (`out`: pointer; in1: pointer; in2: pointer; coeffp: pointer;index1: int64; index2: int64; len: int64)
+  mix_any_func_type* = proc (`out`: ptr ptr int8; in1: ptr ptr int8; coeffp: pointer;len: int64)
 
 
   SwrContext* = ref object
-    av_class*: AVClass      ## /< AVClass used
-    log_level_offset*: cint    ## /< logging level offset
-    log_ctx*: pointer          ## /< parent logging context
-    in_sample_fmt*: AVSampleFormat ## /< input sample format
-    int_sample_fmt*: AVSampleFormat ## /< internal sample format (AV_SAMPLE_FMT_FLTP or AV_SAMPLE_FMT_S16P)
-    out_sample_fmt*: AVSampleFormat ## /< output sample format
-    in_ch_layout*: int64     ## /< input channel layout
-    out_ch_layout*: int64    ## /< output channel layout
-    in_sample_rate*: cint      ## /< input sample rate
-    out_sample_rate*: cint     ## /< output sample rate
-    flags*: cint               ## /< miscellaneous flags such as SWR_FLAG_RESAMPLE
-    slev*: cfloat              ## /< surround mixing level
-    clev*: cfloat              ## /< center mixing level
-    lfe_mix_level*: cfloat     ## /< LFE mixing level
-    rematrix_volume*: cfloat   ## /< rematrixing volume coefficient
-    rematrix_maxval*: cfloat   ## /< maximum value for rematrixing output
-    matrix_encoding*: cint     ## *< matrixed stereo encoding
-    channel_map*: cint      ## /< channel index (or -1 if muted channel) map
-    used_ch_count*: cint       ## /< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
+    av_class*: AVClass      
+    log_level_offset*: cint    
+    log_ctx*: pointer          
+    in_sample_fmt*: AVSampleFormat 
+    int_sample_fmt*: AVSampleFormat 
+    out_sample_fmt*: AVSampleFormat 
+    in_ch_layout*: int64     
+    out_ch_layout*: int64    
+    in_sample_rate*: cint      
+    out_sample_rate*: cint     
+    flags*: cint               
+    slev*: cfloat              
+    clev*: cfloat              
+    lfe_mix_level*: cfloat     
+    rematrix_volume*: cfloat   
+    rematrix_maxval*: cfloat   
+    matrix_encoding*: cint     
+    channel_map*: cint      
+    used_ch_count*: cint       
     engine*: cint
-    user_in_ch_count*: cint    ## /< User set input channel count
-    user_out_ch_count*: cint   ## /< User set output channel count
-    user_used_ch_count*: cint  ## /< User set used channel count
-    user_in_ch_layout*: int64 ## /< User set input channel layout
-    user_out_ch_layout*: int64 ## /< User set output channel layout
-    user_int_sample_fmt*: AVSampleFormat ## /< User set internal sample format
-    user_dither_method*: cint  ## /< User set dither method
+    user_in_ch_count*: cint    
+    user_out_ch_count*: cint   
+    user_used_ch_count*: cint  
+    user_in_ch_layout*: int64 
+    user_out_ch_layout*: int64 
+    user_int_sample_fmt*: AVSampleFormat 
+    user_dither_method*: cint  
     dither*: DitherContext
-    filter_size*: cint         ## *< length of each FIR filter in the resampling filterbank relative to the cutoff frequency
-    phase_shift*: cint         ## *< log2 of the number of entries in the resampling polyphase filterbank
-    linear_interp*: cint       ## *< if 1 then the resampling FIR filter will be linearly interpolated
-    exact_rational*: cint      ## *< if 1 then enable non power of 2 phase_count
-    cutoff*: cdouble           ## *< resampling cutoff frequency (swr: 6dB point; soxr: 0dB point). 1.0 corresponds to half the output sample rate
-    filter_type*: cint         ## *< swr resampling filter type
-    kaiser_beta*: cdouble      ## *< swr beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER)
-    precision*: cdouble        ## *< soxr resampling precision (in bits)
-    cheby*: cint               ## *< soxr: if 1 then passband rolloff will be none (Chebyshev) & irrational ratio approximation precision will be higher
-    min_compensation*: cfloat  ## /< swr minimum below which no compensation will happen
-    min_hard_compensation*: cfloat ## /< swr minimum below which no silence inject / sample drop will happen
-    soft_compensation_duration*: cfloat ## /< swr duration over which soft compensation is applied
-    max_soft_compensation*: cfloat ## /< swr maximum soft compensation in seconds over soft_compensation_duration
-    async*: cfloat             ## /< swr simple 1 parameter async, similar to ffmpegs -async
-    firstpts_in_samples*: int64 ## /< swr first pts in samples
-    resample_first*: cint      ## /< 1 if resampling must come first, 0 if rematrixing
-    rematrix*: cint            ## /< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
-    rematrix_custom*: cint     ## /< flag to indicate that a custom matrix has been defined
-    `in`*: AudioData           ## /< input audio data
-    postin*: AudioData         ## /< post-input audio data: used for rematrix/resample
-    midbuf*: AudioData         ## /< intermediate audio data (postin/preout)
-    preout*: AudioData         ## /< pre-output audio data: used for rematrix/resample
-    `out`*: AudioData          ## /< converted output audio data
-    in_buffer*: AudioData      ## /< cached audio data (convert and resample purpose)
-    silence*: AudioData        ## /< temporary with silence
-    drop_temp*: AudioData      ## /< temporary used to discard output
-    in_buffer_index*: cint     ## /< cached buffer position
-    in_buffer_count*: cint     ## /< cached buffer length
-    resample_in_constraint*: cint ## /< 1 if the input end was reach before the output end, 0 otherwise
-    flushed*: cint             ## /< 1 if data is to be flushed and no further input is expected
-    outpts*: int64           ## /< output PTS
-    firstpts*: int64         ## /< first PTS
-    drop_output*: cint         ## /< number of output samples to drop
-    delayed_samples_fixup*: cdouble ## /< soxr 0.1.1: needed to fixup delayed_samples after flush has been called.
-    in_convert*: ptr AudioConvert ## /< input conversion context
-    out_convert*: ptr AudioConvert ## /< output conversion context
-    full_convert*: ptr AudioConvert ## /< full conversion context (single conversion for input and output)
-    resample*: ptr ResampleContext ## /< resampling context
-    resampler*: ptr Resampler   ## /< resampler virtual function table
-    matrix*: array[SWR_CH_MAX, array[SWR_CH_MAX, cdouble]] ## /< floating point rematrixing coefficients
-    matrix_flt*: array[SWR_CH_MAX, array[SWR_CH_MAX, cfloat]] ## /< single precision floating point rematrixing coefficients
+    filter_size*: cint         
+    phase_shift*: cint         
+    linear_interp*: cint       
+    exact_rational*: cint      
+    cutoff*: cdouble           
+    filter_type*: cint         
+    kaiser_beta*: cdouble      
+    precision*: cdouble        
+    cheby*: cint               
+    min_compensation*: cfloat  
+    min_hard_compensation*: cfloat 
+    soft_compensation_duration*: cfloat 
+    max_soft_compensation*: cfloat 
+    async*: cfloat             
+    firstpts_in_samples*: int64 
+    resample_first*: cint      
+    rematrix*: cint            
+    rematrix_custom*: cint     
+    `in`*: AudioData           
+    postin*: AudioData         
+    midbuf*: AudioData         
+    preout*: AudioData         
+    `out`*: AudioData          
+    in_buffer*: AudioData      
+    silence*: AudioData        
+    drop_temp*: AudioData      
+    in_buffer_index*: cint     
+    in_buffer_count*: cint     
+    resample_in_constraint*: cint 
+    flushed*: cint             
+    outpts*: int64           
+    firstpts*: int64         
+    drop_output*: cint         
+    delayed_samples_fixup*: cdouble 
+    in_convert*: ptr AudioConvert 
+    out_convert*: ptr AudioConvert 
+    full_convert*: ptr AudioConvert 
+    resample*: ptr ResampleContext 
+    resampler*: ptr Resampler   
+    matrix*: array[SWR_CH_MAX, array[SWR_CH_MAX, cdouble]] 
+    matrix_flt*: array[SWR_CH_MAX, array[SWR_CH_MAX, cfloat]] 
     native_matrix*: uint8
     native_one*: uint8
     native_simd_one*: uint8
     native_simd_matrix*: uint8
-    matrix32*: array[SWR_CH_MAX, array[SWR_CH_MAX, int32]] ## /< 17.15 fixed point rematrixing coefficients
-    matrix_ch*: array[SWR_CH_MAX, array[SWR_CH_MAX + 1, uint8]] ## /< Lists of input channels per output channel that have non zero rematrixing coefficients
+    matrix32*: array[SWR_CH_MAX, array[SWR_CH_MAX, int32]] 
+    matrix_ch*: array[SWR_CH_MAX, array[SWR_CH_MAX + 1, uint8]] 
     mix_1_1_f*: ptr mix_1_1_func_type
     mix_1_1_simd*: ptr mix_1_1_func_type
     mix_2_1_f*: ptr mix_2_1_func_type
@@ -2201,16 +2160,16 @@ type
     inverse*: cint
     revtab*: ptr uint16
     tmp_buf*: ptr FFTComplex
-    mdct_size*: cint           ##  size of MDCT (i.e. number of input data * 2)
-    mdct_bits*: cint           ##  n = 2^nbits
-    tcos*: ptr float
-    tsin*: ptr float
+    mdct_size*: cint           
+    mdct_bits*: cint           
+    tcos*: float
+    tsin*: float
     fft_permute*: proc (s: ptr FFTContext; z: ptr FFTComplex)
     fft_calc*: proc (s: ptr FFTContext; z: ptr FFTComplex)
-    imdct_calc*: proc (s: ptr FFTContext; output: ptr float; input: ptr float)
-    imdct_half*: proc (s: ptr FFTContext; output: ptr float; input: ptr float)
-    mdct_calc*: proc (s: ptr FFTContext; output: ptr float; input: ptr float)
-    mdct_calcw*: proc (s: ptr FFTContext; output: ptr float; input: ptr float)
+    imdct_calc*: proc (s: ptr FFTContext; output: float; input: float)
+    imdct_half*: proc (s: ptr FFTContext; output: float; input: float)
+    mdct_calc*: proc (s: ptr FFTContext; output: float; input: float)
+    mdct_calcw*: proc (s: ptr FFTContext; output: float; input: float)
     fft_permutation*: fft_permutation_type
     mdct_permutation*: mdct_permutation_type
     revtab32*: ptr uint32
@@ -2220,16 +2179,16 @@ type
   RDFTContext* = ref object
     nbits*: cint
     inverse*: cint
-    sign_convention*: cint     ##  pre/post rotation tables
-    tcos*: ptr float
-    tsin*: ptr float
+    sign_convention*: cint     
+    tcos*: float
+    tsin*: float
     negative_sin*: cint
     fft*: FFTContext
-    rdft_calc*: proc (s: ptr RDFTContext; z: ptr float)
+    rdft_calc*: proc (s: RDFTContext; z: float)
 
 
-  SwsFunc* = proc (context: ptr SwsContext; src: ptr uint8; srcStride: cint;
-                srcSliceY: cint; srcSliceH: cint; dst: ptr uint8;
+  SwsFunc* = proc (context: SwsContext; src: uint8; srcStride: cint;
+                srcSliceY: cint; srcSliceH: cint; dst: uint8;
                 dstStride: cint): cint
   yuv2planar1_fn* = proc (src: ptr int16; dest: uint8; dstW: cint;
                        dither: uint8; offset: cint)
@@ -2239,82 +2198,82 @@ type
                             chrFilter: ptr int16; chrFilterSize: cint;
                             chrUSrc: ptr ptr int16; chrVSrc: ptr ptr int16;
                             dest: uint8; dstW: cint)
-  yuv2packed1_fn* = proc (c: ptr SwsContext; lumSrc: ptr int16;
+  yuv2packed1_fn* = proc (c: SwsContext; lumSrc: ptr int16;
                        chrUSrc: array[2, ptr int16];
                        chrVSrc: array[2, ptr int16]; alpSrc: ptr int16;
                        dest: uint8; dstW: cint; uvalpha: cint; y: cint)
-  yuv2packed2_fn* = proc (c: ptr SwsContext; lumSrc: array[2, ptr int16];
+  yuv2packed2_fn* = proc (c: SwsContext; lumSrc: array[2, ptr int16];
                        chrUSrc: array[2, ptr int16];
                        chrVSrc: array[2, ptr int16];
                        alpSrc: array[2, ptr int16]; dest: uint8; dstW: cint;
                        yalpha: cint; uvalpha: cint; y: cint)
-  yuv2packedX_fn* = proc (c: ptr SwsContext; lumFilter: ptr int16;
+  yuv2packedX_fn* = proc (c: SwsContext; lumFilter: ptr int16;
                        lumSrc: ptr ptr int16; lumFilterSize: cint;
                        chrFilter: ptr int16; chrUSrc: ptr ptr int16;
                        chrVSrc: ptr ptr int16; chrFilterSize: cint;
                        alpSrc: ptr ptr int16; dest: uint8; dstW: cint; y: cint)
-  yuv2anyX_fn* = proc (c: ptr SwsContext; lumFilter: ptr int16;
+  yuv2anyX_fn* = proc (c: SwsContext; lumFilter: ptr int16;
                     lumSrc: ptr ptr int16; lumFilterSize: cint;
                     chrFilter: ptr int16; chrUSrc: ptr ptr int16;
                     chrVSrc: ptr ptr int16; chrFilterSize: cint;
-                    alpSrc: ptr ptr int16; dest: ptr uint8; dstW: cint; y: cint)
+                    alpSrc: ptr ptr int16; dest: uint8; dstW: cint; y: cint)
 
 
 
   SwsPlane* = ref object
-    available_lines*: cint     ## /< max number of lines that can be hold by this plane
-    sliceY*: cint              ## /< index of first line
-    sliceH*: cint              ## /< number of lines
-    line*: ptr uint8       ## /< line buffer
-    tmp*: ptr uint8        ## /< Tmp line buffer used by mmx code
+    available_lines*: cint     
+    sliceY*: cint              
+    sliceH*: cint              
+    line*: uint8       
+    tmp*: uint8        
 
   SwsSlice* = ref object
-    width*: cint               ## /< Slice line width
-    h_chr_sub_sample*: cint    ## /< horizontal chroma subsampling factor
-    v_chr_sub_sample*: cint    ## /< vertical chroma subsampling factor
-    is_ring*: cint             ## /< flag to identify if this slice is a ring buffer
-    should_free_lines*: cint   ## /< flag to identify if there are dynamic allocated lines
-    fmt*: AVPixelFormat        ## /< planes pixel format
-    plane*: array[MAX_SLICE_PLANES, SwsPlane] ## /< color planes
+    width*: cint               
+    h_chr_sub_sample*: cint    
+    v_chr_sub_sample*: cint    
+    is_ring*: cint             
+    should_free_lines*: cint   
+    fmt*: AVPixelFormat        
+    plane*: array[MAX_SLICE_PLANES, SwsPlane] 
 
 
 
   SwsFilterDescriptor* = ref object
-    src*: ptr SwsSlice          ## /< Source slice
-    dst*: ptr SwsSlice          ## /< Output slice
-    alpha*: cint               ## /< Flag for processing alpha channel
-    instance*: pointer         ## /< Filter instance data
-    process*: proc (c: ptr SwsContext; desc: ptr SwsFilterDescriptor; sliceY: cint;sliceH: cint): cint
+    src*: ptr SwsSlice          
+    dst*: ptr SwsSlice          
+    alpha*: cint               
+    instance*: pointer         
+    process*: proc (c: SwsContext; desc: ptr SwsFilterDescriptor; sliceY: cint;sliceH: cint): cint
 
 
   SwsContext* = ref object
     av_class*: AVClass
     swscale*: SwsFunc
-    srcW*: cint                ## /< Width  of source      luma/alpha planes.
-    srcH*: cint                ## /< Height of source      luma/alpha planes.
-    dstH*: cint                ## /< Height of destination luma/alpha planes.
-    chrSrcW*: cint             ## /< Width  of source      chroma     planes.
-    chrSrcH*: cint             ## /< Height of source      chroma     planes.
-    chrDstW*: cint             ## /< Width  of destination chroma     planes.
-    chrDstH*: cint             ## /< Height of destination chroma     planes.
+    srcW*: cint                
+    srcH*: cint                
+    dstH*: cint                
+    chrSrcW*: cint             
+    chrSrcH*: cint             
+    chrDstW*: cint             
+    chrDstH*: cint             
     lumXInc*: cint
     chrXInc*: cint
     lumYInc*: cint
     chrYInc*: cint
-    dstFormat*: AVPixelFormat  ## /< Destination pixel format.
-    srcFormat*: AVPixelFormat  ## /< Source      pixel format.
-    dstFormatBpp*: cint        ## /< Number of bits per pixel of the destination pixel format.
-    srcFormatBpp*: cint        ## /< Number of bits per pixel of the source      pixel format.
+    dstFormat*: AVPixelFormat  
+    srcFormat*: AVPixelFormat  
+    dstFormatBpp*: cint        
+    srcFormatBpp*: cint        
     dstBpc*: cint
     srcBpc*: cint
-    chrSrcHSubSample*: cint    ## /< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in source      image.
-    chrSrcVSubSample*: cint    ## /< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in source      image.
-    chrDstHSubSample*: cint    ## /< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in destination image.
-    chrDstVSubSample*: cint    ## /< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in destination image.
-    vChrDrop*: cint            ## /< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
-    sliceDir*: cint            ## /< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
-    param*: array[2, cdouble]   ## /< Input parameters for scaling algorithms that need them.
-    cascaded_context*: array[3, ptr SwsContext]
+    chrSrcHSubSample*: cint    
+    chrSrcVSubSample*: cint    
+    chrDstHSubSample*: cint    
+    chrDstVSubSample*: cint    
+    vChrDrop*: cint            
+    sliceDir*: cint            
+    param*: array[2, cdouble]   
+    cascaded_context*: array[3, SwsContext]
     cascaded_tmpStride*: array[4, cint]
     cascaded_tmp*: array[4, uint8]
     cascaded1_tmpStride*: array[4, cint]
@@ -2333,44 +2292,44 @@ type
     pal_yuv*: array[256, uint32]
     pal_rgb*: array[256, uint32]
     uint2float_lut*: array[256, cfloat]
-    lastInLumBuf*: cint        ## /< Last scaled horizontal luma/alpha line from source in the ring buffer.
-    lastInChrBuf*: cint        ## /< Last scaled horizontal chroma     line from source in the ring buffer.
+    lastInLumBuf*: cint        
+    lastInChrBuf*: cint        
     formatConvBuffer*: uint8
     needAlpha*: cint
-    hLumFilter*: ptr int16    ## /< Array of horizontal filter coefficients for luma/alpha planes.
-    hChrFilter*: ptr int16    ## /< Array of horizontal filter coefficients for chroma     planes.
-    vLumFilter*: ptr int16    ## /< Array of vertical   filter coefficients for luma/alpha planes.
-    vChrFilter*: ptr int16    ## /< Array of vertical   filter coefficients for chroma     planes.
-    hLumFilterPos*: ptr int32 ## /< Array of horizontal filter starting positions for each dst[i] for luma/alpha planes.
-    hChrFilterPos*: ptr int32 ## /< Array of horizontal filter starting positions for each dst[i] for chroma     planes.
-    vLumFilterPos*: ptr int32 ## /< Array of vertical   filter starting positions for each dst[i] for luma/alpha planes.
-    vChrFilterPos*: ptr int32 ## /< Array of vertical   filter starting positions for each dst[i] for chroma     planes.
-    hLumFilterSize*: cint      ## /< Horizontal filter size for luma/alpha pixels.
-    hChrFilterSize*: cint      ## /< Horizontal filter size for chroma     pixels.
-    vLumFilterSize*: cint      ## /< Vertical   filter size for luma/alpha pixels.
-    vChrFilterSize*: cint      ## /< Vertical   filter size for chroma     pixels.
-    lumMmxextFilterCodeSize*: cint ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for luma/alpha planes.
-    chrMmxextFilterCodeSize*: cint ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code size for chroma planes.
-    lumMmxextFilterCode*: uint8 ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code for luma/alpha planes.
-    chrMmxextFilterCode*: uint8 ## /< Runtime-generated MMXEXT horizontal fast bilinear scaler code for chroma planes.
+    hLumFilter*: ptr int16    
+    hChrFilter*: ptr int16    
+    vLumFilter*: ptr int16    
+    vChrFilter*: ptr int16    
+    hLumFilterPos*: ptr int32 
+    hChrFilterPos*: ptr int32 
+    vLumFilterPos*: ptr int32 
+    vChrFilterPos*: ptr int32 
+    hLumFilterSize*: cint      
+    hChrFilterSize*: cint      
+    vLumFilterSize*: cint      
+    vChrFilterSize*: cint      
+    lumMmxextFilterCodeSize*: cint 
+    chrMmxextFilterCodeSize*: cint 
+    lumMmxextFilterCode*: uint8 
+    chrMmxextFilterCode*: uint8 
     canMMXEXTBeUsed*: cint
     warned_unuseable_bilinear*: cint
-    dstY*: cint                ## /< Last destination vertical line output from last slice.
-    flags*: cint               ## /< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
-    yuvTable*: pointer ##  pointer to the yuv->rgb table start so it can be freed() alignment ensures the offset can be added in a single instruction on e.g. ARM
+    dstY*: cint                
+    flags*: cint               
+    yuvTable*: pointer 
     table_gV*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, cint]
     table_rV*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
     table_gU*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
     table_bU*: array[256 + 2 * YUVRGB_TABLE_HEADROOM, uint8]
-    input_rgb2yuv_table*: array[16 + 40 * 4, int32] ##  This table can contain both C and SIMD formatted values, the C vales are always at the XY_IDX points
+    input_rgb2yuv_table*: array[16 + 40 * 4, int32] 
     dither_error*: array[4, cint]
     contrast*: cint
     brightness*: cint
-    saturation*: cint          ##  for sws_getColorspaceDetails
+    saturation*: cint          
     srcColorspaceTable*: array[4, cint]
     dstColorspaceTable*: array[4, cint]
-    srcRange*: cint            ## /< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
-    dstRange*: cint            ## /< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
+    srcRange*: cint            
+    dstRange*: cint            
     src0Alpha*: cint
     dst0Alpha*: cint
     srcXYZ*: cint
@@ -2405,8 +2364,8 @@ type
     v_temp*: uint64
     y_temp*: uint64
     alpMmxFilter*: array[4 * MAX_FILTER_SIZE, int32]
-    uv_off*: int64         ## /< offset (in pixels) between u and v planes
-    uv_offx2*: int64       ## /< offset (in bytes) between u and v planes
+    uv_off*: int64         
+    uv_offx2*: int64       
     dither16*: array[8, uint16]
     dither32*: array[8, uint32]
     chrDither8*: uint8
@@ -2425,38 +2384,26 @@ type
     yuv2packed2*: yuv2packed2_fn
     yuv2packedX*: yuv2packedX_fn
     yuv2anyX*: yuv2anyX_fn
-    lumToYV12*: proc (dst: uint8; src: uint8; src2: uint8;
-                    src3: uint8; width: cint; pal: ptr uint32)
-    alpToYV12*: proc (dst: uint8; src: uint8; src2: uint8;
-                    src3: uint8; width: cint; pal: ptr uint32)
-    chrToYV12*: proc (dstU: uint8; dstV: uint8; src1: uint8;
-                    src2: uint8; src3: uint8; width: cint; pal: ptr uint32)
-    readLumPlanar*: proc (dst: uint8; src: array[4, uint8]; width: cint;
-                        rgb2yuv: ptr int32)
-    readChrPlanar*: proc (dstU: uint8; dstV: uint8;
-                        src: array[4, uint8]; width: cint; rgb2yuv: ptr int32)
-    readAlpPlanar*: proc (dst: uint8; src: array[4, uint8]; width: cint;
-                        rgb2yuv: ptr int32)
-    hyscale_fast*: proc (c: ptr SwsContext; dst: ptr int16; dstWidth: cint;
-                       src: uint8; srcW: cint; xInc: cint)
-    hcscale_fast*: proc (c: ptr SwsContext; dst1: ptr int16; dst2: ptr int16;
-                       dstWidth: cint; src1: uint8; src2: uint8; srcW: cint;
-                       xInc: cint)
-    hyScale*: proc (c: ptr SwsContext; dst: ptr int16; dstW: cint; src: uint8;
-                  filter: ptr int16; filterPos: ptr int32; filterSize: cint)
-    hcScale*: proc (c: ptr SwsContext; dst: ptr int16; dstW: cint; src: uint8;
-                  filter: ptr int16; filterPos: ptr int32; filterSize: cint)
+    lumToYV12*: proc (dst: uint8; src: uint8; src2: uint8;src3: uint8; width: cint; pal: ptr uint32)
+    alpToYV12*: proc (dst: uint8; src: uint8; src2: uint8;src3: uint8; width: cint; pal: ptr uint32)
+    chrToYV12*: proc (dstU: uint8; dstV: uint8; src1: uint8;src2: uint8; src3: uint8; width: cint; pal: ptr uint32)
+    readLumPlanar*: proc (dst: uint8; src: array[4, uint8]; width: cint;rgb2yuv: ptr int32)
+    readChrPlanar*: proc (dstU: uint8; dstV: uint8;src: array[4, uint8]; width: cint; rgb2yuv: ptr int32)
+    readAlpPlanar*: proc (dst: uint8; src: array[4, uint8]; width: cint;rgb2yuv: ptr int32)
+    hyscale_fast*: proc (c: SwsContext; dst: ptr int16; dstWidth: cint;src: uint8; srcW: cint; xInc: cint)
+    hcscale_fast*: proc (c: SwsContext; dst1: ptr int16; dst2: ptr int16;dstWidth: cint; src1: uint8; src2: uint8; srcW: cint; xInc: cint)
+    hyScale*: proc (c: SwsContext; dst: ptr int16; dstW: cint; src: uint8; filter: ptr int16; filterPos: ptr int32; filterSize: cint)
+    hcScale*: proc (c: SwsContext; dst: ptr int16; dstW: cint; src: uint8;filter: ptr int16; filterPos: ptr int32; filterSize: cint)
     lumConvertRange*: proc (dst: ptr int16; width: cint)
     chrConvertRange*: proc (dst1: ptr int16; dst2: ptr int16; width: cint)
-    needs_hcscale*: cint       ## /< Set if there are chroma planes to be converted.
+    needs_hcscale*: cint       
     dither*: SwsDither
     alphablend*: SwsAlphaBlend
 
-  avfilter_action_func* = proc (ctx: ptr AVFilterContext; arg: pointer; jobnr: cint;nb_jobs: cint): cint
-  avfilter_execute_func* = proc (ctx: ptr AVFilterContext;
-                              `func`: ptr avfilter_action_func; arg: pointer;ret: cint; nb_jobs: cint): cint
+  avfilter_action_func* = proc (ctx: AVFilterContext; arg: pointer; jobnr: cint;nb_jobs: cint): cint
+  avfilter_execute_func* = proc (ctx: AVFilterContext; `func`: ptr avfilter_action_func; arg: pointer;ret: cint; nb_jobs: cint): cint
   FFFrameQueueGlobal* = ref object
-    dummy*: char               ##  C does not allow empty structs
+    dummy*: char               
 
   AVFilterGraphInternal* = ref object
     thread*: pointer
@@ -2465,23 +2412,23 @@ type
 
   AVFilterGraph* = ref object
     av_class*: AVClass
-    filters*: ptr ptr AVFilterContext
+    filters*: ptr AVFilterContext
     nb_filters*: cuint
-    scale_sws_opts*: string   ## /< sws options to use for the auto-inserted scale filters
+    scale_sws_opts*: string   
     thread_type*: cint
     nb_threads*: cint
-    internal*: ptr AVFilterGraphInternal
+    internal*: AVFilterGraphInternal
     opaque*: pointer
     execute*: ptr avfilter_execute_func
-    aresample_swr_opts*: string ## /< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
-    sink_links*: ptr ptr AVFilterLink
+    aresample_swr_opts*: string 
+    sink_links*: ptr AVFilterLink
     sink_links_count*: cint
     disable_auto_convert*: cuint
 
 
 
   VideoState* = ref object
-    # read_tid*: ptr SDL_Thread
+    read_tid*: Thread[VideoState]
     iformat*: AVInputFormat
     abort_request*: cint
     force_refresh*: cint
@@ -2508,18 +2455,18 @@ type
     av_sync_type*: cint
     audio_clock*: cdouble
     audio_clock_serial*: cint
-    audio_diff_cum*: cdouble   ##  used for AV difference average computation
+    audio_diff_cum*: cdouble   
     audio_diff_avg_coef*: cdouble
     audio_diff_threshold*: cdouble
     audio_diff_avg_count*: cint
-    audio_st*: ptr AVStream
+    audio_st*: AVStream
     audioq*: PacketQueue
     audio_hw_buf_size*: cint
     audio_buf*: uint8
     audio_buf1*: uint8
-    audio_buf_size*: cuint     ##  in bytes
+    audio_buf_size*: cuint     
     audio_buf1_size*: cuint
-    audio_buf_index*: cint     ##  in bytes
+    audio_buf_index*: cint     
     audio_write_buf_size*: cint
     audio_volume*: cint
     muted*: cint
@@ -2533,26 +2480,26 @@ type
     sample_array*: array[8 * 65536, int16]
     sample_array_index*: cint
     last_i_start*: cint
-    rdft*: ptr RDFTContext
+    rdft*: RDFTContext
     rdft_bits*: cint
-    rdft_data*: ptr float
+    rdft_data*: float
     xpos*: cint
     last_vis_time*: cdouble
     vis_texture*: TexturePtr
     sub_texture*: TexturePtr
     vid_texture*: TexturePtr
     subtitle_stream*: cint
-    subtitle_st*: ptr AVStream
+    subtitle_st*: AVStream
     subtitleq*: PacketQueue
     frame_timer*: cdouble
     frame_last_returned_time*: cdouble
     frame_last_filter_delay*: cdouble
     video_stream*: cint
-    video_st*: ptr AVStream
+    video_st*: AVStream
     videoq*: PacketQueue
-    max_frame_duration*: cdouble ##  maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
-    img_convert_ctx*: ptr SwsContext
-    sub_convert_ctx*: ptr SwsContext
+    max_frame_duration*: cdouble 
+    img_convert_ctx*: SwsContext
+    sub_convert_ctx*: SwsContext
     eof*: cint
     filename*: string
     width*: cint
@@ -2561,43 +2508,43 @@ type
     ytop*: cint
     step*: cint
     vfilter_idx*: cint
-    in_video_filter*: ptr AVFilterContext ##  the first filter in the video chain
-    out_video_filter*: ptr AVFilterContext ##  the last filter in the video chain
-    in_audio_filter*: ptr AVFilterContext ##  the first filter in the audio chain
-    out_audio_filter*: ptr AVFilterContext ##  the last filter in the audio chain
-    agraph*: ptr AVFilterGraph  ##  audio filter graph
+    in_video_filter*: AVFilterContext 
+    out_video_filter*: AVFilterContext 
+    in_audio_filter*: AVFilterContext 
+    out_audio_filter*: AVFilterContext 
+    agraph*: AVFilterGraph  
     last_video_stream*: cint
     last_audio_stream*: cint
     last_subtitle_stream*: cint
     # continue_read_thread*: ptr SDL_cond
   
   AVlinkEnum* = enum
-    AVLINK_UNINIT = 0,          ## /< not started
-    AVLINK_STARTINIT,         ## /< started, but incomplete
-    AVLINK_INIT               ## /< complete
+    AVLINK_UNINIT = 0,          
+    AVLINK_STARTINIT,         
+    AVLINK_INIT               
 
   AVFilterFormats* = ref object
-    nb_formats*: cuint         ## /< number of formats
-    formats*: cint          ## /< list of media formats
-    refcount*: cuint           ## /< number of references to this list
-    refs*: ptr ptr ptr AVFilterFormats ## /< references to this list
+    nb_formats*: cuint         
+    formats*: cint          
+    refcount*: cuint           
+    refs*: ptr ptr AVFilterFormats 
 
   AVFilterChannelLayouts* = ref object
-    channel_layouts*: ptr uint64 ## /< list of channel layouts
-    nb_channel_layouts*: cint  ## /< number of channel layouts
-    all_layouts*: char         ## /< accept any known channel layout
-    all_counts*: char          ## /< accept any channel layout or count
-    refcount*: cuint           ## /< number of references to this list
-    refs*: ptr ptr ptr AVFilterChannelLayouts ## /< references to this list
+    channel_layouts*: uint64 
+    nb_channel_layouts*: cint  
+    all_layouts*: char         
+    all_counts*: char          
+    refcount*: cuint           
+    refs*: AVFilterChannelLayouts 
 
 
   AVFilterFormatsConfig* = ref object
-    formats*: ptr AVFilterFormats
-    samplerates*: ptr AVFilterFormats
-    channel_layouts*: ptr AVFilterChannelLayouts
+    formats*: AVFilterFormats
+    samplerates*: AVFilterFormats
+    channel_layouts*: AVFilterChannelLayouts
 
   FFFrameBucket* = ref object
-    frame*: ptr AVFrame
+    frame*: AVFrame
 
   FFFrameQueue* = ref object
     queue*: ptr FFFrameBucket
@@ -2614,27 +2561,27 @@ type
 
 
   AVFilterLink* = ref object
-    src*: ptr AVFilterContext   ## /< source filter
-    srcpad*: ptr AVFilterPad    ## /< output pad on the source filter
-    dst*: ptr AVFilterContext   ## /< dest filter
-    dstpad*: ptr AVFilterPad    ## /< input pad on the dest filter
-    `type`*: AVMediaType       ## /< filter media type
-    w*: cint                   ## /< agreed upon image width
-    h*: cint                   ## /< agreed upon image height
-    sample_aspect_ratio*: AVRational ## /< agreed upon sample aspect ratio
-    channel_layout*: uint64  ## /< channel layout of current buffer (see libavutil/channel_layout.h)
-    sample_rate*: cint         ## /< samples per second
-    format*: cint              ## /< agreed upon media format
+    src*: AVFilterContext   
+    srcpad*: AVFilterPad   
+    dst*: AVFilterContext   
+    dstpad*: AVFilterPad   
+    t*: AVMediaType       
+    w*: cint                   
+    h*: cint                   
+    sample_aspect_ratio*: AVRational 
+    channel_layout*: uint64  
+    sample_rate*: cint         
+    format*: cint              
     time_base*: AVRational
     incfg*: AVFilterFormatsConfig
     outcfg*: AVFilterFormatsConfig
     init_state*: AVlinkEnum
-    graph*: ptr AVFilterGraph
+    graph*: AVFilterGraph
     current_pts*: int64
     current_pts_us*: int64
     age_index*: cint
     frame_rate*: AVRational
-    partial_buf*: ptr AVFrame
+    partial_buf*: AVFrame
     partial_buf_size*: cint
     min_samples*: cint
     max_samples*: cint
@@ -2644,7 +2591,7 @@ type
     frame_count_out*: int64
     frame_pool*: pointer
     frame_wanted_out*: cint
-    hw_frames_ctx*: ptr AVBufferRef
+    hw_frames_ctx*: AVBufferRef
     fifo*: FFFrameQueue
     frame_blocked_in*: cint
     status_in*: cint
@@ -2653,12 +2600,12 @@ type
 
   AVFilterPad* = ref object
     name*: string
-    `type`*: AVMediaType
-    get_video_buffer*: proc (link: ptr AVFilterLink; w: cint; h: cint): ptr AVFrame
-    get_audio_buffer*: proc (link: ptr AVFilterLink; nb_samples: cint): ptr AVFrame
-    filter_frame*: proc (link: ptr AVFilterLink; frame: ptr AVFrame): cint
-    request_frame*: proc (link: ptr AVFilterLink): cint
-    config_props*: proc (link: ptr AVFilterLink): cint
+    t*: AVMediaType
+    get_video_buffer*: proc (link: AVFilterLink; w: cint; h: cint): AVFrame
+    get_audio_buffer*: proc (link: AVFilterLink; nb_samples: cint): AVFrame
+    filter_frame*: proc (link: AVFilterLink; frame: AVFrame): cint
+    request_frame*: proc (link: AVFilterLink): cint
+    config_props*: proc (link: AVFilterLink): cint
     needs_writable*: cint
 
   AVFilter* = ref object
@@ -2668,79 +2615,79 @@ type
     outputs*: ptr AVFilterPad
     priv_class*: AVClass
     flags*: cint
-    preinit*: proc (ctx: ptr AVFilterContext): cint
-    init*: proc (ctx: ptr AVFilterContext): cint
-    init_dict*: proc (ctx: ptr AVFilterContext; options: Table[string,string]): cint
-    uninit*: proc (ctx: ptr AVFilterContext)
-    query_formats*: proc (a1: ptr AVFilterContext): cint
-    priv_size*: cint           ## /< size of private data to allocate for the filter
-    flags_internal*: cint      ## /< Additional flags for avfilter internal use only.
+    preinit*: proc (ctx: AVFilterContext): cint
+    init*: proc (ctx: AVFilterContext): cint
+    init_dict*: proc (ctx: AVFilterContext; options: Table[string,string]): cint
+    uninit*: proc (ctx: AVFilterContext)
+    query_formats*: proc (a1: AVFilterContext): cint
+    priv_size*: cint           
+    flags_internal*: cint      
     next*: ptr AVFilter
-    process_command*: proc (a1: ptr AVFilterContext; cmd: string; arg: string;res: string; res_len: cint; flags: cint): cint
-    init_opaque*: proc (ctx: ptr AVFilterContext; opaque: pointer): cint
-    activate*: proc (ctx: ptr AVFilterContext): cint
+    process_command*: proc (a1: AVFilterContext; cmd: string; arg: string;res: string; res_len: cint; flags: cint): cint
+    init_opaque*: proc (ctx: AVFilterContext; opaque: pointer): cint
+    activate*: proc (ctx: AVFilterContext): cint
 
   AVFilterInternal* = ref object
     execute*: ptr avfilter_execute_func
 
   AVFilterCommand* = ref object
-    time*: cdouble             ## /< time expressed in seconds
-    command*: string          ## /< command
-    arg*: string              ## /< optional argument for the command
+    time*: cdouble             
+    command*: string          
+    arg*: string              
     flags*: cint
     next*: ptr AVFilterCommand
 
   AVFilterContext* = ref object
-    av_class*: AVClass      ## /< needed for  and filters common options
-    filter*: ptr AVFilter       ## /< the AVFilter of which this is an instance
-    name*: string             ## /< name of this filter instance
-    input_pads*: ptr AVFilterPad ## /< array of input pads
-    inputs*: ptr ptr AVFilterLink ## /< array of pointers to input links
-    nb_inputs*: cuint          ## /< number of input pads
-    output_pads*: ptr AVFilterPad ## /< array of output pads
-    outputs*: ptr ptr AVFilterLink ## /< array of pointers to output links
-    nb_outputs*: cuint         ## /< number of output pads
-    priv*: pointer             ## /< private data for use by the filter
-    graph*: ptr AVFilterGraph   ## /< filtergraph this filter belongs to
+    av_class*: AVClass      
+    filter*: ptr AVFilter       
+    name*: string             
+    input_pads*: AVFilterPad
+    inputs*: ptr AVFilterLink 
+    nb_inputs*: cuint          
+    output_pads*: AVFilterPad
+    outputs*: ptr AVFilterLink 
+    nb_outputs*: cuint         
+    priv*: pointer             
+    graph*: AVFilterGraph   
     thread_type*: cint
     internal*: ptr AVFilterInternal
     command_queue*: ptr AVFilterCommand
-    enable_str*: string       ## /< enable expression string
-    enable*: pointer           ## /< parsed expression (AVExpr*)
-    var_values*: ptr cdouble    ## /< variable values for the enable expression
-    is_disabled*: cint         ## /< the enabled state from the last expression evaluation
-    hw_device_ctx*: ptr AVBufferRef
+    enable_str*: string       
+    enable*: pointer           
+    var_values*: ptr cdouble    
+    is_disabled*: cint         
+    hw_device_ctx*: AVBufferRef
     nb_threads*: cint
     ready*: cuint
     extra_hw_frames*: cint
 
   URLContext* {.bycopy.} = object
-    av_class*: AVClass      ## *< information for . Set by url_open().
+    av_class*: AVClass      
     prot*: URLProtocol
     priv_data*: pointer
-    filename*: string         ## *< specified URL
+    filename*: string         
     flags*: cint
-    max_packet_size*: cint     ## *< if non zero, the stream is packetized with this max packet size
-    is_streamed*: cint         ## *< true if streamed (no seek possible), default = false
+    max_packet_size*: cint     
+    is_streamed*: cint         
     is_connected*: cint
     interrupt_callback*: AVIOInterruptCB
-    rw_timeout*: int64       ## *< maximum time to wait for (network) read/write operation completion, in mcs
+    rw_timeout*: int64       
     protocol_whitelist*: string
     protocol_blacklist*: string
-    min_packet_size*: cint     ## *< if non zero, the stream is packetized with this min packet size
+    min_packet_size*: cint     
 
 
   AVIODirEntry* = ref object
-    name*: cstring             ## *< Filename
-    `type`*: cint              ## *< Type of the entry
-    utf8*: cint ## *< Set to 1 when name is encoded with UTF-8, 0 otherwise.Name can be encoded with UTF-8 even though 0 is set.
-    size*: int64             ## *< File size in bytes, -1 if unknown.
-    modification_timestamp*: int64 ## *< Time of last modification in microseconds since unix epoch, -1 if unknown.
-    access_timestamp*: int64 ## *< Time of last access in microseconds since unix epoch,-1 if unknown.
-    status_change_timestamp*: int64 ## *< Time of last status change in microseconds since unix epoch, -1 if unknown.
-    user_id*: int64          ## *< User ID of owner, -1 if unknown.
-    group_id*: int64         ## *< Group ID of owner, -1 if unknown.
-    filemode*: int64         ## *< Unix file mode, -1 if unknown.
+    name*: cstring             
+    t*: cint              
+    utf8*: cint 
+    size*: int64             
+    modification_timestamp*: int64 
+    access_timestamp*: int64 
+    status_change_timestamp*: int64 
+    user_id*: int64          
+    group_id*: int64         
+    filemode*: int64         
 
 
   URLProtocol* = ref object
@@ -2769,10 +2716,6 @@ type
     url_delete*: proc (h: URLContext): cint
     url_move*: proc (h_src: URLContext; h_dst: URLContext): cint
     default_whitelist*: string
-
-
-proc init_dynload() = 
-    echo SetDllDirectory("")
 
 
 
@@ -2806,7 +2749,7 @@ type
     # capture_filter*: array[2, ptr libAVFilter]
     # capture_pin*: array[2, ptr libAVPin]
     mutex*: HANDLE
-    event*: array[2, HANDLE]    ##  event[0] is set by DirectShow event[1] is set by callback()
+    event*: array[2, HANDLE]    
     pktl*: AVPacketList
     eof*: cint
     curbufsize*: array[2, int64]
@@ -2823,6 +2766,17 @@ type
     sample_size*: cint
     channels*: cint
 
+
+var sws_dict*: Table[string,string]
+var swr_opts*: Table[string,string]
+var
+  format_opts*: Table[string,string]
+  codec_opts*: Table[string,string]
+  resample_opts*: Table[string,string]
+
+
+proc init_dynload() = 
+  echo SetDllDirectory("")
 
 # proc dshow_read_header*(avctx: AVFormatContext): cint =
 #   var ctx: DirectShowCtx = cast[DirectShowCtx](avctx.priv_data)
@@ -2968,7 +2922,7 @@ type
 #   AVOption("video_device_save", "save video capture filter device (and properties) to file", DirectShowCtx.video_filter_save_file, AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC),
 # ]
 
-# var dshow_class = AVClass(class_name:"dshow indev",item_name:av_default_item_name,option:dshow_class_option,
+# var dshow_class = AVClass(class_name:"dshow indev",option:dshow_class_option,
 #   version:LIBAVUTIL_VERSION_INT, category:AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT)
 
 # var ff_dshow_demuxer = AVInputFormat(name:"dshow",long_name:"DirectShow capture",priv_data_size:sizeof DirectShowCtx
@@ -2976,32 +2930,1799 @@ type
 
 var indev_list*: seq[AVInputFormat] 
 var outdev_list*: seq[AVOutputFormat]
-
 var  muxer_list: seq[AVOutputFormat]
 
+type
+  GetBitContext* {.bycopy.} = object
+    buffer*: uint8
+    buffer_end*: uint8
+    index*: cint
+    size_in_bits*: cint
+    size_in_bits_plus8*: cint
+
+proc init_get_bits_xe*(s: var GetBitContext; buffer: uint8; bit_size: var cint;is_le: cint): cint {.inline.} =
+  var buffer_size: cint
+  var ret: cint = 0
+  if bit_size >= INT_MAX - max(7, AV_INPUT_BUFFER_PADDING_SIZE * 8) or bit_size < 0:
+    bit_size = 0
+    ret = AVERROR_INVALIDDATA
+  buffer_size = (bit_size + 7) shr 3
+  s.buffer = buffer
+  s.size_in_bits = bit_size
+  s.size_in_bits_plus8 = bit_size + 8
+  s.buffer_end = buffer + buffer_size.uint8
+  s.index = 0
+
+  return ret
+
+
+proc init_get_bits*(s: var GetBitContext; buffer: uint8; bit_size: var cint): cint {.
+    inline.} =
+  return init_get_bits_xe(s, buffer, bit_size, 0)
+
+proc init_get_bits8*(s: var GetBitContext; buffer: uint8; byte_size: var cint): cint {.inline.} =
+  if byte_size > INT_MAX div 8 or byte_size < 0:
+    byte_size = -1
+  var bitSize = byte_size * 8
+  return init_get_bits(s, buffer, bitSize)
+
+proc init_get_bits8_le*(s: var GetBitContext; buffer: uint8; byte_size:var cint): cint {.inline.} =
+  if byte_size > INT_MAX div 8 or byte_size < 0:
+    byte_size = -1
+  var bs = byte_size * 8
+  return init_get_bits_xe(s, buffer, bs, 1)
+
+
+proc skip_bits*(s: var GetBitContext; n: cint) {.inline.} =
+  var re_index: cuint = s.index.cuint
+  var re_cache: cuint
+  var re_size_plus8: cuint = s.size_in_bits_plus8.cuint
+  re_index = min(re_size_plus8, re_index + n.cuint)
+  s.index = re_index.cint
+
+
+proc context_to_name*(p: pointer): cstring =
+  var avc: AVCodecContext = cast[AVCodecContext](p)
+  return avc.codec.name
+
+proc codec_child_next*(obj: pointer; prev: pointer): pointer =
+  var s: AVCodecContext = cast[AVCodecContext](obj)
+  return s.priv_data
+
+type
+  pthread_once_t* = ref object
+    done*: cint
+    mtx*: Pthread_mutex
+
+var av_codec_static_init*: Pthread_once
+
+
+var codec_list*: UncheckedArray[AVCodec] = [
+    # ff_a64multi_encoder,
+    # ff_a64multi5_encoder,
+    # ff_alias_pix_encoder,
+    # ff_amv_encoder,
+    # ff_apng_encoder,
+    # ff_asv1_encoder,
+    # ff_asv2_encoder,
+    # ff_avrp_encoder,
+    # ff_avui_encoder,
+    # ff_ayuv_encoder,
+    # ff_bmp_encoder,
+    # ff_cfhd_encoder,
+    # ff_cinepak_encoder,
+    # ff_cljr_encoder,
+    # ff_comfortnoise_encoder,
+    # ff_dnxhd_encoder,
+    # ff_dpx_encoder,
+    # ff_dvvideo_encoder,
+    # ff_ffv1_encoder,
+    # ff_ffvhuff_encoder,
+    # ff_fits_encoder,
+    # ff_flashsv_encoder,
+    # ff_flashsv2_encoder,
+    # ff_flv_encoder,
+    # ff_gif_encoder,
+    # ff_h261_encoder,
+    # ff_h263_encoder,
+    # ff_h263p_encoder,
+    # ff_hap_encoder,
+    # ff_huffyuv_encoder,
+    # ff_jpeg2000_encoder,
+    # ff_jpegls_encoder,
+    # ff_ljpeg_encoder,
+    # ff_magicyuv_encoder,
+    # ff_mjpeg_encoder,
+    # ff_mpeg1video_encoder,
+    # ff_mpeg2video_encoder,
+    # ff_mpeg4_encoder,
+    # ff_msmpeg4v2_encoder,
+    # ff_msmpeg4v3_encoder,
+    # ff_msvideo1_encoder,
+    # ff_pam_encoder,
+    # ff_pbm_encoder,
+    # ff_pcx_encoder,
+    # ff_pgm_encoder,
+    # ff_pgmyuv_encoder,
+    # ff_png_encoder,
+    # ff_ppm_encoder,
+    # ff_prores_encoder,
+    # ff_prores_aw_encoder,
+    # ff_prores_ks_encoder,
+    # ff_qtrle_encoder,
+    # ff_r10k_encoder,
+    # ff_r210_encoder,
+    # ff_rawvideo_encoder,
+    # ff_roq_encoder,
+    # ff_rpza_encoder,
+    # ff_rv10_encoder,
+    # ff_rv20_encoder,
+    # ff_s302m_encoder,
+    # ff_sgi_encoder,
+    # ff_snow_encoder,
+    # ff_sunrast_encoder,
+    # ff_svq1_encoder,
+    # ff_targa_encoder,
+    # ff_tiff_encoder,
+    # ff_utvideo_encoder,
+    # ff_v210_encoder,
+    # ff_v308_encoder,
+    # ff_v408_encoder,
+    # ff_v410_encoder,
+    # ff_vc2_encoder,
+    # ff_wrapped_avframe_encoder,
+    # ff_wmv1_encoder,
+    # ff_wmv2_encoder,
+    # ff_xbm_encoder,
+    # ff_xface_encoder,
+    # ff_xwd_encoder,
+    # ff_y41p_encoder,
+    # ff_yuv4_encoder,
+    # ff_zlib_encoder,
+    # ff_zmbv_encoder,
+    # ff_aac_encoder,
+    # ff_ac3_encoder,
+    # ff_ac3_fixed_encoder,
+    # ff_alac_encoder,
+    # ff_aptx_encoder,
+    # ff_aptx_hd_encoder,
+    # ff_dca_encoder,
+    # ff_eac3_encoder,
+    # ff_flac_encoder,
+    # ff_g723_1_encoder,
+    # ff_mlp_encoder,
+    # ff_mp2_encoder,
+    # ff_mp2fixed_encoder,
+    # ff_nellymoser_encoder,
+    # ff_opus_encoder,
+    # ff_ra_144_encoder,
+    # ff_sbc_encoder,
+    # ff_sonic_encoder,
+    # ff_sonic_ls_encoder,
+    # ff_truehd_encoder,
+    # ff_tta_encoder,
+    # ff_vorbis_encoder,
+    # ff_wavpack_encoder,
+    # ff_wmav1_encoder,
+    # ff_wmav2_encoder,
+    # ff_pcm_alaw_encoder,
+    # ff_pcm_dvd_encoder,
+    # ff_pcm_f32be_encoder,
+    # ff_pcm_f32le_encoder,
+    # ff_pcm_f64be_encoder,
+    # ff_pcm_f64le_encoder,
+    # ff_pcm_mulaw_encoder,
+    # ff_pcm_s8_encoder,
+    # ff_pcm_s8_planar_encoder,
+    # ff_pcm_s16be_encoder,
+    # ff_pcm_s16be_planar_encoder,
+    # ff_pcm_s16le_encoder,
+    # ff_pcm_s16le_planar_encoder,
+    # ff_pcm_s24be_encoder,
+    # ff_pcm_s24daud_encoder,
+    # ff_pcm_s24le_encoder,
+    # ff_pcm_s24le_planar_encoder,
+    # ff_pcm_s32be_encoder,
+    # ff_pcm_s32le_encoder,
+    # ff_pcm_s32le_planar_encoder,
+    # ff_pcm_s64be_encoder,
+    # ff_pcm_s64le_encoder,
+    # ff_pcm_u8_encoder,
+    # ff_pcm_u16be_encoder,
+    # ff_pcm_u16le_encoder,
+    # ff_pcm_u24be_encoder,
+    # ff_pcm_u24le_encoder,
+    # ff_pcm_u32be_encoder,
+    # ff_pcm_u32le_encoder,
+    # ff_pcm_vidc_encoder,
+    # ff_roq_dpcm_encoder,
+    # ff_adpcm_adx_encoder,
+    # ff_adpcm_argo_encoder,
+    # ff_adpcm_g722_encoder,
+    # ff_adpcm_g726_encoder,
+    # ff_adpcm_g726le_encoder,
+    # ff_adpcm_ima_apm_encoder,
+    # ff_adpcm_ima_qt_encoder,
+    # ff_adpcm_ima_ssi_encoder,
+    # ff_adpcm_ima_wav_encoder,
+    # ff_adpcm_ms_encoder,
+    # ff_adpcm_swf_encoder,
+    # ff_adpcm_yamaha_encoder,
+    # ff_ssa_encoder,
+    # ff_ass_encoder,
+    # ff_dvbsub_encoder,
+    # ff_dvdsub_encoder,
+    # ff_movtext_encoder,
+    # ff_srt_encoder,
+    # ff_subrip_encoder,
+    # ff_text_encoder,
+    # ff_webvtt_encoder,
+    # ff_xsub_encoder,
+    # ff_libaom_av1_encoder,
+    # ff_libgsm_encoder,
+    # ff_libgsm_ms_encoder,
+    # ff_libilbc_encoder,
+    # ff_libmp3lame_encoder,
+    # ff_libopenjpeg_encoder,
+    # ff_libopus_encoder,
+    # ff_libshine_encoder,
+    # ff_libspeex_encoder,
+    # ff_libtheora_encoder,
+    # ff_libtwolame_encoder,
+    # ff_libvorbis_encoder,
+    # ff_libvpx_vp8_encoder,
+    # ff_libvpx_vp9_encoder,
+    # ff_libwavpack_encoder,
+    # ff_libwebp_anim_encoder,
+    # ff_libwebp_encoder,
+    ff_libx264_encoder,
+    # ff_libx264rgb_encoder,
+    ff_libx265_encoder,
+    # ff_libxvid_encoder,
+    # ff_aac_mf_encoder,
+    # ff_ac3_mf_encoder,
+    # ff_h264_mf_encoder,
+    # ff_h264_qsv_encoder,
+    # ff_hevc_mf_encoder,
+    # ff_hevc_qsv_encoder,
+    # ff_mjpeg_qsv_encoder,
+    # ff_mp3_mf_encoder,
+    # ff_mpeg2_qsv_encoder,
+    # ff_vp9_qsv_encoder,
+    # ff_aasc_decoder,
+    # ff_aic_decoder,
+    # ff_alias_pix_decoder,
+    # ff_agm_decoder,
+    # ff_amv_decoder,
+    # ff_anm_decoder,
+    # ff_ansi_decoder,
+    # ff_apng_decoder,
+    # ff_arbc_decoder,
+    # ff_asv1_decoder,
+    # ff_asv2_decoder,
+    # ff_aura_decoder,
+    # ff_aura2_decoder,
+    # ff_avrp_decoder,
+    # ff_avrn_decoder,
+    # ff_avs_decoder,
+    # ff_avui_decoder,
+    # ff_ayuv_decoder,
+    # ff_bethsoftvid_decoder,
+    # ff_bfi_decoder,
+    # ff_bink_decoder,
+    # ff_bitpacked_decoder,
+    # ff_bmp_decoder,
+    # ff_bmv_video_decoder,
+    # ff_brender_pix_decoder,
+    # ff_c93_decoder,
+    # ff_cavs_decoder,
+    # ff_cdgraphics_decoder,
+    # ff_cdtoons_decoder,
+    # ff_cdxl_decoder,
+    # ff_cfhd_decoder,
+    # ff_cinepak_decoder,
+    # ff_clearvideo_decoder,
+    # ff_cljr_decoder,
+    # ff_cllc_decoder,
+    # ff_comfortnoise_decoder,
+    # ff_cpia_decoder,
+    # ff_cscd_decoder,
+    # ff_cyuv_decoder,
+    # ff_dds_decoder,
+    # ff_dfa_decoder,
+    # ff_dirac_decoder,
+    # ff_dnxhd_decoder,
+    # ff_dpx_decoder,
+    # ff_dsicinvideo_decoder,
+    # ff_dvaudio_decoder,
+    # ff_dvvideo_decoder,
+    # ff_dxa_decoder,
+    # ff_dxtory_decoder,
+    # ff_dxv_decoder,
+    # ff_eacmv_decoder,
+    # ff_eamad_decoder,
+    # ff_eatgq_decoder,
+    # ff_eatgv_decoder,
+    # ff_eatqi_decoder,
+    # ff_eightbps_decoder,
+    # ff_eightsvx_exp_decoder,
+    # ff_eightsvx_fib_decoder,
+    # ff_escape124_decoder,
+    # ff_escape130_decoder,
+    # ff_exr_decoder,
+    # ff_ffv1_decoder,
+    # ff_ffvhuff_decoder,
+    # ff_fic_decoder,
+    # ff_fits_decoder,
+    # ff_flashsv_decoder,
+    # ff_flashsv2_decoder,
+    # ff_flic_decoder,
+    # ff_flv_decoder,
+    # ff_fmvc_decoder,
+    # ff_fourxm_decoder,
+    # ff_fraps_decoder,
+    # ff_frwu_decoder,
+    # ff_g2m_decoder,
+    # ff_gdv_decoder,
+    # ff_gif_decoder,
+    # ff_h261_decoder,
+    # ff_h263_decoder,
+    # ff_h263i_decoder,
+    # ff_h263p_decoder,
+    ff_h264_decoder,
+    # ff_h264_qsv_decoder,
+    # ff_hap_decoder,
+    ff_hevc_decoder,
+    # ff_hevc_qsv_decoder,
+    # ff_hnm4_video_decoder,
+    # ff_hq_hqa_decoder,
+    # ff_hqx_decoder,
+    # ff_huffyuv_decoder,
+    # ff_hymt_decoder,
+    # ff_idcin_decoder,
+    # ff_iff_ilbm_decoder,
+    # ff_imm4_decoder,
+    # ff_imm5_decoder,
+    # ff_indeo2_decoder,
+    # ff_indeo3_decoder,
+    # ff_indeo4_decoder,
+    # ff_indeo5_decoder,
+    # ff_interplay_video_decoder,
+    # ff_ipu_decoder,
+    # ff_jpeg2000_decoder,
+    # ff_jpegls_decoder,
+    # ff_jv_decoder,
+    # ff_kgv1_decoder,
+    # ff_kmvc_decoder,
+    # ff_lagarith_decoder,
+    # ff_loco_decoder,
+    # ff_lscr_decoder,
+    # ff_m101_decoder,
+    # ff_magicyuv_decoder,
+    # ff_mdec_decoder,
+    # ff_mimic_decoder,
+    # ff_mjpeg_decoder,
+    # ff_mjpegb_decoder,
+    # ff_mmvideo_decoder,
+    # ff_mobiclip_decoder,
+    # ff_motionpixels_decoder,
+    # ff_mpeg1video_decoder,
+    # ff_mpeg2video_decoder,
+    # ff_mpeg4_decoder,
+    # ff_mpegvideo_decoder,
+    # ff_mpeg2_qsv_decoder,
+    # ff_msa1_decoder,
+    # ff_mscc_decoder,
+    # ff_msmpeg4v1_decoder,
+    # ff_msmpeg4v2_decoder,
+    # ff_msmpeg4v3_decoder,
+    # ff_msrle_decoder,
+    # ff_mss1_decoder,
+    # ff_mss2_decoder,
+    # ff_msvideo1_decoder,
+    # ff_mszh_decoder,
+    # ff_mts2_decoder,
+    # ff_mv30_decoder,
+    # ff_mvc1_decoder,
+    # ff_mvc2_decoder,
+    # ff_mvdv_decoder,
+    # ff_mvha_decoder,
+    # ff_mwsc_decoder,
+    # ff_mxpeg_decoder,
+    # ff_notchlc_decoder,
+    # ff_nuv_decoder,
+    # ff_paf_video_decoder,
+    # ff_pam_decoder,
+    # ff_pbm_decoder,
+    # ff_pcx_decoder,
+    # ff_pfm_decoder,
+    # ff_pgm_decoder,
+    # ff_pgmyuv_decoder,
+    # ff_pgx_decoder,
+    # ff_photocd_decoder,
+    # ff_pictor_decoder,
+    # ff_pixlet_decoder,
+    # ff_png_decoder,
+    # ff_ppm_decoder,
+    # ff_prores_decoder,
+    # ff_prosumer_decoder,
+    # ff_psd_decoder,
+    # ff_ptx_decoder,
+    # ff_qdraw_decoder,
+    # ff_qpeg_decoder,
+    # ff_qtrle_decoder,
+    # ff_r10k_decoder,
+    # ff_r210_decoder,
+    # ff_rasc_decoder,
+    # ff_rawvideo_decoder,
+    # ff_rl2_decoder,
+    # ff_roq_decoder,
+    # ff_rpza_decoder,
+    # ff_rscc_decoder,
+    # ff_rv10_decoder,
+    # ff_rv20_decoder,
+    # ff_rv30_decoder,
+    # ff_rv40_decoder,
+    # ff_s302m_decoder,
+    # ff_sanm_decoder,
+    # ff_scpr_decoder,
+    # ff_screenpresso_decoder,
+    # ff_sgi_decoder,
+    # ff_sgirle_decoder,
+    # ff_sheervideo_decoder,
+    # ff_smacker_decoder,
+    # ff_smc_decoder,
+    # ff_smvjpeg_decoder,
+    # ff_snow_decoder,
+    # ff_sp5x_decoder,
+    # ff_speedhq_decoder,
+    # ff_srgc_decoder,
+    # ff_sunrast_decoder,
+    # ff_svq1_decoder,
+    # ff_svq3_decoder,
+    # ff_targa_decoder,
+    # ff_targa_y216_decoder,
+    # ff_tdsc_decoder,
+    # ff_theora_decoder,
+    # ff_thp_decoder,
+    # ff_tiertexseqvideo_decoder,
+    # ff_tiff_decoder,
+    # ff_tmv_decoder,
+    # ff_truemotion1_decoder,
+    # ff_truemotion2_decoder,
+    # ff_truemotion2rt_decoder,
+    # ff_tscc_decoder,
+    # ff_tscc2_decoder,
+    # ff_txd_decoder,
+    # ff_ulti_decoder,
+    # ff_utvideo_decoder,
+    # ff_v210_decoder,
+    # ff_v210x_decoder,
+    # ff_v308_decoder,
+    # ff_v408_decoder,
+    # ff_v410_decoder,
+    # ff_vb_decoder,
+    # ff_vble_decoder,
+    # ff_vc1_decoder,
+    # ff_vc1image_decoder,
+    # ff_vc1_qsv_decoder,
+    # ff_vcr1_decoder,
+    # ff_vmdvideo_decoder,
+    # ff_vmnc_decoder,
+    # ff_vp3_decoder,
+    # ff_vp4_decoder,
+    # ff_vp5_decoder,
+    # ff_vp6_decoder,
+    # ff_vp6a_decoder,
+    # ff_vp6f_decoder,
+    # ff_vp7_decoder,
+    # ff_vp8_decoder,
+    # ff_vp9_decoder,
+    # ff_vqa_decoder,
+    # ff_webp_decoder,
+    # ff_wcmv_decoder,
+    # ff_wrapped_avframe_decoder,
+    # ff_wmv1_decoder,
+    # ff_wmv2_decoder,
+    # ff_wmv3_decoder,
+    # ff_wmv3image_decoder,
+    # ff_wnv1_decoder,
+    # ff_xan_wc3_decoder,
+    # ff_xan_wc4_decoder,
+    # ff_xbm_decoder,
+    # ff_xface_decoder,
+    # ff_xl_decoder,
+    # ff_xpm_decoder,
+    # ff_xwd_decoder,
+    # ff_y41p_decoder,
+    # ff_ylc_decoder,
+    # ff_yop_decoder,
+    # ff_yuv4_decoder,
+    # ff_zero12v_decoder,
+    # ff_zerocodec_decoder,
+    # ff_zlib_decoder,
+    # ff_zmbv_decoder,
+    # ff_aac_decoder,
+    # ff_aac_fixed_decoder,
+    # ff_aac_latm_decoder,
+    # ff_ac3_decoder,
+    # ff_ac3_fixed_decoder,
+    # ff_acelp_kelvin_decoder,
+    # ff_alac_decoder,
+    # ff_als_decoder,
+    # ff_amrnb_decoder,
+    # ff_amrwb_decoder,
+    # ff_ape_decoder,
+    # ff_aptx_decoder,
+    # ff_aptx_hd_decoder,
+    # ff_atrac1_decoder,
+    # ff_atrac3_decoder,
+    # ff_atrac3al_decoder,
+    # ff_atrac3p_decoder,
+    # ff_atrac3pal_decoder,
+    # ff_atrac9_decoder,
+    # ff_binkaudio_dct_decoder,
+    # ff_binkaudio_rdft_decoder,
+    # ff_bmv_audio_decoder,
+    # ff_cook_decoder,
+    # ff_dca_decoder,
+    # ff_dolby_e_decoder,
+    # ff_dsd_lsbf_decoder,
+    # ff_dsd_msbf_decoder,
+    # ff_dsd_lsbf_planar_decoder,
+    # ff_dsd_msbf_planar_decoder,
+    # ff_dsicinaudio_decoder,
+    # ff_dss_sp_decoder,
+    # ff_dst_decoder,
+    # ff_eac3_decoder,
+    # ff_evrc_decoder,
+    # ff_fastaudio_decoder,
+    # ff_ffwavesynth_decoder,
+    # ff_flac_decoder,
+    # ff_g723_1_decoder,
+    # ff_g729_decoder,
+    # ff_gsm_decoder,
+    # ff_gsm_ms_decoder,
+    # ff_hca_decoder,
+    # ff_hcom_decoder,
+    # ff_iac_decoder,
+    # ff_ilbc_decoder,
+    # ff_imc_decoder,
+    # ff_interplay_acm_decoder,
+    # ff_mace3_decoder,
+    # ff_mace6_decoder,
+    # ff_metasound_decoder,
+    # ff_mlp_decoder,
+    # ff_mp1_decoder,
+    # ff_mp1float_decoder,
+    # ff_mp2_decoder,
+    # ff_mp2float_decoder,
+    # ff_mp3float_decoder,
+    # ff_mp3_decoder,
+    # ff_mp3adufloat_decoder,
+    # ff_mp3adu_decoder,
+    # ff_mp3on4float_decoder,
+    # ff_mp3on4_decoder,
+    # ff_mpc7_decoder,
+    # ff_mpc8_decoder,
+    # ff_nellymoser_decoder,
+    # ff_on2avc_decoder,
+    # ff_opus_decoder,
+    # ff_paf_audio_decoder,
+    # ff_qcelp_decoder,
+    # ff_qdm2_decoder,
+    # ff_qdmc_decoder,
+    # ff_ra_144_decoder,
+    # ff_ra_288_decoder,
+    # ff_ralf_decoder,
+    # ff_sbc_decoder,
+    # ff_shorten_decoder,
+    # ff_sipr_decoder,
+    # ff_siren_decoder,
+    # ff_smackaud_decoder,
+    # ff_sonic_decoder,
+    # ff_tak_decoder,
+    # ff_truehd_decoder,
+    # ff_truespeech_decoder,
+    # ff_tta_decoder,
+    # ff_twinvq_decoder,
+    # ff_vmdaudio_decoder,
+    # ff_vorbis_decoder,
+    # ff_wavpack_decoder,
+    # ff_wmalossless_decoder,
+    # ff_wmapro_decoder,
+    # ff_wmav1_decoder,
+    # ff_wmav2_decoder,
+    # ff_wmavoice_decoder,
+    # ff_ws_snd1_decoder,
+    # ff_xma1_decoder,
+    # ff_xma2_decoder,
+    # ff_pcm_alaw_decoder,
+    # ff_pcm_bluray_decoder,
+    # ff_pcm_dvd_decoder,
+    # ff_pcm_f16le_decoder,
+    # ff_pcm_f24le_decoder,
+    # ff_pcm_f32be_decoder,
+    # ff_pcm_f32le_decoder,
+    # ff_pcm_f64be_decoder,
+    # ff_pcm_f64le_decoder,
+    # ff_pcm_lxf_decoder,
+    # ff_pcm_mulaw_decoder,
+    # ff_pcm_s8_decoder,
+    # ff_pcm_s8_planar_decoder,
+    # ff_pcm_s16be_decoder,
+    # ff_pcm_s16be_planar_decoder,
+    # ff_pcm_s16le_decoder,
+    # ff_pcm_s16le_planar_decoder,
+    # ff_pcm_s24be_decoder,
+    # ff_pcm_s24daud_decoder,
+    # ff_pcm_s24le_decoder,
+    # ff_pcm_s24le_planar_decoder,
+    # ff_pcm_s32be_decoder,
+    # ff_pcm_s32le_decoder,
+    # ff_pcm_s32le_planar_decoder,
+    # ff_pcm_s64be_decoder,
+    # ff_pcm_s64le_decoder,
+    # ff_pcm_u8_decoder,
+    # ff_pcm_u16be_decoder,
+    # ff_pcm_u16le_decoder,
+    # ff_pcm_u24be_decoder,
+    # ff_pcm_u24le_decoder,
+    # ff_pcm_u32be_decoder,
+    # ff_pcm_u32le_decoder,
+    # ff_pcm_vidc_decoder,
+    # ff_derf_dpcm_decoder,
+    # ff_gremlin_dpcm_decoder,
+    # ff_interplay_dpcm_decoder,
+    # ff_roq_dpcm_decoder,
+    # ff_sdx2_dpcm_decoder,
+    # ff_sol_dpcm_decoder,
+    # ff_xan_dpcm_decoder,
+    # ff_adpcm_4xm_decoder,
+    # ff_adpcm_adx_decoder,
+    # ff_adpcm_afc_decoder,
+    # ff_adpcm_agm_decoder,
+    # ff_adpcm_aica_decoder,
+    # ff_adpcm_argo_decoder,
+    # ff_adpcm_ct_decoder,
+    # ff_adpcm_dtk_decoder,
+    # ff_adpcm_ea_decoder,
+    # ff_adpcm_ea_maxis_xa_decoder,
+    # ff_adpcm_ea_r1_decoder,
+    # ff_adpcm_ea_r2_decoder,
+    # ff_adpcm_ea_r3_decoder,
+    # ff_adpcm_ea_xas_decoder,
+    # ff_adpcm_g722_decoder,
+    # ff_adpcm_g726_decoder,
+    # ff_adpcm_g726le_decoder,
+    # ff_adpcm_ima_amv_decoder,
+    # ff_adpcm_ima_alp_decoder,
+    # ff_adpcm_ima_apc_decoder,
+    # ff_adpcm_ima_apm_decoder,
+    # ff_adpcm_ima_cunning_decoder,
+    # ff_adpcm_ima_dat4_decoder,
+    # ff_adpcm_ima_dk3_decoder,
+    # ff_adpcm_ima_dk4_decoder,
+    # ff_adpcm_ima_ea_eacs_decoder,
+    # ff_adpcm_ima_ea_sead_decoder,
+    # ff_adpcm_ima_iss_decoder,
+    # ff_adpcm_ima_moflex_decoder,
+    # ff_adpcm_ima_mtf_decoder,
+    # ff_adpcm_ima_oki_decoder,
+    # ff_adpcm_ima_qt_decoder,
+    # ff_adpcm_ima_rad_decoder,
+    # ff_adpcm_ima_ssi_decoder,
+    # ff_adpcm_ima_smjpeg_decoder,
+    # ff_adpcm_ima_wav_decoder,
+    # ff_adpcm_ima_ws_decoder,
+    # ff_adpcm_ms_decoder,
+    # ff_adpcm_mtaf_decoder,
+    # ff_adpcm_psx_decoder,
+    # ff_adpcm_sbpro_2_decoder,
+    # ff_adpcm_sbpro_3_decoder,
+    # ff_adpcm_sbpro_4_decoder,
+    # ff_adpcm_swf_decoder,
+    # ff_adpcm_thp_decoder,
+    # ff_adpcm_thp_le_decoder,
+    # ff_adpcm_vima_decoder,
+    # ff_adpcm_xa_decoder,
+    # ff_adpcm_yamaha_decoder,
+    # ff_adpcm_zork_decoder,
+    # ff_ssa_decoder,
+    # ff_ass_decoder,
+    # ff_ccaption_decoder,
+    # ff_dvbsub_decoder,
+    # ff_dvdsub_decoder,
+    # ff_jacosub_decoder,
+    # ff_microdvd_decoder,
+    # ff_movtext_decoder,
+    # ff_mpl2_decoder,
+    # ff_pgssub_decoder,
+    # ff_pjs_decoder,
+    # ff_realtext_decoder,
+    # ff_sami_decoder,
+    # ff_srt_decoder,
+    # ff_stl_decoder,
+    # ff_subrip_decoder,
+    # ff_subviewer_decoder,
+    # ff_subviewer1_decoder,
+    # ff_text_decoder,
+    # ff_vplayer_decoder,
+    # ff_webvtt_decoder,
+    # ff_xsub_decoder,
+    # ff_libdav1d_decoder,
+    # ff_libgsm_decoder,
+    # ff_libgsm_ms_decoder,
+    # ff_libilbc_decoder,
+    # ff_libopenjpeg_decoder,
+    # ff_libopus_decoder,
+    # ff_libspeex_decoder,
+    # ff_libvorbis_decoder,
+    # ff_libvpx_vp8_decoder,
+    # ff_libvpx_vp9_decoder,
+    # ff_bintext_decoder,
+    # ff_xbin_decoder,
+    # ff_idf_decoder,
+    # ff_libaom_av1_decoder,
+    # ff_av1_decoder,
+    # ff_mjpeg_qsv_decoder,
+    # ff_vp8_qsv_decoder,
+    # ff_vp9_qsv_decoder,
+ nil]
+
+proc av_codec_init_static*() =
+  var i: cint = 0
+  for i in 0..codec_list[i].high:
+      codec_list[i].init_static_data(codec_list[i])
+
+
+proc av_codec_iterate*(opaque: pointer): AVCodec =
+  var i: uint64 = cast[uint64](opaque)
+  var c: AVCodec = codec_list[i]
+  Pthread_once(av_codec_static_init, av_codec_init_static)
+  if c:
+    opaque[] = cast[pointer]((i + 1))
+  return c
+
+
+proc codec_child_class_next*(prev: AVClass): AVClass =
+  var iter: pointer
+  var c: AVCodec
+  while prev and (c = av_codec_iterate(iter)):
+    if c.priv_class == prev:
+      break
+  while c = av_codec_iterate(iter):
+    if c.priv_class:
+      return c.priv_class
+  return nil
+
+proc codec_child_class_iterate*(iter: pointer): AVClass =
+  var c: AVCodec
+  while c = av_codec_iterate(iter):
+    if c.priv_class:
+      return c.priv_class
+  return nil
+
+var  avcodec_options: seq[AVOption] = @[]
+##  {"b", "set bitrate (in bits/s)", offsetof(AVCodecContext,bit_rate), AV_OPT_TYPE_INT64, {.i64 = AV_CODEC_DEFAULT_BITRATE }, 0, INT64_MAX, A|V|E},
+##  {"ab", "set bitrate (in bits/s)", offsetof(AVCodecContext,bit_rate), AV_OPT_TYPE_INT64, {.i64 = 128*1000 }, 0, INT_MAX, A|E},
+##  {"bt", "Set video bitrate tolerance (in bits/s). In 1-pass mode, bitrate tolerance specifies how far "
+##         "ratecontrol is willing to deviate from the target average bitrate value. This is not related "
+##         "to minimum/maximum bitrate. Lowering tolerance too much has an adverse effect on quality.",
+##         offsetof(AVCodecContext,bit_rate_tolerance), AV_OPT_TYPE_INT, {.i64 = AV_CODEC_DEFAULT_BITRATE*20 }, 1, INT_MAX, V|E},
+##  {"flags", NULL, offsetof(AVCodecContext,flags), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, 0, UINT_MAX, V|A|S|E|D, "flags"},
+##  {"unaligned", "allow decoders to produce unaligned output", 0, AV_OPT_TYPE_CONST, { .i64 = AV_CODEC_FLAG_UNALIGNED }, INT_MIN, INT_MAX, V | D, "flags" },
+##  {"mv4", "use four motion vectors per macroblock (MPEG-4)", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_4MV }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"qpel", "use 1/4-pel motion compensation", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_QPEL }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"loop", "use loop filter", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_LOOP_FILTER }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"qscale", "use fixed qscale", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_QSCALE }, INT_MIN, INT_MAX, 0, "flags"},
+##  {"pass1", "use internal 2-pass ratecontrol in first  pass mode", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_PASS1 }, INT_MIN, INT_MAX, 0, "flags"},
+##  {"pass2", "use internal 2-pass ratecontrol in second pass mode", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_PASS2 }, INT_MIN, INT_MAX, 0, "flags"},
+##  {"gray", "only decode/encode grayscale", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_GRAY }, INT_MIN, INT_MAX, V|E|D, "flags"},
+##  {"psnr", "error[?] variables will be set during encoding", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_PSNR }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"truncated", "Input bitstream might be randomly truncated", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_TRUNCATED }, INT_MIN, INT_MAX, V|D, "flags"},
+##  {"ildct", "use interlaced DCT", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_INTERLACED_DCT }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"low_delay", "force low delay", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_LOW_DELAY }, INT_MIN, INT_MAX, V|D|E, "flags"},
+##  {"global_header", "place global headers in extradata instead of every keyframe", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_GLOBAL_HEADER }, INT_MIN, INT_MAX, V|A|E, "flags"},
+##  {"bitexact", "use only bitexact functions (except (I)DCT)", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_BITEXACT }, INT_MIN, INT_MAX, A|V|S|D|E, "flags"},
+##  {"aic", "H.263 advanced intra coding / MPEG-4 AC prediction", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_AC_PRED }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"ilme", "interlaced motion estimation", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_INTERLACED_ME }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"cgop", "closed GOP", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_CLOSED_GOP }, INT_MIN, INT_MAX, V|E, "flags"},
+##  {"output_corrupt", "Output even potentially corrupted frames", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_OUTPUT_CORRUPT }, INT_MIN, INT_MAX, V|D, "flags"},
+##  {"drop_changed", "Drop frames whose parameters differ from first decoded frame", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG_DROPCHANGED }, INT_MIN, INT_MAX, A|V|D, "flags"},
+##  {"flags2", NULL, offsetof(AVCodecContext,flags2), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT}, 0, UINT_MAX, V|A|E|D|S, "flags2"},
+##  {"fast", "allow non-spec-compliant speedup tricks", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_FAST }, INT_MIN, INT_MAX, V|E, "flags2"},
+##  {"noout", "skip bitstream encoding", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_NO_OUTPUT }, INT_MIN, INT_MAX, V|E, "flags2"},
+##  {"ignorecrop", "ignore cropping information from sps", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_IGNORE_CROP }, INT_MIN, INT_MAX, V|D, "flags2"},
+##  {"local_header", "place global headers at every keyframe instead of in extradata", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_LOCAL_HEADER }, INT_MIN, INT_MAX, V|E, "flags2"},
+##  {"chunks", "Frame data might be split into multiple chunks", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_CHUNKS }, INT_MIN, INT_MAX, V|D, "flags2"},
+##  {"showall", "Show all frames before the first keyframe", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_SHOW_ALL }, INT_MIN, INT_MAX, V|D, "flags2"},
+##  {"export_mvs", "export motion vectors through frame side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_EXPORT_MVS}, INT_MIN, INT_MAX, V|D, "flags2"},
+##  {"skip_manual", "do not skip samples and export skip information as frame side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_SKIP_MANUAL}, INT_MIN, INT_MAX, A|D, "flags2"},
+##  {"ass_ro_flush_noop", "do not reset ASS ReadOrder field on flush", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_FLAG2_RO_FLUSH_NOOP}, INT_MIN, INT_MAX, S|D, "flags2"},
+##  {"export_side_data", "Export metadata as side data", offsetof(AVCodecContext,export_side_data), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT}, 0, UINT_MAX, A|V|S|D|E, "export_side_data"},
+##  {"mvs", "export motion vectors through frame side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_EXPORT_DATA_MVS}, INT_MIN, INT_MAX, V|D, "export_side_data"},
+##  {"prft", "export Producer Reference Time through packet side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_EXPORT_DATA_PRFT}, INT_MIN, INT_MAX, A|V|S|E, "export_side_data"},
+##  {"venc_params", "export video encoding parameters through frame side data", 0, AV_OPT_TYPE_CONST, {.i64 = AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS}, INT_MIN, INT_MAX, V|D, "export_side_data"},
+##  {"time_base", NULL, offsetof(AVCodecContext,time_base), AV_OPT_TYPE_RATIONAL, {.dbl = 0}, 0, INT_MAX},
+##  {"g", "set the group of picture (GOP) size", offsetof(AVCodecContext,gop_size), AV_OPT_TYPE_INT, {.i64 = 12 }, INT_MIN, INT_MAX, V|E},
+##  {"ar", "set audio sampling rate (in Hz)", offsetof(AVCodecContext,sample_rate), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, A|D|E},
+##  {"ac", "set number of audio channels", offsetof(AVCodecContext,channels), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, A|D|E},
+##  {"cutoff", "set cutoff bandwidth", offsetof(AVCodecContext,cutoff), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, A|E},
+##  {"frame_size", NULL, offsetof(AVCodecContext,frame_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, A|E},
+##  {"frame_number", NULL, offsetof(AVCodecContext,frame_number), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"delay", NULL, offsetof(AVCodecContext,delay), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"qcomp", "video quantizer scale compression (VBR). Constant of ratecontrol equation. "
+##            "Recommended range for default rc_eq: 0.0-1.0",
+##            offsetof(AVCodecContext,qcompress), AV_OPT_TYPE_FLOAT, {.dbl = 0.5 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"qblur", "video quantizer scale blur (VBR)", offsetof(AVCodecContext,qblur), AV_OPT_TYPE_FLOAT, {.dbl = 0.5 }, -1, FLT_MAX, V|E},
+##  {"qmin", "minimum video quantizer scale (VBR)", offsetof(AVCodecContext,qmin), AV_OPT_TYPE_INT, {.i64 = 2 }, -1, 69, V|E},
+##  {"qmax", "maximum video quantizer scale (VBR)", offsetof(AVCodecContext,qmax), AV_OPT_TYPE_INT, {.i64 = 31 }, -1, 1024, V|E},
+##  {"qdiff", "maximum difference between the quantizer scales (VBR)", offsetof(AVCodecContext,max_qdiff), AV_OPT_TYPE_INT, {.i64 = 3 }, INT_MIN, INT_MAX, V|E},
+##  {"bf", "set maximum number of B-frames between non-B-frames", offsetof(AVCodecContext,max_b_frames), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, -1, INT_MAX, V|E},
+##  {"b_qfactor", "QP factor between P- and B-frames", offsetof(AVCodecContext,b_quant_factor), AV_OPT_TYPE_FLOAT, {.dbl = 1.25 }, -FLT_MAX, FLT_MAX, V|E},
+##  #if FF_API_PRIVATE_OPT
+##  {"b_strategy", "strategy to choose between I/P/B-frames", offsetof(AVCodecContext,b_frame_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, V|E},
+##  {"ps", "RTP payload size in bytes", offsetof(AVCodecContext,rtp_payload_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  #if FF_API_STAT_BITS
+##  {"mv_bits", NULL, offsetof(AVCodecContext,mv_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"header_bits", NULL, offsetof(AVCodecContext,header_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"i_tex_bits", NULL, offsetof(AVCodecContext,i_tex_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"p_tex_bits", NULL, offsetof(AVCodecContext,p_tex_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"i_count", NULL, offsetof(AVCodecContext,i_count), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"p_count", NULL, offsetof(AVCodecContext,p_count), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"skip_count", NULL, offsetof(AVCodecContext,skip_count), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"misc_bits", NULL, offsetof(AVCodecContext,misc_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"frame_bits", NULL, offsetof(AVCodecContext,frame_bits), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  #endif
+##  {"codec_tag", NULL, offsetof(AVCodecContext,codec_tag), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"bug", "work around not autodetected encoder bugs", offsetof(AVCodecContext,workaround_bugs), AV_OPT_TYPE_FLAGS, {.i64 = FF_BUG_AUTODETECT }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"autodetect", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_AUTODETECT }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"xvid_ilace", "Xvid interlacing bug (autodetected if FOURCC == XVIX)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_XVID_ILACE }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"ump4", "(autodetected if FOURCC == UMP4)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_UMP4 }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"no_padding", "padding bug (autodetected)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_NO_PADDING }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"amv", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_AMV }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"qpel_chroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_QPEL_CHROMA }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"std_qpel", "old standard qpel (autodetected per FOURCC/version)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_STD_QPEL }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"qpel_chroma2", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_QPEL_CHROMA2 }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"direct_blocksize", "direct-qpel-blocksize bug (autodetected per FOURCC/version)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_DIRECT_BLOCKSIZE }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"edge", "edge padding bug (autodetected per FOURCC/version)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_EDGE }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"hpel_chroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_HPEL_CHROMA }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"dc_clip", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_DC_CLIP }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"ms", "work around various bugs in Microsoft's broken decoders", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_MS }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"trunc", "truncated frames", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_TRUNCATED}, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"iedge", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_IEDGE }, INT_MIN, INT_MAX, V|D, "bug"},
+##  {"strict", "how strictly to follow the standards", offsetof(AVCodecContext,strict_std_compliance), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
+##  {"very", "strictly conform to a older more strict version of the spec or reference software", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_VERY_STRICT }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
+##  {"strict", "strictly conform to all the things in the spec no matter what the consequences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_STRICT }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
+##  {"normal", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_NORMAL }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
+##  {"unofficial", "allow unofficial extensions", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_UNOFFICIAL }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
+##  {"experimental", "allow non-standardized experimental things", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_EXPERIMENTAL }, INT_MIN, INT_MAX, A|V|D|E, "strict"},
+##  {"b_qoffset", "QP offset between P- and B-frames", offsetof(AVCodecContext,b_quant_offset), AV_OPT_TYPE_FLOAT, {.dbl = 1.25 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"err_detect", "set error detection flags", offsetof(AVCodecContext,err_recognition), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"crccheck", "verify embedded CRCs", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"bitstream", "detect bitstream specification deviations", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"buffer", "detect improper bitstream length", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_BUFFER }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"explode", "abort decoding on minor error detection", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_EXPLODE }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"ignore_err", "ignore errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_IGNORE_ERR }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"careful",    "consider things that violate the spec, are fast to check and have not been seen in the wild as errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_CAREFUL }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"compliant",  "consider all spec non compliancies as errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_COMPLIANT | AV_EF_CAREFUL }, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"aggressive", "consider things that a sane encoder should not do as an error", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_AGGRESSIVE | AV_EF_COMPLIANT | AV_EF_CAREFUL}, INT_MIN, INT_MAX, A|V|D, "err_detect"},
+##  {"has_b_frames", NULL, offsetof(AVCodecContext,has_b_frames), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX},
+##  {"block_align", NULL, offsetof(AVCodecContext,block_align), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX},
+##  #if FF_API_PRIVATE_OPT
+##  {"mpeg_quant", "use MPEG quantizers instead of H.263", offsetof(AVCodecContext,mpeg_quant), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  {"rc_override_count", NULL, offsetof(AVCodecContext,rc_override_count), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"maxrate", "maximum bitrate (in bits/s). Used for VBV together with bufsize.", offsetof(AVCodecContext,rc_max_rate), AV_OPT_TYPE_INT64, {.i64 = DEFAULT }, 0, INT_MAX, V|A|E},
+##  {"minrate", "minimum bitrate (in bits/s). Most useful in setting up a CBR encode. It is of little use otherwise.",
+##              offsetof(AVCodecContext,rc_min_rate), AV_OPT_TYPE_INT64, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
+##  {"bufsize", "set ratecontrol buffer size (in bits)", offsetof(AVCodecContext,rc_buffer_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, A|V|E},
+##  {"i_qfactor", "QP factor between P- and I-frames", offsetof(AVCodecContext,i_quant_factor), AV_OPT_TYPE_FLOAT, {.dbl = -0.8 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"i_qoffset", "QP offset between P- and I-frames", offsetof(AVCodecContext,i_quant_offset), AV_OPT_TYPE_FLOAT, {.dbl = 0.0 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"dct", "DCT algorithm", offsetof(AVCodecContext,dct_algo), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, V|E, "dct"},
+##  {"auto", "autoselect a good one", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_AUTO }, INT_MIN, INT_MAX, V|E, "dct"},
+##  {"fastint", "fast integer", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_FASTINT }, INT_MIN, INT_MAX, V|E, "dct"},
+##  {"int", "accurate integer", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_INT }, INT_MIN, INT_MAX, V|E, "dct"},
+##  {"mmx", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_MMX }, INT_MIN, INT_MAX, V|E, "dct"},
+##  {"altivec", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_ALTIVEC }, INT_MIN, INT_MAX, V|E, "dct"},
+##  {"faan", "floating point AAN DCT", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_FAAN }, INT_MIN, INT_MAX, V|E, "dct"},
+##  {"lumi_mask", "compresses bright areas stronger than medium ones", offsetof(AVCodecContext,lumi_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"tcplx_mask", "temporal complexity masking", offsetof(AVCodecContext,temporal_cplx_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"scplx_mask", "spatial complexity masking", offsetof(AVCodecContext,spatial_cplx_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"p_mask", "inter masking", offsetof(AVCodecContext,p_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"dark_mask", "compresses dark areas stronger than medium ones", offsetof(AVCodecContext,dark_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},
+##  {"idct", "select IDCT implementation", offsetof(AVCodecContext,idct_algo), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, V|E|D, "idct"},
+##  {"auto", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_AUTO }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"int", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_INT }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"simple", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLE }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"simplemmx", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEMMX }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"arm", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_ARM }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"altivec", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_ALTIVEC }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"simplearm", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEARM }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"simplearmv5te", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEARMV5TE }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"simplearmv6", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEARMV6 }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"simpleneon", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLENEON }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"xvid", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_XVID }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"xvidmmx", "deprecated, for compatibility only", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_XVID }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"faani", "floating point AAN IDCT", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_FAAN }, INT_MIN, INT_MAX, V|D|E, "idct"},
+##  {"simpleauto", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEAUTO }, INT_MIN, INT_MAX, V|E|D, "idct"},
+##  {"slice_count", NULL, offsetof(AVCodecContext,slice_count), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"ec", "set error concealment strategy", offsetof(AVCodecContext,error_concealment), AV_OPT_TYPE_FLAGS, {.i64 = 3 }, INT_MIN, INT_MAX, V|D, "ec"},
+##  {"guess_mvs", "iterative motion vector (MV) search (slow)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_EC_GUESS_MVS }, INT_MIN, INT_MAX, V|D, "ec"},
+##  {"deblock", "use strong deblock filter for damaged MBs", 0, AV_OPT_TYPE_CONST, {.i64 = FF_EC_DEBLOCK }, INT_MIN, INT_MAX, V|D, "ec"},
+##  {"favor_inter", "favor predicting from the previous frame", 0, AV_OPT_TYPE_CONST, {.i64 = FF_EC_FAVOR_INTER }, INT_MIN, INT_MAX, V|D, "ec"},
+##  {"bits_per_coded_sample", NULL, offsetof(AVCodecContext,bits_per_coded_sample), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX},
+##  #if FF_API_PRIVATE_OPT
+##  {"pred", "prediction method", offsetof(AVCodecContext,prediction_method), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E, "pred"},
+##  {"left", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PRED_LEFT }, INT_MIN, INT_MAX, V|E, "pred"},
+##  {"plane", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PRED_PLANE }, INT_MIN, INT_MAX, V|E, "pred"},
+##  {"median", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PRED_MEDIAN }, INT_MIN, INT_MAX, V|E, "pred"},
+##  #endif
+##  {"aspect", "sample aspect ratio", offsetof(AVCodecContext,sample_aspect_ratio), AV_OPT_TYPE_RATIONAL, {.dbl = 0}, 0, 10, V|E},
+##  {"sar",    "sample aspect ratio", offsetof(AVCodecContext,sample_aspect_ratio), AV_OPT_TYPE_RATIONAL, {.dbl = 0}, 0, 10, V|E},
+##  {"debug", "print specific debug info", offsetof(AVCodecContext,debug), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, 0, INT_MAX, V|A|S|E|D, "debug"},
+##  {"pict", "picture info", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_PICT_INFO }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"rc", "rate control", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_RC }, INT_MIN, INT_MAX, V|E, "debug"},
+##  {"bitstream", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_BITSTREAM }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"mb_type", "macroblock (MB) type", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_MB_TYPE }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"qp", "per-block quantization parameter (QP)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_QP }, INT_MIN, INT_MAX, V|D, "debug"},
+##  #if FF_API_DEBUG_MV
+##  {"mv", "motion vector", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_MV }, INT_MIN, INT_MAX, V|D, "debug"},
+##  #endif
+##  {"dct_coeff", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_DCT_COEFF }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"green_metadata", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_GREEN_MD }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"skip", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_SKIP }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"startcode", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_STARTCODE }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"er", "error recognition", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_ER }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"mmco", "memory management control operations (H.264)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_MMCO }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"bugs", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_BUGS }, INT_MIN, INT_MAX, V|D, "debug"},
+##  #if FF_API_DEBUG_MV
+##  {"vis_qp", "visualize quantization parameter (QP), lower QP are tinted greener", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_VIS_QP }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"vis_mb_type", "visualize block types", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_VIS_MB_TYPE }, INT_MIN, INT_MAX, V|D, "debug"},
+##  #endif
+##  {"buffers", "picture buffer allocations", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_BUFFERS }, INT_MIN, INT_MAX, V|D, "debug"},
+##  {"thread_ops", "threading operations", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_THREADS }, INT_MIN, INT_MAX, V|A|D, "debug"},
+##  {"nomc", "skip motion compensation", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DEBUG_NOMC }, INT_MIN, INT_MAX, V|A|D, "debug"},
+##  {"dia_size", "diamond type & size for motion estimation", offsetof(AVCodecContext,dia_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  {"last_pred", "amount of motion predictors from the previous frame", offsetof(AVCodecContext,last_predictor_count), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #if FF_API_PRIVATE_OPT
+##  {"preme", "pre motion estimation", offsetof(AVCodecContext,pre_me), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  {"pre_dia_size", "diamond type & size for motion estimation pre-pass", offsetof(AVCodecContext,pre_dia_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  {"subq", "sub-pel motion estimation quality", offsetof(AVCodecContext,me_subpel_quality), AV_OPT_TYPE_INT, {.i64 = 8 }, INT_MIN, INT_MAX, V|E},
+##  {"me_range", "limit motion vectors range (1023 for DivX player)", offsetof(AVCodecContext,me_range), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  {"global_quality", NULL, offsetof(AVCodecContext,global_quality), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
+##  #if FF_API_CODER_TYPE
+##  {"coder", NULL, offsetof(AVCodecContext,coder_type), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E, "coder"},
+##  {"vlc", "variable length coder / Huffman coder", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CODER_TYPE_VLC }, INT_MIN, INT_MAX, V|E, "coder"},
+##  {"ac", "arithmetic coder", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CODER_TYPE_AC }, INT_MIN, INT_MAX, V|E, "coder"},
+##  {"raw", "raw (no encoding)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CODER_TYPE_RAW }, INT_MIN, INT_MAX, V|E, "coder"},
+##  {"rle", "run-length coder", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CODER_TYPE_RLE }, INT_MIN, INT_MAX, V|E, "coder"},
+##  #endif /* FF_API_CODER_TYPE */
+##  #if FF_API_PRIVATE_OPT
+##  {"context", "context model", offsetof(AVCodecContext,context_model), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  {"slice_flags", NULL, offsetof(AVCodecContext,slice_flags), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
+##  {"mbd", "macroblock decision algorithm (high quality mode)", offsetof(AVCodecContext,mb_decision), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, 2, V|E, "mbd"},
+##  {"simple", "use mbcmp", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MB_DECISION_SIMPLE }, INT_MIN, INT_MAX, V|E, "mbd"},
+##  {"bits", "use fewest bits", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MB_DECISION_BITS }, INT_MIN, INT_MAX, V|E, "mbd"},
+##  {"rd", "use best rate distortion", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MB_DECISION_RD }, INT_MIN, INT_MAX, V|E, "mbd"},
+##  #if FF_API_PRIVATE_OPT
+##  {"sc_threshold", "scene change threshold", offsetof(AVCodecContext,scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  #if FF_API_PRIVATE_OPT
+##  {"nr", "noise reduction", offsetof(AVCodecContext,noise_reduction), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  {"rc_init_occupancy", "number of bits which should be loaded into the rc buffer before decoding starts", offsetof(AVCodecContext,rc_initial_buffer_occupancy), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  {"threads", "set the number of threads", offsetof(AVCodecContext,thread_count), AV_OPT_TYPE_INT, {.i64 = 1 }, 0, INT_MAX, V|A|E|D, "threads"},
+##  {"auto", "autodetect a suitable number of threads to use", 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, INT_MIN, INT_MAX, V|E|D, "threads"},
+##  {"dc", "intra_dc_precision", offsetof(AVCodecContext,intra_dc_precision), AV_OPT_TYPE_INT, {.i64 = 0 }, -8, 16, V|E},
+##  {"nssew", "nsse weight", offsetof(AVCodecContext,nsse_weight), AV_OPT_TYPE_INT, {.i64 = 8 }, INT_MIN, INT_MAX, V|E},
+##  {"skip_top", "number of macroblock rows at the top which are skipped", offsetof(AVCodecContext,skip_top), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|D},
+##  {"skip_bottom", "number of macroblock rows at the bottom which are skipped", offsetof(AVCodecContext,skip_bottom), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|D},
+##  {"profile", NULL, offsetof(AVCodecContext,profile), AV_OPT_TYPE_INT, {.i64 = FF_PROFILE_UNKNOWN }, INT_MIN, INT_MAX, V|A|E|CC, "avctx.profile"},
+##  {"unknown", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_UNKNOWN }, INT_MIN, INT_MAX, V|A|E, "avctx.profile"},
+##  {"main10",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_PROFILE_HEVC_MAIN_10 }, INT_MIN, INT_MAX, V|E, "avctx.profile"},
+##  {"level", NULL, offsetof(AVCodecContext,level), AV_OPT_TYPE_INT, {.i64 = FF_LEVEL_UNKNOWN }, INT_MIN, INT_MAX, V|A|E|CC, "avctx.level"},
+##  {"unknown", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LEVEL_UNKNOWN }, INT_MIN, INT_MAX, V|A|E, "avctx.level"},
+##  {"lowres", "decode at 1= 1/2, 2=1/4, 3=1/8 resolutions", offsetof(AVCodecContext,lowres), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, V|A|D},
+##  #if FF_API_PRIVATE_OPT
+##  {"skip_threshold", "frame skip threshold", offsetof(AVCodecContext,frame_skip_threshold), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  {"skip_factor", "frame skip factor", offsetof(AVCodecContext,frame_skip_factor), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  {"skip_exp", "frame skip exponent", offsetof(AVCodecContext,frame_skip_exp), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  {"skipcmp", "frame skip compare function", offsetof(AVCodecContext,frame_skip_cmp), AV_OPT_TYPE_INT, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  #endif
+##  {"cmp", "full-pel ME compare function", offsetof(AVCodecContext,me_cmp), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"subcmp", "sub-pel ME compare function", offsetof(AVCodecContext,me_sub_cmp), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"mbcmp", "macroblock compare function", offsetof(AVCodecContext,mb_cmp), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"ildctcmp", "interlaced DCT compare function", offsetof(AVCodecContext,ildct_cmp), AV_OPT_TYPE_INT, {.i64 = FF_CMP_VSAD }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"precmp", "pre motion estimation compare function", offsetof(AVCodecContext,me_pre_cmp), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"sad", "sum of absolute differences, fast", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SAD }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"sse", "sum of squared errors", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SSE }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"satd", "sum of absolute Hadamard transformed differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SATD }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"dct", "sum of absolute DCT transformed differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCT }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"psnr", "sum of squared quantization errors (avoid, low quality)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_PSNR }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"bit", "number of bits needed for the block", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_BIT }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"rd", "rate distortion optimal, slow", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_RD }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"zero", "0", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_ZERO }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"vsad", "sum of absolute vertical differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_VSAD }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"vsse", "sum of squared vertical differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_VSSE }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"nsse", "noise preserving sum of squared differences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_NSSE }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  #if CONFIG_SNOW_ENCODER
+##  {"w53", "5/3 wavelet, only used in snow", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_W53 }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"w97", "9/7 wavelet, only used in snow", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_W97 }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  #endif
+##  {"dctmax", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_DCTMAX }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"chroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_CHROMA }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"msad", "sum of absolute differences, median predicted", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_MEDIAN_SAD }, INT_MIN, INT_MAX, V|E, "cmp_func"},
+##  {"mblmin", "minimum macroblock Lagrange factor (VBR)", offsetof(AVCodecContext,mb_lmin), AV_OPT_TYPE_INT, {.i64 = FF_QP2LAMBDA * 2 }, 1, FF_LAMBDA_MAX, V|E},
+##  {"mblmax", "maximum macroblock Lagrange factor (VBR)", offsetof(AVCodecContext,mb_lmax), AV_OPT_TYPE_INT, {.i64 = FF_QP2LAMBDA * 31 }, 1, FF_LAMBDA_MAX, V|E},
+##  #if FF_API_PRIVATE_OPT
+##  {"mepc", "motion estimation bitrate penalty compensation (1.0 = 256)", offsetof(AVCodecContext,me_penalty_compensation), AV_OPT_TYPE_INT, {.i64 = 256 }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  {"skip_loop_filter", "skip loop filtering process for the selected frames", offsetof(AVCodecContext,skip_loop_filter), AV_OPT_TYPE_INT, {.i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"skip_idct"       , "skip IDCT/dequantization for the selected frames",    offsetof(AVCodecContext,skip_idct),        AV_OPT_TYPE_INT, {.i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"skip_frame"      , "skip decoding for the selected frames",               offsetof(AVCodecContext,skip_frame),       AV_OPT_TYPE_INT, {.i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"none"            , "discard no frame",                    0, AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONE    }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"default"         , "discard useless frames",              0, AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"noref"           , "discard all non-reference frames",    0, AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONREF  }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"bidir"           , "discard all bidirectional frames",    0, AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_BIDIR   }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"nokey"           , "discard all frames except keyframes", 0, AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONKEY  }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"nointra"         , "discard all frames except I frames",  0, AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONINTRA}, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"all"             , "discard all frames",                  0, AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_ALL     }, INT_MIN, INT_MAX, V|D, "avdiscard"},
+##  {"bidir_refine", "refine the two motion vectors used in bidirectional macroblocks", offsetof(AVCodecContext,bidir_refine), AV_OPT_TYPE_INT, {.i64 = 1 }, 0, 4, V|E},
+##  #if FF_API_PRIVATE_OPT
+##  {"brd_scale", "downscale frames for dynamic B-frame decision", offsetof(AVCodecContext,brd_scale), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, 10, V|E},
+##  #endif
+##  {"keyint_min", "minimum interval between IDR-frames", offsetof(AVCodecContext,keyint_min), AV_OPT_TYPE_INT, {.i64 = 25 }, INT_MIN, INT_MAX, V|E},
+##  {"refs", "reference frames to consider for motion compensation", offsetof(AVCodecContext,refs), AV_OPT_TYPE_INT, {.i64 = 1 }, INT_MIN, INT_MAX, V|E},
+##  #if FF_API_PRIVATE_OPT
+##  {"chromaoffset", "chroma QP offset from luma", offsetof(AVCodecContext,chromaoffset), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
+##  #endif
+##  {"trellis", "rate-distortion optimal quantization", offsetof(AVCodecContext,trellis), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
+##  {"mv0_threshold", NULL, offsetof(AVCodecContext,mv0_threshold), AV_OPT_TYPE_INT, {.i64 = 256 }, 0, INT_MAX, V|E},
+##  #if FF_API_PRIVATE_OPT
+##  {"b_sensitivity", "adjust sensitivity of b_frame_strategy 1", offsetof(AVCodecContext,b_sensitivity), AV_OPT_TYPE_INT, {.i64 = 40 }, 1, INT_MAX, V|E},
+##  #endif
+##  {"compression_level", NULL, offsetof(AVCodecContext,compression_level), AV_OPT_TYPE_INT, {.i64 = FF_COMPRESSION_DEFAULT }, INT_MIN, INT_MAX, V|A|E},
+##  #if FF_API_PRIVATE_OPT
+##  {"min_prediction_order", NULL, offsetof(AVCodecContext,min_prediction_order), AV_OPT_TYPE_INT, {.i64 = -1 }, INT_MIN, INT_MAX, A|E},
+##  {"max_prediction_order", NULL, offsetof(AVCodecContext,max_prediction_order), AV_OPT_TYPE_INT, {.i64 = -1 }, INT_MIN, INT_MAX, A|E},
+##  {"timecode_frame_start", "GOP timecode frame start number, in non-drop-frame format", offsetof(AVCodecContext,timecode_frame_start), AV_OPT_TYPE_INT64, {.i64 = -1 }, -1, INT64_MAX, V|E},
+##  #endif
+##  {"bits_per_raw_sample", NULL, offsetof(AVCodecContext,bits_per_raw_sample), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX},
+##  {"channel_layout", NULL, offsetof(AVCodecContext,channel_layout), AV_OPT_TYPE_UINT64, {.i64 = DEFAULT }, 0, UINT64_MAX, A|E|D, "channel_layout"},
+##  {"request_channel_layout", NULL, offsetof(AVCodecContext,request_channel_layout), AV_OPT_TYPE_UINT64, {.i64 = DEFAULT }, 0, UINT64_MAX, A|D, "request_channel_layout"},
+##  {"rc_max_vbv_use", NULL, offsetof(AVCodecContext,rc_max_available_vbv_use), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0.0, FLT_MAX, V|E},
+##  {"rc_min_vbv_use", NULL, offsetof(AVCodecContext,rc_min_vbv_overflow_use),  AV_OPT_TYPE_FLOAT, {.dbl = 3 },     0.0, FLT_MAX, V|E},
+##  {"ticks_per_frame", NULL, offsetof(AVCodecContext,ticks_per_frame), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, INT_MAX, A|V|E|D},
+##  {"color_primaries", "color primaries", offsetof(AVCodecContext,color_primaries), AV_OPT_TYPE_INT, {.i64 = AVCOL_PRI_UNSPECIFIED }, 1, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"bt709",       "BT.709",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_BT709 },        INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"unknown",     "Unspecified",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_UNSPECIFIED },  INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"bt470m",      "BT.470 M",       0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_BT470M },       INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"bt470bg",     "BT.470 BG",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_BT470BG },      INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"smpte170m",   "SMPTE 170 M",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE170M },    INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"smpte240m",   "SMPTE 240 M",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE240M },    INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"film",        "Film",           0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_FILM },         INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"bt2020",      "BT.2020",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_BT2020 },       INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"smpte428",    "SMPTE 428-1",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE428 },     INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"smpte428_1",  "SMPTE 428-1",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE428 },     INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"smpte431",    "SMPTE 431-2",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE431 },     INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"smpte432",    "SMPTE 422-1",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE432 },     INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"jedec-p22",   "JEDEC P22",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_JEDEC_P22 },    INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"ebu3213",     "EBU 3213-E",     0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_EBU3213 },      INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"unspecified", "Unspecified",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_UNSPECIFIED },  INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+##  {"color_trc", "color transfer characteristics", offsetof(AVCodecContext,color_trc), AV_OPT_TYPE_INT, {.i64 = AVCOL_TRC_UNSPECIFIED }, 1, INT_MAX, V|E|D, "color_trc_type"},
+##  {"bt709",        "BT.709",           0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT709 },        INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"unknown",      "Unspecified",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_UNSPECIFIED },  INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"gamma22",      "BT.470 M",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_GAMMA22 },      INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"gamma28",      "BT.470 BG",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_GAMMA28 },      INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"smpte170m",    "SMPTE 170 M",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_SMPTE170M },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"smpte240m",    "SMPTE 240 M",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_SMPTE240M },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"linear",       "Linear",           0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_LINEAR },       INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"log100",       "Log",              0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_LOG },          INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"log316",       "Log square root",  0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_LOG_SQRT },     INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"iec61966-2-4", "IEC 61966-2-4",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_IEC61966_2_4 }, INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"bt1361e",      "BT.1361",          0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT1361_ECG },   INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"iec61966-2-1", "IEC 61966-2-1",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_IEC61966_2_1 }, INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"bt2020-10",    "BT.2020 - 10 bit", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT2020_10 },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"bt2020-12",    "BT.2020 - 12 bit", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT2020_12 },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"smpte2084",    "SMPTE 2084",       0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_SMPTE2084 },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"smpte428",     "SMPTE 428-1",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_SMPTE428 },     INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"arib-std-b67", "ARIB STD-B67",     0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_ARIB_STD_B67 }, INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"unspecified",  "Unspecified",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_UNSPECIFIED },  INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"log",          "Log",              0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_LOG },          INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"log_sqrt",     "Log square root",  0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_LOG_SQRT },     INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"iec61966_2_4", "IEC 61966-2-4",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_IEC61966_2_4 }, INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"bt1361",       "BT.1361",          0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT1361_ECG },   INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"iec61966_2_1", "IEC 61966-2-1",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_IEC61966_2_1 }, INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"bt2020_10bit", "BT.2020 - 10 bit", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT2020_10 },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"bt2020_12bit", "BT.2020 - 12 bit", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT2020_12 },    INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"smpte428_1",   "SMPTE 428-1",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_SMPTE428 },     INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
+##  {"colorspace", "color space", offsetof(AVCodecContext,colorspace), AV_OPT_TYPE_INT, {.i64 = AVCOL_SPC_UNSPECIFIED }, 0, INT_MAX, V|E|D, "colorspace_type"},
+##  {"rgb",               "RGB",                0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_RGB },                INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"bt709",             "BT.709",             0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_BT709 },              INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"unknown",           "Unspecified",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_UNSPECIFIED },        INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"fcc",               "FCC",                0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_FCC },                INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"bt470bg",           "BT.470 BG",          0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_BT470BG },            INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"smpte170m",         "SMPTE 170 M",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_SMPTE170M },          INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"smpte240m",         "SMPTE 240 M",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_SMPTE240M },          INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"ycgco",             "YCGCO",              0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_YCGCO },              INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"bt2020nc",          "BT.2020 NCL",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_BT2020_NCL },         INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"bt2020c",           "BT.2020 CL",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_BT2020_CL },          INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"smpte2085",         "SMPTE 2085",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_SMPTE2085 },          INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"chroma-derived-nc", "Chroma-derived NCL", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_CHROMA_DERIVED_NCL }, INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"chroma-derived-c",  "Chroma-derived CL",  0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_CHROMA_DERIVED_CL },  INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"ictcp",             "ICtCp",              0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_ICTCP },              INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"unspecified",       "Unspecified",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_UNSPECIFIED },        INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"ycocg",             "YCGCO",              0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_YCGCO },              INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"bt2020_ncl",        "BT.2020 NCL",        0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_BT2020_NCL },         INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"bt2020_cl",         "BT.2020 CL",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_SPC_BT2020_CL },          INT_MIN, INT_MAX, V|E|D, "colorspace_type"},
+##  {"color_range", "color range", offsetof(AVCodecContext,color_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, INT_MAX, V|E|D, "color_range_type"},
+##  {"unknown", "Unspecified",     0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_UNSPECIFIED }, INT_MIN, INT_MAX, V|E|D, "color_range_type"},
+##  {"tv", "MPEG (219*2^(n-8))",   0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG },        INT_MIN, INT_MAX, V|E|D, "color_range_type"},
+##  {"pc", "JPEG (2^n-1)",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG },        INT_MIN, INT_MAX, V|E|D, "color_range_type"},
+##  {"unspecified", "Unspecified", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_UNSPECIFIED }, INT_MIN, INT_MAX, V|E|D, "color_range_type"},
+##  {"mpeg", "MPEG (219*2^(n-8))", 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG },        INT_MIN, INT_MAX, V|E|D, "color_range_type"},
+##  {"jpeg", "JPEG (2^n-1)",       0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG },        INT_MIN, INT_MAX, V|E|D, "color_range_type"},
+##  {"chroma_sample_location", "chroma sample location", offsetof(AVCodecContext,chroma_sample_location), AV_OPT_TYPE_INT, {.i64 = AVCHROMA_LOC_UNSPECIFIED }, 0, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"unknown",     "Unspecified", 0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_UNSPECIFIED }, INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"left",        "Left",        0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_LEFT },        INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"center",      "Center",      0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_CENTER },      INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"topleft",     "Top-left",    0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_TOPLEFT },     INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"top",         "Top",         0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_TOP },         INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"bottomleft",  "Bottom-left", 0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_BOTTOMLEFT },  INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"bottom",      "Bottom",      0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_BOTTOM },      INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"unspecified", "Unspecified", 0, AV_OPT_TYPE_CONST, {.i64 = AVCHROMA_LOC_UNSPECIFIED }, INT_MIN, INT_MAX, V|E|D, "chroma_sample_location_type"},
+##  {"log_level_offset", "set the log level offset", offsetof(AVCodecContext,log_level_offset), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX },
+##  {"slices", "set the number of slices, used in parallelized encoding", offsetof(AVCodecContext,slices), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, V|E},
+##  {"thread_type", "select multithreading type", offsetof(AVCodecContext,thread_type), AV_OPT_TYPE_FLAGS, {.i64 = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|A|E|D, "thread_type"},
+##  {"slice", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_THREAD_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
+##  {"frame", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_THREAD_FRAME }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
+##  {"audio_service_type", "audio service type", offsetof(AVCodecContext,audio_service_type), AV_OPT_TYPE_INT, {.i64 = AV_AUDIO_SERVICE_TYPE_MAIN }, 0, AV_AUDIO_SERVICE_TYPE_NB-1, A|E, "audio_service_type"},
+##  {"ma", "Main Audio Service", 0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_MAIN },              INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"ef", "Effects",            0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_EFFECTS },           INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"vi", "Visually Impaired",  0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED }, INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"hi", "Hearing Impaired",   0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED },  INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"di", "Dialogue",           0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_DIALOGUE },          INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"co", "Commentary",         0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_COMMENTARY },        INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"em", "Emergency",          0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_EMERGENCY },         INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"vo", "Voice Over",         0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_VOICE_OVER },        INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"ka", "Karaoke",            0, AV_OPT_TYPE_CONST, {.i64 = AV_AUDIO_SERVICE_TYPE_KARAOKE },           INT_MIN, INT_MAX, A|E, "audio_service_type"},
+##  {"request_sample_fmt", "sample format audio decoders should prefer", offsetof(AVCodecContext,request_sample_fmt), AV_OPT_TYPE_SAMPLE_FMT, {.i64=AV_SAMPLE_FMT_NONE}, -1, INT_MAX, A|D, "request_sample_fmt"},
+##  {"pkt_timebase", NULL, offsetof(AVCodecContext,pkt_timebase), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0, INT_MAX, 0},
+##  {"sub_charenc", "set input text subtitles character encoding", offsetof(AVCodecContext,sub_charenc), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, S|D},
+##  {"sub_charenc_mode", "set input text subtitles character encoding mode", offsetof(AVCodecContext,sub_charenc_mode), AV_OPT_TYPE_FLAGS, {.i64 = FF_SUB_CHARENC_MODE_AUTOMATIC}, -1, INT_MAX, S|D, "sub_charenc_mode"},
+##  {"do_nothing",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_CHARENC_MODE_DO_NOTHING},  INT_MIN, INT_MAX, S|D, "sub_charenc_mode"},
+##  {"auto",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_CHARENC_MODE_AUTOMATIC},   INT_MIN, INT_MAX, S|D, "sub_charenc_mode"},
+##  {"pre_decoder", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_CHARENC_MODE_PRE_DECODER}, INT_MIN, INT_MAX, S|D, "sub_charenc_mode"},
+##  {"ignore",      NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_CHARENC_MODE_IGNORE},      INT_MIN, INT_MAX, S|D, "sub_charenc_mode"},
+##  #if FF_API_ASS_TIMING
+##  {"sub_text_format", "set decoded text subtitle format", offsetof(AVCodecContext,sub_text_format), AV_OPT_TYPE_INT, {.i64 = FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS}, 0, 1, S|D, "sub_text_format"},
+##  #else
+##  {"sub_text_format", "set decoded text subtitle format", offsetof(AVCodecContext,sub_text_format), AV_OPT_TYPE_INT, {.i64 = FF_SUB_TEXT_FMT_ASS}, 0, 1, S|D, "sub_text_format"},
+##  #endif
+##  {"ass",              NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_TEXT_FMT_ASS},              INT_MIN, INT_MAX, S|D, "sub_text_format"},
+##  #if FF_API_ASS_TIMING
+##  {"ass_with_timings", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS}, INT_MIN, INT_MAX, S|D, "sub_text_format"},
+##  #endif
+##  {"refcounted_frames", NULL, offsetof(AVCodecContext,refcounted_frames), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, A|V|D },
+##  #if FF_API_SIDEDATA_ONLY_PKT
+##  {"side_data_only_packets", NULL, offsetof(AVCodecContext,side_data_only_packets), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, A|V|E },
+##  #endif
+##  {"apply_cropping", NULL, offsetof(AVCodecContext,apply_cropping), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, V | D },
+##  {"skip_alpha", "Skip processing alpha", offsetof(AVCodecContext,skip_alpha), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, V|D },
+##  {"field_order", "Field order", offsetof(AVCodecContext,field_order), AV_OPT_TYPE_INT, {.i64 = AV_FIELD_UNKNOWN }, 0, 5, V|D|E, "field_order" },
+##  {"progressive", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_FIELD_PROGRESSIVE }, 0, 0, V|D|E, "field_order" },
+##  {"tt", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_FIELD_TT }, 0, 0, V|D|E, "field_order" },
+##  {"bb", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_FIELD_BB }, 0, 0, V|D|E, "field_order" },
+##  {"tb", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_FIELD_TB }, 0, 0, V|D|E, "field_order" },
+##  {"bt", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_FIELD_BT }, 0, 0, V|D|E, "field_order" },
+##  {"dump_separator", "set information dump field separator", offsetof(AVCodecContext,dump_separator), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, A|V|S|D|E},
+##  {"codec_whitelist", "List of decoders that are allowed to be used", offsetof(AVCodecContext,codec_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, A|V|S|D },
+##  {"pixel_format", "set pixel format", offsetof(AVCodecContext,pix_fmt), AV_OPT_TYPE_PIXEL_FMT, {.i64=AV_PIX_FMT_NONE}, -1, INT_MAX, 0 },
+##  {"video_size", "set video size", offsetof(AVCodecContext,width), AV_OPT_TYPE_IMAGE_SIZE, {.str=NULL}, 0, INT_MAX, 0 },
+##  {"max_pixels", "Maximum number of pixels", offsetof(AVCodecContext,max_pixels), AV_OPT_TYPE_INT64, {.i64 = INT_MAX }, 0, INT_MAX, A|V|S|D|E },
+##  {"max_samples", "Maximum number of samples", offsetof(AVCodecContext,max_samples), AV_OPT_TYPE_INT64, {.i64 = INT_MAX }, 0, INT_MAX, A|D|E },
+##  {"hwaccel_flags", NULL, offsetof(AVCodecContext,hwaccel_flags), AV_OPT_TYPE_FLAGS, {.i64 = AV_HWACCEL_FLAG_IGNORE_LEVEL }, 0, UINT_MAX, V|D, "hwaccel_flags"},
+##  {"ignore_level", "ignore level even if the codec level used is unknown or higher than the maximum supported level reported by the hardware driver", 0, AV_OPT_TYPE_CONST, { .i64 = AV_HWACCEL_FLAG_IGNORE_LEVEL }, INT_MIN, INT_MAX, V | D, "hwaccel_flags" },
+##  {"allow_high_depth", "allow to output YUV pixel formats with a different chroma sampling than 4:2:0 and/or other than 8 bits per component", 0, AV_OPT_TYPE_CONST, {.i64 = AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH }, INT_MIN, INT_MAX, V | D, "hwaccel_flags"},
+##  {"allow_profile_mismatch", "attempt to decode anyway if HW accelerated decoder's supported profiles do not exactly match the stream", 0, AV_OPT_TYPE_CONST, {.i64 = AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH }, INT_MIN, INT_MAX, V | D, "hwaccel_flags"},
+##  {"extra_hw_frames", "Number of extra hardware frames to allocate for the user", offsetof(AVCodecContext,extra_hw_frames), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, V|D },
+##  {"discard_damaged_percentage", "Percentage of damaged samples to discard a frame", offsetof(AVCodecContext,discard_damaged_percentage), AV_OPT_TYPE_INT, {.i64 = 95 }, 0, 100, V|D },
+##  {NULL},
+##  };
+var av_codec_context_class = AVClass(class_name= "AVCodecContext", 
+    item_name= context_to_name,
+    option                  = avcodec_options,
+    version                 = LIBAVUTIL_VERSION_INT,
+    log_level_offset_offset = offsetof(AVCodecContext, log_level_offset),
+    child_next              = codec_child_next,
+    child_class_next        = codec_child_class_next,
+    child_class_iterate     = codec_child_class_iterate,
+    category                = AV_CLASS_CATEGORY_ENCODER,
+    get_category            = AVClass_get_category,
+)
+
+
+proc init_context_defaults*(s: AVCodecContext; codec: AVCodec): cint =
+  var flags: cint = 0
+  s.av_class = av_codec_context_class
+  s.codec_type = if codec: codec.t else: AVMEDIA_TYPE_UNKNOWN
+  if codec:
+    s.codec = codec
+    s.codec_id = codec.id
+  if s.codec_type == AVMEDIA_TYPE_AUDIO:
+    flags = AV_OPT_FLAG_AUDIO_PARAM
+  elif s.codec_type == AVMEDIA_TYPE_VIDEO:
+    flags = AV_OPT_FLAG_VIDEO_PARAM
+  elif s.codec_type == AVMEDIA_TYPE_SUBTITLE:
+    flags = AV_OPT_FLAG_SUBTITLE_PARAM
+  av_opt_set_defaults2(s, flags, flags)
+  s.time_base           = AVRational(0, 1)
+  s.framerate           = AVRational(0, 1)
+  s.pkt_timebase        = AVRational(0, 1)
+  s.get_buffer2 = avcodec_default_get_buffer2
+  s.get_format = avcodec_default_get_format
+  s.execute = avcodec_default_execute
+  s.execute2 = avcodec_default_execute2
+  s.sample_aspect_ratio = AVRational(0,1)
+  s.pix_fmt = AV_PIX_FMT_NONE
+  s.sw_pix_fmt = AV_PIX_FMT_NONE
+  s.sample_fmt = AV_SAMPLE_FMT_NONE
+  s.reordered_opaque = AV_NOPTS_VALUE
+  if codec and codec.priv_data_size:
+    if not s.priv_data:
+      s.priv_data = av_mallocz(codec.priv_data_size)
+      if not s.priv_data:
+        return AVERROR(ENOMEM)
+    if codec.priv_class:
+      cast[ptr AVClass](s.priv_data)[] = codec.priv_class
+      av_opt_set_defaults(s.priv_data)
+  if codec and codec.defaults:
+    var ret: cint
+    var d: ptr AVCodecDefault = codec.defaults
+    while d.key:
+      ret = av_opt_set(s, d.key, d.value, 0)
+      av_assert0(ret >= 0)
+      inc(d)
+  return 0
+
+proc avcodec_alloc_context3*(codec: AVCodec): AVCodecContext =
+  var avctx: AVCodecContext
+  if init_context_defaults(avctx, codec) < 0:
+    return nil
+  return avctx
+
+
+proc avformat_new_stream*(s: AVFormatContext; c: AVCodec): AVStream =
+  var st: AVStream
+  var i: cint
+  if s.nb_streams.int32 >= min(s.max_streams, INT_MAX div sizeof(AVStream)):
+    if s.max_streams < INT_MAX div sizeof(AVStream):
+      echo("Number of streams exceeds max_streams parameter (%d), see the documentation if you wish to increase it\n", s.max_streams)
+    return nil
+  s.streams.setLen s.nb_streams + 1
+  st.info = AVStreamInnerStruct(last_dts:AV_NOPTS_VALUE)
+  st.internal = AVStreamInternal(avctx:avcodec_alloc_context3(nil))
+  st.codecpar = avcodec_parameters_alloc()
+  if s.iformat:
+    avpriv_set_pts_info(st, 33, 1, 90000)
+    st.cur_dts = RELATIVE_TS_BASE
+  else:
+    st.cur_dts = AV_NOPTS_VALUE
+  st.index = s.nb_streams
+  st.start_time = AV_NOPTS_VALUE
+  st.duration = AV_NOPTS_VALUE
+  st.first_dts = AV_NOPTS_VALUE
+  st.probe_packets = s.max_probe_packets
+  st.pts_wrap_reference = AV_NOPTS_VALUE
+  st.pts_wrap_behavior = AV_PTS_WRAP_IGNORE
+  st.last_IP_pts = AV_NOPTS_VALUE
+  st.last_dts_for_order_check = AV_NOPTS_VALUE
+  i = 0
+  while i < MAX_REORDER_DELAY + 1:
+    st.pts_buffer[i] = AV_NOPTS_VALUE
+    inc(i)
+  st.sample_aspect_ratio = AVRational(0, 1)
+  st.info.fps_first_dts = AV_NOPTS_VALUE
+  st.info.fps_last_dts = AV_NOPTS_VALUE
+  st.inject_global_side_data = s.internal.inject_global_side_data
+  st.internal.need_context_update = 1
+  s.streams[inc(s.nb_streams)] = st
+  return st
+
+proc align_get_bits*(s: GetBitContext): uint8 {.inline.} =
+  var n: cint = - s.index and 7
+  skip_bits(s, n)
+  return s.buffer + (s.index shr 3)
+
+proc h264_probe*(p: AVProbeData): cint =
+  var code: int32 = -1
+  var
+    sps: cint = 0
+    pps: cint = 0
+    idr: cint = 0
+    res: cint = 0
+    sli: cint = 0
+  var
+    i: cint
+    ret: cint
+  var pps_ids: array[256 + 1, cint]
+  var sps_ids: array[32 + 1, cint]
+  var
+    pps_id: cuint
+    sps_id: cuint
+  var gb: GetBitContext
+  i = 0
+  while i + 2 < p.buf_size:
+    code = (code shl 8) + p.buf[i]
+    if (code and 0xFFFFFF00) == 0x00000100:
+      var ref_idc: cint = (code shr 5) and 3
+      var t: cint = code and 0x0000001F
+      var ref_zero: UncheckedArray[int8] = [2, 0, 0, 0, 0, -1, 1, -1, -1, 1, 1, 1, 1, -1, 2, 2, 2,2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+      if code and 0x00000080:
+        return 0
+      if ref_zero[t] == 1 and ref_idc:
+        return 0
+      if ref_zero[t] == -1 and not ref_idc:
+        return 0
+      if ref_zero[t] == 2:
+        if not (code == 0x00000100 and not p.buf[i + 1] and not p.buf[i + 2]):
+          inc(res)
+      var bufSize = p.buf_size - i - 1
+      ret = init_get_bits8(gb, p.buf + i + 1, bufSize)
+      if ret < 0:
+        return 0
+      case t
+      of 1, 5:
+        get_ue_golomb_long(gb)
+        if get_ue_golomb_long(gb) > 9:
+          return 0
+        pps_id = get_ue_golomb_long(gb)
+        if pps_id > MAX_PPS_COUNT:
+          return 0
+        if not pps_ids[pps_id]:
+          break
+        if t == 1:
+          inc(sli)
+        else:
+          inc(idr)
+      of 7:
+        skip_bits(gb, 14)
+        if get_bits(gb, 2):
+          return 0
+        skip_bits(gb, 8)
+        sps_id = get_ue_golomb_long(gb)
+        if sps_id > MAX_SPS_COUNT:
+          return 0
+        sps_ids[sps_id] = 1
+        inc(sps)
+      of 8:
+        pps_id = get_ue_golomb_long(gb)
+        if pps_id > MAX_PPS_COUNT:
+          return 0
+        sps_id = get_ue_golomb_long(gb)
+        if sps_id > MAX_SPS_COUNT:
+          return 0
+        if not sps_ids[sps_id]:
+          break
+        pps_ids[pps_id] = 1
+        inc(pps)
+    inc(i)
+  if sps and pps and (idr or sli > 3) and res < (sps + pps + idr):
+    return AVPROBE_SCORE_EXTENSION + 1
+  return 0
+
+proc ff_raw_read_partial_packet*(s: AVFormatContext; pkt: AVPacket): cint =
+  var raw: FFRawDemuxerContext = s.priv_data
+  var
+    ret: cint
+    size: cint
+  size = raw.raw_packet_size
+  if (ret = av_new_packet(pkt, size)) < 0:
+    return ret
+  pkt.pos = avio_tell(s.pb)
+  pkt.stream_index = 0
+  ret = avio_read_partial(s.pb, pkt.data, size)
+  if ret < 0:
+    av_packet_unref(pkt)
+    return ret
+  av_shrink_packet(pkt, ret)
+  return ret
+
+proc ff_raw_audio_read_header*(s: AVFormatContext): cint =
+  var st: AVStream = avformat_new_stream(s, nil)
+  if not st:
+    return AVERROR(ENOMEM)
+  st.codecpar.codec_type = AVMEDIA_TYPE_AUDIO
+  st.codecpar.codec_id = s.iformat.raw_codec_id
+  st.need_parsing = AVSTREAM_PARSE_FULL_RAW
+  st.start_time = 0
+  return 0
+
+proc ff_raw_video_read_header*(s: AVFormatContext): cint =
+  var st: AVStream
+  var s1: FFRawVideoDemuxerContext = s.priv_data
+  var ret: cint = 0
+  st = avformat_new_stream(s, nil)
+  st.codecpar.codec_type = AVMEDIA_TYPE_VIDEO
+  st.codecpar.codec_id = s.iformat.raw_codec_id
+  st.need_parsing = AVSTREAM_PARSE_FULL_RAW
+  st.internal.avctx.framerate = s1.framerate
+  avpriv_set_pts_info(st, 64, 1, 1200000)
+  return ret
+
+proc ff_raw_subtitle_read_header*(s: AVFormatContext): cint =
+  var st: AVStream = avformat_new_stream(s, nil)
+  st.codecpar.codec_type = AVMEDIA_TYPE_SUBTITLE
+  st.codecpar.codec_id = s.iformat.raw_codec_id
+  st.start_time = 0
+  return 0
+
+proc ff_raw_data_read_header*(s: AVFormatContext): cint =
+  var st: AVStream = avformat_new_stream(s, nil)
+  st.codecpar.codec_type = AVMEDIA_TYPE_DATA
+  st.codecpar.codec_id = s.iformat.raw_codec_id
+  st.start_time = 0
+  return 0
+
+var h264_dumuxer_class: AVClass = (class_name: "h264_demuxer",option:ff_rawvideo_options,version:LIBAVUTIL_VERSION_INT)
+var ff_h264_demuxer = AVInputFormat(name:"h264",
+    long_name: "raw H.264 video", 
+    read_probe: h264_probe, 
+    read_header:ff_raw_video_read_header, 
+    read_packet:ff_raw_read_partial_packet, 
+    extensions: "h26l,h264,264,avc", 
+    flags: AVFMT_GENERIC_INDEX, 
+    raw_codec_id:id, 
+    priv_data_size:sizeof(FFRawVideoDemuxerContext),
+    priv_class: "h264_demuxer_class")
+
+var demuxer_list*: UncheckedArray[AVInputFormat] = [
+    # ff_aa_demuxer, 
+    # ff_aac_demuxer,
+    # ff_aax_demuxer, 
+    # ff_ac3_demuxer, 
+    # ff_acm_demuxer, 
+    # ff_act_demuxer, 
+    # ff_adf_demuxer,
+    # ff_adp_demuxer, 
+    # ff_ads_demuxer, 
+    # ff_adx_demuxer, 
+    # ff_aea_demuxer, 
+    # ff_afc_demuxer,
+    # ff_aiff_demuxer, 
+    # ff_aix_demuxer, 
+    # ff_alp_demuxer, 
+    # ff_amr_demuxer,
+    # ff_amrnb_demuxer, 
+    # ff_amrwb_demuxer, 
+    # ff_anm_demuxer, 
+    # ff_apc_demuxer,
+    # ff_ape_demuxer, 
+    # ff_apm_demuxer, 
+    # ff_apng_demuxer, 
+    # ff_aptx_demuxer,
+    # ff_aptx_hd_demuxer, 
+    # ff_aqtitle_demuxer, 
+    # ff_argo_asf_demuxer,
+    # ff_argo_brp_demuxer, 
+    # ff_asf_demuxer, 
+    # ff_asf_o_demuxer, 
+    # ff_ass_demuxer,
+    # ff_ast_demuxer, 
+    # ff_au_demuxer, 
+    # ff_av1_demuxer, 
+    # ff_avi_demuxer, 
+    # ff_avr_demuxer,
+    # ff_avs_demuxer, 
+    # ff_avs2_demuxer, 
+    # ff_bethsoftvid_demuxer, 
+    # ff_bfi_demuxer,
+    # ff_bintext_demuxer, 
+    # ff_bink_demuxer, 
+    # ff_bit_demuxer, 
+    # ff_bmv_demuxer,
+    # ff_bfstm_demuxer, 
+    # ff_brstm_demuxer, 
+    # ff_boa_demuxer, 
+    # ff_c93_demuxer,
+    # ff_caf_demuxer, 
+    # ff_cavsvideo_demuxer, 
+    # ff_cdg_demuxer, 
+    # ff_cdxl_demuxer,
+    # ff_cine_demuxer, 
+    # ff_codec2_demuxer, 
+    # ff_codec2raw_demuxer, 
+    # ff_concat_demuxer,
+    # ff_dash_demuxer, 
+    # ff_data_demuxer, 
+    # ff_daud_demuxer, 
+    # ff_dcstr_demuxer,
+    # ff_derf_demuxer, 
+    # ff_dfa_demuxer, 
+    # ff_dhav_demuxer, 
+    # ff_dirac_demuxer,
+    # ff_dnxhd_demuxer, 
+    # ff_dsf_demuxer, 
+    # ff_dsicin_demuxer, 
+    # ff_dss_demuxer,
+    # ff_dts_demuxer, 
+    # ff_dtshd_demuxer, 
+    # ff_dv_demuxer, 
+    # ff_dvbsub_demuxer,
+    # ff_dvbtxt_demuxer, 
+    # ff_dxa_demuxer, 
+    # ff_ea_demuxer, 
+    # ff_ea_cdata_demuxer,
+    # ff_eac3_demuxer, 
+    # ff_epaf_demuxer, 
+    # ff_ffmetadata_demuxer, 
+    # ff_filmstrip_demuxer,
+    # ff_fits_demuxer, 
+    # ff_flac_demuxer, 
+    # ff_flic_demuxer, 
+    # ff_flv_demuxer,
+    # ff_live_flv_demuxer, 
+    # ff_fourxm_demuxer, 
+    # ff_frm_demuxer, 
+    # ff_fsb_demuxer,
+    # ff_fwse_demuxer, 
+    # ff_g722_demuxer, 
+    # ff_g723_1_demuxer, 
+    # ff_g726_demuxer,
+    # ff_g726le_demuxer, 
+    # ff_g729_demuxer, 
+    # ff_gdv_demuxer, 
+    # ff_genh_demuxer,
+    # ff_gif_demuxer, 
+    # ff_gsm_demuxer, 
+    # ff_gxf_demuxer, 
+    # ff_h261_demuxer,
+    # ff_h263_demuxer, 
+    ff_h264_demuxer, 
+    ff_hevc_demuxer, 
+    # ff_hca_demuxer, 
+    # ff_hcom_demuxer,
+    # ff_hls_demuxer, 
+    # ff_hnm_demuxer, 
+    # ff_ico_demuxer,
+    # ff_idcin_demuxer, 
+    # ff_idf_demuxer, 
+    # ff_iff_demuxer, 
+    # ff_ifv_demuxer,
+    # ff_ilbc_demuxer, 
+    # ff_image2_demuxer, 
+    # ff_image2pipe_demuxer,
+    # ff_image2_alias_pix_demuxer, 
+    # ff_image2_brender_pix_demuxer,
+    # ff_ingenient_demuxer, 
+    # ff_ipmovie_demuxer, 
+    # ff_ipu_demuxer, 
+    # ff_ircam_demuxer,
+    # ff_iss_demuxer, 
+    # ff_iv8_demuxer, 
+    # ff_ivf_demuxer, 
+    # ff_ivr_demuxer,
+    # ff_jacosub_demuxer, 
+    # ff_jv_demuxer, 
+    # ff_kux_demuxer, 
+    # ff_kvag_demuxer,
+    # ff_lmlm4_demuxer, 
+    # ff_loas_demuxer,
+    # ff_luodat_demuxer, 
+    # ff_lrc_demuxer,
+    # ff_lvf_demuxer, 
+    # ff_lxf_demuxer, 
+    # ff_m4v_demuxer, 
+    # ff_mca_demuxer, 
+    # ff_mcc_demuxer,
+    # ff_matroska_demuxer, 
+    # ff_mgsts_demuxer, 
+    # ff_microdvd_demuxer, 
+    # ff_mjpeg_demuxer,
+    # ff_mjpeg_2000_demuxer, 
+    # ff_mlp_demuxer, 
+    # ff_mlv_demuxer, 
+    # ff_mm_demuxer,
+    # ff_mmf_demuxer, 
+    # ff_mods_demuxer, 
+    # ff_moflex_demuxer, 
+    # ff_mov_demuxer,
+    # ff_mp3_demuxer, 
+    # ff_mpc_demuxer, 
+    # ff_mpc8_demuxer, 
+    # ff_mpegps_demuxer,
+    # ff_mpegts_demuxer, 
+    # ff_mpegtsraw_demuxer, 
+    # ff_mpegvideo_demuxer,
+    # ff_mpjpeg_demuxer, 
+    # ff_mpl2_demuxer, 
+    # ff_mpsub_demuxer, 
+    # ff_msf_demuxer,
+    # ff_msnwc_tcp_demuxer, 
+    # ff_mtaf_demuxer, 
+    # ff_mtv_demuxer, 
+    # ff_musx_demuxer,
+    # ff_mv_demuxer, 
+    # ff_mvi_demuxer, 
+    # ff_mxf_demuxer, 
+    # ff_mxg_demuxer, 
+    # ff_nc_demuxer,
+    # ff_nistsphere_demuxer, 
+    # ff_nsp_demuxer, 
+    # ff_nsv_demuxer, 
+    # ff_nut_demuxer,
+    # ff_nuv_demuxer, 
+    # ff_obu_demuxer, 
+    # ff_ogg_demuxer, 
+    # ff_oma_demuxer, 
+    # ff_paf_demuxer,
+    # ff_pcm_alaw_demuxer, 
+    # ff_pcm_mulaw_demuxer, 
+    # ff_pcm_vidc_demuxer,
+    # ff_pcm_f64be_demuxer, 
+    # ff_pcm_f64le_demuxer, 
+    # ff_pcm_f32be_demuxer,
+    # ff_pcm_f32le_demuxer, 
+    # ff_pcm_s32be_demuxer, 
+    # ff_pcm_s32le_demuxer,
+    # ff_pcm_s24be_demuxer, 
+    # ff_pcm_s24le_demuxer, 
+    # ff_pcm_s16be_demuxer,
+    # ff_pcm_s16le_demuxer, 
+    # ff_pcm_s8_demuxer, 
+    # ff_pcm_u32be_demuxer,
+    # ff_pcm_u32le_demuxer, 
+    # ff_pcm_u24be_demuxer, 
+    # ff_pcm_u24le_demuxer,
+    # ff_pcm_u16be_demuxer, 
+    # ff_pcm_u16le_demuxer, 
+    # ff_pcm_u8_demuxer, 
+    # ff_pjs_demuxer,
+    # ff_pmp_demuxer, 
+    # ff_pp_bnk_demuxer, 
+    # ff_pva_demuxer, 
+    # ff_pvf_demuxer,
+    # ff_qcp_demuxer, 
+    # ff_r3d_demuxer, 
+    # ff_rawvideo_demuxer, 
+    # ff_realtext_demuxer,
+    # ff_redspark_demuxer, 
+    # ff_rl2_demuxer, 
+    # ff_rm_demuxer, 
+    # ff_roq_demuxer,
+    # ff_rpl_demuxer, 
+    # ff_rsd_demuxer, 
+    # ff_rso_demuxer, 
+    # ff_rtp_demuxer, 
+    # ff_rtsp_demuxer,
+    # ff_s337m_demuxer, 
+    # ff_sami_demuxer, 
+    # ff_sap_demuxer, 
+    # ff_sbc_demuxer,
+    # ff_sbg_demuxer, 
+    # ff_scc_demuxer, 
+    # ff_sdp_demuxer, 
+    # ff_sdr2_demuxer, 
+    # ff_sds_demuxer,
+    # ff_sdx_demuxer, 
+    # ff_segafilm_demuxer, 
+    # ff_ser_demuxer, 
+    # ff_shorten_demuxer,
+    # ff_siff_demuxer, 
+    # ff_sln_demuxer, 
+    # ff_smacker_demuxer, 
+    # ff_smjpeg_demuxer,
+    # ff_smush_demuxer, 
+    # ff_sol_demuxer, 
+    # ff_sox_demuxer, 
+    # ff_spdif_demuxer,
+    # ff_srt_demuxer, 
+    # ff_str_demuxer, 
+    # ff_stl_demuxer, 
+    # ff_subviewer1_demuxer,
+    # ff_subviewer_demuxer, 
+    # ff_sup_demuxer, 
+    # ff_svag_demuxer, 
+    # ff_svs_demuxer,
+    # ff_swf_demuxer, 
+    # ff_tak_demuxer, 
+    # ff_tedcaptions_demuxer, 
+    # ff_thp_demuxer,
+    # ff_threedostr_demuxer, 
+    # ff_tiertexseq_demuxer, 
+    # ff_tmv_demuxer,
+    # ff_truehd_demuxer, 
+    # ff_tta_demuxer, 
+    # ff_txd_demuxer, 
+    # ff_tty_demuxer,
+    # ff_ty_demuxer, 
+    # ff_v210_demuxer, 
+    # ff_v210x_demuxer, 
+    # ff_vag_demuxer,
+    # ff_vc1_demuxer, 
+    # ff_vc1t_demuxer, 
+    # ff_vividas_demuxer, 
+    # ff_vivo_demuxer,
+    # ff_vmd_demuxer, 
+    # ff_vobsub_demuxer, 
+    # ff_voc_demuxer, 
+    # ff_vpk_demuxer,
+    # ff_vplayer_demuxer, 
+    # ff_vqf_demuxer, 
+    # ff_w64_demuxer, 
+    # ff_wav_demuxer,
+    # ff_wc3_demuxer, 
+    # ff_webm_dash_manifest_demuxer, 
+    # ff_webvtt_demuxer,
+    # ff_wsaud_demuxer, 
+    # ff_wsd_demuxer, 
+    # ff_wsvqa_demuxer, 
+    # ff_wtv_demuxer,
+    # ff_wve_demuxer, 
+    # ff_wv_demuxer, 
+    # ff_xa_demuxer, 
+    # ff_xbin_demuxer, 
+    # ff_xmv_demuxer,
+    # ff_xvag_demuxer, 
+    # ff_xwma_demuxer, 
+    # ff_yop_demuxer, 
+    # ff_yuv4mpegpipe_demuxer,
+    # ff_image_bmp_pipe_demuxer, 
+    # ff_image_dds_pipe_demuxer,
+    # ff_image_dpx_pipe_demuxer, 
+    # ff_image_exr_pipe_demuxer,
+    # ff_image_gif_pipe_demuxer, 
+    # ff_image_j2k_pipe_demuxer,
+    # ff_image_jpeg_pipe_demuxer, 
+    # ff_image_jpegls_pipe_demuxer,
+    # ff_image_pam_pipe_demuxer, 
+    # ff_image_pbm_pipe_demuxer,
+    # ff_image_pcx_pipe_demuxer, 
+    # ff_image_pgmyuv_pipe_demuxer,
+    # ff_image_pgm_pipe_demuxer, 
+    # ff_image_pgx_pipe_demuxer,
+    # ff_image_photocd_pipe_demuxer, 
+    # ff_image_pictor_pipe_demuxer,
+    # ff_image_png_pipe_demuxer, 
+    # ff_image_ppm_pipe_demuxer,
+    # ff_image_psd_pipe_demuxer, 
+    # ff_image_qdraw_pipe_demuxer,
+    # ff_image_sgi_pipe_demuxer, 
+    # ff_image_svg_pipe_demuxer,
+    # ff_image_sunrast_pipe_demuxer, 
+    # ff_image_tiff_pipe_demuxer,
+    # ff_image_webp_pipe_demuxer, 
+    # ff_image_xpm_pipe_demuxer,
+    # ff_image_xwd_pipe_demuxer, 
+    # ff_libgme_demuxer, 
+    # ff_libmodplug_demuxer, 
+    nil]
+
+
 proc av_format_init_next*() =
-  var prevout: AVOutputFormat
-  var previn: AVInputFormat
+  var prevout: AVOutputFormat = nil
+  var previn: AVInputFormat = nil
   for o in muxer_list:
     if prevout != nil:
       prevout.next = o
     prevout = o
-  if outdev_list != nil:
-    for o in outdev_list:
-      if prevout:
-        prevout.next = o
-      prevout = o
+  for o in outdev_list:
+    if prevout != nil:
+      prevout.next = o
+    prevout = o
   for i in demuxer_list:
-    if previn:
+    if previn != nil: 
       previn.next = i
     previn = i
-  if indev_list:
-    for i in indev_list:
-      if previn:
-        previn.next = i
-      previn = i
-      
-
+  for i in indev_list:
+    if previn != nil:
+      previn.next = i
+    previn = i
 
 proc avpriv_register_devices*(o: seq[AVOutputFormat]; i: seq[AVInputFormat]) =
   outdev_list = o
@@ -3011,7 +4732,6 @@ proc avpriv_register_devices*(o: seq[AVOutputFormat]; i: seq[AVInputFormat]) =
 proc init_opts*() =
   sws_dict["flags"] = "bicubic"
 
-const AV_NOPTS_VALUE = 0x8000000000000000
 
 var url_protocols: seq[URLProtocol]
 
@@ -3038,13 +4758,13 @@ var ffurl_context_class*: AVClass
 proc av_opt_set_defaults2*(s: pointer; mask: cint; flags: cint) =
   var opt: AVOption
   while (opt = av_opt_next(s, opt)):
-    var dst: pointer = (cast[ptr uint8_t](s)) + opt.offset
+    var dst: pointer = (cast[uint8](s)) + opt.offset
     if (opt.flags and mask) != flags:
       continue
     if opt.flags and AV_OPT_FLAG_READONLY:
       continue
-    case opt.`type`
-    of AV_OPT_TYPE_CONST:      ##  Nothing to be done here
+    case opt.t
+    of AV_OPT_TYPE_CONST:      
       nil
     of AV_OPT_TYPE_BOOL, AV_OPT_TYPE_FLAGS, AV_OPT_TYPE_INT, AV_OPT_TYPE_INT64,
       AV_OPT_TYPE_UINT64, AV_OPT_TYPE_DURATION, AV_OPT_TYPE_CHANNEL_LAYOUT,
@@ -3071,18 +4791,12 @@ proc av_opt_set_defaults2*(s: pointer; mask: cint; flags: cint) =
     of AV_OPT_TYPE_DICT:
       set_string_dict(s, opt, opt.default_val.str, dst)
     else:
-      echo(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt.`type`,opt.name)
+      echo(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt.t,opt.name)
 
 proc url_alloc_for_protocol*(puc: URLContext; up: URLProtocol;filename: string; flags: cint;int_cb: AVIOInterruptCB): cint =
   var uc: URLContext
   var err: cint
 
-  if (flags and AVIO_FLAG_READ) and not up.url_read:
-    echo ("Impossible to open the \'%s\' protocol for reading\n")
-    return EIO
-  if (flags and AVIO_FLAG_WRITE) and not up.url_write:
-    echo ("Impossible to open the \'%s\' protocol for writing\n")
-    return EIO
   uc = av_mallocz(sizeof((URLContext)) + strlen(filename) + 1)
   uc.av_class = addr(ffurl_context_class)
   uc.filename == filename
@@ -3104,8 +4818,7 @@ proc url_alloc_for_protocol*(puc: URLContext; up: URLProtocol;filename: string; 
     inc(p)
     if up.name == "subfile":
       ret = EINVAL
-    while ret >= 0 and (key = strchr(p, sep)) and p < key and
-        (val = strchr(key + 1, sep)):
+    while ret >= 0 and (key = strchr(p, sep)) and p < key and (val = strchr(key + 1, sep)):
       val[] = key[] = 0
       if p == "start" and p == "end":
         ret = AVERROR_OPTION_NOT_FOUND
@@ -3118,7 +4831,7 @@ proc url_alloc_for_protocol*(puc: URLContext; up: URLProtocol;filename: string; 
     if ret < 0 or p != key:
       echo("Error parsing options string",start )
       err = EINVAL
-      break fail
+      goto fail
     memmove(start, key + 1, strlen(key))
   uc.interrupt_callback = int_cb[]
   puc = uc
@@ -3128,7 +4841,6 @@ proc ffurl_alloc*(puc: URLContext; filename: string; flags: cint; int_cb: AVIOIn
   var p: URLProtocol 
   p = url_find_protocol(filename)
   return url_alloc_for_protocol(puc, p, filename, flags, int_cb)
-  return AVERROR_PROTOCOL_NOT_FOUND
 
 proc ffurl_connect*(uc: URLContext; options: TableRef[string,string]): cint =
   var err: cint
@@ -3136,20 +4848,16 @@ proc ffurl_connect*(uc: URLContext; options: TableRef[string,string]): cint =
   var e: AVDictionaryEntry
   if options.len == 0:
     options = tmp_opts
-  av_assert0(not (e = options["protocol_whitelist"])) or (uc.protocol_whitelist and uc.protocol_whitelist == e.value))
-  av_assert0(not (e = options["protocol_blacklist"])) or (uc.protocol_blacklist and uc.protocol_blacklist == e.value))
-  if uc.protocol_whitelist and av_match_list(uc.prot.name, uc.protocol_whitelist, ',') <= 0:
-    echo (uc, AV_LOG_ERROR, "Protocol \'%s\' not on whitelist \'%s\'!\n",uc.prot.name, uc.protocol_whitelist)
+  if  uc.prot.name notin uc.protocol_whitelist :
+    echo ("Protocol \'%s\' not on whitelist \'%s\'!\n",uc.prot.name, uc.protocol_whitelist)
     return EINVAL
-  if uc.protocol_blacklist and av_match_list(uc.prot.name, uc.protocol_blacklist, ',') > 0:
-    echo (uc, AV_LOG_ERROR, "Protocol \'%s\' on blacklist \'%s\'!\n",uc.prot.name, uc.protocol_blacklist)
+  if uc.prot.name in uc.protocol_blacklist:
+    echo ("Protocol \'%s\' on blacklist \'%s\'!\n",uc.prot.name, uc.protocol_blacklist)
     return EINVAL
   if not uc.protocol_whitelist and uc.prot.default_whitelist:
     echo (uc, AV_LOG_DEBUG, "Setting default whitelist \'%s\'\n", uc.prot.default_whitelist)
     uc.protocol_whitelist = av_strdup(uc.prot.default_whitelist)
-    if not uc.protocol_whitelist:
-      return ENOMEM
-  elif not uc.protocol_whitelist: ##  This should be an error once all declare a default whitelist
+  elif not uc.protocol_whitelist: 
     echo (uc, AV_LOG_DEBUG, "No default whitelist set\n")
   options["protocol_whitelist"] = uc.protocol_whitelist
   options["protocol_blacklist"] = uc.protocol_blacklist
@@ -3163,11 +4871,8 @@ proc ffurl_connect*(uc: URLContext; options: TableRef[string,string]): cint =
       uc.is_streamed = 1
   return 0
 
-proc ffurl_open_whitelist*(puc: URLContext; filename: string; flags: cint;
-                          int_cb: AVIOInterruptCB;
-                          options: TableRef[string,string]; whitelist: string;
-                          blacklist: string; parent: URLContext): cint =
-  var tmp_opts: ptr TableRef[string,string] 
+proc ffurl_open_whitelist*(puc: URLContext; filename: string; flags: cint;int_cb: AVIOInterruptCB;options: TableRef[string,string]; whitelist: string;blacklist: string; parent: URLContext): cint =
+  var tmp_opts: TableRef[string,string] 
   var e: AVDictionaryEntry
   var ret: cint = ffurl_alloc(puc, filename, flags, int_cb)
   if ret < 0:
@@ -3175,24 +4880,14 @@ proc ffurl_open_whitelist*(puc: URLContext; filename: string; flags: cint;
   if parent:
     av_opt_copy(puc[], parent)
   if options and (ret = av_opt_set_dict(puc[], options)) < 0:
-    break fail
-  if options and (puc[]).prot.priv_data_class and
-      (ret = av_opt_set_dict((puc[]).priv_data, options)) < 0:
-    break fail
+    goto fail
+  if options and (puc[]).prot.priv_data_class and (ret = av_opt_set_dict((puc[]).priv_data, options)) < 0:
+    goto fail
   if not options:
     options = addr(tmp_opts)
-  av_assert0(not whitelist or
-      not (e = av_dict_get(options[], "protocol_whitelist", nil, 0)) or
-      whitelist, e.value))
-  av_assert0(not blacklist or
-      not (e = av_dict_get(options[], "protocol_blacklist", nil, 0)) or
-      blacklist, e.value))
-  if (ret = av_dict_set(options, "protocol_whitelist", whitelist, 0)) < 0:
-    break fail
-  if (ret = av_dict_set(options, "protocol_blacklist", blacklist, 0)) < 0:
-    break fail
+  options["protocol_whitelist"] = whitelist 
+  options["protocol_blacklist"] = blacklist 
   if (ret = av_opt_set_dict(puc[], options)) < 0:
-    break fail
   ret = ffurl_connect(puc[], options)
   if not ret:
     return 0
@@ -3219,7 +4914,7 @@ proc async_open*(h: ptr URLContext; arg: cstring; flags: cint;
                 options: ptr ptr AVDictionary): cint =
   var c: ptr Context = h.priv_data
   var ret: cint
-  ##  AVIOInterruptCB  interrupt_callback = {.callback = async_check_interrupt, .opaque = h};
+  
   av_strstart(arg, "async:", addr(arg))
   ret = ring_init(addr(c.ring), BUFFER_CAPACITY, READ_BACK_CAPACITY)
   if ret < 0:
@@ -3279,7 +4974,7 @@ proc ring_size*(ring: ptr RingBuffer): cint =
 proc av_fifo_generic_peek_at*(f: ptr AVFifoBuffer; dest: pointer; offset: cint;
                              buf_size: cint;
                              `func`: proc (a1: pointer; a2: pointer; a3: cint)): cint =
-  var rptr: ptr uint8_t = f.rptr
+  var rptr: uint8 = f.rptr
   av_assert2(offset >= 0)
   av_assert2(buf_size + cast[cuint](offset) <= f.wndx - f.rndx)
   if offset >= f.`end` - rptr:
@@ -3290,12 +4985,12 @@ proc av_fifo_generic_peek_at*(f: ptr AVFifoBuffer; dest: pointer; offset: cint;
     var len: cint
     if rptr >= f.`end`:
       dec(rptr, f.`end` - f.buffer)
-    len = FFMIN(f.`end` - rptr, buf_size)
+    len = min(f.`end` - rptr, buf_size)
     if `func`:
       `func`(dest, rptr, len)
     else:
       memcpy(dest, rptr, len)
-      dest = cast[ptr uint8_t](dest) + len
+      dest = cast[uint8](dest) + len
     dec(buf_size, len)
     inc(rptr, len)
   return 0
@@ -3311,9 +5006,7 @@ proc ring_generic_read*(ring: ptr RingBuffer; dest: pointer; buf_size: cint;
     ring.read_pos = ring.read_back_capacity
   return ret
 
-proc async_read_internal*(h: ptr URLContext; dest: pointer; size: cint;
-                         read_complete: cint;
-                         `func`: proc (a1: pointer; a2: pointer; a3: cint)): cint =
+proc async_read_internal*(h: ptr URLContext; dest: pointer; size: cint;read_complete: cint;`func`: proc (a1: pointer; a2: pointer; a3: cint)): cint =
   var c: ptr Context = h.priv_data
   var ring: ptr RingBuffer = addr(c.ring)
   var to_read: cint = size
@@ -3327,11 +5020,11 @@ proc async_read_internal*(h: ptr URLContext; dest: pointer; size: cint;
       ret = AVERROR_EXIT
       break
     fifo_size = ring_size(ring)
-    to_copy = FFMIN(to_read, fifo_size)
+    to_copy = min(to_read, fifo_size)
     if to_copy > 0:
       ring_generic_read(ring, dest, to_copy, `func`)
       if not `func`:
-        dest = cast[ptr uint8_t](dest) + to_copy
+        dest = cast[uint8](dest) + to_copy
       inc(c.logical_pos, to_copy)
       dec(to_read, to_copy)
       ret = size - to_read
@@ -3393,9 +5086,7 @@ proc async_seek*(h: ptr URLContext; pos: int64_t; whence: cint): int64_t =
   elif (new_logical_pos >= (c.logical_pos - fifo_size_of_read_back)) and
       (new_logical_pos < (c.logical_pos + fifo_size + SHORT_SEEK_THRESHOLD)):
     var pos_delta: cint = (int)(new_logical_pos - c.logical_pos)
-    echo(h, AV_LOG_TRACE, "async_seek: fask_seek %", PRId64,
-           " from %d dist:%d/%d\n", new_logical_pos, cast[cint](c.logical_pos),
-           (int)(new_logical_pos - c.logical_pos), fifo_size)
+    echo("async_seek: fask_seek %", PRId64," from %d dist:%d/%d\n", new_logical_pos, cast[cint](c.logical_pos),(int)(new_logical_pos - c.logical_pos), fifo_size)
     if pos_delta > 0:
       async_read_internal(h, nil, pos_delta, 1, fifo_do_not_copy_func)
     else:
@@ -3436,85 +5127,10 @@ proc io_open_default*(s: AVFormatContext; pb: AVIOContext; url: string;flags: ci
     loglevel = AV_LOG_DEBUG
   else:
     loglevel = AV_LOG_INFO
-  echo "Opening \'%s\' for %s\n", "writing" else: "reading"
   return ffio_open_whitelist(pb, url, flags, addr(s.interrupt_callback), options, s.protocol_whitelist, s.protocol_blacklist)
 
 proc io_close_default*(s: AVFormatContext; pb: AVIOContext) =
   avio_close(pb)
-
-##  static const AVOption avformat_options[] = {
-##  {"avioflags", NULL, offsetof(AVFormatContext,avio_flags), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "avioflags"},
-##  {"direct", "reduce buffering", 0, AV_OPT_TYPE_CONST, {.i64 = AVIO_FLAG_DIRECT }, INT_MIN, INT_MAX, D|E, "avioflags"},
-##  {"probesize", "set probing size", offsetof(AVFormatContext,probesize), AV_OPT_TYPE_INT64, {.i64 = 5000000 }, 32, INT64_MAX, D},
-##  {"formatprobesize", "number of bytes to probe file format", offsetof(AVFormatContext,format_probesize), AV_OPT_TYPE_INT, {.i64 = PROBE_BUF_MAX}, 0, INT_MAX-1, D},
-##  {"packetsize", "set packet size", offsetof(AVFormatContext,packet_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, E},
-##  {"fflags", NULL, offsetof(AVFormatContext,flags), AV_OPT_TYPE_FLAGS, {.i64 = AVFMT_FLAG_AUTO_BSF }, INT_MIN, INT_MAX, D|E, "fflags"},
-##  {"flush_packets", "reduce the latency by flushing out packets immediately", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_FLUSH_PACKETS }, INT_MIN, INT_MAX, E, "fflags"},
-##  {"ignidx", "ignore index", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_IGNIDX }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"genpts", "generate pts", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_GENPTS }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"nofillin", "do not fill in missing values that can be exactly calculated", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_NOFILLIN }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"noparse", "disable AVParsers, this needs nofillin too", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_NOPARSE }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"igndts", "ignore dts", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_IGNDTS }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"discardcorrupt", "discard corrupted frames", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_DISCARD_CORRUPT }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"sortdts", "try to interleave outputted packets by dts", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_SORT_DTS }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"fastseek", "fast but inaccurate seeks", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_FAST_SEEK }, INT_MIN, INT_MAX, D, "fflags"},
-##  {"nobuffer", "reduce the latency introduced by optional buffering", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_FLAG_NOBUFFER }, 0, INT_MAX, D, "fflags"},
-##  {"bitexact", "do not write random/volatile data", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_BITEXACT }, 0, 0, E, "fflags" },
-##  {"shortest", "stop muxing with the shortest stream", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_SHORTEST }, 0, 0, E, "fflags" },
-##  {"autobsf", "add needed bsfs automatically", 0, AV_OPT_TYPE_CONST, { .i64 = AVFMT_FLAG_AUTO_BSF }, 0, 0, E, "fflags" },
-##  {"seek2any", "allow seeking to non-keyframes on demuxer level when supported", offsetof(AVFormatContext,seek2any), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, D},
-##  {"analyzeduration", "specify how many microseconds are analyzed to probe the input", offsetof(AVFormatContext,max_analyze_duration), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, D},
-##  {"cryptokey", "decryption key", offsetof(AVFormatContext,key), AV_OPT_TYPE_BINARY, {.dbl = 0}, 0, 0, D},
-##  {"indexmem", "max memory used for timestamp index (per stream)", offsetof(AVFormatContext,max_index_size), AV_OPT_TYPE_INT, {.i64 = 1<<20 }, 0, INT_MAX, D},
-##  {"rtbufsize", "max memory used for buffering real-time frames", offsetof(AVFormatContext,max_picture_buffer), AV_OPT_TYPE_INT, {.i64 = 3041280 }, 0, INT_MAX, D}, /* defaults to 1s of 15fps 352x288 YUYV422 video */
-##  {"fdebug", "print specific debug info", offsetof(AVFormatContext,debug), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT }, 0, INT_MAX, E|D, "fdebug"},
-##  {"ts", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_FDEBUG_TS }, INT_MIN, INT_MAX, E|D, "fdebug"},
-##  {"max_delay", "maximum muxing or demuxing delay in microseconds", offsetof(AVFormatContext,max_delay), AV_OPT_TYPE_INT, {.i64 = -1 }, -1, INT_MAX, E|D},
-##  {"start_time_realtime", "wall-clock time when stream begins (PTS==0)", offsetof(AVFormatContext,start_time_realtime), AV_OPT_TYPE_INT64, {.i64 = AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX, E},
-##  {"fpsprobesize", "number of frames used to probe fps", offsetof(AVFormatContext,fps_probe_size), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX-1, D},
-##  {"audio_preload", "microseconds by which audio packets should be interleaved earlier", offsetof(AVFormatContext,audio_preload), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, E},
-##  {"chunk_duration", "microseconds for each chunk", offsetof(AVFormatContext,max_chunk_duration), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, E},
-##  {"chunk_size", "size in bytes for each chunk", offsetof(AVFormatContext,max_chunk_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX-1, E},
-##  {"f_err_detect", "set error detection flags (deprecated; use err_detect, save via avconv)", offsetof(AVFormatContext,error_recognition), AV_OPT_TYPE_FLAGS, {.i64 = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"err_detect", "set error detection flags", offsetof(AVFormatContext,error_recognition), AV_OPT_TYPE_FLAGS, {.i64 = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"crccheck", "verify embedded CRCs", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"bitstream", "detect bitstream specification deviations", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"buffer", "detect improper bitstream length", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_BUFFER }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"explode", "abort decoding on minor error detection", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_EXPLODE }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"ignore_err", "ignore errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_IGNORE_ERR }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"careful",    "consider things that violate the spec, are fast to check and have not been seen in the wild as errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_CAREFUL }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"compliant",  "consider all spec non compliancies as errors", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_COMPLIANT | AV_EF_CAREFUL }, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"aggressive", "consider things that a sane encoder shouldn't do as an error", 0, AV_OPT_TYPE_CONST, {.i64 = AV_EF_AGGRESSIVE | AV_EF_COMPLIANT | AV_EF_CAREFUL}, INT_MIN, INT_MAX, D, "err_detect"},
-##  {"use_wallclock_as_timestamps", "use wallclock as timestamps", offsetof(AVFormatContext,use_wallclock_as_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, D},
-##  {"skip_initial_bytes", "set number of bytes to skip before reading header and frames", offsetof(AVFormatContext,skip_initial_bytes), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX-1, D},
-##  {"correct_ts_overflow", "correct single timestamp overflows", offsetof(AVFormatContext,correct_ts_overflow), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, D},
-##  {"flush_packets", "enable flushing of the I/O context after each packet", offsetof(AVFormatContext,flush_packets), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, E},
-##  {"metadata_header_padding", "set number of bytes to be written as padding in a metadata header", offsetof(AVFormatContext,metadata_header_padding), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, E},
-##  {"output_ts_offset", "set output timestamp offset", offsetof(AVFormatContext,output_ts_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, -INT64_MAX, INT64_MAX, E},
-##  {"max_interleave_delta", "maximum buffering duration for interleaving", offsetof(AVFormatContext,max_interleave_delta), AV_OPT_TYPE_INT64, { .i64 = 10000000 }, 0, INT64_MAX, E },
-##  {"f_strict", "how strictly to follow the standards (deprecated; use strict, save via avconv)", offsetof(AVFormatContext,strict_std_compliance), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "strict"},
-##  {"strict", "how strictly to follow the standards", offsetof(AVFormatContext,strict_std_compliance), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, D|E, "strict"},
-##  {"very", "strictly conform to a older more strict version of the spec or reference software", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_VERY_STRICT }, INT_MIN, INT_MAX, D|E, "strict"},
-##  {"strict", "strictly conform to all the things in the spec no matter what the consequences", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_STRICT }, INT_MIN, INT_MAX, D|E, "strict"},
-##  {"normal", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_NORMAL }, INT_MIN, INT_MAX, D|E, "strict"},
-##  {"unofficial", "allow unofficial extensions", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_UNOFFICIAL }, INT_MIN, INT_MAX, D|E, "strict"},
-##  {"experimental", "allow non-standardized experimental variants", 0, AV_OPT_TYPE_CONST, {.i64 = FF_COMPLIANCE_EXPERIMENTAL }, INT_MIN, INT_MAX, D|E, "strict"},
-##  {"max_ts_probe", "maximum number of packets to read while waiting for the first timestamp", offsetof(AVFormatContext,max_ts_probe), AV_OPT_TYPE_INT, { .i64 = 50 }, 0, INT_MAX, D },
-##  {"avoid_negative_ts", "shift timestamps so they start at 0", offsetof(AVFormatContext,avoid_negative_ts), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, E, "avoid_negative_ts"},
-##  {"auto",              "enabled when required by target format",    0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_AUTO },              INT_MIN, INT_MAX, E, "avoid_negative_ts"},
-##  {"disabled",          "do not change timestamps",                  0, AV_OPT_TYPE_CONST, {.i64 = 0 },                                    INT_MIN, INT_MAX, E, "avoid_negative_ts"},
-##  {"make_non_negative", "shift timestamps so they are non negative", 0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE }, INT_MIN, INT_MAX, E, "avoid_negative_ts"},
-##  {"make_zero",         "shift timestamps so they start at 0",       0, AV_OPT_TYPE_CONST, {.i64 = AVFMT_AVOID_NEG_TS_MAKE_ZERO },         INT_MIN, INT_MAX, E, "avoid_negative_ts"},
-##  {"dump_separator", "set information dump field separator", offsetof(AVFormatContext,dump_separator), AV_OPT_TYPE_STRING, {.str = ", "}, 0, 0, D|E},
-##  {"codec_whitelist", "List of decoders that are allowed to be used", offsetof(AVFormatContext,codec_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
-##  {"format_whitelist", "List of demuxers that are allowed to be used", offsetof(AVFormatContext,format_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
-##  {"protocol_whitelist", "List of protocols that are allowed to be used", offsetof(AVFormatContext,protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
-##  {"protocol_blacklist", "List of protocols that are not allowed to be used", offsetof(AVFormatContext,protocol_blacklist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, D },
-##  {"max_streams", "maximum number of streams", offsetof(AVFormatContext,max_streams), AV_OPT_TYPE_INT, { .i64 = 1000 }, 0, INT_MAX, D },
-##  {"skip_estimate_duration_from_pts", "skip duration calculation in estimate_timings_from_pts", offsetof(AVFormatContext,skip_estimate_duration_from_pts), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, D},
-##  {"max_probe_packets", "Maximum number of packets to probe a codec", offsetof(AVFormatContext,max_probe_packets), AV_OPT_TYPE_INT, { .i64 = 2500 }, 0, INT_MAX, D },
-##  {NULL},
-##  };
 
 proc av_demuxer_iterate*(opaque: ptr pointer): AVInputFormat =
   var size: uintptr_t = sizeof((demuxer_list) div sizeof((demuxer_list[0]))) - 1
@@ -3541,8 +5157,7 @@ proc av_muxer_iterate*(opaque: ptr pointer): AVOutputFormat =
   return f
 
 proc format_child_class_iterate*(iter: ptr pointer): AVClass =
-  var val: pointer = cast[pointer]((((uintptr_t) * iter) and
-      ((1 shl ITER_STATE_SHIFT) - 1)))
+  var val: pointer = cast[pointer]((((uintptr_t) * iter) and ((1 shl ITER_STATE_SHIFT) - 1)))
   var state: cuint = ((uintptr_t) * iter) shr ITER_STATE_SHIFT
   var ret: AVClass
   if state == CHILD_CLASS_ITER_AVIO:
@@ -3578,15 +5193,15 @@ proc format_child_next*(obj: pointer; prev: pointer): pointer =
     return s.pb
   return nil
 
-proc AVClass_get_category*(`ptr`: pointer): AVClassCategory =
-  var avctx: AVCodecContext = `ptr`
+proc AVClass_get_category*(p: pointer): AVClassCategory =
+  var avctx: AVCodecContext = p
   if avctx.codec and avctx.codec.decode:
     return AV_CLASS_CATEGORY_DECODER
   else:
     return AV_CLASS_CATEGORY_ENCODER
 
-proc format_to_name*(`ptr`: pointer): string =
-  var fc: AVFormatContext = cast[AVFormatContext](`ptr`)
+proc format_to_name*(p: pointer): string =
+  var fc: AVFormatContext = cast[AVFormatContext](p)
   if fc.iformat:
     return fc.iformat.name
   elif fc.oformat:
@@ -3602,7 +5217,7 @@ proc avformat_alloc_context*(): AVFormatContext =
   s.av_class = av_format_context_class
   s.io_open = io_open_default
   s.io_close = io_close_default
-  av_opt_set_defaults(s)
+  av_opt_set_defaults2(s,0,0)
   ic.internal = internal
   ic.internal.offset = AV_NOPTS_VALUE
   ic.internal.raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE
@@ -3610,50 +5225,40 @@ proc avformat_alloc_context*(): AVFormatContext =
   return ic
 
 
-proc read_thread*(arg: pointer): cint =
+proc read_thread*(arg: VideoState): cint =
   var videoState: VideoState = arg
   var ic: AVFormatContext
   var
     err: cint
     i: cint
     ret: cint
-  var st_index: array[AVMEDIA_TYPE_NB, cint]
+  var st_index: array[5, cint]
   var
     pkt1: AVPacket
-    pkt: ptr AVPacket = addr(pkt1)
+    pkt: AVPacket = addr(pkt1)
   var stream_start_time: int64
   var pkt_in_play_range: cint = 0
   var t: string
-  var wait_mutex: ptr SDL_mutex = SDL_CreateMutex()
   var scan_all_pmts_set: cint = 0
   var pkt_ts: int64
-  if not wait_mutex:
-    echo(nil, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError())
-    ret = ENOMEM
-    break fail
-  memset(st_index, -1, sizeof((st_index)))
   videoState.eof = 0
   ic = avformat_alloc_context()
   if not ic:
     echo(nil, AV_LOG_FATAL, "Could not allocate context.\n")
     ret = ENOMEM
-    break fail
+    goto fail
   ic.interrupt_callback.callback = decode_interrupt_cb
   ic.interrupt_callback.opaque = videoState
-  if not av_dict_get(format_opts, "scan_all_pmts", nil, AV_DICT_MATCH_CASE):
-    format_opts["scan_all_pmts"], "1", AV_DICT_DONT_OVERWRITE)
+  if not format_opts.has "scan_all_pmts":
+    format_opts["scan_all_pmts"] = "1"
     scan_all_pmts_set = 1
   err = avformat_open_input(addr(ic), videoState.filename, videoState.iformat, addr(format_opts))
   if err < 0:
     print_error(videoState.filename, err)
     ret = -1
-    break fail
+    goto fail
   if scan_all_pmts_set:
-    format_opts["scan_all_pmts"], nil, AV_DICT_MATCH_CASE)
-  if (t = format_opts[""], nil, AV_DICT_IGNORE_SUFFIX)):
-    echo(nil, AV_LOG_ERROR, "Option %s not found.\n", t.key)
-    ret = AVERROR_OPTION_NOT_FOUND
-    break fail
+    format_opts["scan_all_pmts"] = ""
   videoState.ic = ic
   if genpts:
     ic.flags = ic.flags or AVFMT_FLAG_GENPTS
@@ -3665,11 +5270,10 @@ proc read_thread*(arg: pointer): cint =
     i = 0
     while i < orig_nb_streams:
       inc(i)
-    av_freep(addr(opts))
     if err < 0:
-      echo(nil, AV_LOG_WARNING, "%s: could not find codec parameters\n",videoState.filename)
+      echo(fmt"{videoState.filename}: could not find codec parameters\n")
       ret = -1
-      break fail
+      goto fail
   if ic.pb:
     ic.pb.eof_reached = 0
   if seek_by_bytes < 0:
@@ -3690,12 +5294,12 @@ proc read_thread*(arg: pointer): cint =
     av_dump_format(ic, 0, videoState.filename, 0)
   i = 0
   while i < ic.nb_streams:
-    var st: ptr AVStream = ic.streams[i]
-    var `type`: AVMediaType = st.codecpar.codec_type
+    var st: AVStream = ic.streams[i]
+    var t: AVMediaType = st.codecpar.codec_type
     st.`discard` = AVDISCARD_ALL
-    if `type` >= 0 and wanted_stream_spec[`type`] and st_index[`type`] == -1:
-      if avformat_match_stream_specifier(ic, st, wanted_stream_spec[`type`]) > 0:
-        st_index[`type`] = i
+    if t >= 0 and wanted_stream_spec[t] and st_index[t] == -1:
+      if avformat_match_stream_specifier(ic, st, wanted_stream_spec[t]) > 0:
+        st_index[t] = i
     inc(i)
   i = 0
   while i < AVMEDIA_TYPE_NB:
@@ -3718,7 +5322,7 @@ proc read_thread*(arg: pointer): cint =
         AVMEDIA_TYPE_VIDEO]), nil, 0)
   videoState.show_mode = show_mode
   if st_index[AVMEDIA_TYPE_VIDEO] >= 0:
-    var st: ptr AVStream = ic.streams[st_index[AVMEDIA_TYPE_VIDEO]]
+    var st: AVStream = ic.streams[st_index[AVMEDIA_TYPE_VIDEO]]
     var codecpar: AVCodecParameters = st.codecpar
     var sar: AVRational = av_guess_sample_aspect_ratio(ic, st, nil)
     if codecpar.width:
@@ -3736,7 +5340,7 @@ proc read_thread*(arg: pointer): cint =
     echo(nil, AV_LOG_FATAL,
            "Failed to open file \'%s\' or configure filtergraph\n", videoState.filename)
     ret = -1
-    break fail
+    goto fail
   if infinite_buffer < 0 and videoState.realtime:
     infinite_buffer = 1
   while true:
@@ -3749,8 +5353,7 @@ proc read_thread*(arg: pointer): cint =
       else:
         av_read_play(ic)
     if videoState.paused and ic.iformat.name == "rtsp" or (ic.pb and not strncmp(input_filename, "mmsh:", 5))):
-      ##  wait 10 ms to avoid trying to get another packet
-      ##  XXX: horrible
+      
       poll 10
       # SDL_Delay(10)
       continue
@@ -3758,10 +5361,10 @@ proc read_thread*(arg: pointer): cint =
       var seek_target: int64 = videoState.seek_pos
       var seek_min: int64 = if videoState.seek_rel > 0: seek_target - videoState.seek_rel + 2 else: INT64_MIN
       var seek_max: int64 = if videoState.seek_rel < 0: seek_target - videoState.seek_rel - 2 else: INT64_MAX
-      ##  FIXME the +-2 is due to rounding being not done in the correct direction in generation of the seek_pos/seek_rel variables
+      
       ret = avformat_seek_file(videoState.ic, -1, seek_min, seek_target, seek_max,videoState.seek_flags)
       if ret < 0:
-        echo(nil, AV_LOG_ERROR, "%s: error while seeking\n", videoState.ic.url)
+        echo(fmt"{videoState.ic.url}: error while seeking\n", )
       else:
         if videoState.audio_stream >= 0:
           packet_queue_flush(addr(videoState.audioq))
@@ -3775,8 +5378,7 @@ proc read_thread*(arg: pointer): cint =
         if videoState.seek_flags and AVSEEK_FLAG_BYTE:
           set_clock(addr(videoState.extclk), NAN, 0)
         else:
-          set_clock(addr(videoState.extclk),
-                    seek_target div cast[cdouble](AV_TIME_BASE), 0)
+          set_clock(addr(videoState.extclk), seek_target div cast[cdouble](AV_TIME_BASE), 0)
       videoState.seek_req = 0
       videoState.queue_attachments_req = 1
       videoState.eof = 0
@@ -3787,34 +5389,25 @@ proc read_thread*(arg: pointer): cint =
           (videoState.video_st.disposition and AV_DISPOSITION_ATTACHED_PIC):
         var copy: AVPacket
         if (ret = av_packet_ref(addr(copy), addr(videoState.video_st.attached_pic))) < 0:
-          break fail
+          goto fail
         packet_queue_put(addr(videoState.videoq), addr(copy))
         packet_queue_put_nullpacket(addr(videoState.videoq), videoState.video_stream)
       videoState.queue_attachments_req = 0
     if infinite_buffer < 1 and
         (videoState.audioq.size + videoState.videoq.size + videoState.subtitleq.size > MAX_QUEUE_SIZE or
-        (stream_has_enough_packets(videoState.audio_st, videoState.audio_stream,
-                                   addr(videoState.audioq)) and
-        stream_has_enough_packets(videoState.video_st, videoState.video_stream,
-                                  addr(videoState.videoq)) and
-        stream_has_enough_packets(videoState.subtitle_st, videoState.subtitle_stream,
-                                  addr(videoState.subtitleq)))):
-      ##  wait 10 ms
+        (stream_has_enough_packets(videoState.audio_st, videoState.audio_stream, addr(videoState.audioq)) and
+        stream_has_enough_packets(videoState.video_st, videoState.video_stream, addr(videoState.videoq)) and
+        stream_has_enough_packets(videoState.subtitle_st, videoState.subtitle_stream, addr(videoState.subtitleq)))):
+      
       poll 10
       # SDL_CondWaitTimeout(videoState.continue_read_thread, wait_mutex, 10)
       continue
-    if not videoState.paused and
-        (not videoState.audio_st or
-        (videoState.auddec.finished == videoState.audioq.serial and
-        frame_queue_nb_remaining(addr(videoState.sampq)) == 0)) and
-        (not videoState.video_st or
-        (videoState.viddec.finished == videoState.videoq.serial and
-        frame_queue_nb_remaining(addr(videoState.pictq)) == 0)):
+    if not videoState.paused and (not videoState.audio_st or (videoState.auddec.finished == videoState.audioq.serial and frame_queue_nb_remaining(addr(videoState.sampq)) == 0)) and (not videoState.video_st or (videoState.viddec.finished == videoState.videoq.serial and frame_queue_nb_remaining(addr(videoState.pictq)) == 0)):
       if loop != 1 and (not loop or dec(loop)):
         stream_seek(videoState, if start_time != AV_NOPTS_VALUE: start_time else: 0, 0, 0)
       elif autoexit:
         ret = AVERROR_EOF
-        break fail
+        goto fail
     ret = av_read_frame(ic, pkt)
     if ret < 0:
       if (ret == AVERROR_EOF or avio_feof(ic.pb)) and not videoState.eof:
@@ -3827,7 +5420,7 @@ proc read_thread*(arg: pointer): cint =
         videoState.eof = 1
       if ic.pb and ic.pb.error:
         if autoexit:
-          break fail
+          goto fail
         else:
           break
       poll 10
@@ -3836,12 +5429,7 @@ proc read_thread*(arg: pointer): cint =
       videoState.eof = 0
     stream_start_time = ic.streams[pkt.stream_index].start_time
     pkt_ts = if pkt.pts == AV_NOPTS_VALUE: pkt.dts else: pkt.pts
-    pkt_in_play_range = duration == AV_NOPTS_VALUE or
-        (pkt_ts -
-        (if stream_start_time != AV_NOPTS_VALUE: stream_start_time else: 0)) *
-        av_q2d(ic.streams[pkt.stream_index].time_base) -
-        (double)(if start_time != AV_NOPTS_VALUE: start_time else: 0) div 1000000 <=
-        (cast[cdouble](duration div 1000000))
+    pkt_in_play_range = duration == AV_NOPTS_VALUE or (pkt_ts - (if stream_start_time != AV_NOPTS_VALUE: stream_start_time else: 0)) * av_q2d(ic.streams[pkt.stream_index].time_base) - (double)(if start_time != AV_NOPTS_VALUE: start_time else: 0) div 1000000 <= (cast[cdouble](duration div 1000000))
     if pkt.stream_index == videoState.audio_stream and pkt_in_play_range:
       packet_queue_put(addr(videoState.audioq), pkt)
     elif pkt.stream_index == videoState.video_stream and pkt_in_play_range and
@@ -3856,7 +5444,7 @@ proc read_thread*(arg: pointer): cint =
     avformat_close_input(addr(ic))
   if ret != 0:
     var event: SDL_Event
-    event.`type` = FF_QUIT_EVENT
+    event.t = FF_QUIT_EVENT
     event.user.data1 = videoState
     SDL_PushEvent(addr(event))
   return 0
@@ -3872,7 +5460,7 @@ proc frame_queue_init*(f: ptr FrameQueue; pktq: ptr PacketQueue; max_size: cint;
     echo(nil, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError())
     return ENOMEM
   f.pktq = pktq
-  f.max_size = FFMIN(max_size, FRAME_QUEUE_SIZE)
+  f.max_size = min(max_size, FRAME_QUEUE_SIZE)
   f.keep_last = not not keep_last
   i = 0
   while i < f.max_size:
@@ -3892,38 +5480,35 @@ proc stream_open*(filename: string; iformat: AVInputFormat): VideoState =
   videoState.iformat = iformat
   videoState.ytop = 0
   videoState.xleft = 0
-  ##  start video display
+  
   if frame_queue_init(addr(videoState.pictq), addr(videoState.videoq),VIDEO_PICTURE_QUEUE_SIZE, 1) < 0:
-    break fail
+    goto fail
   if frame_queue_init(addr(videoState.subpq), addr(videoState.subtitleq),SUBPICTURE_QUEUE_SIZE, 0) < 0:
-    break fail
+    goto fail
   if frame_queue_init(addr(videoState.sampq), addr(videoState.audioq), SAMPLE_QUEUE_SIZE, 1) < 0:
-    break fail
+    goto fail
   if packet_queue_init(addr(videoState.videoq)) < 0 or
       packet_queue_init(addr(videoState.audioq)) < 0 or
       packet_queue_init(addr(videoState.subtitleq)) < 0:
-    break fail
+    goto fail
   if not (videoState.continue_read_thread = SDL_CreateCond()):
     echo(nil, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError())
-    break fail
-  init_clock(addr(videoState.vidclk), addr(videoState.videoq.serial))
-  init_clock(addr(videoState.audclk), addr(videoState.audioq.serial))
-  init_clock(addr(videoState.extclk), addr(videoState.extclk.serial))
+    goto fail
+  # init_clock(videoState.vidclk), videoState.videoq.serial))
+  # init_clock(videoState.audclk), videoState.audioq.serial))
+  # init_clock(videoState.extclk), videoState.extclk.serial))
   videoState.audio_clock_serial = -1
   if startup_volume < 0:
-    echo(nil, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume)
+    echo("-volume=%d < 0, setting to 0\n", startup_volume)
   if startup_volume > 100:
-    echo(nil, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n",
-           startup_volume)
+    echo("-volume=%d > 100, setting to 100\n",startup_volume)
   startup_volume = av_clip(startup_volume, 0, 100)
-  startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume div 100, 0,
-                         SDL_MIX_MAXVOLUME)
+  startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume div 100, 0,SDL_MIX_MAXVOLUME)
   videoState.audio_volume = startup_volume
   videoState.muted = 0
   videoState.av_sync_type = av_sync_type
   videoState.read_tid = createThread(read_thread, "read_thread", videoState)
   if not videoState.read_tid:
-    echo "SDL_CreateThread()"
     stream_close(videoState)
     return nil
   return videoState

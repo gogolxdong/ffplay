@@ -6139,6 +6139,27 @@ static inline char *av_make_error_string(char *errbuf, size_t errbuf_size, int e
 #define av_err2str(errnum) \
     av_make_error_string((char[AV_ERROR_MAX_STRING_SIZE]){0}, AV_ERROR_MAX_STRING_SIZE, errnum)
 
+static inline int pthread_once(pthread_once_t *once_control,
+                                         void (*init_routine)(void))
+{
+    if (!once_control->done)
+    {
+        _fmutex_request(&once_control->mtx, 0);
+
+        if (!once_control->done)
+        {
+            init_routine();
+
+            once_control->done = 1;
+        }
+
+        _fmutex_release(&once_control->mtx);
+    }
+
+    return 0;
+}
+#endif /* COMPAT_OS2THREADS_H */
+
 #define ff_thread_once(control, routine) pthread_once(control, routine)
 
 #define GET_UTF8(val, GET_BYTE, ERROR)\

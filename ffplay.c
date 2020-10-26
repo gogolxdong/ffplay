@@ -33466,7 +33466,6 @@ static const char* context_to_name(void* ptr) {
     else
         return "NULL";
 }
-
 static void *codec_child_next(void *obj, void *prev)
 {
     AVCodecContext *s = obj;
@@ -33493,7 +33492,6 @@ static const AVClass *codec_child_class_next(const AVClass *prev)
     return NULL;
 }
 #endif
-
 static const AVClass *codec_child_class_iterate(void **iter)
 {
     const AVCodec *c;
@@ -33503,9 +33501,6 @@ static const AVClass *codec_child_class_iterate(void **iter)
             return c->priv_class;
     return NULL;
 }
-
-
-
 static const AVOption avcodec_options[] = {
 {"b", "set bitrate (in bits/s)", offsetof(AVCodecContext,bit_rate), AV_OPT_TYPE_INT64, {.i64 = AV_CODEC_DEFAULT_BITRATE }, 0, INT64_MAX, A|V|E},
 {"ab", "set bitrate (in bits/s)", offsetof(AVCodecContext,bit_rate), AV_OPT_TYPE_INT64, {.i64 = 128*1000 }, 0, INT_MAX, A|E},
@@ -33937,9 +33932,6 @@ static const AVOption avcodec_options[] = {
 {"discard_damaged_percentage", "Percentage of damaged samples to discard a frame", offsetof(AVCodecContext,discard_damaged_percentage), AV_OPT_TYPE_INT, {.i64 = 95 }, 0, 100, V|D },
 {NULL},
 };
-
-
-
 static const AVClass av_codec_context_class = {
     .class_name              = "AVCodecContext",
     .item_name               = context_to_name,
@@ -33947,9 +33939,7 @@ static const AVClass av_codec_context_class = {
     .version                 = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset = offsetof(AVCodecContext, log_level_offset),
     .child_next              = codec_child_next,
-#if FF_API_CHILD_CLASS_NEXT
     .child_class_next        = codec_child_class_next,
-#endif
     .child_class_iterate     = codec_child_class_iterate,
     .category                = AV_CLASS_CATEGORY_ENCODER,
     .get_category            = AVClass_get_category,
