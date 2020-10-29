@@ -15,6 +15,14 @@
         "xhash": "cpp",
         "xstring": "cpp",
         "xutility": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "deque": "c",
+        "fstream": "c",
+        "map": "c",
+        "sstream": "c",
+        "xiosbase": "c",
+        "xlocale": "c",
+        "xtree": "c",
+        "shared_mutex": "c"
     }
 }

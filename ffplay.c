@@ -1,23 +1,17 @@
 #include "ffplay.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "config.h"
+#include <time.h>
+#include <soxr.h>
+#if HAVE_GETTIMEOFDAY
 #include <sys/time.h>
-
-#include <fcntl.h>
-#if CONFIG_ZLIB
-#include <zlib.h>
 #endif
-
-#include <bcrypt.h>
-#ifdef _WIN32
-#undef open
-#undef lseek
-#undef stat
-#undef fstat
+#define COBJMACROS
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <share.h>
-#include <errno.h>
-
+#define NO_DSHOW_STRSAFE
+#include <dshow.h>
+#include <dvdmedia.h>
+#include <zlib.h>
 // #if HAVE_X86ASM
 
 // #define cpuid(index, eax, ebx, ecx, edx)        \
@@ -661,11 +655,6 @@ int av_buffer_realloc(AVBufferRef **pbuf, int size)
     return 0;
 }
 
-static inline int av_bprint_is_complete(const AVBPrint *buf)
-{
-    return buf->len < buf->size;
-}
-
 
 static int av_bprint_alloc(AVBPrint *buf, unsigned room)
 {
@@ -1052,9 +1041,9 @@ static void win_console_puts(const char *str)
             uint32_t ch;
             uint16_t tmp;
 
-            // GET_UTF8(ch, *q ? *q++ : 0, ch = 0xfffd; goto continue_on_invalid;)
+            GET_UTF8(ch, *q ? *q++ : 0, ch = 0xfffd; goto continue_on_invalid;)
 continue_on_invalid:
-            // PUT_UTF16(ch, tmp, *buf++ = tmp; nb_chars++;)
+            PUT_UTF16(ch, tmp, *buf++ = tmp; nb_chars++;)
         }
 
         WriteConsoleW(con, line, nb_chars, &written, NULL);
@@ -7614,6 +7603,22 @@ static void get_subtitle_defaults(AVSubtitle *sub)
     sub->pts = AV_NOPTS_VALUE;
 }
 
+
+int av_new_packet(AVPacket *pkt, int size)
+{
+    AVBufferRef *buf = NULL;
+    int ret = packet_alloc(&buf, size);
+    if (ret < 0)
+        return ret;
+
+    av_init_packet(pkt);
+    pkt->buf      = buf;
+    pkt->data     = buf->data;
+    pkt->size     = size;
+
+    return 0;
+}
+#define UTF8_MAX_BYTES 4
 static int recode_subtitle(AVCodecContext *avctx,
                            AVPacket *outpkt, const AVPacket *inpkt)
 {
@@ -8776,7 +8781,7 @@ const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter)
 #if FF_API_CHILD_CLASS_NEXT
 FF_DISABLE_DEPRECATION_WARNINGS
     if (parent->child_class_next) {
-        *iter = parent->child_class_next(*iter);
+        // *iter = parent->child_class_next(*iter);
         return *iter;
     }
 FF_ENABLE_DEPRECATION_WARNINGS
@@ -11917,77 +11922,77 @@ av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c)
 
 av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
 {
-// #if HAVE_X86ASM
-//     int cpu_flags = av_get_cpu_flags();
+#if HAVE_X86ASM
+    int cpu_flags = av_get_cpu_flags();
 
-//     if (EXTERNAL_SSSE3(cpu_flags)) {
-//         switch (c->dstFormat) {
-//         case AV_PIX_FMT_RGB32:
-//             if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
-// #if CONFIG_SWSCALE_ALPHA
-//                 return yuva420_rgb32_ssse3;
-// #endif
-//                 break;
-//             } else
-//                 return yuv420_rgb32_ssse3;
-//         case AV_PIX_FMT_BGR32:
-//             if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
-// #if CONFIG_SWSCALE_ALPHA
-//                 return yuva420_bgr32_ssse3;
-// #endif
-//                 break;
-//             } else
-//                 return yuv420_bgr32_ssse3;
-//         case AV_PIX_FMT_RGB24:
-//             return yuv420_rgb24_ssse3;
-//         case AV_PIX_FMT_BGR24:
-//             return yuv420_bgr24_ssse3;
-//         case AV_PIX_FMT_RGB565:
-//             return yuv420_rgb16_ssse3;
-//         case AV_PIX_FMT_RGB555:
-//             return yuv420_rgb15_ssse3;
-//         }
-//     }
+    if (EXTERNAL_SSSE3(cpu_flags)) {
+        switch (c->dstFormat) {
+        case AV_PIX_FMT_RGB32:
+            if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
+#if CONFIG_SWSCALE_ALPHA
+                return yuva420_rgb32_ssse3;
+#endif
+                break;
+            } else
+                return yuv420_rgb32_ssse3;
+        case AV_PIX_FMT_BGR32:
+            if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
+#if CONFIG_SWSCALE_ALPHA
+                return yuva420_bgr32_ssse3;
+#endif
+                break;
+            } else
+                return yuv420_bgr32_ssse3;
+        case AV_PIX_FMT_RGB24:
+            return yuv420_rgb24_ssse3;
+        case AV_PIX_FMT_BGR24:
+            return yuv420_bgr24_ssse3;
+        case AV_PIX_FMT_RGB565:
+            return yuv420_rgb16_ssse3;
+        case AV_PIX_FMT_RGB555:
+            return yuv420_rgb15_ssse3;
+        }
+    }
 
-//     if (EXTERNAL_MMXEXT(cpu_flags)) {
-//         switch (c->dstFormat) {
-//         case AV_PIX_FMT_RGB24:
-//             return yuv420_rgb24_mmxext;
-//         case AV_PIX_FMT_BGR24:
-//             return yuv420_bgr24_mmxext;
-//         }
-//     }
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        switch (c->dstFormat) {
+        case AV_PIX_FMT_RGB24:
+            return yuv420_rgb24_mmxext;
+        case AV_PIX_FMT_BGR24:
+            return yuv420_bgr24_mmxext;
+        }
+    }
 
-//     if (EXTERNAL_MMX(cpu_flags)) {
-//         switch (c->dstFormat) {
-//             case AV_PIX_FMT_RGB32:
-//                 if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
-// #if CONFIG_SWSCALE_ALPHA
-//                     return yuva420_rgb32_mmx;
-// #endif
-//                     break;
-//                 } else
-//                     return yuv420_rgb32_mmx;
-//             case AV_PIX_FMT_BGR32:
-//                 if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
-// #if CONFIG_SWSCALE_ALPHA
-//                     return yuva420_bgr32_mmx;
-// #endif
-//                     break;
-//                 } else
-//                     return yuv420_bgr32_mmx;
-//             case AV_PIX_FMT_RGB24:
-//                 return yuv420_rgb24_mmx;
-//             case AV_PIX_FMT_BGR24:
-//                 return yuv420_bgr24_mmx;
-//             case AV_PIX_FMT_RGB565:
-//                 return yuv420_rgb16_mmx;
-//             case AV_PIX_FMT_RGB555:
-//                 return yuv420_rgb15_mmx;
-//         }
-//     }
+    if (EXTERNAL_MMX(cpu_flags)) {
+        switch (c->dstFormat) {
+            case AV_PIX_FMT_RGB32:
+                if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
+#if CONFIG_SWSCALE_ALPHA
+                    return yuva420_rgb32_mmx;
+#endif
+                    break;
+                } else
+                    return yuv420_rgb32_mmx;
+            case AV_PIX_FMT_BGR32:
+                if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
+#if CONFIG_SWSCALE_ALPHA
+                    return yuva420_bgr32_mmx;
+#endif
+                    break;
+                } else
+                    return yuv420_bgr32_mmx;
+            case AV_PIX_FMT_RGB24:
+                return yuv420_rgb24_mmx;
+            case AV_PIX_FMT_BGR24:
+                return yuv420_bgr24_mmx;
+            case AV_PIX_FMT_RGB565:
+                return yuv420_rgb16_mmx;
+            case AV_PIX_FMT_RGB555:
+                return yuv420_rgb15_mmx;
+        }
+    }
 
-#endif /* HAVE_X86ASM */
+#endif 
     return NULL;
 }
 
@@ -12681,25 +12686,6 @@ DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2YOffset);
 DECLARE_ALIGNED(8, extern const uint64_t, ff_w1111);
 DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
-
-
-
-#define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
-#define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
-#define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
-#define GY ((int)( 0.504*(1<<RGB2YUV_SHIFT)+0.5))
-#define GV ((int)(-0.368*(1<<RGB2YUV_SHIFT)+0.5))
-#define GU ((int)(-0.291*(1<<RGB2YUV_SHIFT)+0.5))
-#define RY ((int)( 0.257*(1<<RGB2YUV_SHIFT)+0.5))
-#define RV ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
-#define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
-
-// Note: We have C, MMX, MMXEXT, 3DNOW versions, there is no 3DNOW + MMXEXT one.
-
-#define COMPILE_TEMPLATE_MMXEXT 0
-#define COMPILE_TEMPLATE_AMD3DNOW 0
-#define COMPILE_TEMPLATE_SSE2 0
-#define COMPILE_TEMPLATE_AVX 0
 
 //MMX versions
 #undef RENAME
@@ -19866,13 +19852,6 @@ int ff_rotate_slice(SwsSlice *s, int lum, int chr)
     return 0;
 }
 
-const DECLARE_ALIGNED(8, uint64_t, ff_dither4)[2] = {
-    0x0103010301030103LL,
-    0x0200020002000200LL,};
-
-const DECLARE_ALIGNED(8, uint64_t, ff_dither8)[2] = {
-    0x0602060206020602LL,
-    0x0004000400040004LL,};
 
 void ff_updateMMXDitherTables(SwsContext *c, int dstY)
 {
@@ -21992,6 +21971,17 @@ static int split_radix_permutation(int i, int n, int inverse)
     else                  return split_radix_permutation(i, m, inverse)*4 - 1;
 }
 
+
+#define INIT_FF_COS_TABS_FUNC(index,size) static av_cold void init_ff_cos_tabs_ ## size (void){ init_ff_cos_tabs(index); }
+
+static inline int ff_thread_once(char *control, void (*routine)(void))
+{
+    if (!*control) {
+        routine();
+        *control = 1;
+    }
+    return 0;
+}
 av_cold void ff_init_ff_cos_tabs(int index)
 {
 #if (!CONFIG_HARDCODED_TABLES) && (!FFT_FIXED_32)
@@ -24543,6 +24533,29 @@ static const AVOption avfilter_options[] = {
         offsetof(AVFilterContext,extra_hw_frames), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
     { NULL },
 };
+#if FF_API_CHILD_CLASS_NEXT
+static const AVClass *filter_child_class_next(const AVClass *prev)
+{
+    void *opaque = NULL;
+    const AVFilter *f = NULL;
+
+    /* find the filter that corresponds to prev */
+    while (prev && (f = av_filter_iterate(&opaque)))
+        if (f->priv_class == prev)
+            break;
+
+    /* could not find filter corresponding to prev */
+    if (prev && !f)
+        return NULL;
+
+    /* find next filter with specific options */
+    while ((f = av_filter_iterate(&opaque)))
+        if (f->priv_class)
+            return f->priv_class;
+
+    return NULL;
+}
+#endif
 static const AVClass avfilter_class = {
     .class_name = "AVFilter",
     .item_name  = default_filter_name,
@@ -25411,11 +25424,11 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             is_utc = 1;
         }
         if (today) { /* fill in today's date */
-            struct tm dt2 = is_utc ? *gmtime_r(&now, &tmbuf) : *localtime_r(&now, &tmbuf);
-            dt2.tm_hour = dt.tm_hour;
-            dt2.tm_min  = dt.tm_min;
-            dt2.tm_sec  = dt.tm_sec;
-            dt = dt2;
+            // struct tm dt2 = is_utc ? *gmtime_r(&now, &tmbuf) : *localtime_r(&now, &tmbuf);
+            // dt2.tm_hour = dt.tm_hour;
+            // dt2.tm_min  = dt.tm_min;
+            // dt2.tm_sec  = dt.tm_sec;
+            // dt = dt2;
         }
         dt.tm_isdst = is_utc ? 0 : -1;
         t = is_utc ? av_timegm(&dt) : mktime(&dt);
@@ -28615,59 +28628,6 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 fail:
     return ret;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if FF_API_CHILD_CLASS_NEXT
-static const AVClass *filter_child_class_next(const AVClass *prev)
-{
-    void *opaque = NULL;
-    const AVFilter *f = NULL;
-
-    /* find the filter that corresponds to prev */
-    while (prev && (f = av_filter_iterate(&opaque)))
-        if (f->priv_class == prev)
-            break;
-
-    /* could not find filter corresponding to prev */
-    if (prev && !f)
-        return NULL;
-
-    /* find next filter with specific options */
-    while ((f = av_filter_iterate(&opaque)))
-        if (f->priv_class)
-            return f->priv_class;
-
-    return NULL;
-}
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -32269,6 +32229,104 @@ av_cold int swri_rematrix_init(SwrContext *s){
     return 0;
 }
 
+static struct ResampleContext *create(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
+        double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta, double precision, int cheby, int exact_rational){
+    soxr_error_t error;
+
+    soxr_datatype_t type =
+        format == AV_SAMPLE_FMT_S16P? SOXR_INT16_S :
+        format == AV_SAMPLE_FMT_S16 ? SOXR_INT16_I :
+        format == AV_SAMPLE_FMT_S32P? SOXR_INT32_S :
+        format == AV_SAMPLE_FMT_S32 ? SOXR_INT32_I :
+        format == AV_SAMPLE_FMT_FLTP? SOXR_FLOAT32_S :
+        format == AV_SAMPLE_FMT_FLT ? SOXR_FLOAT32_I :
+        format == AV_SAMPLE_FMT_DBLP? SOXR_FLOAT64_S :
+        format == AV_SAMPLE_FMT_DBL ? SOXR_FLOAT64_I : (soxr_datatype_t)-1;
+
+    soxr_io_spec_t io_spec = soxr_io_spec(type, type);
+
+    soxr_quality_spec_t q_spec = soxr_quality_spec((int)((precision-2)/4), (SOXR_HI_PREC_CLOCK|SOXR_ROLLOFF_NONE)*!!cheby);
+    q_spec.precision = precision;
+#if !defined SOXR_VERSION /* Deprecated @ March 2013: */
+    q_spec.bw_pc = cutoff? FFMAX(FFMIN(cutoff,.995),.8)*100 : q_spec.bw_pc;
+#else
+    q_spec.passband_end = cutoff? FFMAX(FFMIN(cutoff,.995),.8) : q_spec.passband_end;
+#endif
+
+    soxr_delete((soxr_t)c);
+    c = (struct ResampleContext *)
+        soxr_create(in_rate, out_rate, 0, &error, &io_spec, &q_spec, 0);
+    if (!c)
+        av_log(NULL, AV_LOG_ERROR, "soxr_create: %s\n", error);
+    return c;
+}
+
+static void destroy(struct ResampleContext * *c){
+    soxr_delete((soxr_t)*c);
+    *c = NULL;
+}
+
+static int flush(struct SwrContext *s){
+    s->delayed_samples_fixup = soxr_delay((soxr_t)s->resample);
+
+    soxr_process((soxr_t)s->resample, NULL, 0, NULL, NULL, 0, NULL);
+
+    {
+        float f;
+        size_t idone, odone;
+        soxr_process((soxr_t)s->resample, &f, 0, &idone, &f, 0, &odone);
+        s->delayed_samples_fixup -= soxr_delay((soxr_t)s->resample);
+    }
+
+    return 0;
+}
+
+static int process(
+        struct ResampleContext * c, AudioData *dst, int dst_size,
+        AudioData *src, int src_size, int *consumed){
+    size_t idone, odone;
+    soxr_error_t error = soxr_set_error((soxr_t)c, soxr_set_num_channels((soxr_t)c, src->ch_count));
+    if (!error)
+        error = soxr_process((soxr_t)c, src->ch, (size_t)src_size,
+                             &idone, dst->ch, (size_t)dst_size, &odone);
+    else
+        idone = 0;
+
+    *consumed = (int)idone;
+    return error? -1 : odone;
+}
+
+static int64_t get_delay_soxr(struct SwrContext *s, int64_t base){
+    double delayed_samples = soxr_delay((soxr_t)s->resample);
+    double delay_s;
+
+    if (s->flushed)
+        delayed_samples += s->delayed_samples_fixup;
+
+    delay_s = delayed_samples / s->out_sample_rate;
+
+    return (int64_t)(delay_s * base + .5);
+}
+
+static int invert_initial_buffer_soxr(struct ResampleContext *c, AudioData *dst, const AudioData *src,
+                                 int in_count, int *out_idx, int *out_sz){
+    return 0;
+}
+
+static int64_t get_out_samples_soxr(struct SwrContext *s, int in_samples){
+    double out_samples = (double)s->out_sample_rate / s->in_sample_rate * in_samples;
+    double delayed_samples = soxr_delay((soxr_t)s->resample);
+
+    if (s->flushed)
+        delayed_samples += s->delayed_samples_fixup;
+
+    return (int64_t)(out_samples + delayed_samples + 1 + .5);
+}
+struct Resampler const swri_soxr_resampler={
+    create, destroy, process, flush, NULL /* set_compensation */, get_delay_soxr,
+    invert_initial_buffer_soxr, get_out_samples_soxr
+};
+
 
 av_cold void swr_close(SwrContext *s){
     clear_context(s);
@@ -32540,24 +32598,7 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
         return s->resampler->set_compensation(s->resample, sample_delta, compensation_distance);
     }
 }
-static inline int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int zero_realloc)
-{
-    void *val;
 
-    memcpy(&val, ptr, sizeof(val));
-    if (min_size <= *size) {
-        av_assert0(val || !min_size);
-        return 0;
-    }
-    min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
-    av_freep(ptr);
-    val = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
-    memcpy(ptr, &val, sizeof(val));
-    if (!val)
-        min_size = 0;
-    *size = min_size;
-    return 1;
-}
 void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
     ff_fast_malloc(ptr, size, min_size, 0);
@@ -33474,24 +33515,7 @@ static void *codec_child_next(void *obj, void *prev)
     return NULL;
 }
 
-#if FF_API_CHILD_CLASS_NEXT
-static const AVClass *codec_child_class_next(const AVClass *prev)
-{
-    void *iter = NULL;
-    const AVCodec *c = NULL;
 
-    /* find the codec that corresponds to prev */
-    while (prev && (c = av_codec_iterate(&iter)))
-        if (c->priv_class == prev)
-            break;
-
-    /* find next codec with priv options */
-    while (c = av_codec_iterate(&iter))
-        if (c->priv_class)
-            return c->priv_class;
-    return NULL;
-}
-#endif
 static const AVClass *codec_child_class_iterate(void **iter)
 {
     const AVCodec *c;
@@ -33932,6 +33956,33 @@ static const AVOption avcodec_options[] = {
 {"discard_damaged_percentage", "Percentage of damaged samples to discard a frame", offsetof(AVCodecContext,discard_damaged_percentage), AV_OPT_TYPE_INT, {.i64 = 95 }, 0, 100, V|D },
 {NULL},
 };
+
+#if FF_API_CHILD_CLASS_NEXT
+static const AVClass *codec_child_class_next(const AVClass *prev)
+{
+    void *iter = NULL;
+    const AVCodec *c = NULL;
+
+    /* find the codec that corresponds to prev */
+    while (prev && (c = av_codec_iterate(&iter)))
+        if (c->priv_class == prev)
+            break;
+
+    /* find next codec with priv options */
+    while (c = av_codec_iterate(&iter))
+        if (c->priv_class)
+            return c->priv_class;
+    return NULL;
+}
+#endif
+
+
+static AVClassCategory AVClass_get_category(void *ptr)
+{
+    AVCodecContext* avctx = ptr;
+    if(avctx->codec && avctx->codec->decode) return AV_CLASS_CATEGORY_DECODER;
+    else                                     return AV_CLASS_CATEGORY_ENCODER;
+}
 static const AVClass av_codec_context_class = {
     .class_name              = "AVCodecContext",
     .item_name               = context_to_name,
@@ -34960,6 +35011,29 @@ const AVClass *ff_bsf_child_class_iterate(void **opaque)
     }
     return NULL;
 }
+
+#if FF_API_CHILD_CLASS_NEXT
+const AVClass *ff_bsf_child_class_next(const AVClass *prev)
+{
+    const AVBitStreamFilter *f = NULL;
+    void *i = 0;
+
+    /* find the filter that corresponds to prev */
+    while (prev && (f = av_bsf_iterate(&i))) {
+        if (f->priv_class == prev) {
+            break;
+        }
+    }
+
+    /* find next filter with priv options */
+    while ((f = av_bsf_iterate(&i))) {
+        if (f->priv_class)
+            return f->priv_class;
+    }
+    return NULL;
+}
+#endif
+
 static const AVClass bsf_class = {
     .class_name       = "AVBSFContext",
     .item_name        = bsf_to_name,
@@ -37137,21 +37211,31 @@ int avformat_network_init(void)
         return ret;
     return 0;
 }
-static const AVOutputFormat *const *outdev_list = NULL;
-static const AVInputFormat *const *indev_list = NULL;
+
+
+static const AVOutputFormat *const *outdev_list_p = NULL;
+static const AVInputFormat *const *indev_list_p = NULL;
+
 static AVMutex avpriv_register_devices_mutex = AV_MUTEX_INITIALIZER;
 
 void avpriv_register_devices(const AVOutputFormat *const o[], const AVInputFormat *const i[])
 {
     ff_mutex_lock(&avpriv_register_devices_mutex);
-    outdev_list = o;
-    indev_list = i;
+    outdev_list_p = o;
+    indev_list_p = i;
     ff_mutex_unlock(&avpriv_register_devices_mutex);
 #if FF_API_NEXT
     av_format_init_next();
 #endif
 }
 
+static const AVOutputFormat * const outdev_list[] = {
+    // &ff_caca_muxer,
+    // &ff_sdl2_muxer,
+    NULL };
+static const AVInputFormat * const indev_list[] = {
+    // &ff_dshow_demuxer,
+    NULL };
 
 typedef struct {
     AVClass *class;
@@ -37170,36 +37254,6 @@ typedef struct {
 
     int inited;
 } SDLContext;
-
-static const struct sdl_texture_format_entry {
-    enum AVPixelFormat format; int texture_fmt;
-} sdl_texture_format_map[] = {
-    { AV_PIX_FMT_RGB8,    SDL_PIXELFORMAT_RGB332 },
-    { AV_PIX_FMT_RGB444,  SDL_PIXELFORMAT_RGB444 },
-    { AV_PIX_FMT_RGB555,  SDL_PIXELFORMAT_RGB555 },
-    { AV_PIX_FMT_BGR555,  SDL_PIXELFORMAT_BGR555 },
-    { AV_PIX_FMT_RGB565,  SDL_PIXELFORMAT_RGB565 },
-    { AV_PIX_FMT_BGR565,  SDL_PIXELFORMAT_BGR565 },
-    { AV_PIX_FMT_RGB24,   SDL_PIXELFORMAT_RGB24 },
-    { AV_PIX_FMT_BGR24,   SDL_PIXELFORMAT_BGR24 },
-    { AV_PIX_FMT_0RGB32,  SDL_PIXELFORMAT_RGB888 },
-    { AV_PIX_FMT_0BGR32,  SDL_PIXELFORMAT_BGR888 },
-#if HAVE_BIGENDIAN
-    { AV_PIX_FMT_RGB0,    SDL_PIXELFORMAT_RGBX8888 },
-    { AV_PIX_FMT_BGR0,    SDL_PIXELFORMAT_BGRX8888 },
-#else
-    { AV_PIX_FMT_0BGR,    SDL_PIXELFORMAT_RGBX8888 },
-    { AV_PIX_FMT_0RGB,    SDL_PIXELFORMAT_BGRX8888 },
-#endif
-    { AV_PIX_FMT_RGB32,   SDL_PIXELFORMAT_ARGB8888 },
-    { AV_PIX_FMT_RGB32_1, SDL_PIXELFORMAT_RGBA8888 },
-    { AV_PIX_FMT_BGR32,   SDL_PIXELFORMAT_ABGR8888 },
-    { AV_PIX_FMT_BGR32_1, SDL_PIXELFORMAT_BGRA8888 },
-    { AV_PIX_FMT_YUV420P, SDL_PIXELFORMAT_IYUV },
-    { AV_PIX_FMT_YUYV422, SDL_PIXELFORMAT_YUY2 },
-    { AV_PIX_FMT_UYVY422, SDL_PIXELFORMAT_UYVY },
-    { AV_PIX_FMT_NONE,    0                },
-};
 
 static void compute_texture_rect(AVFormatContext *s)
 {
@@ -37346,6 +37400,27 @@ fail:
     return ret;
 }
 
+int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
+                         const uint8_t *src, enum AVPixelFormat pix_fmt,
+                         int width, int height, int align)
+{
+    int ret, i;
+
+    ret = av_image_check_size(width, height, 0, NULL);
+    if (ret < 0)
+        return ret;
+
+    ret = av_image_fill_linesizes(dst_linesize, pix_fmt, width);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i < 4; i++)
+        dst_linesize[i] = FFALIGN(dst_linesize[i], align);
+
+    return av_image_fill_pointers(dst_data, pix_fmt, height, (uint8_t *)src, dst_linesize);
+}
+
+
 static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, quit = 0;
@@ -37431,16 +37506,16 @@ static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-#define OFFSET(x) offsetof(SDLContext,x)
+#define SDLContextOFFSET(x) offsetof(SDLContext,x)
 
 static const AVOption options[] = {
-    { "window_title",      "set SDL window title",       OFFSET(window_title), AV_OPT_TYPE_STRING,     { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_size",       "set SDL window forced size", OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_x",          "set SDL window x position",  OFFSET(window_x),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_y",          "set SDL window y position",  OFFSET(window_y),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_fullscreen", "set SDL window fullscreen",  OFFSET(window_fullscreen), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_borderless", "set SDL window border off",  OFFSET(window_borderless), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_enable_quit", "set if quit action is available", OFFSET(enable_quit_action), AV_OPT_TYPE_INT, {.i64=1},   0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_title",      "set SDL window title",       SDLContextOFFSET(window_title), AV_OPT_TYPE_STRING,     { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_size",       "set SDL window forced size", SDLContextOFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_x",          "set SDL window x position",  SDLContextOFFSET(window_x),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_y",          "set SDL window y position",  SDLContextOFFSET(window_y),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_fullscreen", "set SDL window fullscreen",  SDLContextOFFSET(window_fullscreen), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_borderless", "set SDL window border off",  SDLContextOFFSET(window_borderless), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_enable_quit", "set if quit action is available", SDLContextOFFSET(enable_quit_action), AV_OPT_TYPE_INT, {.i64=1},   0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
@@ -37465,11 +37540,295 @@ AVOutputFormat ff_sdl2_muxer = {
     .priv_class     = &sdl2_class,
 };
 
-static const AVOutputFormat * const outdev_list[] = {
-    // &ff_caca_muxer,
-    &ff_sdl2_muxer,
-    NULL };
+typedef struct PixelFormatTag {
+    enum AVPixelFormat pix_fmt;
+    unsigned int fourcc;
+} PixelFormatTag;
 
+enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags,
+                                       unsigned int fourcc)
+{
+    while (tags->pix_fmt >= 0) {
+        if (tags->fourcc == fourcc)
+            return tags->pix_fmt;
+        tags++;
+    }
+    return AV_PIX_FMT_NONE;
+}
+
+const PixelFormatTag ff_raw_pix_fmt_tags[] = {
+    { AV_PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
+    { AV_PIX_FMT_YUV420P, MKTAG('I', 'Y', 'U', 'V') },
+    { AV_PIX_FMT_YUV420P, MKTAG('y', 'v', '1', '2') },
+    { AV_PIX_FMT_YUV420P, MKTAG('Y', 'V', '1', '2') },
+    { AV_PIX_FMT_YUV410P, MKTAG('Y', 'U', 'V', '9') },
+    { AV_PIX_FMT_YUV410P, MKTAG('Y', 'V', 'U', '9') },
+    { AV_PIX_FMT_YUV411P, MKTAG('Y', '4', '1', 'B') },
+    { AV_PIX_FMT_YUV422P, MKTAG('Y', '4', '2', 'B') },
+    { AV_PIX_FMT_YUV422P, MKTAG('P', '4', '2', '2') },
+    { AV_PIX_FMT_YUV422P, MKTAG('Y', 'V', '1', '6') },
+    /* yuvjXXX formats are deprecated hacks specific to libav*,
+       they are identical to yuvXXX  */
+    { AV_PIX_FMT_YUVJ420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
+    { AV_PIX_FMT_YUVJ420P, MKTAG('I', 'Y', 'U', 'V') },
+    { AV_PIX_FMT_YUVJ420P, MKTAG('Y', 'V', '1', '2') },
+    { AV_PIX_FMT_YUVJ422P, MKTAG('Y', '4', '2', 'B') },
+    { AV_PIX_FMT_YUVJ422P, MKTAG('P', '4', '2', '2') },
+    { AV_PIX_FMT_GRAY8,    MKTAG('Y', '8', '0', '0') },
+    { AV_PIX_FMT_GRAY8,    MKTAG('Y', '8', ' ', ' ') },
+
+    { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'Y', '2') }, /* Packed formats */
+    { AV_PIX_FMT_YUYV422, MKTAG('Y', '4', '2', '2') },
+    { AV_PIX_FMT_YUYV422, MKTAG('V', '4', '2', '2') },
+    { AV_PIX_FMT_YUYV422, MKTAG('V', 'Y', 'U', 'Y') },
+    { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'N', 'V') },
+    { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'Y', 'V') },
+    { AV_PIX_FMT_YVYU422, MKTAG('Y', 'V', 'Y', 'U') }, /* Philips */
+    { AV_PIX_FMT_UYVY422, MKTAG('U', 'Y', 'V', 'Y') },
+    { AV_PIX_FMT_UYVY422, MKTAG('H', 'D', 'Y', 'C') },
+    { AV_PIX_FMT_UYVY422, MKTAG('U', 'Y', 'N', 'V') },
+    { AV_PIX_FMT_UYVY422, MKTAG('U', 'Y', 'N', 'Y') },
+    { AV_PIX_FMT_UYVY422, MKTAG('u', 'y', 'v', '1') },
+    { AV_PIX_FMT_UYVY422, MKTAG('2', 'V', 'u', '1') },
+    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', 'R', 'n') }, /* Avid AVI Codec 1:1 */
+    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', '1', 'x') }, /* Avid 1:1x */
+    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', 'u', 'p') },
+    { AV_PIX_FMT_UYVY422, MKTAG('V', 'D', 'T', 'Z') }, /* SoftLab-NSK VideoTizer */
+    { AV_PIX_FMT_UYVY422, MKTAG('a', 'u', 'v', '2') },
+    { AV_PIX_FMT_UYVY422, MKTAG('c', 'y', 'u', 'v') }, /* CYUV is also Creative YUV */
+    { AV_PIX_FMT_UYYVYY411, MKTAG('Y', '4', '1', '1') },
+    { AV_PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
+    { AV_PIX_FMT_NV12,    MKTAG('N', 'V', '1', '2') },
+    { AV_PIX_FMT_NV21,    MKTAG('N', 'V', '2', '1') },
+
+    /* nut */
+    { AV_PIX_FMT_RGB555LE, MKTAG('R', 'G', 'B', 15) },
+    { AV_PIX_FMT_BGR555LE, MKTAG('B', 'G', 'R', 15) },
+    { AV_PIX_FMT_RGB565LE, MKTAG('R', 'G', 'B', 16) },
+    { AV_PIX_FMT_BGR565LE, MKTAG('B', 'G', 'R', 16) },
+    { AV_PIX_FMT_RGB555BE, MKTAG(15 , 'B', 'G', 'R') },
+    { AV_PIX_FMT_BGR555BE, MKTAG(15 , 'R', 'G', 'B') },
+    { AV_PIX_FMT_RGB565BE, MKTAG(16 , 'B', 'G', 'R') },
+    { AV_PIX_FMT_BGR565BE, MKTAG(16 , 'R', 'G', 'B') },
+    { AV_PIX_FMT_RGB444LE, MKTAG('R', 'G', 'B', 12) },
+    { AV_PIX_FMT_BGR444LE, MKTAG('B', 'G', 'R', 12) },
+    { AV_PIX_FMT_RGB444BE, MKTAG(12 , 'B', 'G', 'R') },
+    { AV_PIX_FMT_BGR444BE, MKTAG(12 , 'R', 'G', 'B') },
+    { AV_PIX_FMT_RGBA64LE, MKTAG('R', 'B', 'A', 64 ) },
+    { AV_PIX_FMT_BGRA64LE, MKTAG('B', 'R', 'A', 64 ) },
+    { AV_PIX_FMT_RGBA64BE, MKTAG(64 , 'R', 'B', 'A') },
+    { AV_PIX_FMT_BGRA64BE, MKTAG(64 , 'B', 'R', 'A') },
+    { AV_PIX_FMT_RGBA,     MKTAG('R', 'G', 'B', 'A') },
+    { AV_PIX_FMT_RGB0,     MKTAG('R', 'G', 'B',  0 ) },
+    { AV_PIX_FMT_BGRA,     MKTAG('B', 'G', 'R', 'A') },
+    { AV_PIX_FMT_BGR0,     MKTAG('B', 'G', 'R',  0 ) },
+    { AV_PIX_FMT_ABGR,     MKTAG('A', 'B', 'G', 'R') },
+    { AV_PIX_FMT_0BGR,     MKTAG( 0 , 'B', 'G', 'R') },
+    { AV_PIX_FMT_ARGB,     MKTAG('A', 'R', 'G', 'B') },
+    { AV_PIX_FMT_0RGB,     MKTAG( 0 , 'R', 'G', 'B') },
+    { AV_PIX_FMT_RGB24,    MKTAG('R', 'G', 'B', 24 ) },
+    { AV_PIX_FMT_BGR24,    MKTAG('B', 'G', 'R', 24 ) },
+    { AV_PIX_FMT_YUV411P,  MKTAG('4', '1', '1', 'P') },
+    { AV_PIX_FMT_YUV422P,  MKTAG('4', '2', '2', 'P') },
+    { AV_PIX_FMT_YUVJ422P, MKTAG('4', '2', '2', 'P') },
+    { AV_PIX_FMT_YUV440P,  MKTAG('4', '4', '0', 'P') },
+    { AV_PIX_FMT_YUVJ440P, MKTAG('4', '4', '0', 'P') },
+    { AV_PIX_FMT_YUV444P,  MKTAG('4', '4', '4', 'P') },
+    { AV_PIX_FMT_YUVJ444P, MKTAG('4', '4', '4', 'P') },
+    { AV_PIX_FMT_MONOWHITE,MKTAG('B', '1', 'W', '0') },
+    { AV_PIX_FMT_MONOBLACK,MKTAG('B', '0', 'W', '1') },
+    { AV_PIX_FMT_BGR8,     MKTAG('B', 'G', 'R',  8 ) },
+    { AV_PIX_FMT_RGB8,     MKTAG('R', 'G', 'B',  8 ) },
+    { AV_PIX_FMT_BGR4,     MKTAG('B', 'G', 'R',  4 ) },
+    { AV_PIX_FMT_RGB4,     MKTAG('R', 'G', 'B',  4 ) },
+    { AV_PIX_FMT_RGB4_BYTE,MKTAG('B', '4', 'B', 'Y') },
+    { AV_PIX_FMT_BGR4_BYTE,MKTAG('R', '4', 'B', 'Y') },
+    { AV_PIX_FMT_RGB48LE,  MKTAG('R', 'G', 'B', 48 ) },
+    { AV_PIX_FMT_RGB48BE,  MKTAG( 48, 'R', 'G', 'B') },
+    { AV_PIX_FMT_BGR48LE,  MKTAG('B', 'G', 'R', 48 ) },
+    { AV_PIX_FMT_BGR48BE,  MKTAG( 48, 'B', 'G', 'R') },
+    { AV_PIX_FMT_GRAY9LE,     MKTAG('Y', '1',  0 ,  9 ) },
+    { AV_PIX_FMT_GRAY9BE,     MKTAG( 9 ,  0 , '1', 'Y') },
+    { AV_PIX_FMT_GRAY10LE,    MKTAG('Y', '1',  0 , 10 ) },
+    { AV_PIX_FMT_GRAY10BE,    MKTAG(10 ,  0 , '1', 'Y') },
+    { AV_PIX_FMT_GRAY12LE,    MKTAG('Y', '1',  0 , 12 ) },
+    { AV_PIX_FMT_GRAY12BE,    MKTAG(12 ,  0 , '1', 'Y') },
+    { AV_PIX_FMT_GRAY14LE,    MKTAG('Y', '1',  0 , 14 ) },
+    { AV_PIX_FMT_GRAY14BE,    MKTAG(14 ,  0 , '1', 'Y') },
+    { AV_PIX_FMT_GRAY16LE,    MKTAG('Y', '1',  0 , 16 ) },
+    { AV_PIX_FMT_GRAY16BE,    MKTAG(16 ,  0 , '1', 'Y') },
+    { AV_PIX_FMT_YUV420P9LE,  MKTAG('Y', '3', 11 ,  9 ) },
+    { AV_PIX_FMT_YUV420P9BE,  MKTAG( 9 , 11 , '3', 'Y') },
+    { AV_PIX_FMT_YUV422P9LE,  MKTAG('Y', '3', 10 ,  9 ) },
+    { AV_PIX_FMT_YUV422P9BE,  MKTAG( 9 , 10 , '3', 'Y') },
+    { AV_PIX_FMT_YUV444P9LE,  MKTAG('Y', '3',  0 ,  9 ) },
+    { AV_PIX_FMT_YUV444P9BE,  MKTAG( 9 ,  0 , '3', 'Y') },
+    { AV_PIX_FMT_YUV420P10LE, MKTAG('Y', '3', 11 , 10 ) },
+    { AV_PIX_FMT_YUV420P10BE, MKTAG(10 , 11 , '3', 'Y') },
+    { AV_PIX_FMT_YUV422P10LE, MKTAG('Y', '3', 10 , 10 ) },
+    { AV_PIX_FMT_YUV422P10BE, MKTAG(10 , 10 , '3', 'Y') },
+    { AV_PIX_FMT_YUV444P10LE, MKTAG('Y', '3',  0 , 10 ) },
+    { AV_PIX_FMT_YUV444P10BE, MKTAG(10 ,  0 , '3', 'Y') },
+    { AV_PIX_FMT_YUV420P12LE, MKTAG('Y', '3', 11 , 12 ) },
+    { AV_PIX_FMT_YUV420P12BE, MKTAG(12 , 11 , '3', 'Y') },
+    { AV_PIX_FMT_YUV422P12LE, MKTAG('Y', '3', 10 , 12 ) },
+    { AV_PIX_FMT_YUV422P12BE, MKTAG(12 , 10 , '3', 'Y') },
+    { AV_PIX_FMT_YUV444P12LE, MKTAG('Y', '3',  0 , 12 ) },
+    { AV_PIX_FMT_YUV444P12BE, MKTAG(12 ,  0 , '3', 'Y') },
+    { AV_PIX_FMT_YUV420P14LE, MKTAG('Y', '3', 11 , 14 ) },
+    { AV_PIX_FMT_YUV420P14BE, MKTAG(14 , 11 , '3', 'Y') },
+    { AV_PIX_FMT_YUV422P14LE, MKTAG('Y', '3', 10 , 14 ) },
+    { AV_PIX_FMT_YUV422P14BE, MKTAG(14 , 10 , '3', 'Y') },
+    { AV_PIX_FMT_YUV444P14LE, MKTAG('Y', '3',  0 , 14 ) },
+    { AV_PIX_FMT_YUV444P14BE, MKTAG(14 ,  0 , '3', 'Y') },
+    { AV_PIX_FMT_YUV420P16LE, MKTAG('Y', '3', 11 , 16 ) },
+    { AV_PIX_FMT_YUV420P16BE, MKTAG(16 , 11 , '3', 'Y') },
+    { AV_PIX_FMT_YUV422P16LE, MKTAG('Y', '3', 10 , 16 ) },
+    { AV_PIX_FMT_YUV422P16BE, MKTAG(16 , 10 , '3', 'Y') },
+    { AV_PIX_FMT_YUV444P16LE, MKTAG('Y', '3',  0 , 16 ) },
+    { AV_PIX_FMT_YUV444P16BE, MKTAG(16 ,  0 , '3', 'Y') },
+    { AV_PIX_FMT_YUVA420P,    MKTAG('Y', '4', 11 ,  8 ) },
+    { AV_PIX_FMT_YUVA422P,    MKTAG('Y', '4', 10 ,  8 ) },
+    { AV_PIX_FMT_YUVA444P,    MKTAG('Y', '4',  0 ,  8 ) },
+    { AV_PIX_FMT_YA8,         MKTAG('Y', '2',  0 ,  8 ) },
+    { AV_PIX_FMT_PAL8,        MKTAG('P', 'A', 'L',  8 ) },
+
+    { AV_PIX_FMT_YUVA420P9LE,  MKTAG('Y', '4', 11 ,  9 ) },
+    { AV_PIX_FMT_YUVA420P9BE,  MKTAG( 9 , 11 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA422P9LE,  MKTAG('Y', '4', 10 ,  9 ) },
+    { AV_PIX_FMT_YUVA422P9BE,  MKTAG( 9 , 10 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA444P9LE,  MKTAG('Y', '4',  0 ,  9 ) },
+    { AV_PIX_FMT_YUVA444P9BE,  MKTAG( 9 ,  0 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA420P10LE, MKTAG('Y', '4', 11 , 10 ) },
+    { AV_PIX_FMT_YUVA420P10BE, MKTAG(10 , 11 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA422P10LE, MKTAG('Y', '4', 10 , 10 ) },
+    { AV_PIX_FMT_YUVA422P10BE, MKTAG(10 , 10 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA444P10LE, MKTAG('Y', '4',  0 , 10 ) },
+    { AV_PIX_FMT_YUVA444P10BE, MKTAG(10 ,  0 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA422P12LE, MKTAG('Y', '4', 10 , 12 ) },
+    { AV_PIX_FMT_YUVA422P12BE, MKTAG(12 , 10 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA444P12LE, MKTAG('Y', '4',  0 , 12 ) },
+    { AV_PIX_FMT_YUVA444P12BE, MKTAG(12 ,  0 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA420P16LE, MKTAG('Y', '4', 11 , 16 ) },
+    { AV_PIX_FMT_YUVA420P16BE, MKTAG(16 , 11 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA422P16LE, MKTAG('Y', '4', 10 , 16 ) },
+    { AV_PIX_FMT_YUVA422P16BE, MKTAG(16 , 10 , '4', 'Y') },
+    { AV_PIX_FMT_YUVA444P16LE, MKTAG('Y', '4',  0 , 16 ) },
+    { AV_PIX_FMT_YUVA444P16BE, MKTAG(16 ,  0 , '4', 'Y') },
+
+    { AV_PIX_FMT_GBRP,         MKTAG('G', '3', 00 ,  8 ) },
+    { AV_PIX_FMT_GBRP9LE,      MKTAG('G', '3', 00 ,  9 ) },
+    { AV_PIX_FMT_GBRP9BE,      MKTAG( 9 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP10LE,     MKTAG('G', '3', 00 , 10 ) },
+    { AV_PIX_FMT_GBRP10BE,     MKTAG(10 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP12LE,     MKTAG('G', '3', 00 , 12 ) },
+    { AV_PIX_FMT_GBRP12BE,     MKTAG(12 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP14LE,     MKTAG('G', '3', 00 , 14 ) },
+    { AV_PIX_FMT_GBRP14BE,     MKTAG(14 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP16LE,     MKTAG('G', '3', 00 , 16 ) },
+    { AV_PIX_FMT_GBRP16BE,     MKTAG(16 , 00 , '3', 'G') },
+
+    { AV_PIX_FMT_GBRAP,        MKTAG('G', '4', 00 ,  8 ) },
+    { AV_PIX_FMT_GBRAP10LE,    MKTAG('G', '4', 00 , 10 ) },
+    { AV_PIX_FMT_GBRAP10BE,    MKTAG(10 , 00 , '4', 'G') },
+    { AV_PIX_FMT_GBRAP12LE,    MKTAG('G', '4', 00 , 12 ) },
+    { AV_PIX_FMT_GBRAP12BE,    MKTAG(12 , 00 , '4', 'G') },
+    { AV_PIX_FMT_GBRAP16LE,    MKTAG('G', '4', 00 , 16 ) },
+    { AV_PIX_FMT_GBRAP16BE,    MKTAG(16 , 00 , '4', 'G') },
+
+    { AV_PIX_FMT_XYZ12LE,      MKTAG('X', 'Y', 'Z' , 36 ) },
+    { AV_PIX_FMT_XYZ12BE,      MKTAG(36 , 'Z' , 'Y', 'X') },
+
+    { AV_PIX_FMT_BAYER_BGGR8,    MKTAG(0xBA, 'B', 'G', 8   ) },
+    { AV_PIX_FMT_BAYER_BGGR16LE, MKTAG(0xBA, 'B', 'G', 16  ) },
+    { AV_PIX_FMT_BAYER_BGGR16BE, MKTAG(16  , 'G', 'B', 0xBA) },
+    { AV_PIX_FMT_BAYER_RGGB8,    MKTAG(0xBA, 'R', 'G', 8   ) },
+    { AV_PIX_FMT_BAYER_RGGB16LE, MKTAG(0xBA, 'R', 'G', 16  ) },
+    { AV_PIX_FMT_BAYER_RGGB16BE, MKTAG(16  , 'G', 'R', 0xBA) },
+    { AV_PIX_FMT_BAYER_GBRG8,    MKTAG(0xBA, 'G', 'B', 8   ) },
+    { AV_PIX_FMT_BAYER_GBRG16LE, MKTAG(0xBA, 'G', 'B', 16  ) },
+    { AV_PIX_FMT_BAYER_GBRG16BE, MKTAG(16,   'B', 'G', 0xBA) },
+    { AV_PIX_FMT_BAYER_GRBG8,    MKTAG(0xBA, 'G', 'R', 8   ) },
+    { AV_PIX_FMT_BAYER_GRBG16LE, MKTAG(0xBA, 'G', 'R', 16  ) },
+    { AV_PIX_FMT_BAYER_GRBG16BE, MKTAG(16,   'R', 'G', 0xBA) },
+
+    /* quicktime */
+    { AV_PIX_FMT_YUV420P, MKTAG('R', '4', '2', '0') }, /* Radius DV YUV PAL */
+    { AV_PIX_FMT_YUV411P, MKTAG('R', '4', '1', '1') }, /* Radius DV YUV NTSC */
+    { AV_PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
+    { AV_PIX_FMT_UYVY422, MKTAG('2', 'V', 'u', 'y') },
+    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', 'U', 'I') }, /* FIXME merge both fields */
+    { AV_PIX_FMT_UYVY422, MKTAG('b', 'x', 'y', 'v') },
+    { AV_PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', '2') },
+    { AV_PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', 's') },
+    { AV_PIX_FMT_YUYV422, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
+    { AV_PIX_FMT_RGB555LE,MKTAG('L', '5', '5', '5') },
+    { AV_PIX_FMT_RGB565LE,MKTAG('L', '5', '6', '5') },
+    { AV_PIX_FMT_RGB565BE,MKTAG('B', '5', '6', '5') },
+    { AV_PIX_FMT_BGR24,   MKTAG('2', '4', 'B', 'G') },
+    { AV_PIX_FMT_BGR24,   MKTAG('b', 'x', 'b', 'g') },
+    { AV_PIX_FMT_BGRA,    MKTAG('B', 'G', 'R', 'A') },
+    { AV_PIX_FMT_RGBA,    MKTAG('R', 'G', 'B', 'A') },
+    { AV_PIX_FMT_RGB24,   MKTAG('b', 'x', 'r', 'g') },
+    { AV_PIX_FMT_ABGR,    MKTAG('A', 'B', 'G', 'R') },
+    { AV_PIX_FMT_GRAY16BE,MKTAG('b', '1', '6', 'g') },
+    { AV_PIX_FMT_RGB48BE, MKTAG('b', '4', '8', 'r') },
+    { AV_PIX_FMT_RGBA64BE,MKTAG('b', '6', '4', 'a') },
+    { AV_PIX_FMT_BAYER_RGGB16BE, MKTAG('B', 'G', 'G', 'R') },
+
+    /* vlc */
+    { AV_PIX_FMT_YUV410P,     MKTAG('I', '4', '1', '0') },
+    { AV_PIX_FMT_YUV411P,     MKTAG('I', '4', '1', '1') },
+    { AV_PIX_FMT_YUV422P,     MKTAG('I', '4', '2', '2') },
+    { AV_PIX_FMT_YUV440P,     MKTAG('I', '4', '4', '0') },
+    { AV_PIX_FMT_YUV444P,     MKTAG('I', '4', '4', '4') },
+    { AV_PIX_FMT_YUVJ420P,    MKTAG('J', '4', '2', '0') },
+    { AV_PIX_FMT_YUVJ422P,    MKTAG('J', '4', '2', '2') },
+    { AV_PIX_FMT_YUVJ440P,    MKTAG('J', '4', '4', '0') },
+    { AV_PIX_FMT_YUVJ444P,    MKTAG('J', '4', '4', '4') },
+    { AV_PIX_FMT_YUVA444P,    MKTAG('Y', 'U', 'V', 'A') },
+    { AV_PIX_FMT_YUVA420P,    MKTAG('I', '4', '0', 'A') },
+    { AV_PIX_FMT_YUVA422P,    MKTAG('I', '4', '2', 'A') },
+    { AV_PIX_FMT_RGB8,        MKTAG('R', 'G', 'B', '2') },
+    { AV_PIX_FMT_RGB555LE,    MKTAG('R', 'V', '1', '5') },
+    { AV_PIX_FMT_RGB565LE,    MKTAG('R', 'V', '1', '6') },
+    { AV_PIX_FMT_BGR24,       MKTAG('R', 'V', '2', '4') },
+    { AV_PIX_FMT_BGR0,        MKTAG('R', 'V', '3', '2') },
+    { AV_PIX_FMT_RGBA,        MKTAG('A', 'V', '3', '2') },
+    { AV_PIX_FMT_YUV420P9LE,  MKTAG('I', '0', '9', 'L') },
+    { AV_PIX_FMT_YUV420P9BE,  MKTAG('I', '0', '9', 'B') },
+    { AV_PIX_FMT_YUV422P9LE,  MKTAG('I', '2', '9', 'L') },
+    { AV_PIX_FMT_YUV422P9BE,  MKTAG('I', '2', '9', 'B') },
+    { AV_PIX_FMT_YUV444P9LE,  MKTAG('I', '4', '9', 'L') },
+    { AV_PIX_FMT_YUV444P9BE,  MKTAG('I', '4', '9', 'B') },
+    { AV_PIX_FMT_YUV420P10LE, MKTAG('I', '0', 'A', 'L') },
+    { AV_PIX_FMT_YUV420P10BE, MKTAG('I', '0', 'A', 'B') },
+    { AV_PIX_FMT_YUV422P10LE, MKTAG('I', '2', 'A', 'L') },
+    { AV_PIX_FMT_YUV422P10BE, MKTAG('I', '2', 'A', 'B') },
+    { AV_PIX_FMT_YUV444P10LE, MKTAG('I', '4', 'A', 'L') },
+    { AV_PIX_FMT_YUV444P10BE, MKTAG('I', '4', 'A', 'B') },
+    { AV_PIX_FMT_YUV420P12LE, MKTAG('I', '0', 'C', 'L') },
+    { AV_PIX_FMT_YUV420P12BE, MKTAG('I', '0', 'C', 'B') },
+    { AV_PIX_FMT_YUV422P12LE, MKTAG('I', '2', 'C', 'L') },
+    { AV_PIX_FMT_YUV422P12BE, MKTAG('I', '2', 'C', 'B') },
+    { AV_PIX_FMT_YUV444P12LE, MKTAG('I', '4', 'C', 'L') },
+    { AV_PIX_FMT_YUV444P12BE, MKTAG('I', '4', 'C', 'B') },
+    { AV_PIX_FMT_YUV420P16LE, MKTAG('I', '0', 'F', 'L') },
+    { AV_PIX_FMT_YUV420P16BE, MKTAG('I', '0', 'F', 'B') },
+    { AV_PIX_FMT_YUV444P16LE, MKTAG('I', '4', 'F', 'L') },
+    { AV_PIX_FMT_YUV444P16BE, MKTAG('I', '4', 'F', 'B') },
+
+    /* special */
+    { AV_PIX_FMT_RGB565LE,MKTAG( 3 ,  0 ,  0 ,  0 ) }, /* flipped RGB565LE */
+    { AV_PIX_FMT_YUV444P, MKTAG('Y', 'V', '2', '4') }, /* YUV444P, swapped UV */
+
+    { AV_PIX_FMT_NONE, 0 },
+};
+
+const struct PixelFormatTag *avpriv_get_raw_pix_fmt_tags(void)
+{
+    return ff_raw_pix_fmt_tags;
+}
 static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
 {
     switch(biCompression) {
@@ -37492,6 +37851,162 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
     }
     return avpriv_find_pix_fmt(avpriv_get_raw_pix_fmt_tags(), biCompression); // all others
 }
+typedef struct libAVPin libAVPin;
+typedef struct libAVMemInputPin libAVMemInputPin;
+typedef struct libAVEnumPins libAVEnumPins;
+typedef struct libAVEnumMediaTypes libAVEnumMediaTypes;
+typedef struct libAVFilter libAVFilter;
+
+struct GUIDoffset {
+    const GUID *iid;
+    int offset;
+};
+
+enum dshowDeviceType {
+    VideoDevice = 0,
+    AudioDevice = 1,
+};
+
+enum dshowSourceFilterType {
+    VideoSourceDevice = 0,
+    AudioSourceDevice = 1,
+};
+
+typedef struct libAVFilter {
+    IBaseFilterVtbl *vtbl;
+    long ref;
+    const wchar_t *name;
+    libAVPin *pin;
+    FILTER_INFO info;
+    FILTER_STATE state;
+    IReferenceClock *clock;
+    enum dshowDeviceType type;
+    void *priv_data;
+    int stream_index;
+    int64_t start_time;
+    void (*callback)(void *priv_data, int index, uint8_t *buf, int buf_size, int64_t time, enum dshowDeviceType type);
+} libAVFilter;
+
+struct libAVPin {
+    IPinVtbl *vtbl;
+    long ref;
+    libAVFilter *filter;
+    IPin *connectedto;
+    AM_MEDIA_TYPE type;
+    IMemInputPinVtbl *imemvtbl;
+};
+
+struct dshow_ctx {
+    const AVClass *class;
+
+    IGraphBuilder *graph;
+
+    char *device_name[2];
+    char *device_unique_name[2];
+
+    int video_device_number;
+    int audio_device_number;
+
+    int   list_options;
+    int   list_devices;
+    int   audio_buffer_size;
+    int   crossbar_video_input_pin_number;
+    int   crossbar_audio_input_pin_number;
+    char *video_pin_name;
+    char *audio_pin_name;
+    int   show_video_device_dialog;
+    int   show_audio_device_dialog;
+    int   show_video_crossbar_connection_dialog;
+    int   show_audio_crossbar_connection_dialog;
+    int   show_analog_tv_tuner_dialog;
+    int   show_analog_tv_tuner_audio_dialog;
+    char *audio_filter_load_file;
+    char *audio_filter_save_file;
+    char *video_filter_load_file;
+    char *video_filter_save_file;
+
+    IBaseFilter *device_filter[2];
+    IPin        *device_pin[2];
+    libAVFilter *capture_filter[2];
+    libAVPin    *capture_pin[2];
+
+    HANDLE mutex;
+    HANDLE event[2]; /* event[0] is set by DirectShow
+                      * event[1] is set by callback() */
+    AVPacketList *pktl;
+
+    int eof;
+
+    int64_t curbufsize[2];
+    unsigned int video_frame_num;
+
+    IMediaControl *control;
+    IMediaEvent *media_event;
+
+    enum AVPixelFormat pixel_format;
+    enum AVCodecID video_codec_id;
+    char *framerate;
+
+    int requested_width;
+    int requested_height;
+    AVRational requested_framerate;
+
+    int sample_rate;
+    int sample_size;
+    int channels;
+};
+
+long          WINAPI libAVPin_QueryInterface          (libAVPin *, const GUID *, void **);
+unsigned long WINAPI libAVPin_AddRef                  (libAVPin *);
+unsigned long WINAPI libAVPin_Release                 (libAVPin *);
+long          WINAPI libAVPin_Connect                 (libAVPin *, IPin *, const AM_MEDIA_TYPE *);
+long          WINAPI libAVPin_ReceiveConnection       (libAVPin *, IPin *, const AM_MEDIA_TYPE *);
+long          WINAPI libAVPin_Disconnect              (libAVPin *);
+long          WINAPI libAVPin_ConnectedTo             (libAVPin *, IPin **);
+long          WINAPI libAVPin_ConnectionMediaType     (libAVPin *, AM_MEDIA_TYPE *);
+long          WINAPI libAVPin_QueryPinInfo            (libAVPin *, PIN_INFO *);
+long          WINAPI libAVPin_QueryDirection          (libAVPin *, PIN_DIRECTION *);
+long          WINAPI libAVPin_QueryId                 (libAVPin *, wchar_t **);
+long          WINAPI libAVPin_QueryAccept             (libAVPin *, const AM_MEDIA_TYPE *);
+long          WINAPI libAVPin_EnumMediaTypes          (libAVPin *, IEnumMediaTypes **);
+long          WINAPI libAVPin_QueryInternalConnections(libAVPin *, IPin **, unsigned long *);
+long          WINAPI libAVPin_EndOfStream             (libAVPin *);
+long          WINAPI libAVPin_BeginFlush              (libAVPin *);
+long          WINAPI libAVPin_EndFlush                (libAVPin *);
+long          WINAPI libAVPin_NewSegment              (libAVPin *, REFERENCE_TIME, REFERENCE_TIME, double);
+
+long          WINAPI libAVMemInputPin_QueryInterface          (libAVMemInputPin *, const GUID *, void **);
+unsigned long WINAPI libAVMemInputPin_AddRef                  (libAVMemInputPin *);
+unsigned long WINAPI libAVMemInputPin_Release                 (libAVMemInputPin *);
+long          WINAPI libAVMemInputPin_GetAllocator            (libAVMemInputPin *, IMemAllocator **);
+long          WINAPI libAVMemInputPin_NotifyAllocator         (libAVMemInputPin *, IMemAllocator *, BOOL);
+long          WINAPI libAVMemInputPin_GetAllocatorRequirements(libAVMemInputPin *, ALLOCATOR_PROPERTIES *);
+long          WINAPI libAVMemInputPin_Receive                 (libAVMemInputPin *, IMediaSample *);
+long          WINAPI libAVMemInputPin_ReceiveMultiple         (libAVMemInputPin *, IMediaSample **, long, long *);
+long          WINAPI libAVMemInputPin_ReceiveCanBlock         (libAVMemInputPin *);
+
+void                 libAVPin_Destroy(libAVPin *);
+libAVPin            *libAVPin_Create (libAVFilter *filter);
+
+void                 libAVMemInputPin_Destroy(libAVMemInputPin *);
+long          WINAPI libAVFilter_QueryInterface (libAVFilter *, const GUID *, void **);
+unsigned long WINAPI libAVFilter_AddRef         (libAVFilter *);
+unsigned long WINAPI libAVFilter_Release        (libAVFilter *);
+long          WINAPI libAVFilter_GetClassID     (libAVFilter *, CLSID *);
+long          WINAPI libAVFilter_Stop           (libAVFilter *);
+long          WINAPI libAVFilter_Pause          (libAVFilter *);
+long          WINAPI libAVFilter_Run            (libAVFilter *, REFERENCE_TIME);
+long          WINAPI libAVFilter_GetState       (libAVFilter *, DWORD, FILTER_STATE *);
+long          WINAPI libAVFilter_SetSyncSource  (libAVFilter *, IReferenceClock *);
+long          WINAPI libAVFilter_GetSyncSource  (libAVFilter *, IReferenceClock **);
+long          WINAPI libAVFilter_EnumPins       (libAVFilter *, IEnumPins **);
+long          WINAPI libAVFilter_FindPin        (libAVFilter *, const wchar_t *, IPin **);
+long          WINAPI libAVFilter_QueryFilterInfo(libAVFilter *, FILTER_INFO *);
+long          WINAPI libAVFilter_JoinFilterGraph(libAVFilter *, IFilterGraph *, const wchar_t *);
+long          WINAPI libAVFilter_QueryVendorInfo(libAVFilter *, wchar_t **);
+
+void                 libAVFilter_Destroy(libAVFilter *);
+libAVFilter         *libAVFilter_Create (void *, void *, enum dshowDeviceType);
 
 static int
 dshow_read_close(AVFormatContext *s)
@@ -37636,12 +38151,7 @@ fail:
     return;
 }
 
-/**
- * Cycle through available devices using the device enumerator devenum,
- * retrieve the device with type specified by devtype and return the
- * pointer to the object found in *pfilter.
- * If pfilter is NULL, list all device names.
- */
+
 static int
 dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                     enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype,
@@ -37669,94 +38179,725 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         return AVERROR(EIO);
     }
 
-    while (!device_filter && IEnumMoniker_Next(classenum, 1, &m, NULL) == S_OK) {
-        IPropertyBag *bag = NULL;
-        char *friendly_name = NULL;
-        char *unique_name = NULL;
-        VARIANT var;
-        IBindCtx *bind_ctx = NULL;
-        LPOLESTR olestr = NULL;
-        LPMALLOC co_malloc = NULL;
-        int i;
+//     while (!device_filter && IEnumMoniker_Next(classenum, 1, &m, NULL) == S_OK) {
+//         IPropertyBag *bag = NULL;
+//         char *friendly_name = NULL;
+//         char *unique_name = NULL;
+//         VARIANT var;
+//         IBindCtx *bind_ctx = NULL;
+//         LPOLESTR olestr = NULL;
+//         LPMALLOC co_malloc = NULL;
+//         int i;
 
-        r = CoGetMalloc(1, &co_malloc);
-        if (r != S_OK)
-            goto fail1;
-        r = CreateBindCtx(0, &bind_ctx);
-        if (r != S_OK)
-            goto fail1;
-        /* GetDisplayname works for both video and audio, DevicePath doesn't */
-        r = IMoniker_GetDisplayName(m, bind_ctx, NULL, &olestr);
-        if (r != S_OK)
-            goto fail1;
-        unique_name = dup_wchar_to_utf8(olestr);
-        /* replace ':' with '_' since we use : to delineate between sources */
-        for (i = 0; i < strlen(unique_name); i++) {
-            if (unique_name[i] == ':')
-                unique_name[i] = '_';
-        }
+//         r = CoGetMalloc(1, &co_malloc);
+//         if (r != S_OK)
+//             goto fail1;
+//         r = CreateBindCtx(0, &bind_ctx);
+//         if (r != S_OK)
+//             goto fail1;
+//         /* GetDisplayname works for both video and audio, DevicePath doesn't */
+//         r = IMoniker_GetDisplayName(m, bind_ctx, NULL, &olestr);
+//         if (r != S_OK)
+//             goto fail1;
+//         unique_name = dup_wchar_to_utf8(olestr);
+//         /* replace ':' with '_' since we use : to delineate between sources */
+//         for (i = 0; i < strlen(unique_name); i++) {
+//             if (unique_name[i] == ':')
+//                 unique_name[i] = '_';
+//         }
 
-        r = IMoniker_BindToStorage(m, 0, 0, &IID_IPropertyBag, (void *) &bag);
-        if (r != S_OK)
-            goto fail1;
+//         r = IMoniker_BindToStorage(m, 0, 0, &IID_IPropertyBag, (void *) &bag);
+//         if (r != S_OK)
+//             goto fail1;
 
-        var.vt = VT_BSTR;
-        r = IPropertyBag_Read(bag, L"FriendlyName", &var, NULL);
-        if (r != S_OK)
-            goto fail1;
-        friendly_name = dup_wchar_to_utf8(var.bstrVal);
+//         var.vt = VT_BSTR;
+//         r = IPropertyBag_Read(bag, L"FriendlyName", &var, NULL);
+//         if (r != S_OK)
+//             goto fail1;
+//         friendly_name = dup_wchar_to_utf8(var.bstrVal);
 
-        if (pfilter) {
-            if (strcmp(device_name, friendly_name) && strcmp(device_name, unique_name))
-                goto fail1;
+//         if (pfilter) {
+//             if (strcmp(device_name, friendly_name) && strcmp(device_name, unique_name))
+//                 goto fail1;
 
-            if (!skip--) {
-                r = IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
-                if (r != S_OK) {
-                    av_log(avctx, AV_LOG_ERROR, "Unable to BindToObject for %s\n", device_name);
-                    goto fail1;
-                }
-                *device_unique_name = unique_name;
-                unique_name = NULL;
-                // success, loop will end now
-            }
-        } else {
-            av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
-            av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
-        }
+//             if (!skip--) {
+//                 r = IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
+//                 if (r != S_OK) {
+//                     av_log(avctx, AV_LOG_ERROR, "Unable to BindToObject for %s\n", device_name);
+//                     goto fail1;
+//                 }
+//                 *device_unique_name = unique_name;
+//                 unique_name = NULL;
+//                 // success, loop will end now
+//             }
+//         } else {
+//             av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
+//             av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
+//         }
 
-fail1:
-        if (olestr && co_malloc)
-            IMalloc_Free(co_malloc, olestr);
-        if (bind_ctx)
-            IBindCtx_Release(bind_ctx);
-        av_freep(&friendly_name);
-        av_freep(&unique_name);
-        if (bag)
-            IPropertyBag_Release(bag);
-        IMoniker_Release(m);
-    }
+// fail1:
+//         if (olestr && co_malloc)
+//             IMalloc_Free(co_malloc, olestr);
+//         if (bind_ctx)
+//             IBindCtx_Release(bind_ctx);
+//         av_freep(&friendly_name);
+//         av_freep(&unique_name);
+//         if (bag)
+//             IPropertyBag_Release(bag);
+//         IMoniker_Release(m);
+//     }
 
-    IEnumMoniker_Release(classenum);
+//     IEnumMoniker_Release(classenum);
 
-    if (pfilter) {
-        if (!device_filter) {
-            av_log(avctx, AV_LOG_ERROR, "Could not find %s device with name [%s] among source devices of type %s.\n",
-                   devtypename, device_name, sourcetypename);
-            return AVERROR(EIO);
-        }
-        *pfilter = device_filter;
-    }
+//     if (pfilter) {
+//         if (!device_filter) {
+//             av_log(avctx, AV_LOG_ERROR, "Could not find %s device with name [%s] among source devices of type %s.\n",
+//                    devtypename, device_name, sourcetypename);
+//             return AVERROR(EIO);
+//         }
+//         *pfilter = device_filter;
+//     }
 
     return 0;
 }
 
-/**
- * Cycle through available formats using the specified pin,
- * try to set parameters specified through AVOptions and if successful
- * return 1 in *pformat_set.
- * If pformat_set is NULL, list all pin capabilities.
- */
+
+const AVCodecTag ff_codec_bmp_tags[] = {
+    { AV_CODEC_ID_H264,         MKTAG('H', '2', '6', '4') },
+    { AV_CODEC_ID_H264,         MKTAG('h', '2', '6', '4') },
+    { AV_CODEC_ID_H264,         MKTAG('X', '2', '6', '4') },
+    { AV_CODEC_ID_H264,         MKTAG('x', '2', '6', '4') },
+    { AV_CODEC_ID_H264,         MKTAG('a', 'v', 'c', '1') },
+    { AV_CODEC_ID_H264,         MKTAG('D', 'A', 'V', 'C') },
+    { AV_CODEC_ID_H264,         MKTAG('S', 'M', 'V', '2') },
+    { AV_CODEC_ID_H264,         MKTAG('V', 'S', 'S', 'H') },
+    { AV_CODEC_ID_H264,         MKTAG('Q', '2', '6', '4') }, /* QNAP surveillance system */
+    { AV_CODEC_ID_H264,         MKTAG('V', '2', '6', '4') }, /* CCTV recordings */
+    { AV_CODEC_ID_H264,         MKTAG('G', 'A', 'V', 'C') }, /* GeoVision camera */
+    { AV_CODEC_ID_H264,         MKTAG('U', 'M', 'S', 'V') },
+    { AV_CODEC_ID_H264,         MKTAG('t', 's', 'h', 'd') },
+    { AV_CODEC_ID_H264,         MKTAG('I', 'N', 'M', 'C') },
+    { AV_CODEC_ID_H263,         MKTAG('H', '2', '6', '3') },
+    { AV_CODEC_ID_H263,         MKTAG('X', '2', '6', '3') },
+    { AV_CODEC_ID_H263,         MKTAG('T', '2', '6', '3') },
+    { AV_CODEC_ID_H263,         MKTAG('L', '2', '6', '3') },
+    { AV_CODEC_ID_H263,         MKTAG('V', 'X', '1', 'K') },
+    { AV_CODEC_ID_H263,         MKTAG('Z', 'y', 'G', 'o') },
+    { AV_CODEC_ID_H263,         MKTAG('M', '2', '6', '3') },
+    { AV_CODEC_ID_H263,         MKTAG('l', 's', 'v', 'm') },
+    { AV_CODEC_ID_H263P,        MKTAG('H', '2', '6', '3') },
+    { AV_CODEC_ID_H263I,        MKTAG('I', '2', '6', '3') }, /* Intel H.263 */
+    { AV_CODEC_ID_H261,         MKTAG('H', '2', '6', '1') },
+    { AV_CODEC_ID_H263,         MKTAG('U', '2', '6', '3') },
+    { AV_CODEC_ID_H263,         MKTAG('V', 'S', 'M', '4') }, /* needs -vf il=l=i:c=i */
+    { AV_CODEC_ID_MPEG4,        MKTAG('F', 'M', 'P', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'I', 'V', 'X') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'X', '5', '0') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('X', 'V', 'I', 'D') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('M', 'P', '4', 'S') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('M', '4', 'S', '2') },
+    /* some broken AVIs use this */
+    { AV_CODEC_ID_MPEG4,        MKTAG( 4 ,  0 ,  0 ,  0 ) },
+    /* some broken AVIs use this */
+    { AV_CODEC_ID_MPEG4,        MKTAG('Z', 'M', 'P', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'I', 'V', '1') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('B', 'L', 'Z', '0') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('U', 'M', 'P', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('W', 'V', '1', 'F') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('S', 'E', 'D', 'G') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('R', 'M', 'P', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('3', 'I', 'V', '2') },
+    /* WaWv MPEG-4 Video Codec */
+    { AV_CODEC_ID_MPEG4,        MKTAG('W', 'A', 'W', 'V') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('F', 'F', 'D', 'S') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('F', 'V', 'F', 'W') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'C', 'O', 'D') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('M', 'V', 'X', 'M') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('P', 'M', '4', 'V') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('S', 'M', 'P', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'X', 'G', 'M') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('V', 'I', 'D', 'M') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('M', '4', 'T', '3') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'X') },
+    /* flipped video */
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', '2', '6', '4') },
+    /* flipped video */
+    { AV_CODEC_ID_MPEG4,        MKTAG('H', 'D', 'X', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'M', '4', 'V') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'M', 'K', '2') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'Y', 'M', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'I', 'G', 'I') },
+    /* Ephv MPEG-4 */
+    { AV_CODEC_ID_MPEG4,        MKTAG('E', 'P', 'H', 'V') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('E', 'M', '4', 'A') },
+    /* Divio MPEG-4 */
+    { AV_CODEC_ID_MPEG4,        MKTAG('M', '4', 'C', 'C') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('S', 'N', '4', '0') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('V', 'S', 'P', 'X') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('U', 'L', 'D', 'X') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'V') },
+    /* Samsung SHR-6040 */
+    { AV_CODEC_ID_MPEG4,        MKTAG('S', 'I', 'P', 'P') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('S', 'M', '4', 'V') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('X', 'V', 'I', 'X') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'r', 'e', 'X') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('Q', 'M', 'P', '4') }, /* QNAP Systems */
+    { AV_CODEC_ID_MPEG4,        MKTAG('P', 'L', 'V', '1') }, /* Pelco DVR MPEG-4 */
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', 'L', 'V', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', 'M', 'P', '4') }, /* GeoVision camera */
+    { AV_CODEC_ID_MPEG4,        MKTAG('M', 'N', 'M', '4') }, /* March Networks DVR */
+    { AV_CODEC_ID_MPEG4,        MKTAG('G', 'T', 'M', '4') }, /* Telefactor */
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', '4', '3') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '3') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('M', 'P', 'G', '3') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '5') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '6') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('D', 'I', 'V', '4') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('D', 'V', 'X', '3') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('A', 'P', '4', '1') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('C', 'O', 'L', '1') },
+    { AV_CODEC_ID_MSMPEG4V3,    MKTAG('C', 'O', 'L', '0') },
+    { AV_CODEC_ID_MSMPEG4V2,    MKTAG('M', 'P', '4', '2') },
+    { AV_CODEC_ID_MSMPEG4V2,    MKTAG('D', 'I', 'V', '2') },
+    { AV_CODEC_ID_MSMPEG4V1,    MKTAG('M', 'P', 'G', '4') },
+    { AV_CODEC_ID_MSMPEG4V1,    MKTAG('M', 'P', '4', '1') },
+    { AV_CODEC_ID_WMV1,         MKTAG('W', 'M', 'V', '1') },
+    { AV_CODEC_ID_WMV2,         MKTAG('W', 'M', 'V', '2') },
+    { AV_CODEC_ID_WMV2,         MKTAG('G', 'X', 'V', 'E') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 's', 'd') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', 'd') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', '1') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 's', 'l') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', '2', '5') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', '5', '0') },
+    /* Canopus DV */
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('c', 'd', 'v', 'c') },
+    /* Canopus DV */
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('C', 'D', 'V', 'H') },
+    /* Canopus DV */
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('C', 'D', 'V', '5') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'c', ' ') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'c', 's') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'h', '1') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('d', 'v', 'i', 's') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('p', 'd', 'v', 'c') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('S', 'L', '2', '5') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('S', 'L', 'D', 'V') },
+    { AV_CODEC_ID_DVVIDEO,      MKTAG('A', 'V', 'd', '1') },
+    { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('m', 'p', 'g', '1') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('m', 'p', 'g', '2') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', 'P', 'E', 'G') },
+    { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('P', 'I', 'M', '1') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('P', 'I', 'M', '2') },
+    { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('V', 'C', 'R', '2') },
+    { AV_CODEC_ID_MPEG1VIDEO,   MKTAG( 1 ,  0 ,  0 ,  16) },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG( 2 ,  0 ,  0 ,  16) },
+    { AV_CODEC_ID_MPEG4,        MKTAG( 4 ,  0 ,  0 ,  16) },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('D', 'V', 'R', ' ') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', 'M', 'E', 'S') },
+    /* Lead MPEG-2 in AVI */
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('L', 'M', 'P', '2') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('s', 'l', 'i', 'f') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('E', 'M', '2', 'V') },
+    /* Matrox MPEG-2 intra-only */
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '1') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '2') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '3') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '4') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('M', '7', '0', '5') },
+    { AV_CODEC_ID_MPEG2VIDEO,   MKTAG('m', 'p', 'g', 'v') },
+    { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('B', 'W', '1', '0') },
+    { AV_CODEC_ID_MPEG1VIDEO,   MKTAG('X', 'M', 'P', 'G') }, /* Xing MPEG intra only */
+    { AV_CODEC_ID_MJPEG,        MKTAG('M', 'J', 'P', 'G') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('M', 'S', 'C', '2') }, /* Multiscope II */
+    { AV_CODEC_ID_MJPEG,        MKTAG('L', 'J', 'P', 'G') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('d', 'm', 'b', '1') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('m', 'j', 'p', 'a') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('J', 'R', '2', '4') }, /* Quadrox Mjpeg */
+    { AV_CODEC_ID_LJPEG,        MKTAG('L', 'J', 'P', 'G') },
+    /* Pegasus lossless JPEG */
+    { AV_CODEC_ID_MJPEG,        MKTAG('J', 'P', 'G', 'L') },
+    /* JPEG-LS custom FOURCC for AVI - encoder */
+    { AV_CODEC_ID_JPEGLS,       MKTAG('M', 'J', 'L', 'S') },
+    { AV_CODEC_ID_JPEGLS,       MKTAG('M', 'J', 'P', 'G') },
+    /* JPEG-LS custom FOURCC for AVI - decoder */
+    { AV_CODEC_ID_MJPEG,        MKTAG('M', 'J', 'L', 'S') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('j', 'p', 'e', 'g') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('I', 'J', 'P', 'G') },
+    { AV_CODEC_ID_AVRN,         MKTAG('A', 'V', 'R', 'n') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('A', 'C', 'D', 'V') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('Q', 'I', 'V', 'G') },
+    /* SL M-JPEG */
+    { AV_CODEC_ID_MJPEG,        MKTAG('S', 'L', 'M', 'J') },
+    /* Creative Webcam JPEG */
+    { AV_CODEC_ID_MJPEG,        MKTAG('C', 'J', 'P', 'G') },
+    /* Intel JPEG Library Video Codec */
+    { AV_CODEC_ID_MJPEG,        MKTAG('I', 'J', 'L', 'V') },
+    /* Midvid JPEG Video Codec */
+    { AV_CODEC_ID_MJPEG,        MKTAG('M', 'V', 'J', 'P') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('A', 'V', 'I', '1') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('A', 'V', 'I', '2') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('M', 'T', 'S', 'J') },
+    /* Paradigm Matrix M-JPEG Codec */
+    { AV_CODEC_ID_MJPEG,        MKTAG('Z', 'J', 'P', 'G') },
+    { AV_CODEC_ID_MJPEG,        MKTAG('M', 'M', 'J', 'P') },
+    { AV_CODEC_ID_HUFFYUV,      MKTAG('H', 'F', 'Y', 'U') },
+    { AV_CODEC_ID_FFVHUFF,      MKTAG('F', 'F', 'V', 'H') },
+    { AV_CODEC_ID_CYUV,         MKTAG('C', 'Y', 'U', 'V') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG( 0 ,  0 ,  0 ,  0 ) },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG( 3 ,  0 ,  0 ,  0 ) },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '2', '0') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'Y', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '2', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('V', '4', '2', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'N', 'V') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('U', 'Y', 'N', 'V') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('U', 'Y', 'N', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('u', 'y', 'v', '1') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('2', 'V', 'u', '1') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('2', 'v', 'u', 'y') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('y', 'u', 'v', 's') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('y', 'u', 'v', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('P', '4', '2', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', '1', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', '1', '6') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', '2', '4') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('U', 'Y', 'V', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('V', 'Y', 'U', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', 'Y', 'U', 'V') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', '8', '0', '0') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', '8', ' ', ' ') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('H', 'D', 'Y', 'C') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', 'U', '9') },
+    /* SoftLab-NSK VideoTizer */
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('V', 'D', 'T', 'Z') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '1', '1') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('N', 'V', '1', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('N', 'V', '2', '1') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '1', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', '4', '2', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'V', '9') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', 'U', '9') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('a', 'u', 'v', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'V', 'Y', 'U') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'Y', 'V') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '1', '0') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '1', '1') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '2', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '4', '0') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '4', '4') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('J', '4', '2', '0') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('J', '4', '2', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('J', '4', '4', '0') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('J', '4', '4', '4') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('Y', 'U', 'V', 'A') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '0', 'A') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '2', 'A') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('R', 'G', 'B', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('R', 'V', '1', '5') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('R', 'V', '1', '6') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('R', 'V', '2', '4') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('R', 'V', '3', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('R', 'G', 'B', 'A') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('A', 'V', '3', '2') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('G', 'R', 'E', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', '9', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', '9', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '2', '9', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '2', '9', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '9', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', '9', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'A', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'A', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '2', 'A', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '2', 'A', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', 'A', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', 'A', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', 'F', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', 'F', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'C', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'C', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '2', 'C', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '2', 'C', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', 'C', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', 'C', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'F', 'L') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'F', 'B') },
+    { AV_CODEC_ID_FRWU,         MKTAG('F', 'R', 'W', 'U') },
+    { AV_CODEC_ID_R10K,         MKTAG('R', '1', '0', 'k') },
+    { AV_CODEC_ID_R210,         MKTAG('r', '2', '1', '0') },
+    { AV_CODEC_ID_V210,         MKTAG('v', '2', '1', '0') },
+    { AV_CODEC_ID_V210,         MKTAG('C', '2', '1', '0') },
+    { AV_CODEC_ID_V308,         MKTAG('v', '3', '0', '8') },
+    { AV_CODEC_ID_V408,         MKTAG('v', '4', '0', '8') },
+    { AV_CODEC_ID_AYUV,         MKTAG('A', 'Y', 'U', 'V') },
+    { AV_CODEC_ID_V410,         MKTAG('v', '4', '1', '0') },
+    { AV_CODEC_ID_YUV4,         MKTAG('y', 'u', 'v', '4') },
+    { AV_CODEC_ID_INDEO3,       MKTAG('I', 'V', '3', '1') },
+    { AV_CODEC_ID_INDEO3,       MKTAG('I', 'V', '3', '2') },
+    { AV_CODEC_ID_INDEO4,       MKTAG('I', 'V', '4', '1') },
+    { AV_CODEC_ID_INDEO5,       MKTAG('I', 'V', '5', '0') },
+    { AV_CODEC_ID_VP3,          MKTAG('V', 'P', '3', '1') },
+    { AV_CODEC_ID_VP3,          MKTAG('V', 'P', '3', '0') },
+    { AV_CODEC_ID_VP4,          MKTAG('V', 'P', '4', '0') },
+    { AV_CODEC_ID_VP5,          MKTAG('V', 'P', '5', '0') },
+    { AV_CODEC_ID_VP6,          MKTAG('V', 'P', '6', '0') },
+    { AV_CODEC_ID_VP6,          MKTAG('V', 'P', '6', '1') },
+    { AV_CODEC_ID_VP6,          MKTAG('V', 'P', '6', '2') },
+    { AV_CODEC_ID_VP6A,         MKTAG('V', 'P', '6', 'A') },
+    { AV_CODEC_ID_VP6F,         MKTAG('V', 'P', '6', 'F') },
+    { AV_CODEC_ID_VP6F,         MKTAG('F', 'L', 'V', '4') },
+    { AV_CODEC_ID_VP7,          MKTAG('V', 'P', '7', '0') },
+    { AV_CODEC_ID_VP7,          MKTAG('V', 'P', '7', '1') },
+    { AV_CODEC_ID_VP8,          MKTAG('V', 'P', '8', '0') },
+    { AV_CODEC_ID_VP9,          MKTAG('V', 'P', '9', '0') },
+    { AV_CODEC_ID_ASV1,         MKTAG('A', 'S', 'V', '1') },
+    { AV_CODEC_ID_ASV2,         MKTAG('A', 'S', 'V', '2') },
+    { AV_CODEC_ID_VCR1,         MKTAG('V', 'C', 'R', '1') },
+    { AV_CODEC_ID_FFV1,         MKTAG('F', 'F', 'V', '1') },
+    { AV_CODEC_ID_XAN_WC4,      MKTAG('X', 'x', 'a', 'n') },
+    { AV_CODEC_ID_MIMIC,        MKTAG('L', 'M', '2', '0') },
+    { AV_CODEC_ID_MSRLE,        MKTAG('m', 'r', 'l', 'e') },
+    { AV_CODEC_ID_MSRLE,        MKTAG( 1 ,  0 ,  0 ,  0 ) },
+    { AV_CODEC_ID_MSRLE,        MKTAG( 2 ,  0 ,  0 ,  0 ) },
+    { AV_CODEC_ID_MSVIDEO1,     MKTAG('M', 'S', 'V', 'C') },
+    { AV_CODEC_ID_MSVIDEO1,     MKTAG('m', 's', 'v', 'c') },
+    { AV_CODEC_ID_MSVIDEO1,     MKTAG('C', 'R', 'A', 'M') },
+    { AV_CODEC_ID_MSVIDEO1,     MKTAG('c', 'r', 'a', 'm') },
+    { AV_CODEC_ID_MSVIDEO1,     MKTAG('W', 'H', 'A', 'M') },
+    { AV_CODEC_ID_MSVIDEO1,     MKTAG('w', 'h', 'a', 'm') },
+    { AV_CODEC_ID_CINEPAK,      MKTAG('c', 'v', 'i', 'd') },
+    { AV_CODEC_ID_TRUEMOTION1,  MKTAG('D', 'U', 'C', 'K') },
+    { AV_CODEC_ID_TRUEMOTION1,  MKTAG('P', 'V', 'E', 'Z') },
+    { AV_CODEC_ID_MSZH,         MKTAG('M', 'S', 'Z', 'H') },
+    { AV_CODEC_ID_ZLIB,         MKTAG('Z', 'L', 'I', 'B') },
+    { AV_CODEC_ID_SNOW,         MKTAG('S', 'N', 'O', 'W') },
+    { AV_CODEC_ID_4XM,          MKTAG('4', 'X', 'M', 'V') },
+    { AV_CODEC_ID_FLV1,         MKTAG('F', 'L', 'V', '1') },
+    { AV_CODEC_ID_FLV1,         MKTAG('S', '2', '6', '3') },
+    { AV_CODEC_ID_FLASHSV,      MKTAG('F', 'S', 'V', '1') },
+    { AV_CODEC_ID_SVQ1,         MKTAG('s', 'v', 'q', '1') },
+    { AV_CODEC_ID_TSCC,         MKTAG('t', 's', 'c', 'c') },
+    { AV_CODEC_ID_ULTI,         MKTAG('U', 'L', 'T', 'I') },
+    { AV_CODEC_ID_VIXL,         MKTAG('V', 'I', 'X', 'L') },
+    { AV_CODEC_ID_QPEG,         MKTAG('Q', 'P', 'E', 'G') },
+    { AV_CODEC_ID_QPEG,         MKTAG('Q', '1', '.', '0') },
+    { AV_CODEC_ID_QPEG,         MKTAG('Q', '1', '.', '1') },
+    { AV_CODEC_ID_WMV3,         MKTAG('W', 'M', 'V', '3') },
+    { AV_CODEC_ID_WMV3IMAGE,    MKTAG('W', 'M', 'V', 'P') },
+    { AV_CODEC_ID_VC1,          MKTAG('W', 'V', 'C', '1') },
+    { AV_CODEC_ID_VC1,          MKTAG('W', 'M', 'V', 'A') },
+    { AV_CODEC_ID_VC1IMAGE,     MKTAG('W', 'V', 'P', '2') },
+    { AV_CODEC_ID_LOCO,         MKTAG('L', 'O', 'C', 'O') },
+    { AV_CODEC_ID_WNV1,         MKTAG('W', 'N', 'V', '1') },
+    { AV_CODEC_ID_WNV1,         MKTAG('Y', 'U', 'V', '8') },
+    { AV_CODEC_ID_AASC,         MKTAG('A', 'A', 'S', '4') }, /* Autodesk 24 bit RLE compressor */
+    { AV_CODEC_ID_AASC,         MKTAG('A', 'A', 'S', 'C') },
+    { AV_CODEC_ID_INDEO2,       MKTAG('R', 'T', '2', '1') },
+    { AV_CODEC_ID_FRAPS,        MKTAG('F', 'P', 'S', '1') },
+    { AV_CODEC_ID_THEORA,       MKTAG('t', 'h', 'e', 'o') },
+    { AV_CODEC_ID_TRUEMOTION2,  MKTAG('T', 'M', '2', '0') },
+    { AV_CODEC_ID_TRUEMOTION2RT,MKTAG('T', 'R', '2', '0') },
+    { AV_CODEC_ID_CSCD,         MKTAG('C', 'S', 'C', 'D') },
+    { AV_CODEC_ID_ZMBV,         MKTAG('Z', 'M', 'B', 'V') },
+    { AV_CODEC_ID_KMVC,         MKTAG('K', 'M', 'V', 'C') },
+    { AV_CODEC_ID_CAVS,         MKTAG('C', 'A', 'V', 'S') },
+    { AV_CODEC_ID_AVS2,         MKTAG('A', 'V', 'S', '2') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('m', 'j', 'p', '2') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('M', 'J', '2', 'C') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'C') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'K') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('I', 'P', 'J', '2') },
+    { AV_CODEC_ID_JPEG2000,     MKTAG('A', 'V', 'j', '2') }, /* Avid jpeg2000 */
+    { AV_CODEC_ID_VMNC,         MKTAG('V', 'M', 'n', 'c') },
+    { AV_CODEC_ID_TARGA,        MKTAG('t', 'g', 'a', ' ') },
+    { AV_CODEC_ID_PNG,          MKTAG('M', 'P', 'N', 'G') },
+    { AV_CODEC_ID_PNG,          MKTAG('P', 'N', 'G', '1') },
+    { AV_CODEC_ID_PNG,          MKTAG('p', 'n', 'g', ' ') }, /* ImageJ */
+    { AV_CODEC_ID_CLJR,         MKTAG('C', 'L', 'J', 'R') },
+    { AV_CODEC_ID_DIRAC,        MKTAG('d', 'r', 'a', 'c') },
+    { AV_CODEC_ID_RPZA,         MKTAG('a', 'z', 'p', 'r') },
+    { AV_CODEC_ID_RPZA,         MKTAG('R', 'P', 'Z', 'A') },
+    { AV_CODEC_ID_RPZA,         MKTAG('r', 'p', 'z', 'a') },
+    { AV_CODEC_ID_SP5X,         MKTAG('S', 'P', '5', '4') },
+    { AV_CODEC_ID_AURA,         MKTAG('A', 'U', 'R', 'A') },
+    { AV_CODEC_ID_AURA2,        MKTAG('A', 'U', 'R', '2') },
+    { AV_CODEC_ID_DPX,          MKTAG('d', 'p', 'x', ' ') },
+    { AV_CODEC_ID_KGV1,         MKTAG('K', 'G', 'V', '1') },
+    { AV_CODEC_ID_LAGARITH,     MKTAG('L', 'A', 'G', 'S') },
+    { AV_CODEC_ID_AMV,          MKTAG('A', 'M', 'V', 'F') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'R', 'A') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'R', 'G') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'Y', '0') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'Y', '2') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'Y', '4') },
+    /* Ut Video version 13.0.1 BT.709 codecs */
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '0') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '2') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'H', '4') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'Y', '0') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'Y', '2') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'R', 'A') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'Q', 'R', 'G') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'M', 'Y', '2') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'M', 'H', '2') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'M', 'Y', '4') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'M', 'H', '4') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'M', 'R', 'A') },
+    { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'M', 'R', 'G') },
+    { AV_CODEC_ID_VBLE,         MKTAG('V', 'B', 'L', 'E') },
+    { AV_CODEC_ID_ESCAPE130,    MKTAG('E', '1', '3', '0') },
+    { AV_CODEC_ID_DXTORY,       MKTAG('x', 't', 'o', 'r') },
+    { AV_CODEC_ID_ZEROCODEC,    MKTAG('Z', 'E', 'C', 'O') },
+    { AV_CODEC_ID_Y41P,         MKTAG('Y', '4', '1', 'P') },
+    { AV_CODEC_ID_FLIC,         MKTAG('A', 'F', 'L', 'C') },
+    { AV_CODEC_ID_MSS1,         MKTAG('M', 'S', 'S', '1') },
+    { AV_CODEC_ID_MSA1,         MKTAG('M', 'S', 'A', '1') },
+    { AV_CODEC_ID_TSCC2,        MKTAG('T', 'S', 'C', '2') },
+    { AV_CODEC_ID_MTS2,         MKTAG('M', 'T', 'S', '2') },
+    { AV_CODEC_ID_CLLC,         MKTAG('C', 'L', 'L', 'C') },
+    { AV_CODEC_ID_MSS2,         MKTAG('M', 'S', 'S', '2') },
+    { AV_CODEC_ID_SVQ3,         MKTAG('S', 'V', 'Q', '3') },
+    { AV_CODEC_ID_012V,         MKTAG('0', '1', '2', 'v') },
+    { AV_CODEC_ID_012V,         MKTAG('a', '1', '2', 'v') },
+    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '2') },
+    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '3') },
+    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '4') },
+    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '5') },
+    { AV_CODEC_ID_FIC,          MKTAG('F', 'I', 'C', 'V') },
+    { AV_CODEC_ID_HQX,          MKTAG('C', 'H', 'Q', 'X') },
+    { AV_CODEC_ID_TDSC,         MKTAG('T', 'D', 'S', 'C') },
+    { AV_CODEC_ID_HQ_HQA,       MKTAG('C', 'U', 'V', 'C') },
+    { AV_CODEC_ID_RV40,         MKTAG('R', 'V', '4', '0') },
+    { AV_CODEC_ID_SCREENPRESSO, MKTAG('S', 'P', 'V', '1') },
+    { AV_CODEC_ID_RSCC,         MKTAG('R', 'S', 'C', 'C') },
+    { AV_CODEC_ID_RSCC,         MKTAG('I', 'S', 'C', 'C') },
+    { AV_CODEC_ID_CFHD,         MKTAG('C', 'F', 'H', 'D') },
+    { AV_CODEC_ID_M101,         MKTAG('M', '1', '0', '1') },
+    { AV_CODEC_ID_M101,         MKTAG('M', '1', '0', '2') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', 'A', 'G', 'Y') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '8', 'R', 'G') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '8', 'R', 'A') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '8', 'G', '0') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '8', 'Y', '0') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '8', 'Y', '2') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '8', 'Y', '4') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '8', 'Y', 'A') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'R', 'A') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'R', 'G') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'G', '0') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'Y', '0') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'Y', '2') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '0', 'Y', '4') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '2', 'R', 'A') },
+    { AV_CODEC_ID_MAGICYUV,     MKTAG('M', '2', 'R', 'G') },
+    { AV_CODEC_ID_YLC,          MKTAG('Y', 'L', 'C', '0') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '0') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '1') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '2') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '3') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '4') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '5') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '7') },
+    { AV_CODEC_ID_SPEEDHQ,      MKTAG('S', 'H', 'Q', '9') },
+    { AV_CODEC_ID_FMVC,         MKTAG('F', 'M', 'V', 'C') },
+    { AV_CODEC_ID_SCPR,         MKTAG('S', 'C', 'P', 'R') },
+    { AV_CODEC_ID_CLEARVIDEO,   MKTAG('U', 'C', 'O', 'D') },
+    { AV_CODEC_ID_AV1,          MKTAG('A', 'V', '0', '1') },
+    { AV_CODEC_ID_MSCC,         MKTAG('M', 'S', 'C', 'C') },
+    { AV_CODEC_ID_SRGC,         MKTAG('S', 'R', 'G', 'C') },
+    { AV_CODEC_ID_IMM4,         MKTAG('I', 'M', 'M', '4') },
+    { AV_CODEC_ID_PROSUMER,     MKTAG('B', 'T', '2', '0') },
+    { AV_CODEC_ID_MWSC,         MKTAG('M', 'W', 'S', 'C') },
+    { AV_CODEC_ID_WCMV,         MKTAG('W', 'C', 'M', 'V') },
+    { AV_CODEC_ID_RASC,         MKTAG('R', 'A', 'S', 'C') },
+    { AV_CODEC_ID_HYMT,         MKTAG('H', 'Y', 'M', 'T') },
+    { AV_CODEC_ID_ARBC,         MKTAG('A', 'R', 'B', 'C') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '0') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '1') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '2') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '3') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '4') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '5') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '6') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '7') },
+    { AV_CODEC_ID_LSCR,         MKTAG('L', 'S', 'C', 'R') },
+    { AV_CODEC_ID_IMM5,         MKTAG('I', 'M', 'M', '5') },
+    { AV_CODEC_ID_MVDV,         MKTAG('M', 'V', 'D', 'V') },
+    { AV_CODEC_ID_MVHA,         MKTAG('M', 'V', 'H', 'A') },
+    { AV_CODEC_ID_MV30,         MKTAG('M', 'V', '3', '0') },
+    { AV_CODEC_ID_NOTCHLC,      MKTAG('n', 'l', 'c', '1') },
+    { AV_CODEC_ID_NONE,         0 }
+};
+
+const AVCodecTag ff_codec_bmp_tags_unofficial[] = {
+    { AV_CODEC_ID_HEVC,         MKTAG('H', 'E', 'V', 'C') },
+    { AV_CODEC_ID_HEVC,         MKTAG('H', '2', '6', '5') },
+    { AV_CODEC_ID_NONE,         0 }
+};
+
+const AVCodecTag ff_codec_wav_tags[] = {
+    { AV_CODEC_ID_PCM_S16LE,       0x0001 },
+    /* must come after s16le in this list */
+    { AV_CODEC_ID_PCM_U8,          0x0001 },
+    { AV_CODEC_ID_PCM_S24LE,       0x0001 },
+    { AV_CODEC_ID_PCM_S32LE,       0x0001 },
+    { AV_CODEC_ID_PCM_S64LE,       0x0001 },
+    { AV_CODEC_ID_ADPCM_MS,        0x0002 },
+    { AV_CODEC_ID_PCM_F32LE,       0x0003 },
+    /* must come after f32le in this list */
+    { AV_CODEC_ID_PCM_F64LE,       0x0003 },
+    { AV_CODEC_ID_PCM_ALAW,        0x0006 },
+    { AV_CODEC_ID_PCM_MULAW,       0x0007 },
+    { AV_CODEC_ID_WMAVOICE,        0x000A },
+    { AV_CODEC_ID_ADPCM_IMA_OKI,   0x0010 },
+    { AV_CODEC_ID_ADPCM_IMA_WAV,   0x0011 },
+    /* must come after adpcm_ima_wav in this list */
+    { AV_CODEC_ID_ADPCM_ZORK,      0x0011 },
+    { AV_CODEC_ID_ADPCM_IMA_OKI,   0x0017 },
+    { AV_CODEC_ID_ADPCM_YAMAHA,    0x0020 },
+    { AV_CODEC_ID_TRUESPEECH,      0x0022 },
+    { AV_CODEC_ID_GSM_MS,          0x0031 },
+    { AV_CODEC_ID_GSM_MS,          0x0032 },  /* msn audio */
+    { AV_CODEC_ID_AMR_NB,          0x0038 },  /* rogue format number */
+    { AV_CODEC_ID_G723_1,          0x0042 },
+    { AV_CODEC_ID_ADPCM_G726,      0x0045 },
+    { AV_CODEC_ID_ADPCM_G726,      0x0014 },  /* g723 Antex */
+    { AV_CODEC_ID_ADPCM_G726,      0x0040 },  /* g721 Antex */
+    { AV_CODEC_ID_MP2,             0x0050 },
+    { AV_CODEC_ID_MP3,             0x0055 },
+    { AV_CODEC_ID_AMR_NB,          0x0057 },
+    { AV_CODEC_ID_AMR_WB,          0x0058 },
+    /* rogue format number */
+    { AV_CODEC_ID_ADPCM_IMA_DK4,   0x0061 },
+    /* rogue format number */
+    { AV_CODEC_ID_ADPCM_IMA_DK3,   0x0062 },
+    { AV_CODEC_ID_ADPCM_G726,      0x0064 },
+    { AV_CODEC_ID_ADPCM_IMA_WAV,   0x0069 },
+    { AV_CODEC_ID_METASOUND,       0x0075 },
+    { AV_CODEC_ID_G729,            0x0083 },
+    { AV_CODEC_ID_AAC,             0x00ff },
+    { AV_CODEC_ID_G723_1,          0x0111 },
+    { AV_CODEC_ID_SIPR,            0x0130 },
+    { AV_CODEC_ID_ACELP_KELVIN,    0x0135 },
+    { AV_CODEC_ID_WMAV1,           0x0160 },
+    { AV_CODEC_ID_WMAV2,           0x0161 },
+    { AV_CODEC_ID_WMAPRO,          0x0162 },
+    { AV_CODEC_ID_WMALOSSLESS,     0x0163 },
+    { AV_CODEC_ID_XMA1,            0x0165 },
+    { AV_CODEC_ID_XMA2,            0x0166 },
+    { AV_CODEC_ID_ADPCM_CT,        0x0200 },
+    { AV_CODEC_ID_DVAUDIO,         0x0215 },
+    { AV_CODEC_ID_DVAUDIO,         0x0216 },
+    { AV_CODEC_ID_ATRAC3,          0x0270 },
+    { AV_CODEC_ID_ADPCM_G722,      0x028F },
+    { AV_CODEC_ID_IMC,             0x0401 },
+    { AV_CODEC_ID_IAC,             0x0402 },
+    { AV_CODEC_ID_ON2AVC,          0x0500 },
+    { AV_CODEC_ID_ON2AVC,          0x0501 },
+    { AV_CODEC_ID_GSM_MS,          0x1500 },
+    { AV_CODEC_ID_TRUESPEECH,      0x1501 },
+    /* ADTS AAC */
+    { AV_CODEC_ID_AAC,             0x1600 },
+    { AV_CODEC_ID_AAC_LATM,        0x1602 },
+    { AV_CODEC_ID_AC3,             0x2000 },
+    /* There is no Microsoft Format Tag for E-AC3, the GUID has to be used */
+    { AV_CODEC_ID_EAC3,            0x2000 },
+    { AV_CODEC_ID_DTS,             0x2001 },
+    { AV_CODEC_ID_SONIC,           0x2048 },
+    { AV_CODEC_ID_SONIC_LS,        0x2048 },
+    { AV_CODEC_ID_PCM_MULAW,       0x6c75 },
+    { AV_CODEC_ID_AAC,             0x706d },
+    { AV_CODEC_ID_AAC,             0x4143 },
+    { AV_CODEC_ID_XAN_DPCM,        0x594a },
+    { AV_CODEC_ID_G729,            0x729A },
+    { AV_CODEC_ID_G723_1,          0xA100 }, /* Comverse Infosys Ltd. G723 1 */
+    { AV_CODEC_ID_AAC,             0xA106 },
+    { AV_CODEC_ID_SPEEX,           0xA109 },
+    { AV_CODEC_ID_FLAC,            0xF1AC },
+    { AV_CODEC_ID_ADPCM_SWF,       ('S' << 8) + 'F' },
+    /* HACK/FIXME: Does Vorbis in WAV/AVI have an (in)official ID? */
+    { AV_CODEC_ID_VORBIS,          ('V' << 8) + 'o' },
+    { AV_CODEC_ID_NONE,      0 },
+};
+
+typedef struct AVMetadataConv {
+    const char *native;
+    const char *generic;
+} AVMetadataConv;
+
+const AVMetadataConv ff_riff_info_conv[] = {
+    { "IART", "artist"     },
+    { "ICMT", "comment"    },
+    { "ICOP", "copyright"  },
+    { "ICRD", "date"       },
+    { "IGNR", "genre"      },
+    { "ILNG", "language"   },
+    { "INAM", "title"      },
+    { "IPRD", "album"      },
+    { "IPRT", "track"      },
+    { "ITRK", "track"      },
+    { "ISFT", "encoder"    },
+    { "ISMP", "timecode"   },
+    { "ITCH", "encoded_by" },
+    { 0 },
+};
+
+const struct AVCodecTag *avformat_get_riff_video_tags(void)
+{
+    return ff_codec_bmp_tags;
+}
+
+const struct AVCodecTag *avformat_get_riff_audio_tags(void)
+{
+    return ff_codec_wav_tags;
+}
+typedef uint8_t ff_asf_guid[16];
+typedef struct AVCodecGuid {
+    enum AVCodecID id;
+    ff_asf_guid guid;
+} AVCodecGuid;
+
+const AVCodecGuid ff_codec_wav_guids[] = {
+    { AV_CODEC_ID_AC3,      { 0x2C, 0x80, 0x6D, 0xE0, 0x46, 0xDB, 0xCF, 0x11, 0xB4, 0xD1, 0x00, 0x80, 0x5F, 0x6C, 0xBB, 0xEA } },
+    { AV_CODEC_ID_ATRAC3P,  { 0xBF, 0xAA, 0x23, 0xE9, 0x58, 0xCB, 0x71, 0x44, 0xA1, 0x19, 0xFF, 0xFA, 0x01, 0xE4, 0xCE, 0x62 } },
+    { AV_CODEC_ID_ATRAC9,   { 0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D, 0x88, 0xFC, 0x61, 0x65, 0x4F, 0x8C, 0x83, 0x6C } },
+    { AV_CODEC_ID_EAC3,     { 0xAF, 0x87, 0xFB, 0xA7, 0x02, 0x2D, 0xFB, 0x42, 0xA4, 0xD4, 0x05, 0xCD, 0x93, 0x84, 0x3B, 0xDD } },
+    { AV_CODEC_ID_MP2,      { 0x2B, 0x80, 0x6D, 0xE0, 0x46, 0xDB, 0xCF, 0x11, 0xB4, 0xD1, 0x00, 0x80, 0x5F, 0x6C, 0xBB, 0xEA } },
+    { AV_CODEC_ID_ADPCM_AGM,{ 0x82, 0xEC, 0x1F, 0x6A, 0xCA, 0xDB, 0x19, 0x45, 0xBD, 0xE7, 0x56, 0xD3, 0xB3, 0xEF, 0x98, 0x1D } },
+    { AV_CODEC_ID_NONE }
+};
+
+unsigned int avpriv_toupper4(unsigned int x)
+{
+    return av_toupper(x & 0xFF) +
+          (av_toupper((x >>  8) & 0xFF) << 8)  +
+          (av_toupper((x >> 16) & 0xFF) << 16) +
+((unsigned)av_toupper((x >> 24) & 0xFF) << 24);
+}
+enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag)
+{
+    int i;
+    for (i = 0; tags[i].id != AV_CODEC_ID_NONE; i++)
+        if (tag == tags[i].tag)
+            return tags[i].id;
+    for (i = 0; tags[i].id != AV_CODEC_ID_NONE; i++)
+        if (avpriv_toupper4(tag) == avpriv_toupper4(tags[i].tag))
+            return tags[i].id;
+    return AV_CODEC_ID_NONE;
+}
+enum AVCodecID av_codec_get_id(const AVCodecTag *const *tags, unsigned int tag)
+{
+    int i;
+    for (i = 0; tags && tags[i]; i++) {
+        enum AVCodecID id = ff_codec_get_id(tags[i], tag);
+        if (id != AV_CODEC_ID_NONE)
+            return id;
+    }
+    return AV_CODEC_ID_NONE;
+}
+
 static void
 dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                     IPin *pin, int *pformat_set)
@@ -37981,15 +39122,15 @@ dshow_show_filter_properties(IBaseFilter *device_filter, AVFormatContext *avctx)
     goto end;
 fail:
     av_log(avctx, AV_LOG_ERROR, "Failure showing property pages for filter");
-end:
-    if (property_pages)
-        ISpecifyPropertyPages_Release(property_pages);
-    if (device_filter_iunknown)
-        IUnknown_Release(device_filter_iunknown);
-    if (filter_info.pGraph)
-        IFilterGraph_Release(filter_info.pGraph);
-    if (ca_guid.pElems)
-        CoTaskMemFree(ca_guid.pElems);
+end: return;
+//     if (property_pages)
+//         ISpecifyPropertyPages_Release(property_pages);
+//     if (device_filter_iunknown)
+//         IUnknown_Release(device_filter_iunknown);
+//     if (filter_info.pGraph)
+//         IFilterGraph_Release(filter_info.pGraph);
+//     if (ca_guid.pElems)
+//         CoTaskMemFree(ca_guid.pElems);
 }
 
 /**
@@ -38161,6 +39302,189 @@ dshow_list_device_options(AVFormatContext *avctx, ICreateDevEnum *devenum,
     return 0;
 }
 
+static const char *
+GetPhysicalPinName(long pin_type)
+{
+    switch (pin_type)
+    {
+    case PhysConn_Video_Tuner:            return "Video Tuner";
+    case PhysConn_Video_Composite:        return "Video Composite";
+    case PhysConn_Video_SVideo:           return "S-Video";
+    case PhysConn_Video_RGB:              return "Video RGB";
+    case PhysConn_Video_YRYBY:            return "Video YRYBY";
+    case PhysConn_Video_SerialDigital:    return "Video Serial Digital";
+    case PhysConn_Video_ParallelDigital:  return "Video Parallel Digital";
+    case PhysConn_Video_SCSI:             return "Video SCSI";
+    case PhysConn_Video_AUX:              return "Video AUX";
+    case PhysConn_Video_1394:             return "Video 1394";
+    case PhysConn_Video_USB:              return "Video USB";
+    case PhysConn_Video_VideoDecoder:     return "Video Decoder";
+    case PhysConn_Video_VideoEncoder:     return "Video Encoder";
+
+    case PhysConn_Audio_Tuner:            return "Audio Tuner";
+    case PhysConn_Audio_Line:             return "Audio Line";
+    case PhysConn_Audio_Mic:              return "Audio Microphone";
+    case PhysConn_Audio_AESDigital:       return "Audio AES/EBU Digital";
+    case PhysConn_Audio_SPDIFDigital:     return "Audio S/PDIF";
+    case PhysConn_Audio_SCSI:             return "Audio SCSI";
+    case PhysConn_Audio_AUX:              return "Audio AUX";
+    case PhysConn_Audio_1394:             return "Audio 1394";
+    case PhysConn_Audio_USB:              return "Audio USB";
+    case PhysConn_Audio_AudioDecoder:     return "Audio Decoder";
+    default:                              return "Unknown Crossbar Pin Type—Please report!";
+    }
+}
+
+static HRESULT
+setup_crossbar_options(IAMCrossbar *cross_bar, enum dshowDeviceType devtype, AVFormatContext *avctx)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    long count_output_pins, count_input_pins;
+    int i;
+    int log_level = ctx->list_options ? AV_LOG_INFO : AV_LOG_DEBUG;
+    int video_input_pin = ctx->crossbar_video_input_pin_number;
+    int audio_input_pin = ctx->crossbar_audio_input_pin_number;
+    const char *device_name = ctx->device_name[devtype];
+    HRESULT hr;
+
+    av_log(avctx, log_level, "Crossbar Switching Information for %s:\n", device_name);
+    hr = IAMCrossbar_get_PinCounts(cross_bar, &count_output_pins, &count_input_pins);
+    if (hr != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to get crossbar pin counts\n");
+        return hr;
+    }
+
+    for (i = 0; i < count_output_pins; i++)
+    {
+        int j;
+        long related_pin, pin_type, route_to_pin;
+        hr = IAMCrossbar_get_CrossbarPinInfo(cross_bar, FALSE, i, &related_pin, &pin_type);
+        if (pin_type == PhysConn_Video_VideoDecoder) {
+            /* assume there is only one "Video (and one Audio) Decoder" output pin, and it's all we care about routing to...for now */
+            if (video_input_pin != -1) {
+                av_log(avctx, log_level, "Routing video input from pin %d\n", video_input_pin);
+                hr = IAMCrossbar_Route(cross_bar, i, video_input_pin);
+                if (hr != S_OK) {
+                    av_log(avctx, AV_LOG_ERROR, "Unable to route video input from pin %d\n", video_input_pin);
+                    return AVERROR(EIO);
+                }
+            }
+        } else if (pin_type == PhysConn_Audio_AudioDecoder) {
+            if (audio_input_pin != -1) {
+                av_log(avctx, log_level, "Routing audio input from pin %d\n", audio_input_pin);
+                hr = IAMCrossbar_Route(cross_bar, i, audio_input_pin);
+                if (hr != S_OK) {
+                    av_log(avctx, AV_LOG_ERROR, "Unable to route audio input from pin %d\n", audio_input_pin);
+                    return hr;
+                }
+            }
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Unexpected output pin type, please report the type if you want to use this (%s)", GetPhysicalPinName(pin_type));
+        }
+
+        hr = IAMCrossbar_get_IsRoutedTo(cross_bar, i, &route_to_pin);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to get crossbar is routed to from pin %d\n", i);
+            return hr;
+        }
+        av_log(avctx, log_level, "  Crossbar Output pin %d: \"%s\" related output pin: %ld ", i, GetPhysicalPinName(pin_type), related_pin);
+        av_log(avctx, log_level, "current input pin: %ld ", route_to_pin);
+        av_log(avctx, log_level, "compatible input pins: ");
+
+        for (j = 0; j < count_input_pins; j++)
+        {
+            hr = IAMCrossbar_CanRoute(cross_bar, i, j);
+            if (hr == S_OK)
+                av_log(avctx, log_level ,"%d ", j);
+        }
+        av_log(avctx, log_level, "\n");
+    }
+
+    for (i = 0; i < count_input_pins; i++)
+    {
+        long related_pin, pin_type;
+        hr = IAMCrossbar_get_CrossbarPinInfo(cross_bar, TRUE, i, &related_pin, &pin_type);
+        if (hr != S_OK) {
+            av_log(avctx, AV_LOG_ERROR, "unable to get crossbar info audio input from pin %d\n", i);
+            return hr;
+        }
+        av_log(avctx, log_level, "  Crossbar Input pin %d - \"%s\" ", i, GetPhysicalPinName(pin_type));
+        av_log(avctx, log_level, "related input pin: %ld\n", related_pin);
+    }
+    return S_OK;
+}
+
+HRESULT
+dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
+    IBaseFilter *device_filter, enum dshowDeviceType devtype, AVFormatContext *avctx)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IAMCrossbar *cross_bar = NULL;
+    IBaseFilter *cross_bar_base_filter = NULL;
+    IAMTVTuner *tv_tuner_filter = NULL;
+    IBaseFilter *tv_tuner_base_filter = NULL;
+    IAMAudioInputMixer *tv_audio_filter = NULL;
+    IBaseFilter *tv_audio_base_filter = NULL;
+    HRESULT hr;
+
+    hr = ICaptureGraphBuilder2_FindInterface(graph_builder2, &LOOK_UPSTREAM_ONLY, (const GUID *) NULL,
+            device_filter, &IID_IAMCrossbar, (void**) &cross_bar);
+    if (hr != S_OK) {
+        /* no crossbar found */
+        hr = S_OK;
+        goto end;
+    }
+    /* TODO some TV tuners apparently have multiple crossbars? */
+
+    if (devtype == VideoDevice && ctx->show_video_crossbar_connection_dialog ||
+        devtype == AudioDevice && ctx->show_audio_crossbar_connection_dialog) {
+        hr = IAMCrossbar_QueryInterface(cross_bar, &IID_IBaseFilter, (void **) &cross_bar_base_filter);
+        if (hr != S_OK)
+            goto end;
+        dshow_show_filter_properties(cross_bar_base_filter, avctx);
+    }
+
+    if (devtype == VideoDevice && ctx->show_analog_tv_tuner_dialog) {
+        hr = ICaptureGraphBuilder2_FindInterface(graph_builder2, &LOOK_UPSTREAM_ONLY, NULL,
+             device_filter, &IID_IAMTVTuner, (void**) &tv_tuner_filter);
+        if (hr == S_OK) {
+            hr = IAMCrossbar_QueryInterface(tv_tuner_filter, &IID_IBaseFilter, (void **) &tv_tuner_base_filter);
+            if (hr != S_OK)
+                goto end;
+            dshow_show_filter_properties(tv_tuner_base_filter, avctx);
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "unable to find a tv tuner to display dialog for!");
+        }
+    }
+    if (devtype == AudioDevice && ctx->show_analog_tv_tuner_audio_dialog) {
+        hr = ICaptureGraphBuilder2_FindInterface(graph_builder2, &LOOK_UPSTREAM_ONLY, NULL,
+             device_filter, &IID_IAMTVAudio, (void**) &tv_audio_filter);
+        if (hr == S_OK) {
+            hr = IAMCrossbar_QueryInterface(tv_audio_filter, &IID_IBaseFilter, (void **) &tv_audio_base_filter);
+            if (hr != S_OK)
+                goto end;
+            dshow_show_filter_properties(tv_audio_base_filter, avctx);
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "unable to find a tv audio tuner to display dialog for!");
+        }
+    }
+
+    hr = setup_crossbar_options(cross_bar, devtype, avctx);
+    if (hr != S_OK)
+        goto end;
+
+end:
+    if (cross_bar)
+        IAMCrossbar_Release(cross_bar);
+    if (cross_bar_base_filter)
+        IBaseFilter_Release(cross_bar_base_filter);
+    if (tv_tuner_filter)
+        IAMTVTuner_Release(tv_tuner_filter);
+    if (tv_tuner_base_filter)
+        IBaseFilter_Release(tv_tuner_base_filter);
+    return hr;
+}
+
 static int
 dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
                   enum dshowDeviceType devtype, enum dshowSourceFilterType sourcetype)
@@ -38193,23 +39517,23 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         else
             filename = ctx->video_filter_load_file;
 
-        hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_READ, &ifile_stream);
-        if (S_OK != hr) {
-            av_log(avctx, AV_LOG_ERROR, "Could not open capture filter description file.\n");
-            goto error;
-        }
+        // hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_READ, &ifile_stream);
+        // if (S_OK != hr) {
+        //     av_log(avctx, AV_LOG_ERROR, "Could not open capture filter description file.\n");
+        //     goto error;
+        // }
 
-        hr = OleLoadFromStream(ifile_stream, &IID_IBaseFilter, (void **) &device_filter);
-        if (hr != S_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Could not load capture filter from file.\n");
-            goto error;
-        }
+        // hr = OleLoadFromStream(ifile_stream, &IID_IBaseFilter, (void **) &device_filter);
+        // if (hr != S_OK) {
+        //     av_log(avctx, AV_LOG_ERROR, "Could not load capture filter from file.\n");
+        //     goto error;
+        // }
 
-        if (sourcetype == AudioSourceDevice)
-            av_log(avctx, AV_LOG_INFO, "Audio-");
-        else
-            av_log(avctx, AV_LOG_INFO, "Video-");
-        av_log(avctx, AV_LOG_INFO, "Capture filter loaded successfully from file \"%s\".\n", filename);
+        // if (sourcetype == AudioSourceDevice)
+        //     av_log(avctx, AV_LOG_INFO, "Audio-");
+        // else
+        //     av_log(avctx, AV_LOG_INFO, "Video-");
+        // av_log(avctx, AV_LOG_INFO, "Capture filter loaded successfully from file \"%s\".\n", filename);
     } else {
 
         if ((r = dshow_cycle_devices(avctx, devenum, devtype, sourcetype, &device_filter, &device_filter_unique_name)) < 0) {
@@ -38264,29 +39588,29 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         else
             filename = ctx->video_filter_save_file;
 
-        hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_CREATE | STGM_READWRITE, &ofile_stream);
-        if (S_OK != hr) {
-            av_log(avctx, AV_LOG_ERROR, "Could not create capture filter description file.\n");
-            goto error;
-        }
+        // hr = SHCreateStreamOnFile ((LPCSTR) filename, STGM_CREATE | STGM_READWRITE, &ofile_stream);
+        // if (S_OK != hr) {
+        //     av_log(avctx, AV_LOG_ERROR, "Could not create capture filter description file.\n");
+        //     goto error;
+        // }
 
-        hr  = IBaseFilter_QueryInterface(device_filter, &IID_IPersistStream, (void **) &pers_stream);
-        if (hr != S_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Query for IPersistStream failed.\n");
-            goto error;
-        }
+        // hr  = IBaseFilter_QueryInterface(device_filter, &IID_IPersistStream, (void **) &pers_stream);
+        // if (hr != S_OK) {
+        //     av_log(avctx, AV_LOG_ERROR, "Query for IPersistStream failed.\n");
+        //     goto error;
+        // }
 
-        hr = OleSaveToStream(pers_stream, ofile_stream);
-        if (hr != S_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Could not save capture filter \n");
-            goto error;
-        }
+        // hr = OleSaveToStream(pers_stream, ofile_stream);
+        // if (hr != S_OK) {
+        //     av_log(avctx, AV_LOG_ERROR, "Could not save capture filter \n");
+        //     goto error;
+        // }
 
-        hr = IStream_Commit(ofile_stream, STGC_DEFAULT);
-        if (S_OK != hr) {
-            av_log(avctx, AV_LOG_ERROR, "Could not commit capture filter data to file.\n");
-            goto error;
-        }
+        // hr = IStream_Commit(ofile_stream, STGC_DEFAULT);
+        // if (S_OK != hr) {
+        //     av_log(avctx, AV_LOG_ERROR, "Could not commit capture filter data to file.\n");
+        //     goto error;
+        // }
 
         if (sourcetype == AudioSourceDevice)
             av_log(avctx, AV_LOG_INFO, "Audio-");
@@ -38336,17 +39660,17 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
     ret = 0;
 
 error:
-    if (graph_builder2 != NULL)
-        ICaptureGraphBuilder2_Release(graph_builder2);
+    // if (graph_builder2 != NULL)
+    //     ICaptureGraphBuilder2_Release(graph_builder2);
 
-    if (pers_stream)
-        IPersistStream_Release(pers_stream);
+    // if (pers_stream)
+    //     IPersistStream_Release(pers_stream);
 
-    if (ifile_stream)
-        IStream_Release(ifile_stream);
+    // if (ifile_stream)
+    //     IStream_Release(ifile_stream);
 
-    if (ofile_stream)
-        IStream_Release(ofile_stream);
+    // if (ofile_stream)
+    //     IStream_Release(ofile_stream);
 
     return ret;
 }
@@ -38371,6 +39695,10 @@ static enum AVSampleFormat sample_fmt_bits_per_sample(int bits)
     }
 }
 
+AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c);
+
+void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
+                         unsigned int pts_num, unsigned int pts_den);
 static int
 dshow_add_device(AVFormatContext *avctx,
                  enum dshowDeviceType devtype)
@@ -38728,41 +40056,39 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ctx->eof ? AVERROR(EIO) : pkt->size;
 }
 
-#define OFFSET(x) offsetof(struct dshow_ctx, x)
+#define dshow_ctx_OFFSET(x) offsetof(struct dshow_ctx, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
-static const AVOption options[] = 
-};
 
 static const AVClass dshow_class = {
     .class_name = "dshow indev",
     .item_name  = av_default_item_name,
     .option     = (AVOption []){
-    { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(requested_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
-    { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, DEC },
-    { "framerate", "set video frame rate", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "sample_rate", "set audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-    { "sample_size", "set audio sample size", OFFSET(sample_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC },
-    { "channels", "set number of audio channels, such as 1 or 2", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-    { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", OFFSET(audio_buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-    { "list_devices", "list available devices",                      OFFSET(list_devices), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
-    { "list_options", "list available options for specified device", OFFSET(list_options), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
-    { "video_device_number", "set video device number for devices with same name (starts at 0)", OFFSET(video_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-    { "audio_device_number", "set audio device number for devices with same name (starts at 0)", OFFSET(audio_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
-    { "video_pin_name", "select video capture pin by name", OFFSET(video_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "audio_pin_name", "select audio capture pin by name", OFFSET(audio_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "crossbar_video_input_pin_number", "set video input pin number for crossbar device", OFFSET(crossbar_video_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
-    { "crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", OFFSET(crossbar_audio_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
-    { "show_video_device_dialog",              "display property dialog for video capture device",                            OFFSET(show_video_device_dialog),              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-    { "show_audio_device_dialog",              "display property dialog for audio capture device",                            OFFSET(show_audio_device_dialog),              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-    { "show_video_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on video device", OFFSET(show_video_crossbar_connection_dialog), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-    { "show_audio_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on audio device", OFFSET(show_audio_crossbar_connection_dialog), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-    { "show_analog_tv_tuner_dialog",           "display property dialog for analog tuner filter",                             OFFSET(show_analog_tv_tuner_dialog),           AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-    { "show_analog_tv_tuner_audio_dialog",     "display property dialog for analog tuner audio filter",                       OFFSET(show_analog_tv_tuner_audio_dialog),     AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
-    { "audio_device_load", "load audio capture filter device (and properties) from file", OFFSET(audio_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "audio_device_save", "save audio capture filter device (and properties) to file", OFFSET(audio_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "video_device_load", "load video capture filter device (and properties) from file", OFFSET(video_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "video_device_save", "save video capture filter device (and properties) to file", OFFSET(video_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { NULL },
+    { "video_size", "set video size given a string such as 640x480 or hd720.", dshow_ctx_OFFSET(requested_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
+    { "pixel_format", "set video pixel format", dshow_ctx_OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, DEC },
+    { "framerate", "set video frame rate", dshow_ctx_OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "sample_rate", "set audio sample rate", dshow_ctx_OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "sample_size", "set audio sample size", dshow_ctx_OFFSET(sample_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 16, DEC },
+    { "channels", "set number of audio channels, such as 1 or 2", dshow_ctx_OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "audio_buffer_size", "set audio device buffer latency size in milliseconds (default is the device's default)", dshow_ctx_OFFSET(audio_buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "list_devices", "list available devices",                      dshow_ctx_OFFSET(list_devices), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
+    { "list_options", "list available options for specified device", dshow_ctx_OFFSET(list_options), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, DEC },
+    { "video_device_number", "set video device number for devices with same name (starts at 0)", dshow_ctx_OFFSET(video_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "audio_device_number", "set audio device number for devices with same name (starts at 0)", dshow_ctx_OFFSET(audio_device_number), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, DEC },
+    { "video_pin_name", "select video capture pin by name", dshow_ctx_OFFSET(video_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "audio_pin_name", "select audio capture pin by name", dshow_ctx_OFFSET(audio_pin_name),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "crossbar_video_input_pin_number", "set video input pin number for crossbar device", dshow_ctx_OFFSET(crossbar_video_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+    { "crossbar_audio_input_pin_number", "set audio input pin number for crossbar device", dshow_ctx_OFFSET(crossbar_audio_input_pin_number), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, DEC },
+    { "show_video_device_dialog",              "display property dialog for video capture device",                            dshow_ctx_OFFSET(show_video_device_dialog),              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_audio_device_dialog",              "display property dialog for audio capture device",                            dshow_ctx_OFFSET(show_audio_device_dialog),              AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_video_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on video device", dshow_ctx_OFFSET(show_video_crossbar_connection_dialog), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_audio_crossbar_connection_dialog", "display property dialog for crossbar connecting pins filter on audio device", dshow_ctx_OFFSET(show_audio_crossbar_connection_dialog), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_analog_tv_tuner_dialog",           "display property dialog for analog tuner filter",                             dshow_ctx_OFFSET(show_analog_tv_tuner_dialog),           AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "show_analog_tv_tuner_audio_dialog",     "display property dialog for analog tuner audio filter",                       dshow_ctx_OFFSET(show_analog_tv_tuner_audio_dialog),     AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
+    { "audio_device_load", "load audio capture filter device (and properties) from file", dshow_ctx_OFFSET(audio_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "audio_device_save", "save audio capture filter device (and properties) to file", dshow_ctx_OFFSET(audio_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_device_load", "load video capture filter device (and properties) from file", dshow_ctx_OFFSET(video_filter_load_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_device_save", "save video capture filter device (and properties) to file", dshow_ctx_OFFSET(video_filter_save_file), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { NULL }},
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
@@ -38778,9 +40104,7 @@ AVInputFormat ff_dshow_demuxer = {
     .priv_class     = &dshow_class,
 };
 
-static const AVInputFormat * const indev_list[] = {
-    &ff_dshow_demuxer,
-    NULL };
+
 
 
 void avdevice_register_all(void)
@@ -38805,7 +40129,7 @@ static void *urlcontext_child_next(void *obj, void *prev)
     return NULL;
 }
 
-static URLProtocol * url_protocols[] = 
+static URLProtocol * url_protocols[] = {
     // &ff_async_protocol,
     // &ff_bluray_protocol,
     // &ff_cache_protocol,
@@ -38841,7 +40165,7 @@ static URLProtocol * url_protocols[] =
     // &ff_libsrt_protocol,
     // &ff_libssh_protocol,
     // &ff_libzmq_protocol,
-    NULL };
+     };
 
 const URLProtocol **ffurl_get_protocols(const char *whitelist,
                                         const char *blacklist)
@@ -39440,6 +40764,27 @@ const AVClass *ff_urlcontext_child_class_iterate(void **iter)
     *iter = (void*)(uintptr_t)(url_protocols[i] ? i + 1 : i);
     return ret;
 }
+
+#if FF_API_CHILD_CLASS_NEXT
+const AVClass *ff_urlcontext_child_class_next(const AVClass *prev)
+{
+    int i;
+
+    /* find the protocol that corresponds to prev */
+    for (i = 0; prev && url_protocols[i]; i++) {
+        if (url_protocols[i]->priv_data_class == prev) {
+            i++;
+            break;
+        }
+    }
+
+    /* find next protocol with priv options */
+    for (; url_protocols[i]; i++)
+        if (url_protocols[i]->priv_data_class)
+            return url_protocols[i]->priv_data_class;
+    return NULL;
+}
+#endif
 const AVClass ffurl_context_class = {
     .class_name       = "URLContext",
     .item_name        = urlcontext_to_name,
@@ -39561,6 +40906,12 @@ static const AVClass *child_class_iterate(void **iter)
     *iter = (void*)(uintptr_t)c;
     return c;
 }
+#if FF_API_CHILD_CLASS_NEXT
+static const AVClass *ff_avio_child_class_next(const AVClass *prev)
+{
+    return prev ? NULL : &ffurl_context_class;
+}
+#endif
 const AVClass ff_avio_class = {
     .class_name = "AVIOContext",
     .item_name  = av_default_item_name,
@@ -39852,12 +41203,7 @@ static void *format_child_next(void *obj, void *prev)
         return s->pb;
     return NULL;
 }
-static AVClassCategory AVClass_get_category(void *ptr)
-{
-    AVCodecContext* avctx = ptr;
-    if(avctx->codec && avctx->codec->decode) return AV_CLASS_CATEGORY_DECODER;
-    else                                     return AV_CLASS_CATEGORY_ENCODER;
-}
+
 static const char* format_to_name(void* ptr)
 {
     AVFormatContext* fc = (AVFormatContext*) ptr;
@@ -41346,10 +42692,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
     if (dst)
         av_dict_set(metadata, key, dst, dict_flags);
 }
-typedef struct AVMetadataConv {
-    const char *native;
-    const char *generic;
-} AVMetadataConv;
+
 void ff_metadata_conv(AVDictionary **pm, const AVMetadataConv *d_conv,
                                        const AVMetadataConv *s_conv)
 {
@@ -44754,278 +46097,8 @@ void ff_rfps_calculate(AVFormatContext *ic)
         st->info->rfps_duration_sum = 0;
     }
 }
-typedef struct PixelFormatTag {
-    enum AVPixelFormat pix_fmt;
-    unsigned int fourcc;
-} PixelFormatTag;
-const PixelFormatTag ff_raw_pix_fmt_tags[] = {
-    { AV_PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
-    { AV_PIX_FMT_YUV420P, MKTAG('I', 'Y', 'U', 'V') },
-    { AV_PIX_FMT_YUV420P, MKTAG('y', 'v', '1', '2') },
-    { AV_PIX_FMT_YUV420P, MKTAG('Y', 'V', '1', '2') },
-    { AV_PIX_FMT_YUV410P, MKTAG('Y', 'U', 'V', '9') },
-    { AV_PIX_FMT_YUV410P, MKTAG('Y', 'V', 'U', '9') },
-    { AV_PIX_FMT_YUV411P, MKTAG('Y', '4', '1', 'B') },
-    { AV_PIX_FMT_YUV422P, MKTAG('Y', '4', '2', 'B') },
-    { AV_PIX_FMT_YUV422P, MKTAG('P', '4', '2', '2') },
-    { AV_PIX_FMT_YUV422P, MKTAG('Y', 'V', '1', '6') },
-    /* yuvjXXX formats are deprecated hacks specific to libav*,
-       they are identical to yuvXXX  */
-    { AV_PIX_FMT_YUVJ420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
-    { AV_PIX_FMT_YUVJ420P, MKTAG('I', 'Y', 'U', 'V') },
-    { AV_PIX_FMT_YUVJ420P, MKTAG('Y', 'V', '1', '2') },
-    { AV_PIX_FMT_YUVJ422P, MKTAG('Y', '4', '2', 'B') },
-    { AV_PIX_FMT_YUVJ422P, MKTAG('P', '4', '2', '2') },
-    { AV_PIX_FMT_GRAY8,    MKTAG('Y', '8', '0', '0') },
-    { AV_PIX_FMT_GRAY8,    MKTAG('Y', '8', ' ', ' ') },
 
-    { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'Y', '2') }, /* Packed formats */
-    { AV_PIX_FMT_YUYV422, MKTAG('Y', '4', '2', '2') },
-    { AV_PIX_FMT_YUYV422, MKTAG('V', '4', '2', '2') },
-    { AV_PIX_FMT_YUYV422, MKTAG('V', 'Y', 'U', 'Y') },
-    { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'N', 'V') },
-    { AV_PIX_FMT_YUYV422, MKTAG('Y', 'U', 'Y', 'V') },
-    { AV_PIX_FMT_YVYU422, MKTAG('Y', 'V', 'Y', 'U') }, /* Philips */
-    { AV_PIX_FMT_UYVY422, MKTAG('U', 'Y', 'V', 'Y') },
-    { AV_PIX_FMT_UYVY422, MKTAG('H', 'D', 'Y', 'C') },
-    { AV_PIX_FMT_UYVY422, MKTAG('U', 'Y', 'N', 'V') },
-    { AV_PIX_FMT_UYVY422, MKTAG('U', 'Y', 'N', 'Y') },
-    { AV_PIX_FMT_UYVY422, MKTAG('u', 'y', 'v', '1') },
-    { AV_PIX_FMT_UYVY422, MKTAG('2', 'V', 'u', '1') },
-    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', 'R', 'n') }, /* Avid AVI Codec 1:1 */
-    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', '1', 'x') }, /* Avid 1:1x */
-    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', 'u', 'p') },
-    { AV_PIX_FMT_UYVY422, MKTAG('V', 'D', 'T', 'Z') }, /* SoftLab-NSK VideoTizer */
-    { AV_PIX_FMT_UYVY422, MKTAG('a', 'u', 'v', '2') },
-    { AV_PIX_FMT_UYVY422, MKTAG('c', 'y', 'u', 'v') }, /* CYUV is also Creative YUV */
-    { AV_PIX_FMT_UYYVYY411, MKTAG('Y', '4', '1', '1') },
-    { AV_PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
-    { AV_PIX_FMT_NV12,    MKTAG('N', 'V', '1', '2') },
-    { AV_PIX_FMT_NV21,    MKTAG('N', 'V', '2', '1') },
 
-    /* nut */
-    { AV_PIX_FMT_RGB555LE, MKTAG('R', 'G', 'B', 15) },
-    { AV_PIX_FMT_BGR555LE, MKTAG('B', 'G', 'R', 15) },
-    { AV_PIX_FMT_RGB565LE, MKTAG('R', 'G', 'B', 16) },
-    { AV_PIX_FMT_BGR565LE, MKTAG('B', 'G', 'R', 16) },
-    { AV_PIX_FMT_RGB555BE, MKTAG(15 , 'B', 'G', 'R') },
-    { AV_PIX_FMT_BGR555BE, MKTAG(15 , 'R', 'G', 'B') },
-    { AV_PIX_FMT_RGB565BE, MKTAG(16 , 'B', 'G', 'R') },
-    { AV_PIX_FMT_BGR565BE, MKTAG(16 , 'R', 'G', 'B') },
-    { AV_PIX_FMT_RGB444LE, MKTAG('R', 'G', 'B', 12) },
-    { AV_PIX_FMT_BGR444LE, MKTAG('B', 'G', 'R', 12) },
-    { AV_PIX_FMT_RGB444BE, MKTAG(12 , 'B', 'G', 'R') },
-    { AV_PIX_FMT_BGR444BE, MKTAG(12 , 'R', 'G', 'B') },
-    { AV_PIX_FMT_RGBA64LE, MKTAG('R', 'B', 'A', 64 ) },
-    { AV_PIX_FMT_BGRA64LE, MKTAG('B', 'R', 'A', 64 ) },
-    { AV_PIX_FMT_RGBA64BE, MKTAG(64 , 'R', 'B', 'A') },
-    { AV_PIX_FMT_BGRA64BE, MKTAG(64 , 'B', 'R', 'A') },
-    { AV_PIX_FMT_RGBA,     MKTAG('R', 'G', 'B', 'A') },
-    { AV_PIX_FMT_RGB0,     MKTAG('R', 'G', 'B',  0 ) },
-    { AV_PIX_FMT_BGRA,     MKTAG('B', 'G', 'R', 'A') },
-    { AV_PIX_FMT_BGR0,     MKTAG('B', 'G', 'R',  0 ) },
-    { AV_PIX_FMT_ABGR,     MKTAG('A', 'B', 'G', 'R') },
-    { AV_PIX_FMT_0BGR,     MKTAG( 0 , 'B', 'G', 'R') },
-    { AV_PIX_FMT_ARGB,     MKTAG('A', 'R', 'G', 'B') },
-    { AV_PIX_FMT_0RGB,     MKTAG( 0 , 'R', 'G', 'B') },
-    { AV_PIX_FMT_RGB24,    MKTAG('R', 'G', 'B', 24 ) },
-    { AV_PIX_FMT_BGR24,    MKTAG('B', 'G', 'R', 24 ) },
-    { AV_PIX_FMT_YUV411P,  MKTAG('4', '1', '1', 'P') },
-    { AV_PIX_FMT_YUV422P,  MKTAG('4', '2', '2', 'P') },
-    { AV_PIX_FMT_YUVJ422P, MKTAG('4', '2', '2', 'P') },
-    { AV_PIX_FMT_YUV440P,  MKTAG('4', '4', '0', 'P') },
-    { AV_PIX_FMT_YUVJ440P, MKTAG('4', '4', '0', 'P') },
-    { AV_PIX_FMT_YUV444P,  MKTAG('4', '4', '4', 'P') },
-    { AV_PIX_FMT_YUVJ444P, MKTAG('4', '4', '4', 'P') },
-    { AV_PIX_FMT_MONOWHITE,MKTAG('B', '1', 'W', '0') },
-    { AV_PIX_FMT_MONOBLACK,MKTAG('B', '0', 'W', '1') },
-    { AV_PIX_FMT_BGR8,     MKTAG('B', 'G', 'R',  8 ) },
-    { AV_PIX_FMT_RGB8,     MKTAG('R', 'G', 'B',  8 ) },
-    { AV_PIX_FMT_BGR4,     MKTAG('B', 'G', 'R',  4 ) },
-    { AV_PIX_FMT_RGB4,     MKTAG('R', 'G', 'B',  4 ) },
-    { AV_PIX_FMT_RGB4_BYTE,MKTAG('B', '4', 'B', 'Y') },
-    { AV_PIX_FMT_BGR4_BYTE,MKTAG('R', '4', 'B', 'Y') },
-    { AV_PIX_FMT_RGB48LE,  MKTAG('R', 'G', 'B', 48 ) },
-    { AV_PIX_FMT_RGB48BE,  MKTAG( 48, 'R', 'G', 'B') },
-    { AV_PIX_FMT_BGR48LE,  MKTAG('B', 'G', 'R', 48 ) },
-    { AV_PIX_FMT_BGR48BE,  MKTAG( 48, 'B', 'G', 'R') },
-    { AV_PIX_FMT_GRAY9LE,     MKTAG('Y', '1',  0 ,  9 ) },
-    { AV_PIX_FMT_GRAY9BE,     MKTAG( 9 ,  0 , '1', 'Y') },
-    { AV_PIX_FMT_GRAY10LE,    MKTAG('Y', '1',  0 , 10 ) },
-    { AV_PIX_FMT_GRAY10BE,    MKTAG(10 ,  0 , '1', 'Y') },
-    { AV_PIX_FMT_GRAY12LE,    MKTAG('Y', '1',  0 , 12 ) },
-    { AV_PIX_FMT_GRAY12BE,    MKTAG(12 ,  0 , '1', 'Y') },
-    { AV_PIX_FMT_GRAY14LE,    MKTAG('Y', '1',  0 , 14 ) },
-    { AV_PIX_FMT_GRAY14BE,    MKTAG(14 ,  0 , '1', 'Y') },
-    { AV_PIX_FMT_GRAY16LE,    MKTAG('Y', '1',  0 , 16 ) },
-    { AV_PIX_FMT_GRAY16BE,    MKTAG(16 ,  0 , '1', 'Y') },
-    { AV_PIX_FMT_YUV420P9LE,  MKTAG('Y', '3', 11 ,  9 ) },
-    { AV_PIX_FMT_YUV420P9BE,  MKTAG( 9 , 11 , '3', 'Y') },
-    { AV_PIX_FMT_YUV422P9LE,  MKTAG('Y', '3', 10 ,  9 ) },
-    { AV_PIX_FMT_YUV422P9BE,  MKTAG( 9 , 10 , '3', 'Y') },
-    { AV_PIX_FMT_YUV444P9LE,  MKTAG('Y', '3',  0 ,  9 ) },
-    { AV_PIX_FMT_YUV444P9BE,  MKTAG( 9 ,  0 , '3', 'Y') },
-    { AV_PIX_FMT_YUV420P10LE, MKTAG('Y', '3', 11 , 10 ) },
-    { AV_PIX_FMT_YUV420P10BE, MKTAG(10 , 11 , '3', 'Y') },
-    { AV_PIX_FMT_YUV422P10LE, MKTAG('Y', '3', 10 , 10 ) },
-    { AV_PIX_FMT_YUV422P10BE, MKTAG(10 , 10 , '3', 'Y') },
-    { AV_PIX_FMT_YUV444P10LE, MKTAG('Y', '3',  0 , 10 ) },
-    { AV_PIX_FMT_YUV444P10BE, MKTAG(10 ,  0 , '3', 'Y') },
-    { AV_PIX_FMT_YUV420P12LE, MKTAG('Y', '3', 11 , 12 ) },
-    { AV_PIX_FMT_YUV420P12BE, MKTAG(12 , 11 , '3', 'Y') },
-    { AV_PIX_FMT_YUV422P12LE, MKTAG('Y', '3', 10 , 12 ) },
-    { AV_PIX_FMT_YUV422P12BE, MKTAG(12 , 10 , '3', 'Y') },
-    { AV_PIX_FMT_YUV444P12LE, MKTAG('Y', '3',  0 , 12 ) },
-    { AV_PIX_FMT_YUV444P12BE, MKTAG(12 ,  0 , '3', 'Y') },
-    { AV_PIX_FMT_YUV420P14LE, MKTAG('Y', '3', 11 , 14 ) },
-    { AV_PIX_FMT_YUV420P14BE, MKTAG(14 , 11 , '3', 'Y') },
-    { AV_PIX_FMT_YUV422P14LE, MKTAG('Y', '3', 10 , 14 ) },
-    { AV_PIX_FMT_YUV422P14BE, MKTAG(14 , 10 , '3', 'Y') },
-    { AV_PIX_FMT_YUV444P14LE, MKTAG('Y', '3',  0 , 14 ) },
-    { AV_PIX_FMT_YUV444P14BE, MKTAG(14 ,  0 , '3', 'Y') },
-    { AV_PIX_FMT_YUV420P16LE, MKTAG('Y', '3', 11 , 16 ) },
-    { AV_PIX_FMT_YUV420P16BE, MKTAG(16 , 11 , '3', 'Y') },
-    { AV_PIX_FMT_YUV422P16LE, MKTAG('Y', '3', 10 , 16 ) },
-    { AV_PIX_FMT_YUV422P16BE, MKTAG(16 , 10 , '3', 'Y') },
-    { AV_PIX_FMT_YUV444P16LE, MKTAG('Y', '3',  0 , 16 ) },
-    { AV_PIX_FMT_YUV444P16BE, MKTAG(16 ,  0 , '3', 'Y') },
-    { AV_PIX_FMT_YUVA420P,    MKTAG('Y', '4', 11 ,  8 ) },
-    { AV_PIX_FMT_YUVA422P,    MKTAG('Y', '4', 10 ,  8 ) },
-    { AV_PIX_FMT_YUVA444P,    MKTAG('Y', '4',  0 ,  8 ) },
-    { AV_PIX_FMT_YA8,         MKTAG('Y', '2',  0 ,  8 ) },
-    { AV_PIX_FMT_PAL8,        MKTAG('P', 'A', 'L',  8 ) },
-
-    { AV_PIX_FMT_YUVA420P9LE,  MKTAG('Y', '4', 11 ,  9 ) },
-    { AV_PIX_FMT_YUVA420P9BE,  MKTAG( 9 , 11 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA422P9LE,  MKTAG('Y', '4', 10 ,  9 ) },
-    { AV_PIX_FMT_YUVA422P9BE,  MKTAG( 9 , 10 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA444P9LE,  MKTAG('Y', '4',  0 ,  9 ) },
-    { AV_PIX_FMT_YUVA444P9BE,  MKTAG( 9 ,  0 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA420P10LE, MKTAG('Y', '4', 11 , 10 ) },
-    { AV_PIX_FMT_YUVA420P10BE, MKTAG(10 , 11 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA422P10LE, MKTAG('Y', '4', 10 , 10 ) },
-    { AV_PIX_FMT_YUVA422P10BE, MKTAG(10 , 10 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA444P10LE, MKTAG('Y', '4',  0 , 10 ) },
-    { AV_PIX_FMT_YUVA444P10BE, MKTAG(10 ,  0 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA422P12LE, MKTAG('Y', '4', 10 , 12 ) },
-    { AV_PIX_FMT_YUVA422P12BE, MKTAG(12 , 10 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA444P12LE, MKTAG('Y', '4',  0 , 12 ) },
-    { AV_PIX_FMT_YUVA444P12BE, MKTAG(12 ,  0 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA420P16LE, MKTAG('Y', '4', 11 , 16 ) },
-    { AV_PIX_FMT_YUVA420P16BE, MKTAG(16 , 11 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA422P16LE, MKTAG('Y', '4', 10 , 16 ) },
-    { AV_PIX_FMT_YUVA422P16BE, MKTAG(16 , 10 , '4', 'Y') },
-    { AV_PIX_FMT_YUVA444P16LE, MKTAG('Y', '4',  0 , 16 ) },
-    { AV_PIX_FMT_YUVA444P16BE, MKTAG(16 ,  0 , '4', 'Y') },
-
-    { AV_PIX_FMT_GBRP,         MKTAG('G', '3', 00 ,  8 ) },
-    { AV_PIX_FMT_GBRP9LE,      MKTAG('G', '3', 00 ,  9 ) },
-    { AV_PIX_FMT_GBRP9BE,      MKTAG( 9 , 00 , '3', 'G') },
-    { AV_PIX_FMT_GBRP10LE,     MKTAG('G', '3', 00 , 10 ) },
-    { AV_PIX_FMT_GBRP10BE,     MKTAG(10 , 00 , '3', 'G') },
-    { AV_PIX_FMT_GBRP12LE,     MKTAG('G', '3', 00 , 12 ) },
-    { AV_PIX_FMT_GBRP12BE,     MKTAG(12 , 00 , '3', 'G') },
-    { AV_PIX_FMT_GBRP14LE,     MKTAG('G', '3', 00 , 14 ) },
-    { AV_PIX_FMT_GBRP14BE,     MKTAG(14 , 00 , '3', 'G') },
-    { AV_PIX_FMT_GBRP16LE,     MKTAG('G', '3', 00 , 16 ) },
-    { AV_PIX_FMT_GBRP16BE,     MKTAG(16 , 00 , '3', 'G') },
-
-    { AV_PIX_FMT_GBRAP,        MKTAG('G', '4', 00 ,  8 ) },
-    { AV_PIX_FMT_GBRAP10LE,    MKTAG('G', '4', 00 , 10 ) },
-    { AV_PIX_FMT_GBRAP10BE,    MKTAG(10 , 00 , '4', 'G') },
-    { AV_PIX_FMT_GBRAP12LE,    MKTAG('G', '4', 00 , 12 ) },
-    { AV_PIX_FMT_GBRAP12BE,    MKTAG(12 , 00 , '4', 'G') },
-    { AV_PIX_FMT_GBRAP16LE,    MKTAG('G', '4', 00 , 16 ) },
-    { AV_PIX_FMT_GBRAP16BE,    MKTAG(16 , 00 , '4', 'G') },
-
-    { AV_PIX_FMT_XYZ12LE,      MKTAG('X', 'Y', 'Z' , 36 ) },
-    { AV_PIX_FMT_XYZ12BE,      MKTAG(36 , 'Z' , 'Y', 'X') },
-
-    { AV_PIX_FMT_BAYER_BGGR8,    MKTAG(0xBA, 'B', 'G', 8   ) },
-    { AV_PIX_FMT_BAYER_BGGR16LE, MKTAG(0xBA, 'B', 'G', 16  ) },
-    { AV_PIX_FMT_BAYER_BGGR16BE, MKTAG(16  , 'G', 'B', 0xBA) },
-    { AV_PIX_FMT_BAYER_RGGB8,    MKTAG(0xBA, 'R', 'G', 8   ) },
-    { AV_PIX_FMT_BAYER_RGGB16LE, MKTAG(0xBA, 'R', 'G', 16  ) },
-    { AV_PIX_FMT_BAYER_RGGB16BE, MKTAG(16  , 'G', 'R', 0xBA) },
-    { AV_PIX_FMT_BAYER_GBRG8,    MKTAG(0xBA, 'G', 'B', 8   ) },
-    { AV_PIX_FMT_BAYER_GBRG16LE, MKTAG(0xBA, 'G', 'B', 16  ) },
-    { AV_PIX_FMT_BAYER_GBRG16BE, MKTAG(16,   'B', 'G', 0xBA) },
-    { AV_PIX_FMT_BAYER_GRBG8,    MKTAG(0xBA, 'G', 'R', 8   ) },
-    { AV_PIX_FMT_BAYER_GRBG16LE, MKTAG(0xBA, 'G', 'R', 16  ) },
-    { AV_PIX_FMT_BAYER_GRBG16BE, MKTAG(16,   'R', 'G', 0xBA) },
-
-    /* quicktime */
-    { AV_PIX_FMT_YUV420P, MKTAG('R', '4', '2', '0') }, /* Radius DV YUV PAL */
-    { AV_PIX_FMT_YUV411P, MKTAG('R', '4', '1', '1') }, /* Radius DV YUV NTSC */
-    { AV_PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
-    { AV_PIX_FMT_UYVY422, MKTAG('2', 'V', 'u', 'y') },
-    { AV_PIX_FMT_UYVY422, MKTAG('A', 'V', 'U', 'I') }, /* FIXME merge both fields */
-    { AV_PIX_FMT_UYVY422, MKTAG('b', 'x', 'y', 'v') },
-    { AV_PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', '2') },
-    { AV_PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', 's') },
-    { AV_PIX_FMT_YUYV422, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
-    { AV_PIX_FMT_RGB555LE,MKTAG('L', '5', '5', '5') },
-    { AV_PIX_FMT_RGB565LE,MKTAG('L', '5', '6', '5') },
-    { AV_PIX_FMT_RGB565BE,MKTAG('B', '5', '6', '5') },
-    { AV_PIX_FMT_BGR24,   MKTAG('2', '4', 'B', 'G') },
-    { AV_PIX_FMT_BGR24,   MKTAG('b', 'x', 'b', 'g') },
-    { AV_PIX_FMT_BGRA,    MKTAG('B', 'G', 'R', 'A') },
-    { AV_PIX_FMT_RGBA,    MKTAG('R', 'G', 'B', 'A') },
-    { AV_PIX_FMT_RGB24,   MKTAG('b', 'x', 'r', 'g') },
-    { AV_PIX_FMT_ABGR,    MKTAG('A', 'B', 'G', 'R') },
-    { AV_PIX_FMT_GRAY16BE,MKTAG('b', '1', '6', 'g') },
-    { AV_PIX_FMT_RGB48BE, MKTAG('b', '4', '8', 'r') },
-    { AV_PIX_FMT_RGBA64BE,MKTAG('b', '6', '4', 'a') },
-    { AV_PIX_FMT_BAYER_RGGB16BE, MKTAG('B', 'G', 'G', 'R') },
-
-    /* vlc */
-    { AV_PIX_FMT_YUV410P,     MKTAG('I', '4', '1', '0') },
-    { AV_PIX_FMT_YUV411P,     MKTAG('I', '4', '1', '1') },
-    { AV_PIX_FMT_YUV422P,     MKTAG('I', '4', '2', '2') },
-    { AV_PIX_FMT_YUV440P,     MKTAG('I', '4', '4', '0') },
-    { AV_PIX_FMT_YUV444P,     MKTAG('I', '4', '4', '4') },
-    { AV_PIX_FMT_YUVJ420P,    MKTAG('J', '4', '2', '0') },
-    { AV_PIX_FMT_YUVJ422P,    MKTAG('J', '4', '2', '2') },
-    { AV_PIX_FMT_YUVJ440P,    MKTAG('J', '4', '4', '0') },
-    { AV_PIX_FMT_YUVJ444P,    MKTAG('J', '4', '4', '4') },
-    { AV_PIX_FMT_YUVA444P,    MKTAG('Y', 'U', 'V', 'A') },
-    { AV_PIX_FMT_YUVA420P,    MKTAG('I', '4', '0', 'A') },
-    { AV_PIX_FMT_YUVA422P,    MKTAG('I', '4', '2', 'A') },
-    { AV_PIX_FMT_RGB8,        MKTAG('R', 'G', 'B', '2') },
-    { AV_PIX_FMT_RGB555LE,    MKTAG('R', 'V', '1', '5') },
-    { AV_PIX_FMT_RGB565LE,    MKTAG('R', 'V', '1', '6') },
-    { AV_PIX_FMT_BGR24,       MKTAG('R', 'V', '2', '4') },
-    { AV_PIX_FMT_BGR0,        MKTAG('R', 'V', '3', '2') },
-    { AV_PIX_FMT_RGBA,        MKTAG('A', 'V', '3', '2') },
-    { AV_PIX_FMT_YUV420P9LE,  MKTAG('I', '0', '9', 'L') },
-    { AV_PIX_FMT_YUV420P9BE,  MKTAG('I', '0', '9', 'B') },
-    { AV_PIX_FMT_YUV422P9LE,  MKTAG('I', '2', '9', 'L') },
-    { AV_PIX_FMT_YUV422P9BE,  MKTAG('I', '2', '9', 'B') },
-    { AV_PIX_FMT_YUV444P9LE,  MKTAG('I', '4', '9', 'L') },
-    { AV_PIX_FMT_YUV444P9BE,  MKTAG('I', '4', '9', 'B') },
-    { AV_PIX_FMT_YUV420P10LE, MKTAG('I', '0', 'A', 'L') },
-    { AV_PIX_FMT_YUV420P10BE, MKTAG('I', '0', 'A', 'B') },
-    { AV_PIX_FMT_YUV422P10LE, MKTAG('I', '2', 'A', 'L') },
-    { AV_PIX_FMT_YUV422P10BE, MKTAG('I', '2', 'A', 'B') },
-    { AV_PIX_FMT_YUV444P10LE, MKTAG('I', '4', 'A', 'L') },
-    { AV_PIX_FMT_YUV444P10BE, MKTAG('I', '4', 'A', 'B') },
-    { AV_PIX_FMT_YUV420P12LE, MKTAG('I', '0', 'C', 'L') },
-    { AV_PIX_FMT_YUV420P12BE, MKTAG('I', '0', 'C', 'B') },
-    { AV_PIX_FMT_YUV422P12LE, MKTAG('I', '2', 'C', 'L') },
-    { AV_PIX_FMT_YUV422P12BE, MKTAG('I', '2', 'C', 'B') },
-    { AV_PIX_FMT_YUV444P12LE, MKTAG('I', '4', 'C', 'L') },
-    { AV_PIX_FMT_YUV444P12BE, MKTAG('I', '4', 'C', 'B') },
-    { AV_PIX_FMT_YUV420P16LE, MKTAG('I', '0', 'F', 'L') },
-    { AV_PIX_FMT_YUV420P16BE, MKTAG('I', '0', 'F', 'B') },
-    { AV_PIX_FMT_YUV444P16LE, MKTAG('I', '4', 'F', 'L') },
-    { AV_PIX_FMT_YUV444P16BE, MKTAG('I', '4', 'F', 'B') },
-
-    /* special */
-    { AV_PIX_FMT_RGB565LE,MKTAG( 3 ,  0 ,  0 ,  0 ) }, /* flipped RGB565LE */
-    { AV_PIX_FMT_YUV444P, MKTAG('Y', 'V', '2', '4') }, /* YUV444P, swapped UV */
-
-    { AV_PIX_FMT_NONE, 0 },
-};
 unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat fmt)
 {
     const PixelFormatTag *tags = ff_raw_pix_fmt_tags;
@@ -45036,21 +46109,9 @@ unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat fmt)
     }
     return 0;
 }
-enum AVPixelFormat avpriv_find_pix_fmt(const PixelFormatTag *tags,
-                                       unsigned int fourcc)
-{
-    while (tags->pix_fmt >= 0) {
-        if (tags->fourcc == fourcc)
-            return tags->pix_fmt;
-        tags++;
-    }
-    return AV_PIX_FMT_NONE;
-}
 
-const struct PixelFormatTag *avpriv_get_raw_pix_fmt_tags(void)
-{
-    return ff_raw_pix_fmt_tags;
-}
+
+
 int64_t avio_size(AVIOContext *s)
 {
     int64_t size;
@@ -48685,7 +49746,7 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
 }
 
 static int dummy;
-static const OptionDef options[] = {
+static const OptionDef optionDefOptions[] = {
     CMDUTILS_COMMON_OPTIONS{"x", HAS_ARG, {.func_arg = opt_width}, "force displayed width", "width"},
     {"y", HAS_ARG, {.func_arg = opt_height}, "force displayed height", "height"},
     {"s", HAS_ARG | OPT_VIDEO, {.func_arg = opt_frame_size}, "set frame size (WxH or abbreviation)", "size"},
@@ -49792,8 +50853,8 @@ void show_help_default(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
     show_usage();
-    show_help_options(options, "Main options:", 0, OPT_EXPERT, 0);
-    show_help_options(options, "Advanced options:", OPT_EXPERT, 0, 0);
+    show_help_options(optionDefOptions, "Main options:", 0, OPT_EXPERT, 0);
+    show_help_options(optionDefOptions, "Advanced options:", OPT_EXPERT, 0, 0);
     printf("\n");
     show_help_children(avcodec_get_class(), AV_OPT_FLAG_DECODING_PARAM);
     show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
@@ -51006,84 +52067,7 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-struct error_entry {
-    int num;
-    const char *tag;
-    const char *str;
-};
-#define ERROR_TAG(tag) AVERROR_##tag, #tag
-#define EERROR_TAG(tag) AVERROR(tag), #tag
-#define AVERROR_INPUT_AND_OUTPUT_CHANGED (AVERROR_INPUT_CHANGED | AVERROR_OUTPUT_CHANGED)
-static const struct error_entry error_entries[] = {
-    { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
-    { ERROR_TAG(BUG),                "Internal bug, should not have happened"         },
-    { ERROR_TAG(BUG2),               "Internal bug, should not have happened"         },
-    { ERROR_TAG(BUFFER_TOO_SMALL),   "Buffer too small"                               },
-    { ERROR_TAG(DECODER_NOT_FOUND),  "Decoder not found"                              },
-    { ERROR_TAG(DEMUXER_NOT_FOUND),  "Demuxer not found"                              },
-    { ERROR_TAG(ENCODER_NOT_FOUND),  "Encoder not found"                              },
-    { ERROR_TAG(EOF),                "End of file"                                    },
-    { ERROR_TAG(EXIT),               "Immediate exit requested"                       },
-    { ERROR_TAG(EXTERNAL),           "Generic error in an external library"           },
-    { ERROR_TAG(FILTER_NOT_FOUND),   "Filter not found"                               },
-    { ERROR_TAG(INPUT_CHANGED),      "Input changed"                                  },
-    { ERROR_TAG(INVALIDDATA),        "Invalid data found when processing input"       },
-    { ERROR_TAG(MUXER_NOT_FOUND),    "Muxer not found"                                },
-    { ERROR_TAG(OPTION_NOT_FOUND),   "Option not found"                               },
-    { ERROR_TAG(OUTPUT_CHANGED),     "Output changed"                                 },
-    { ERROR_TAG(PATCHWELCOME),       "Not yet implemented in FFmpeg, patches welcome" },
-    { ERROR_TAG(PROTOCOL_NOT_FOUND), "Protocol not found"                             },
-    { ERROR_TAG(STREAM_NOT_FOUND),   "Stream not found"                               },
-    { ERROR_TAG(UNKNOWN),            "Unknown error occurred"                         },
-    { ERROR_TAG(EXPERIMENTAL),       "Experimental feature"                           },
-    { ERROR_TAG(INPUT_AND_OUTPUT_CHANGED), "Input and output changed"                 },
-    { ERROR_TAG(HTTP_BAD_REQUEST),   "Server returned 400 Bad Request"         },
-    { ERROR_TAG(HTTP_UNAUTHORIZED),  "Server returned 401 Unauthorized (authorization failed)" },
-    { ERROR_TAG(HTTP_FORBIDDEN),     "Server returned 403 Forbidden (access denied)" },
-    { ERROR_TAG(HTTP_NOT_FOUND),     "Server returned 404 Not Found"           },
-    { ERROR_TAG(HTTP_OTHER_4XX),     "Server returned 4XX Client Error, but not one of 40{0,1,3,4}" },
-    { ERROR_TAG(HTTP_SERVER_ERROR),  "Server returned 5XX Server Error reply" },
-#if !HAVE_STRERROR_R
-    { EERROR_TAG(E2BIG),             "Argument list too long" },
-    { EERROR_TAG(EACCES),            "Permission denied" },
-    { EERROR_TAG(EAGAIN),            "Resource temporarily unavailable" },
-    { EERROR_TAG(EBADF),             "Bad file descriptor" },
-    { EERROR_TAG(EBUSY),             "Device or resource busy" },
-    { EERROR_TAG(ECHILD),            "No child processes" },
-    { EERROR_TAG(EDEADLK),           "Resource deadlock avoided" },
-    { EERROR_TAG(EDOM),              "Numerical argument out of domain" },
-    { EERROR_TAG(EEXIST),            "File exists" },
-    { EERROR_TAG(EFAULT),            "Bad address" },
-    { EERROR_TAG(EFBIG),             "File too large" },
-    { EERROR_TAG(EILSEQ),            "Illegal byte sequence" },
-    { EERROR_TAG(EINTR),             "Interrupted system call" },
-    { EERROR_TAG(EINVAL),            "Invalid argument" },
-    { EERROR_TAG(EIO),               "I/O error" },
-    { EERROR_TAG(EISDIR),            "Is a directory" },
-    { EERROR_TAG(EMFILE),            "Too many open files" },
-    { EERROR_TAG(EMLINK),            "Too many links" },
-    { EERROR_TAG(ENAMETOOLONG),      "File name too long" },
-    { EERROR_TAG(ENFILE),            "Too many open files in system" },
-    { EERROR_TAG(ENODEV),            "No such device" },
-    { EERROR_TAG(ENOENT),            "No such file or directory" },
-    { EERROR_TAG(ENOEXEC),           "Exec format error" },
-    { EERROR_TAG(ENOLCK),            "No locks available" },
-    { EERROR_TAG(ENOMEM),            "Cannot allocate memory" },
-    { EERROR_TAG(ENOSPC),            "No space left on device" },
-    { EERROR_TAG(ENOSYS),            "Function not implemented" },
-    { EERROR_TAG(ENOTDIR),           "Not a directory" },
-    { EERROR_TAG(ENOTEMPTY),         "Directory not empty" },
-    { EERROR_TAG(ENOTTY),            "Inappropriate I/O control operation" },
-    { EERROR_TAG(ENXIO),             "No such device or address" },
-    { EERROR_TAG(EPERM),             "Operation not permitted" },
-    { EERROR_TAG(EPIPE),             "Broken pipe" },
-    { EERROR_TAG(ERANGE),            "Result too large" },
-    { EERROR_TAG(EROFS),             "Read-only file system" },
-    { EERROR_TAG(ESPIPE),            "Illegal seek" },
-    { EERROR_TAG(ESRCH),             "No such process" },
-    { EERROR_TAG(EXDEV),             "Cross-device link" },
-#endif
-};
+
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 {
@@ -52512,8 +53496,8 @@ int main(int argc, char **argv)
     init_opts();
     signal(SIGINT, sigterm_handler);  
     signal(SIGTERM, sigterm_handler);
-    show_banner(argc, argv, options);
-    parse_options(NULL, argc, argv, options, opt_input_file);
+    show_banner(argc, argv, optionDefOptions);
+    parse_options(NULL, argc, argv, optionDefOptions, opt_input_file);
     if (!input_filename)
     {
         show_usage();
@@ -52567,7 +53551,7 @@ int main(int argc, char **argv)
             if (renderer)
             {
                 if (!SDL_GetRendererInfo(renderer, &renderer_info))
-                    // av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
+                    av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
             }
         }
         if (!window || !renderer || !renderer_info.num_texture_formats)
