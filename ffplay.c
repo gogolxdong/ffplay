@@ -12,62 +12,62 @@
 #include <dshow.h>
 #include <dvdmedia.h>
 #include <zlib.h>
-// #if HAVE_X86ASM
+#if HAVE_X86ASM
 
-// #define cpuid(index, eax, ebx, ecx, edx)        \
-//     ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
+#define cpuid(index, eax, ebx, ecx, edx)        \
+    ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
 
-// #define xgetbv(index, eax, edx)                 \
-//     ff_cpu_xgetbv(index, &eax, &edx)
+#define xgetbv(index, eax, edx)                 \
+    ff_cpu_xgetbv(index, &eax, &edx)
 
-// #elif HAVE_INLINE_ASM
+#elif HAVE_INLINE_ASM
 
-// #define cpuid(index, eax, ebx, ecx, edx)                        \
-//     __asm__ volatile (                                          \
-//         "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
-//         "cpuid                       \n\t"                      \
-//         "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
-//         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
-//         : "0" (index), "2"(0))
+#define cpuid(index, eax, ebx, ecx, edx)                        \
+    __asm__ volatile (                                          \
+        "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
+        "cpuid                       \n\t"                      \
+        "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
+        : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
+        : "0" (index), "2"(0))
 
-// #define xgetbv(index, eax, edx)                                 \
-//     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
+#define xgetbv(index, eax, edx)                                 \
+    __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
 
-// #define get_eflags(x)                           \
-//     __asm__ volatile ("pushfl     \n"           \
-//                       "pop    %0  \n"           \
-//                       : "=r"(x))
+#define get_eflags(x)                           \
+    __asm__ volatile ("pushfl     \n"           \
+                      "pop    %0  \n"           \
+                      : "=r"(x))
 
-// #define set_eflags(x)                           \
-//     __asm__ volatile ("push    %0 \n"           \
-//                       "popfl      \n"           \
-//                       :: "r"(x))
+#define set_eflags(x)                           \
+    __asm__ volatile ("push    %0 \n"           \
+                      "popfl      \n"           \
+                      :: "r"(x))
 
-// #endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_INLINE_ASM */
 
-// #if ARCH_X86_64
+#if ARCH_X86_64
 
-// #define cpuid_test() 1
+#define cpuid_test() 1
 
-// #elif HAVE_X86ASM
+#elif HAVE_X86ASM
 
-// #define cpuid_test ff_cpu_cpuid_test
+#define cpuid_test ff_cpu_cpuid_test
 
-// #elif HAVE_INLINE_ASM
+#elif HAVE_INLINE_ASM
 
-// static int cpuid_test(void)
-// {
-//     x86_reg a, c;
+static int cpuid_test(void)
+{
+    x86_reg a, c;
 
-//     /* Check if CPUID is supported by attempting to toggle the ID bit in
-//      * the EFLAGS register. */
-//     get_eflags(a);
-//     set_eflags(a ^ 0x200000);
-//     get_eflags(c);
+    /* Check if CPUID is supported by attempting to toggle the ID bit in
+     * the EFLAGS register. */
+    get_eflags(a);
+    set_eflags(a ^ 0x200000);
+    get_eflags(c);
 
-//     return a != c;
-// }
-// #endif
+    return a != c;
+}
+#endif
 
 /* Function to test if multimedia instructions are supported...  */
 int ff_get_cpu_flags_x86(void)
@@ -12687,45 +12687,6 @@ DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2YOffset);
 DECLARE_ALIGNED(8, extern const uint64_t, ff_w1111);
 DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
 
-//MMX versions
-#undef RENAME
-#define RENAME(a) a ## _mmx
-#include "rgb2rgb_template.c"
-
-// MMXEXT versions
-#undef RENAME
-#undef COMPILE_TEMPLATE_MMXEXT
-#define COMPILE_TEMPLATE_MMXEXT 1
-#define RENAME(a) a ## _mmxext
-#include "rgb2rgb_template.c"
-
-//SSE2 versions
-#undef RENAME
-#undef COMPILE_TEMPLATE_SSE2
-#define COMPILE_TEMPLATE_SSE2 1
-#define RENAME(a) a ## _sse2
-#include "rgb2rgb_template.c"
-
-//AVX versions
-#undef RENAME
-#undef COMPILE_TEMPLATE_AVX
-#define COMPILE_TEMPLATE_AVX 1
-#define RENAME(a) a ## _avx
-#include "rgb2rgb_template.c"
-
-//3DNOW versions
-#undef RENAME
-#undef COMPILE_TEMPLATE_MMXEXT
-#undef COMPILE_TEMPLATE_SSE2
-#undef COMPILE_TEMPLATE_AVX
-#undef COMPILE_TEMPLATE_AMD3DNOW
-#define COMPILE_TEMPLATE_MMXEXT 0
-#define COMPILE_TEMPLATE_SSE2 0
-#define COMPILE_TEMPLATE_AVX 0
-#define COMPILE_TEMPLATE_AMD3DNOW 1
-#define RENAME(a) a ## _3dnow
-#include "rgb2rgb_template.c"
-
 #endif /* HAVE_INLINE_ASM */
 
 void ff_shuffle_bytes_2103_mmxext(const uint8_t *src, uint8_t *dst, int src_size);
@@ -12744,44 +12705,9 @@ void ff_uyvytoyuv422_avx(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                          int lumStride, int chromStride, int srcStride);
 #endif
 
-av_cold void rgb2rgb_init_x86(void)
-{
-    int cpu_flags = av_get_cpu_flags();
+#include "libswscale_x86_rgb2rgb.c"
 
-#if HAVE_INLINE_ASM
-    if (INLINE_MMX(cpu_flags))
-        rgb2rgb_init_mmx();
-    if (INLINE_AMD3DNOW(cpu_flags))
-        rgb2rgb_init_3dnow();
-    if (INLINE_MMXEXT(cpu_flags))
-        rgb2rgb_init_mmxext();
-    if (INLINE_SSE2(cpu_flags))
-        rgb2rgb_init_sse2();
-    if (INLINE_AVX(cpu_flags))
-        rgb2rgb_init_avx();
-#endif /* HAVE_INLINE_ASM */
 
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-        shuffle_bytes_2103 = ff_shuffle_bytes_2103_mmxext;
-    }
-    if (EXTERNAL_SSE2(cpu_flags)) {
-#if ARCH_X86_64
-        uyvytoyuv422 = ff_uyvytoyuv422_sse2;
-#endif
-    }
-    if (EXTERNAL_SSSE3(cpu_flags)) {
-        shuffle_bytes_0321 = ff_shuffle_bytes_0321_ssse3;
-        shuffle_bytes_2103 = ff_shuffle_bytes_2103_ssse3;
-        shuffle_bytes_1230 = ff_shuffle_bytes_1230_ssse3;
-        shuffle_bytes_3012 = ff_shuffle_bytes_3012_ssse3;
-        shuffle_bytes_3210 = ff_shuffle_bytes_3210_ssse3;
-    }
-    if (EXTERNAL_AVX(cpu_flags)) {
-#if ARCH_X86_64
-        uyvytoyuv422 = ff_uyvytoyuv422_avx;
-#endif
-    }
-}
 
 static inline void rgb24tobgr32_c(const uint8_t *src, uint8_t *dst,
                                   int src_size)
@@ -13683,53 +13609,46 @@ static void uyvytoyuv422_c(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
     }
 }
 
-static av_cold void rgb2rgb_init_c(void)
+static void rgb2rgb_init_c(void)
 {
-    rgb15to16          = rgb15to16_c;
-    rgb15tobgr24       = rgb15tobgr24_c;
-    rgb15to32          = rgb15to32_c;
-    rgb16tobgr24       = rgb16tobgr24_c;
-    rgb16to32          = rgb16to32_c;
-    rgb16to15          = rgb16to15_c;
-    rgb24tobgr16       = rgb24tobgr16_c;
-    rgb24tobgr15       = rgb24tobgr15_c;
-    rgb24tobgr32       = rgb24tobgr32_c;
-    rgb32to16          = rgb32to16_c;
-    rgb32to15          = rgb32to15_c;
-    rgb32tobgr24       = rgb32tobgr24_c;
-    rgb24to15          = rgb24to15_c;
-    rgb24to16          = rgb24to16_c;
-    rgb24tobgr24       = rgb24tobgr24_c;
-#if HAVE_BIGENDIAN
-    shuffle_bytes_0321 = shuffle_bytes_2103_c;
-    shuffle_bytes_2103 = shuffle_bytes_0321_c;
-#else
+    rgb15to16 = rgb15to16_c;
+    rgb15tobgr24 = rgb15tobgr24_c;
+    rgb15to32 = rgb15to32_c;
+    rgb16tobgr24 = rgb16tobgr24_c;
+    rgb16to32 = rgb16to32_c;
+    rgb16to15 = rgb16to15_c;
+    rgb24tobgr16 = rgb24tobgr16_c;
+    rgb24tobgr15 = rgb24tobgr15_c;
+    rgb24tobgr32 = rgb24tobgr32_c;
+    rgb32to16 = rgb32to16_c;
+    rgb32to15 = rgb32to15_c;
+    rgb32tobgr24 = rgb32tobgr24_c;
+    rgb24to15 = rgb24to15_c;
+    rgb24to16 = rgb24to16_c;
+    rgb24tobgr24 = rgb24tobgr24_c;
     shuffle_bytes_0321 = shuffle_bytes_0321_c;
     shuffle_bytes_2103 = shuffle_bytes_2103_c;
     shuffle_bytes_1230 = shuffle_bytes_1230_c;
     shuffle_bytes_3012 = shuffle_bytes_3012_c;
     shuffle_bytes_3210 = shuffle_bytes_3210_c;
-#endif
-    rgb32tobgr16       = rgb32tobgr16_c;
-    rgb32tobgr15       = rgb32tobgr15_c;
-    yv12toyuy2         = yv12toyuy2_c;
-    yv12touyvy         = yv12touyvy_c;
-    yuv422ptoyuy2      = yuv422ptoyuy2_c;
-    yuv422ptouyvy      = yuv422ptouyvy_c;
-    yuy2toyv12         = yuy2toyv12_c;
-    planar2x           = planar2x_c;
-    ff_rgb24toyv12     = ff_rgb24toyv12_c;
-    interleaveBytes    = interleaveBytes_c;
-    deinterleaveBytes  = deinterleaveBytes_c;
-    vu9_to_vu12        = vu9_to_vu12_c;
-    yvu9_to_yuy2       = yvu9_to_yuy2_c;
-
-    uyvytoyuv420       = uyvytoyuv420_c;
-    uyvytoyuv422       = uyvytoyuv422_c;
-    yuyvtoyuv420       = yuyvtoyuv420_c;
-    yuyvtoyuv422       = yuyvtoyuv422_c;
+    rgb32tobgr16 = rgb32tobgr16_c;
+    rgb32tobgr15 = rgb32tobgr15_c;
+    yv12toyuy2 = yv12toyuy2_c;
+    yv12touyvy = yv12touyvy_c;
+    yuv422ptoyuy2 = yuv422ptoyuy2_c;
+    yuv422ptouyvy = yuv422ptouyvy_c;
+    yuy2toyv12 = yuy2toyv12_c;
+    planar2x = planar2x_c;
+    ff_rgb24toyv12 = ff_rgb24toyv12_c;
+    interleaveBytes = interleaveBytes_c;
+    deinterleaveBytes = deinterleaveBytes_c;
+    vu9_to_vu12 = vu9_to_vu12_c;
+    yvu9_to_yuy2 = yvu9_to_yuy2_c;
+    uyvytoyuv420 = uyvytoyuv420_c;
+    uyvytoyuv422 = uyvytoyuv422_c;
+    yuyvtoyuv420 = yuyvtoyuv420_c;
+    yuyvtoyuv422 = yuyvtoyuv422_c;
 }
-
 
 av_cold void ff_sws_rgb2rgb_init(void)
 {
@@ -13738,6 +13657,147 @@ av_cold void ff_sws_rgb2rgb_init(void)
         rgb2rgb_init_aarch64();
     if (ARCH_X86)
         rgb2rgb_init_x86();
+}
+
+void rgb32to24(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    int i, num_pixels = src_size >> 2;
+    for (i = 0; i < num_pixels; i++) {
+        dst[3 * i + 0] = src[4 * i + 2];
+        dst[3 * i + 1] = src[4 * i + 1];
+        dst[3 * i + 2] = src[4 * i + 0];
+    }
+}
+
+void rgb24to32(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    int i;
+    for (i = 0; 3 * i < src_size; i++) {
+        dst[4 * i + 0] = src[3 * i + 2];
+        dst[4 * i + 1] = src[3 * i + 1];
+        dst[4 * i + 2] = src[3 * i + 0];
+        dst[4 * i + 3] = 255;
+    }
+}
+
+void rgb16tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    uint8_t *d = dst;
+    const uint16_t *s = (const uint16_t *)src;
+    const uint16_t *end = s + src_size / 2;
+    while (s < end) {
+        register uint16_t bgr = *s++;
+        *d++ = ((bgr&0xF800)>>8) | ((bgr&0xF800)>>13);
+        *d++ = ((bgr&0x07E0)>>3) | ((bgr&0x07E0)>> 9);
+        *d++ = ((bgr&0x001F)<<3) | ((bgr&0x001F)>> 2);
+        *d++ = 255;
+    }
+}
+
+void rgb12to15(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    uint16_t rgb, r, g, b;
+    uint16_t *d = (uint16_t *)dst;
+    const uint16_t *s = (const uint16_t *)src;
+    const uint16_t *end = s + src_size / 2;
+    while (s < end) {
+        rgb = *s++;
+        r = rgb & 0xF00;
+        g = rgb & 0x0F0;
+        b = rgb & 0x00F;
+        r = (r << 3) | ((r & 0x800) >> 1);
+        g = (g << 2) | ((g & 0x080) >> 2);
+        b = (b << 1) | ( b >> 3);
+        *d++ = r | g | b;
+    }
+}
+
+void rgb16to24(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    uint8_t *d = dst;
+    const uint16_t *s = (const uint16_t *)src;
+    const uint16_t *end = s + src_size / 2;
+    while (s < end) {
+        register uint16_t bgr = *s++;
+        *d++ = ((bgr&0xF800)>>8) | ((bgr&0xF800)>>13);
+        *d++ = ((bgr&0x07E0)>>3) | ((bgr&0x07E0)>> 9);
+        *d++ = ((bgr&0x001F)<<3) | ((bgr&0x001F)>> 2);
+    }
+}
+
+void rgb16tobgr16(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    int i, num_pixels = src_size >> 1;
+    for (i = 0; i < num_pixels; i++) {
+        unsigned rgb = ((const uint16_t *)src)[i];
+        ((uint16_t *)dst)[i] = (rgb >> 11) | (rgb & 0x7E0) | (rgb << 11);
+    }
+}
+
+void rgb16tobgr15(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    int i, num_pixels = src_size >> 1;
+    for (i = 0; i < num_pixels; i++) {
+        unsigned rgb = ((const uint16_t *)src)[i];
+        ((uint16_t *)dst)[i] = (rgb >> 11) | ((rgb & 0x7C0) >> 1) | ((rgb & 0x1F) << 10);
+    }
+}
+
+void rgb15tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    uint8_t *d = dst;
+    const uint16_t *s = (const uint16_t *)src;
+    const uint16_t *end = s + src_size / 2;
+    while (s < end) {
+        register uint16_t bgr = *s++;
+        *d++ = ((bgr&0x7C00)>>7) | ((bgr&0x7C00)>>12);
+        *d++ = ((bgr&0x03E0)>>2) | ((bgr&0x03E0)>> 7);
+        *d++ = ((bgr&0x001F)<<3) | ((bgr&0x001F)>> 2);
+        *d++ = 255;
+    }
+}
+
+void rgb15to24(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    uint8_t *d = dst;
+    const uint16_t *s = (const uint16_t *)src;
+    const uint16_t *end = s + src_size / 2;
+    while (s < end) {
+        register uint16_t bgr = *s++;
+        *d++ = ((bgr&0x7C00)>>7) | ((bgr&0x7C00)>>12);
+        *d++ = ((bgr&0x03E0)>>2) | ((bgr&0x03E0)>> 7);
+        *d++ = ((bgr&0x001F)<<3) | ((bgr&0x001F)>> 2);
+    }
+}
+
+void rgb15tobgr16(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    int i, num_pixels = src_size >> 1;
+    for (i = 0; i < num_pixels; i++) {
+        unsigned rgb = ((const uint16_t *)src)[i];
+        ((uint16_t *)dst)[i] = ((rgb & 0x7C00) >> 10) | ((rgb & 0x3E0) << 1) | (rgb << 11);
+    }
+}
+
+void rgb15tobgr15(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    int i, num_pixels = src_size >> 1;
+    for (i = 0; i < num_pixels; i++) {
+        unsigned rgb = ((const uint16_t *)src)[i];
+        unsigned br = rgb & 0x7C1F;
+        ((uint16_t *)dst)[i] = (br >> 10) | (rgb & 0x3E0) | (br << 10);
+    }
+}
+
+void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size)
+{
+    uint16_t *d = (uint16_t *)dst;
+    uint16_t *s = (uint16_t *)src;
+    int i, num_pixels = src_size >> 1;
+    for (i = 0; i < num_pixels; i++) {
+        unsigned rgb = s[i];
+        d[i] = (rgb << 8 | rgb & 0xF0 | rgb >> 8) & 0xFFF;
+    }
 }
 
 static int handle_jpeg(enum AVPixelFormat *format)
@@ -16998,65 +17058,6 @@ static int rgbToPlanarRgbWrapper(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
-// #define BAYER_GBRG
-// #define BAYER_8
-// #define BAYER_RENAME(x) bayer_gbrg8_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_GBRG
-// #define BAYER_16LE
-// #define BAYER_RENAME(x) bayer_gbrg16le_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_GBRG
-// #define BAYER_16BE
-// #define BAYER_RENAME(x) bayer_gbrg16be_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_GRBG
-// #define BAYER_8
-// #define BAYER_RENAME(x) bayer_grbg8_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_GRBG
-// #define BAYER_16LE
-// #define BAYER_RENAME(x) bayer_grbg16le_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_GRBG
-// #define BAYER_16BE
-// #define BAYER_RENAME(x) bayer_grbg16be_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_BGGR
-// #define BAYER_8
-// #define BAYER_RENAME(x) bayer_bggr8_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_BGGR
-// #define BAYER_16LE
-// #define BAYER_RENAME(x) bayer_bggr16le_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_BGGR
-// #define BAYER_16BE
-// #define BAYER_RENAME(x) bayer_bggr16be_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_RGGB
-// #define BAYER_8
-// #define BAYER_RENAME(x) bayer_rggb8_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_RGGB
-// #define BAYER_16LE
-// #define BAYER_RENAME(x) bayer_rggb16le_to_##x
-// #include "bayer_template.c"
-
-// #define BAYER_RGGB
-// #define BAYER_16BE
-// #define BAYER_RENAME(x) bayer_rggb16be_to_##x
-// #include "bayer_template.c"
 
 static int bayer_to_rgb24_wrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                                   int srcSliceH, uint8_t* dst[], int dstStride[])
@@ -17276,7 +17277,14 @@ static inline int isRGBinInt(enum AVPixelFormat pix_fmt)
            pix_fmt == AV_PIX_FMT_MONOWHITE;
 }
 
-/* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
+
+#define IS_NOT_NE(bpp, desc) \
+    (((bpp + 7) >> 3) == 2 && \
+     (!(desc->flags & AV_PIX_FMT_FLAG_BE) != !HAVE_BIGENDIAN))
+
+#define CONV_IS(src, dst) (srcFormat == AV_PIX_FMT_##src && dstFormat == AV_PIX_FMT_##dst)
+
+#include "libswscale_rgb2rgb.c"
 typedef void (* rgbConvFn) (const uint8_t *, uint8_t *, int);
 static rgbConvFn findRgbConvFn(SwsContext *c)
 {
@@ -17285,12 +17293,6 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
     const int srcId = c->srcFormatBpp;
     const int dstId = c->dstFormatBpp;
     rgbConvFn conv = NULL;
-
-#define IS_NOT_NE(bpp, desc) \
-    (((bpp + 7) >> 3) == 2 && \
-     (!(desc->flags & AV_PIX_FMT_FLAG_BE) != !HAVE_BIGENDIAN))
-
-#define CONV_IS(src, dst) (srcFormat == AV_PIX_FMT_##src && dstFormat == AV_PIX_FMT_##dst)
 
     if (isRGBA32(srcFormat) && isRGBA32(dstFormat)) {
         if (     CONV_IS(ABGR, RGBA)
@@ -28670,19 +28672,16 @@ void ff_framequeue_global_init(FFFrameQueueGlobal *fqg)
 {
 }
 
-#define F AV_OPT_FLAG_FILTERING_PARAM
-#define V AV_OPT_FLAG_VIDEO_PARAM
-#define A AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption filtergraph_options[] = {
     { "thread_type", "Allowed thread types", offsetof(AVFilterGraph,thread_type), AV_OPT_TYPE_FLAGS,
-        { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, F|V|A, "thread_type" },
-        { "slice", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AVFILTER_THREAD_SLICE }, .flags = F|V|A, .unit = "thread_type" },
+        { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, (1 << 16)|16|8, "thread_type" },
+        { "slice", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AVFILTER_THREAD_SLICE }, .flags = (1 << 16)|16|8, .unit = "thread_type" },
     { "threads",     "Maximum number of threads", offsetof(AVFilterGraph,nb_threads),
-        AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, F|V|A },
+        AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, (1 << 16)|16|8 },
     {"scale_sws_opts"       , "default scale filter options"        , offsetof(AVFilterGraph,scale_sws_opts)        ,
-        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, F|V },
+        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, (1 << 16)|16 },
     {"aresample_swr_opts"   , "default aresample filter options"    , offsetof(AVFilterGraph,aresample_swr_opts)    ,
-        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, F|A },
+        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, (1 << 16)|8 },
     { NULL },
 };
 
@@ -33446,8 +33445,9 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
     return spec.size;
 }
 
-
 static AVOnce av_codec_static_init = AV_ONCE_INIT;
+
+#include "codec_list.c"
 static void av_codec_init_static(void)
 {
     for (int i = 0; codec_list[i]; i++) {
@@ -46041,9 +46041,7 @@ void ff_rfps_calculate(AVFormatContext *ic)
 
         if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
             continue;
-        // the check for tb_unreliable() is not completely correct, since this is not about handling
-        // an unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
-        // ipmovie.c produces.
+
         if (tb_unreliable(st->internal->avctx) && st->info->duration_count > 15 && st->info->duration_gcd > FFMAX(1, st->time_base.den/(500LL*st->time_base.num)) && !st->r_frame_rate.num)
             av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, st->time_base.den, st->time_base.num * st->info->duration_gcd, INT_MAX);
         if (st->info->duration_count>1 && !st->r_frame_rate.num

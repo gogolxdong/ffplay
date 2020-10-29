@@ -1465,13 +1465,13 @@ enum
 #define AV_HAS_BUILTIN(x) 0
 #endif
 
-#ifndef av_always_inline
+#ifndef inline
 #if AV_GCC_VERSION_AT_LEAST(3, 1)
-#define av_always_inline __attribute__((always_inline)) inline
+#define inline __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
-#define av_always_inline __forceinline
+#define inline __forceinline
 #else
-#define av_always_inline inline
+#define inline inline
 #endif
 #endif
 
@@ -1575,6 +1575,113 @@ enum
 #else
 #define av_const
 #endif
+
+#if HAVE_INLINE_ASM
+
+#if ARCH_X86_32
+
+#define MULL MULL
+static inline av_const int MULL(int a, int b, unsigned shift)
+{
+    int rt, dummy;
+    __asm__ (
+        "imull %3               \n\t"
+        "shrdl %4, %%edx, %%eax \n\t"
+        :"=a"(rt), "=d"(dummy)
+        :"a"(a), "rm"(b), "ci"((uint8_t)shift)
+    );
+    return rt;
+}
+
+#define MULH MULH
+static inline av_const int MULH(int a, int b)
+{
+    int rt, dummy;
+    __asm__ (
+        "imull %3"
+        :"=d"(rt), "=a"(dummy)
+        :"a"(a), "rm"(b)
+    );
+    return rt;
+}
+
+#define MUL64 MUL64
+static inline av_const int64_t MUL64(int a, int b)
+{
+    int64_t rt;
+    __asm__ (
+        "imull %2"
+        :"=A"(rt)
+        :"a"(a), "rm"(b)
+    );
+    return rt;
+}
+
+#endif /* ARCH_X86_32 */
+
+#if HAVE_I686
+/* median of 3 */
+#define mid_pred mid_pred
+
+static inline av_const int mid_pred(int a, int b, int c)
+{
+    int i=b;
+    __asm__ (
+        "cmp    %2, %1 \n\t"
+        "cmovg  %1, %0 \n\t"
+        "cmovg  %2, %1 \n\t"
+        "cmp    %3, %1 \n\t"
+        "cmovl  %3, %1 \n\t"
+        "cmp    %1, %0 \n\t"
+        "cmovg  %1, %0 \n\t"
+        :"+&r"(i), "+&r"(a)
+        :"r"(b), "r"(c)
+    );
+    return i;
+}
+
+#if HAVE_6REGS
+#define COPY3_IF_LT(x, y, a, b, c, d)\
+__asm__ volatile(\
+    "cmpl  %0, %3       \n\t"\
+    "cmovl %3, %0       \n\t"\
+    "cmovl %4, %1       \n\t"\
+    "cmovl %5, %2       \n\t"\
+    : "+&r" (x), "+&r" (a), "+r" (c)\
+    : "r" (y), "r" (b), "r" (d)\
+);
+#endif /* HAVE_6REGS */
+
+#endif /* HAVE_I686 */
+
+#define MASK_ABS(mask, level)                   \
+    __asm__ ("cdq                    \n\t"      \
+             "xorl %1, %0            \n\t"      \
+             "subl %1, %0            \n\t"      \
+             : "+a"(level), "=&d"(mask))
+
+// avoid +32 for shift optimization (gcc should do that ...)
+#define NEG_SSR32 NEG_SSR32
+static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
+    __asm__ ("sarl %1, %0\n\t"
+         : "+r" (a)
+         : "ic" ((uint8_t)(-s))
+    );
+    return a;
+}
+
+#define NEG_USR32 NEG_USR32
+static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
+    __asm__ ("shrl %1, %0\n\t"
+         : "+r" (a)
+         : "ic" ((uint8_t)(-s))
+    );
+    return a;
+}
+
+#endif /* HAVE_INLINE_ASM */
+
+
 
 #if !HAVE_BIGENDIAN
 #define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                   \
@@ -2697,14 +2804,6 @@ static inline char *av_ts_make_string(char *buf, int64_t ts)
 
 #define SHOW_SBITS_BE(name, gb, num) NEG_SSR32(name##_cache, num)
 
-#define NEG_USR32 NEG_USR32
-static inline uint32_t NEG_USR32(uint32_t a, int8_t s)
-{
-    __asm__("shrl %1, %0\n\t"
-            : "+r"(a)
-            : "ic"((uint8_t)(-s)));
-    return a;
-}
 
 #define SHOW_UBITS_BE(name, gb, num) NEG_USR32(name##_cache, num)
 
@@ -3837,11 +3936,6 @@ static inline char *av_make_error_string(char *errbuf, size_t errbuf_size, int e
 
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
-#define V AV_OPT_FLAG_VIDEO_PARAM
-#define A AV_OPT_FLAG_AUDIO_PARAM
-#define S AV_OPT_FLAG_SUBTITLE_PARAM
-#define E AV_OPT_FLAG_ENCODING_PARAM
-#define D AV_OPT_FLAG_DECODING_PARAM
 #define CC AV_OPT_FLAG_CHILD_CONSTS
 
 #define AV_CODEC_DEFAULT_BITRATE 200 * 1000
@@ -7695,7 +7789,6 @@ typedef struct AVCodec
     const struct AVCodecHWConfigInternal **hw_configs;
 } AVCodec;
 
-extern const AVCodec *const codec_list[];
 
 typedef struct AVCodecParameters
 {
@@ -15507,28 +15600,6 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                      const uint8_t *src, int width, int height,
                      int lumStride, int chromStride, int srcStride);
 
-void rgb64tobgr48_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb64tobgr48_bswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb48tobgr48_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb48tobgr48_bswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb64to48_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb64to48_bswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb48tobgr64_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb48tobgr64_bswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb48to64_nobswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb48to64_bswap(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb24to32(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb32to24(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb16tobgr32(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb16to24(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb16tobgr16(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb16tobgr15(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb15tobgr32(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb15to24(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb15tobgr16(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb15tobgr15(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size);
-void rgb12to15(const uint8_t *src, uint8_t *dst, int src_size);
 
 void ff_rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
                       uint8_t *vdst, int width, int height, int lumStride,
