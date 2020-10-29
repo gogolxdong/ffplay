@@ -6342,6 +6342,28 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
 }
 
 
+static void missing_feature_sample(int sample, void *avc, const char *msg,
+                                   va_list argument_list)
+{
+    av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
+    av_log(avc, AV_LOG_WARNING, " is not implemented. Update your FFmpeg "
+           "version to the newest one from Git. If the problem still "
+           "occurs, it means that your file has a feature which has not "
+           "been implemented.\n");
+    if (sample)
+        av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
+               "of this file to https://streams.videolan.org/upload/ "
+               "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n");
+}
+void avpriv_request_sample(void *avc, const char *msg, ...)
+{
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+    missing_feature_sample(1, avc, msg, argument_list);
+    va_end(argument_list);
+}
+
 static int get_scale_factor(H264SliceContext *sl,
                             int poc, int poc1, int i)
 {
@@ -6484,6 +6506,28 @@ void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *
                             field, 1);
     }
 }
+
+void ff_thread_await_progress(ThreadFrame *f, int n, int field)
+{
+    PerThreadContext *p;
+    atomic_int *progress = f->progress ? (atomic_int*)f->progress->data : NULL;
+
+    if (!progress ||
+        atomic_load_explicit(&progress[field], memory_order_acquire) >= n)
+        return;
+
+    p = f->owner[field]->internal->thread_ctx;
+
+    if (atomic_load_explicit(&p->debug_threads, memory_order_relaxed))
+        av_log(f->owner[field], AV_LOG_DEBUG,
+               "thread awaiting %d field %d from %p\n", n, field, progress);
+
+    pthread_mutex_lock(&p->progress_mutex);
+    while (atomic_load_explicit(&progress[field], memory_order_relaxed) < n)
+        pthread_cond_wait(&p->progress_cond, &p->progress_mutex);
+    pthread_mutex_unlock(&p->progress_mutex);
+}
+
 
 static void await_reference_mb_row(const H264Context *const h, H264Ref *ref,
                                    int mb_y)

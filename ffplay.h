@@ -4088,8 +4088,30 @@ static inline uint64_t av_const av_bswap64(uint64_t x)
 #define AV_RL(s, p) AV_RN##s(p)
 #define AV_WL(s, p, v) AV_WN##s(p, v)
 
-#define AV_WN64A(p, v) AV_WNA(64, p, v)
-#define AV_RN64A(p) AV_RNA(64, p)
+#ifndef AV_RN16A
+#   define AV_RN16A(p) AV_RNA(16, p)
+#endif
+
+#ifndef AV_RN32A
+#   define AV_RN32A(p) AV_RNA(32, p)
+#endif
+
+#ifndef AV_RN64A
+#   define AV_RN64A(p) AV_RNA(64, p)
+#endif
+
+#ifndef AV_WN16A
+#   define AV_WN16A(p, v) AV_WNA(16, p, v)
+#endif
+
+#ifndef AV_WN32A
+#   define AV_WN32A(p, v) AV_WNA(32, p, v)
+#endif
+
+#ifndef AV_WN64A
+#   define AV_WN64A(p, v) AV_WNA(64, p, v)
+#endif
+
 #define AV_WN64(p, v) AV_WN(64, p, v)
 #define AV_WN32(p, v) AV_WN(32, p, v)
 #define AV_WN8(p, v) AV_WN(8, p, v)
@@ -6087,6 +6109,95 @@ void ff_mdct_calc_c(FFTContext *s, FFTSample *output, const FFTSample *input);
 #define ALLOW_INTERLACE
 
 #define FMO 0
+
+#define FRAME_SKIPPED 100
+
+/* picture type */
+#define PICT_TOP_FIELD     1
+#define PICT_BOTTOM_FIELD  2
+#define PICT_FRAME         3
+
+/**
+ * Value of Picture.reference when Picture is not a reference picture, but
+ * is held for delayed output.
+ */
+#define DELAYED_PIC_REF 4
+
+#define MAX_MB_BYTES    (30 * 16 * 16 * 3 / 8 + 120)
+#define MAX_FCODE        7
+
+/* MB types */
+#define MB_TYPE_INTRA4x4   (1 <<  0)
+#define MB_TYPE_INTRA16x16 (1 <<  1) // FIXME H.264-specific
+#define MB_TYPE_INTRA_PCM  (1 <<  2) // FIXME H.264-specific
+#define MB_TYPE_16x16      (1 <<  3)
+#define MB_TYPE_16x8       (1 <<  4)
+#define MB_TYPE_8x16       (1 <<  5)
+#define MB_TYPE_8x8        (1 <<  6)
+#define MB_TYPE_INTERLACED (1 <<  7)
+#define MB_TYPE_DIRECT2    (1 <<  8) // FIXME
+#define MB_TYPE_ACPRED     (1 <<  9)
+#define MB_TYPE_GMC        (1 << 10)
+#define MB_TYPE_SKIP       (1 << 11)
+#define MB_TYPE_P0L0       (1 << 12)
+#define MB_TYPE_P1L0       (1 << 13)
+#define MB_TYPE_P0L1       (1 << 14)
+#define MB_TYPE_P1L1       (1 << 15)
+#define MB_TYPE_L0         (MB_TYPE_P0L0 | MB_TYPE_P1L0)
+#define MB_TYPE_L1         (MB_TYPE_P0L1 | MB_TYPE_P1L1)
+#define MB_TYPE_L0L1       (MB_TYPE_L0   | MB_TYPE_L1)
+#define MB_TYPE_QUANT      (1 << 16)
+#define MB_TYPE_CBP        (1 << 17)
+
+#define MB_TYPE_INTRA    MB_TYPE_INTRA4x4 // default mb_type if there is just one type
+
+#define IS_INTRA4x4(a)   ((a) & MB_TYPE_INTRA4x4)
+#define IS_INTRA16x16(a) ((a) & MB_TYPE_INTRA16x16)
+#define IS_PCM(a)        ((a) & MB_TYPE_INTRA_PCM)
+#define IS_INTRA(a)      ((a) & 7)
+#define IS_INTER(a)      ((a) & (MB_TYPE_16x16 | MB_TYPE_16x8 | \
+                                 MB_TYPE_8x16  | MB_TYPE_8x8))
+#define IS_SKIP(a)       ((a) & MB_TYPE_SKIP)
+#define IS_INTRA_PCM(a)  ((a) & MB_TYPE_INTRA_PCM)
+#define IS_INTERLACED(a) ((a) & MB_TYPE_INTERLACED)
+#define IS_DIRECT(a)     ((a) & MB_TYPE_DIRECT2)
+#define IS_GMC(a)        ((a) & MB_TYPE_GMC)
+#define IS_16X16(a)      ((a) & MB_TYPE_16x16)
+#define IS_16X8(a)       ((a) & MB_TYPE_16x8)
+#define IS_8X16(a)       ((a) & MB_TYPE_8x16)
+#define IS_8X8(a)        ((a) & MB_TYPE_8x8)
+#define IS_SUB_8X8(a)    ((a) & MB_TYPE_16x16) // note reused
+#define IS_SUB_8X4(a)    ((a) & MB_TYPE_16x8)  // note reused
+#define IS_SUB_4X8(a)    ((a) & MB_TYPE_8x16)  // note reused
+#define IS_SUB_4X4(a)    ((a) & MB_TYPE_8x8)   // note reused
+#define IS_ACPRED(a)     ((a) & MB_TYPE_ACPRED)
+#define IS_QUANT(a)      ((a) & MB_TYPE_QUANT)
+#define IS_DIR(a, part, list) ((a) & (MB_TYPE_P0L0 << ((part) + 2 * (list))))
+
+// does this mb use listX, note does not work if subMBs
+#define USES_LIST(a, list) ((a) & ((MB_TYPE_P0L0 | MB_TYPE_P1L0) << (2 * (list))))
+
+#define HAS_CBP(a)       ((a) & MB_TYPE_CBP)
+
+/* MB types for encoding */
+#define CANDIDATE_MB_TYPE_INTRA      (1 <<  0)
+#define CANDIDATE_MB_TYPE_INTER      (1 <<  1)
+#define CANDIDATE_MB_TYPE_INTER4V    (1 <<  2)
+#define CANDIDATE_MB_TYPE_SKIPPED    (1 <<  3)
+
+#define CANDIDATE_MB_TYPE_DIRECT     (1 <<  4)
+#define CANDIDATE_MB_TYPE_FORWARD    (1 <<  5)
+#define CANDIDATE_MB_TYPE_BACKWARD   (1 <<  6)
+#define CANDIDATE_MB_TYPE_BIDIR      (1 <<  7)
+
+#define CANDIDATE_MB_TYPE_INTER_I    (1 <<  8)
+#define CANDIDATE_MB_TYPE_FORWARD_I  (1 <<  9)
+#define CANDIDATE_MB_TYPE_BACKWARD_I (1 << 10)
+#define CANDIDATE_MB_TYPE_BIDIR_I    (1 << 11)
+
+#define CANDIDATE_MB_TYPE_DIRECT0    (1 << 12)
+
+#define INPLACE_OFFSET 16     3
 
 #define MAX_SLICES 32
 #define MB_MBAFF(h) (h)->mb_mbaff
@@ -10751,164 +10862,104 @@ typedef struct CABACContext
     const uint8_t *bytestream_end;
     PutBitContext pb;
 } CABACContext;
+
 typedef struct H264SliceContext
 {
     struct H264Context *h264;
     GetBitContext gb;
     ERContext er;
-
     int slice_num;
     int slice_type;
-    int slice_type_nos; ///< S free slice type (SI/SP are remapped to I/P)
+    int slice_type_nos;
     int slice_type_fixed;
-
     int qscale;
-    int chroma_qp[2]; // QPc
-    int qp_thresh;    ///< QP threshold to skip loopfilter
+    int chroma_qp[2];
+    int qp_thresh;
     int last_qscale_diff;
-
-    // deblock
-    int deblocking_filter; ///< disable_deblocking_filter_idc with 1 <-> 0
+    int deblocking_filter;
     int slice_alpha_c0_offset;
     int slice_beta_offset;
-
     H264PredWeightTable pwt;
-
     int prev_mb_skipped;
     int next_mb_skipped;
-
     int chroma_pred_mode;
     int intra16x16_pred_mode;
-
     int8_t intra4x4_pred_mode_cache[5 * 8];
     int8_t(*intra4x4_pred_mode);
-
     int topleft_mb_xy;
     int top_mb_xy;
     int topright_mb_xy;
-    int left_mb_xy[LEFT_MBS];
-
+    int left_mb_xy[2];
     int topleft_type;
     int top_type;
     int topright_type;
-    int left_type[LEFT_MBS];
-
+    int left_type[2];
     const uint8_t *left_block;
     int topleft_partition;
-
     unsigned int topleft_samples_available;
     unsigned int top_samples_available;
     unsigned int topright_samples_available;
     unsigned int left_samples_available;
-
     ptrdiff_t linesize, uvlinesize;
-    ptrdiff_t mb_linesize; ///< may be equal to s->linesize or s->linesize * 2, for mbaff
+    ptrdiff_t mb_linesize;
     ptrdiff_t mb_uvlinesize;
-
     int mb_x, mb_y;
     int mb_xy;
     int resync_mb_x;
     int resync_mb_y;
     unsigned int first_mb_addr;
-    // index of the first MB of the next slice
     int next_slice_idx;
     int mb_skip_run;
     int is_complex;
-
     int picture_structure;
     int mb_field_decoding_flag;
-    int mb_mbaff; ///< mb_aff_frame && mb_field_decoding_flag
-
+    int mb_mbaff;
     int redundant_pic_count;
-
-    /**
-     * number of neighbors (top and/or left) that used 8x8 dct
-     */
     int neighbor_transform_size;
-
     int direct_spatial_mv_pred;
     int col_parity;
     int col_fieldoff;
-
     int cbp;
     int top_cbp;
     int left_cbp;
-
     int dist_scale_factor[32];
     int dist_scale_factor_field[2][32];
     int map_col_to_list0[2][16 + 32];
     int map_col_to_list0_field[2][2][16 + 32];
-
-    /**
-     * num_ref_idx_l0/1_active_minus1 + 1
-     */
-    unsigned int ref_count[2]; ///< counts frames or fields, depending on current mb mode
+    unsigned int ref_count[2];
     unsigned int list_count;
-    H264Ref ref_list[2][48]; /**< 0..15: frame refs, 16..47: mbaff field refs.
-                                         *   Reordered version of default_ref_list
-                                         *   according to picture reordering in slice header */
+    H264Ref ref_list[2][48];
     struct
     {
         uint8_t op;
         uint32_t val;
     } ref_modifications[2][32];
     int nb_ref_modifications[2];
-
     unsigned int pps_id;
-
     const uint8_t *intra_pcm_ptr;
     int16_t *dc_val_base;
-
     uint8_t *bipred_scratchpad;
     uint8_t *edge_emu_buffer;
     uint8_t (*top_borders[2])[(16 * 3) * 2];
     int bipred_scratchpad_allocated;
     int edge_emu_buffer_allocated;
     int top_borders_allocated[2];
-
-    /**
-     * non zero coeff count cache.
-     * is 64 if not available.
-     */
-    DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)
-    [15 * 8];
-
-    /**
-     * Motion vector cache.
-     */
-    DECLARE_ALIGNED(16, int16_t, mv_cache)
-    [2][5 * 8][2];
-    DECLARE_ALIGNED(8, int8_t, ref_cache)
-    [2][5 * 8];
-    DECLARE_ALIGNED(16, uint8_t, mvd_cache)
-    [2][5 * 8][2];
+    uint8_t non_zero_count_cache[15 * 8];
+    int16_t mv_cache[2][5 * 8][2];
+    int8_t ref_cache[2][5 * 8];
+    uint8_t mvd_cache[2][5 * 8][2];
     uint8_t direct_cache[5 * 8];
-
-    DECLARE_ALIGNED(8, uint16_t, sub_mb_type)
-    [4];
-
-    ///< as a DCT coefficient is int32_t in high depth, we need to reserve twice the space.
-    DECLARE_ALIGNED(16, int16_t, mb)
-    [16 * 48 * 2];
-    DECLARE_ALIGNED(16, int16_t, mb_luma_dc)
-    [3][16 * 2];
-    ///< as mb is addressed by scantable[i] and scantable is uint8_t we can either
-    ///< check that i is not too large or ensure that there is some unused stuff after mb
+    uint16_t sub_mb_type[4];
+    int16_t mb[16 * 48 * 2];
+    int16_t mb_luma_dc[3][16 * 2];
     int16_t mb_padding[256 * 2];
-
     uint8_t (*mvd_table[2])[2];
-
-    /**
-     * Cabac
-     */
     CABACContext cabac;
     uint8_t cabac_state[1024];
     int cabac_init_idc;
-
-    MMCO mmco[MAX_MMCO_COUNT];
+    MMCO mmco[66];
     int nb_mmco;
     int explicit_ref_marking;
-
     int frame_num;
     int poc_lsb;
     int delta_poc_bottom;
