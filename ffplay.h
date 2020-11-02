@@ -1,10 +1,14 @@
 #include <inttypes.h>
+#include <errno.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <iconv.h>
+#include <fcntl.h>
 #include <math.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
-#include <gcrypt.h>
 #include <inttypes.h>
 #include <math.h>
 #include <limits.h>
@@ -18,15 +22,12 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
-#include <process.h>
-#include <errno.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <iconv.h>
 #include <fcntl.h>
-#include <soxr.h>
 
-#include <fcntl.h>
+#include <soxr.h>
+#include <gcrypt.h>
+#include <process.h>
+
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif

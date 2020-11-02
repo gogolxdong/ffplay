@@ -23,6 +23,10 @@
         "xiosbase": "c",
         "xlocale": "c",
         "xtree": "c",
-        "shared_mutex": "c"
+        "shared_mutex": "c",
+        "bit": "c",
+        "string": "c",
+        "optional": "c",
+        "new": "c"
     }
 }

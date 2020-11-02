@@ -1104,7 +1104,7 @@ proc av_rescale_rnd*(a: int64; b: int64; c: int64; rnd: var cint): int64 =
       a1.inc int a1 + ((a0 shr i) and 1)
       t1.inc t1.int
       if c.uint64 <= a1:
-        dec(a1, c)
+        dec(a1, c.int)
         inc(t1)
       dec(i)
     if t1 > int64.high.uint64:
@@ -1151,7 +1151,7 @@ proc get_sdl_pix_fmt_and_blendmode*(format: cint; sdl_pix_fmt: ptr uint32;sdl_bl
       sdl_pix_fmt[] = texture_fmt.uint32
       return
 
-proc SDL_UpdateYUVTexture*(texture:var TexturePtr; rect: ptr sdl2.Rect;
+proc updateYUVTexture*(texture:var TexturePtr; rect: ptr sdl2.Rect;
                           Yplane: ptr uint8; Ypitch: cint; Uplane: ptr uint8;
                           Upitch: cint; Vplane: ptr uint8; Vpitch: cint): cint {.importc.}
 
@@ -1177,9 +1177,9 @@ proc upload_texture*(tex: var TexturePtr; frame: ptr AVFrame;img_convert_ctx: pt
       ret = -1
   of SDL_PIXELFORMAT_IYUV.uint32:
     if frame.linesize[0] > 0 and frame.linesize[1] > 0 and frame.linesize[2] > 0:
-      ret = SDL_UpdateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0], frame.linesize[0],frame.data[1], frame.linesize[1], frame.data[2],frame.linesize[2])
+      ret = updateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0], frame.linesize[0],frame.data[1], frame.linesize[1], frame.data[2],frame.linesize[2])
     elif frame.linesize[0] < 0 and frame.linesize[1] < 0 and frame.linesize[2] < 0:
-      ret = SDL_UpdateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0] + frame.linesize[0] * (frame.height - 1), -frame.linesize[0], frame.data[1] + frame.linesize[1] * (AV_CEIL_RSHIFT(frame.height, 1) - 1),-frame.linesize[1], frame.data[2] + frame.linesize[2] * (AV_CEIL_RSHIFT(frame.height, 1) - 1), -frame.linesize[2])
+      ret = updateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0] + frame.linesize[0] * (frame.height - 1), -frame.linesize[0], frame.data[1] + frame.linesize[1] * (AV_CEIL_RSHIFT(frame.height, 1) - 1),-frame.linesize[1], frame.data[2] + frame.linesize[2] * (AV_CEIL_RSHIFT(frame.height, 1) - 1), -frame.linesize[2])
     else:
       echo("Mixed negative and positive linesizes are not supported.\n")
       return -1

@@ -43,35 +43,35 @@
 #include <windows.h>
 #endif
 
-#define AV_GCC_VERSION_AT_LEAST(x, y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
-#define AV_GCC_VERSION_AT_MOST(x, y) (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
-#define AV_HAS_BUILTIN(x) 0
-#define av_always_inline __attribute__((always_inline)) inline
-#define av_extern_inline extern inline
-#define av_warn_unused_result __attribute__((warn_unused_result))
-#define av_noinline __attribute__((noinline))
-#define av_pure __attribute__((pure))
-#define av_const __attribute__((const))
-#define av_cold __attribute__((cold))
-#define av_flatten __attribute__((flatten))
-#define attribute_deprecated __attribute__((deprecated))
-#define AV_NOWARN_DEPRECATED(code) _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") code _Pragma("GCC diagnostic pop")
-#define av_unused __attribute__((unused))
-#define av_used __attribute__((used))
-#define av_alias __attribute__((may_alias))
-#define av_uninit(x) x = x
-#define av_builtin_constant_p __builtin_constant_p
-#define av_printf_format(fmtpos, attrpos) __attribute__((__format__(__printf__, fmtpos, attrpos)))
-#define av_noreturn __attribute__((noreturn))
+// #define AV_GCC_VERSION_AT_LEAST(x, y) (__GNUC__ > (x) || __GNUC__ == (x) && __GNUC_MINOR__ >= (y))
+// #define AV_GCC_VERSION_AT_MOST(x, y) (__GNUC__ < (x) || __GNUC__ == (x) && __GNUC_MINOR__ <= (y))
+// #define AV_HAS_BUILTIN(x) 0
+// #define av_always_inline __attribute__((always_inline)) inline
+// #define av_extern_inline extern inline
+// #define av_warn_unused_result __attribute__((warn_unused_result))
+// #define av_noinline __attribute__((noinline))
+// #define av_pure __attribute__((pure))
+// #define av_const __attribute__((const))
+// #define av_cold __attribute__((cold))
+// #define av_flatten __attribute__((flatten))
+// #define attribute_deprecated __attribute__((deprecated))
+// #define AV_NOWARN_DEPRECATED(code) _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") code _Pragma("GCC diagnostic pop")
+// #define av_unused __attribute__((unused))
+// #define av_used __attribute__((used))
+// #define av_alias __attribute__((may_alias))
+// #define av_uninit(x) x = x
+// #define av_builtin_constant_p __builtin_constant_p
+// #define av_printf_format(fmtpos, attrpos) __attribute__((__format__(__printf__, fmtpos, attrpos)))
+// #define av_noreturn __attribute__((noreturn))
 
 #define AV_STRINGIFY(s) AV_TOSTRING(s)
-#define AV_TOSTRING(s) #s
-#define AV_GLUE(a, b) a##b
+// #define AV_TOSTRING(s) #s
+// #define AV_GLUE(a, b) a##b
 #define AV_JOIN(a, b) AV_GLUE(a, b)
-#define AV_PRAGMA(s) _Pragma(#s)
+// #define AV_PRAGMA(s) _Pragma(#s)
 #define FFALIGN(x, a) (((x) + (a)-1) & ~((a)-1))
 #define AV_VERSION_INT(a, b, c) ((a) << 16 | (b) << 8 | (c))
-#define AV_VERSION_DOT(a, b, c) a##.##b##.##c
+// #define AV_VERSION_DOT(a, b, c) a##.##b##.##c
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 #define AV_VERSION_MAJOR(a) ((a) >> 16)
 #define AV_VERSION_MINOR(a) (((a)&0x00FF00) >> 8)
@@ -82,7 +82,7 @@
 #define LIBAVUTIL_VERSION_INT AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, LIBAVUTIL_VERSION_MINOR, LIBAVUTIL_VERSION_MICRO)
 #define LIBAVUTIL_VERSION AV_VERSION(LIBAVUTIL_VERSION_MAJOR, LIBAVUTIL_VERSION_MINOR, LIBAVUTIL_VERSION_MICRO)
 #define LIBAVUTIL_BUILD LIBAVUTIL_VERSION_INT
-#define LIBAVUTIL_IDENT "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
+// #define LIBAVUTIL_IDENT "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
 
 #define FF_API_VAAPI (LIBAVUTIL_VERSION_MAJOR < 57)
 #define FF_API_FRAME_QP (LIBAVUTIL_VERSION_MAJOR < 57)
@@ -133,8 +133,7 @@ static inline int av_isgraph(int c)
 
 static inline int av_isspace(int c)
 {
-    return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' ||
-           c == '\v';
+    // return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v';
 }
 
 static inline int av_toupper(int c)
@@ -180,7 +179,6 @@ enum AVEscapeMode
 #define AV_ESCAPE_FLAG_WHITESPACE (1 << 0)
 #define AV_ESCAPE_FLAG_STRICT (1 << 1)
 
-
 int av_escape(char **dst, const char *src, const char *special_chars,
               enum AVEscapeMode mode, int flags);
 #define AV_UTF8_FLAG_ACCEPT_INVALID_BIG_CODES 1
@@ -188,7 +186,6 @@ int av_escape(char **dst, const char *src, const char *special_chars,
 #define AV_UTF8_FLAG_ACCEPT_SURROGATES 4
 #define AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES 8
 #define AV_UTF8_FLAG_ACCEPT_ALL AV_UTF8_FLAG_ACCEPT_INVALID_BIG_CODES | AV_UTF8_FLAG_ACCEPT_NON_CHARACTERS | AV_UTF8_FLAG_ACCEPT_SURROGATES
-
 
 int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
                    unsigned int flags);
@@ -224,8 +221,8 @@ const char *av_get_media_type_string(enum AVMediaType media_type);
 #define FF_QUALITY_SCALE FF_LAMBDA_SCALE
 #define AV_NOPTS_VALUE ((int64_t)UINT64_C(0x8000000000000000))
 #define AV_TIME_BASE 1000000
-#define AV_TIME_BASE_Q \
-    (AVRational) { 1, AV_TIME_BASE }
+// #define AV_TIME_BASE_Q \
+//     (AVRational) { 1, AV_TIME_BASE }
 
 enum AVPictureType
 {
@@ -449,77 +446,77 @@ static inline int av_parity_c(uint32_t v)
 }
 #define MKTAG(a, b, c, d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
 #define MKBETAG(a, b, c, d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
-#define GET_UTF8(val, GET_BYTE, ERROR)           \
-    val = (GET_BYTE);                            \
-    {                                            \
-        uint32_t top = (val & 128) >> 1;         \
-        if ((val & 0xc0) == 0x80 || val >= 0xFE) \
-        {                                        \
-            ERROR                                \
-        }                                        \
-        while (val & top)                        \
-        {                                        \
-            unsigned int tmp = (GET_BYTE)-128;   \
-            if (tmp >> 6)                        \
-            {                                    \
-                ERROR                            \
-            }                                    \
-            val = (val << 6) + tmp;              \
-            top <<= 5;                           \
-        }                                        \
-        val &= (top << 1) - 1;                   \
-    }
-#define GET_UTF16(val, GET_16BIT, ERROR)     \
-    val = (GET_16BIT);                       \
-    {                                        \
-        unsigned int hi = val - 0xD800;      \
-        if (hi < 0x800)                      \
-        {                                    \
-            val = (GET_16BIT)-0xDC00;        \
-            if (val > 0x3FFU || hi > 0x3FFU) \
-            {                                \
-                ERROR                        \
-            }                                \
-            val += (hi << 10) + 0x10000;     \
-        }                                    \
-    }
-#define PUT_UTF8(val, tmp, PUT_BYTE)                      \
-    {                                                     \
-        int bytes, shift;                                 \
-        uint32_t in = val;                                \
-        if (in < 0x80)                                    \
-        {                                                 \
-            tmp = in;                                     \
-            PUT_BYTE                                      \
-        }                                                 \
-        else                                              \
-        {                                                 \
-            bytes = (av_log2(in) + 4) / 5;                \
-            shift = (bytes - 1) * 6;                      \
-            tmp = (256 - (256 >> bytes)) | (in >> shift); \
-            PUT_BYTE while (shift >= 6)                   \
-            {                                             \
-                shift -= 6;                               \
-                tmp = 0x80 | ((in >> shift) & 0x3f);      \
-                PUT_BYTE                                  \
-            }                                             \
-        }                                                 \
-    }
-#define PUT_UTF16(val, tmp, PUT_16BIT)                         \
-    {                                                          \
-        uint32_t in = val;                                     \
-        if (in < 0x10000)                                      \
-        {                                                      \
-            tmp = in;                                          \
-            PUT_16BIT                                          \
-        }                                                      \
-        else                                                   \
-        {                                                      \
-            tmp = 0xD800 | ((in - 0x10000) >> 10);             \
-            PUT_16BIT tmp = 0xDC00 | ((in - 0x10000) & 0x3FF); \
-            PUT_16BIT                                          \
-        }                                                      \
-    }
+// #define GET_UTF8(val, GET_BYTE, ERROR)           \
+//     val = (GET_BYTE);                            \
+//     {                                            \
+//         uint32_t top = (val & 128) >> 1;         \
+//         if ((val & 0xc0) == 0x80 || val >= 0xFE) \
+//         {                                        \
+//             ERROR                                \
+//         }                                        \
+//         while (val & top)                        \
+//         {                                        \
+//             unsigned int tmp = (GET_BYTE)-128;   \
+//             if (tmp >> 6)                        \
+//             {                                    \
+//                 ERROR                            \
+//             }                                    \
+//             val = (val << 6) + tmp;              \
+//             top <<= 5;                           \
+//         }                                        \
+//         val &= (top << 1) - 1;                   \
+//     }
+// #define GET_UTF16(val, GET_16BIT, ERROR)     \
+//     val = (GET_16BIT);                       \
+//     {                                        \
+//         unsigned int hi = val - 0xD800;      \
+//         if (hi < 0x800)                      \
+//         {                                    \
+//             val = (GET_16BIT)-0xDC00;        \
+//             if (val > 0x3FFU || hi > 0x3FFU) \
+//             {                                \
+//                 ERROR                        \
+//             }                                \
+//             val += (hi << 10) + 0x10000;     \
+//         }                                    \
+//     }
+// #define PUT_UTF8(val, tmp, PUT_BYTE)                      \
+//     {                                                     \
+//         int bytes, shift;                                 \
+//         uint32_t in = val;                                \
+//         if (in < 0x80)                                    \
+//         {                                                 \
+//             tmp = in;                                     \
+//             PUT_BYTE                                      \
+//         }                                                 \
+//         else                                              \
+//         {                                                 \
+//             bytes = (av_log2(in) + 4) / 5;                \
+//             shift = (bytes - 1) * 6;                      \
+//             tmp = (256 - (256 >> bytes)) | (in >> shift); \
+//             PUT_BYTE while (shift >= 6)                   \
+//             {                                             \
+//                 shift -= 6;                               \
+//                 tmp = 0x80 | ((in >> shift) & 0x3f);      \
+//                 PUT_BYTE                                  \
+//             }                                             \
+//         }                                                 \
+//     }
+// #define PUT_UTF16(val, tmp, PUT_16BIT)                         \
+//     {                                                          \
+//         uint32_t in = val;                                     \
+//         if (in < 0x10000)                                      \
+//         {                                                      \
+//             tmp = in;                                          \
+//             PUT_16BIT                                          \
+//         }                                                      \
+//         else                                                   \
+//         {                                                      \
+//             tmp = 0xD800 | ((in - 0x10000) >> 10);             \
+//             PUT_16BIT tmp = 0xDC00 | ((in - 0x10000) & 0x3FF); \
+//             PUT_16BIT                                          \
+//         }                                                      \
+//     }
 #define AVUTIL_MEM_H
 
 #define AVUTIL_ERROR_H
@@ -562,14 +559,14 @@ static inline char *av_make_error_string(char *errbuf, size_t errbuf_size, int e
     av_strerror(errnum, errbuf, errbuf_size);
     return errbuf;
 }
-#define av_err2str(errnum) av_make_error_string((char[AV_ERROR_MAX_STRING_SIZE]){0}, AV_ERROR_MAX_STRING_SIZE, errnum)
+// #define av_err2str(errnum) av_make_error_string((char[AV_ERROR_MAX_STRING_SIZE]){0}, AV_ERROR_MAX_STRING_SIZE, errnum)
 
-#define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
-#define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(n))) v
-#define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(n))) v
-#define av_malloc_attrib __attribute__((__malloc__))
+// #define DECLARE_ALIGNED(n, t, v) t __attribute__((aligned(n))) v
+// #define DECLARE_ASM_ALIGNED(n, t, v) t av_used __attribute__((aligned(n))) v
+// #define DECLARE_ASM_CONST(n, t, v) static const t av_used __attribute__((aligned(n))) v
+// #define av_malloc_attrib __attribute__((__malloc__))
 
-#define av_alloc_size(...) __attribute__((alloc_size(__VA_ARGS__)))
+// #define av_alloc_size(...) __attribute__((alloc_size(__VA_ARGS__)))
 
 void *av_malloc(size_t size);
 
@@ -582,7 +579,6 @@ void *av_mallocz_array(size_t nmemb, size_t size);
 void *av_calloc(size_t nmemb, size_t size);
 
 void *av_realloc(void *ptr, size_t size);
-
 
 int av_reallocp(void *ptr, size_t size);
 
@@ -620,10 +616,10 @@ void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
 static inline int av_size_mult(size_t a, size_t b, size_t *r)
 {
     size_t t = a * b;
-    
+
     if ((a | b) >= ((size_t)1 << (sizeof(size_t) * 4)) && a && t / a != b)
         return (-(
-            22)) ;
+            22));
     *r = t;
     return 0;
 }
@@ -734,7 +730,7 @@ enum AVRounding
     AV_ROUND_DOWN = 2,     ///< Round toward -infinity.
     AV_ROUND_UP = 3,       ///< Round toward +infinity.
     AV_ROUND_NEAR_INF = 5, ///< Round to nearest and halfway cases away from zero.
-    
+
     AV_ROUND_PASS_MINMAX = 8192,
 };
 
@@ -796,7 +792,7 @@ typedef struct AVClass
     AVClassCategory category;
     AVClassCategory (*get_category)(void *ctx);
     int (*query_ranges)(struct AVOptionRanges **, void *obj, const char *key, int flags);
-    
+
     const struct AVClass *(*child_class_iterate)(void **iter);
 } AVClass;
 #define AV_LOG_QUIET -8
@@ -840,77 +836,76 @@ int av_log_format_line2(void *ptr, int level, const char *fmt, va_list vl,
 void av_log_set_flags(int arg);
 int av_log_get_flags(void);
 
-
 #define AVPALETTE_SIZE 1024
 #define AVPALETTE_COUNT 256
 
 enum AVPixelFormat
 {
     AV_PIX_FMT_NONE = -1,
-    AV_PIX_FMT_YUV420P,   ///< planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
-    AV_PIX_FMT_YUYV422,   ///< packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
-    AV_PIX_FMT_RGB24,     ///< packed RGB 8:8:8, 24bpp, RGBRGB...
-    AV_PIX_FMT_BGR24,     ///< packed RGB 8:8:8, 24bpp, BGRBGR...
-    AV_PIX_FMT_YUV422P,   ///< planar YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
-    AV_PIX_FMT_YUV444P,   ///< planar YUV 4:4:4, 24bpp, (1 Cr & Cb sample per 1x1 Y samples)
-    AV_PIX_FMT_YUV410P,   ///< planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
-    AV_PIX_FMT_YUV411P,   ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
-    AV_PIX_FMT_GRAY8,     ///<        Y        ,  8bpp
-    AV_PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 0 is white, 1 is black, in each byte pixels are ordered from the msb to the lsb
-    AV_PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black, 1 is white, in each byte pixels are ordered from the msb to the lsb
-    AV_PIX_FMT_PAL8,      ///< 8 bits with AV_PIX_FMT_RGB32 palette
-    AV_PIX_FMT_YUVJ420P,  ///< planar YUV 4:2:0, 12bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV420P and setting color_range
-    AV_PIX_FMT_YUVJ422P,  ///< planar YUV 4:2:2, 16bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV422P and setting color_range
-    AV_PIX_FMT_YUVJ444P,  ///< planar YUV 4:4:4, 24bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV444P and setting color_range
-    AV_PIX_FMT_UYVY422,   ///< packed YUV 4:2:2, 16bpp, Cb Y0 Cr Y1
-    AV_PIX_FMT_UYYVYY411, ///< packed YUV 4:1:1, 12bpp, Cb Y0 Y1 Cr Y2 Y3
-    AV_PIX_FMT_BGR8,      ///< packed RGB 3:3:2,  8bpp, (msb)2B 3G 3R(lsb)
-    AV_PIX_FMT_BGR4,      ///< packed RGB 1:2:1 bitstream,  4bpp, (msb)1B 2G 1R(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
-    AV_PIX_FMT_BGR4_BYTE, ///< packed RGB 1:2:1,  8bpp, (msb)1B 2G 1R(lsb)
-    AV_PIX_FMT_RGB8,      ///< packed RGB 3:3:2,  8bpp, (msb)2R 3G 3B(lsb)
-    AV_PIX_FMT_RGB4,      ///< packed RGB 1:2:1 bitstream,  4bpp, (msb)1R 2G 1B(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
-    AV_PIX_FMT_RGB4_BYTE, ///< packed RGB 1:2:1,  8bpp, (msb)1R 2G 1B(lsb)
-    AV_PIX_FMT_NV12,      ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
-    AV_PIX_FMT_NV21,      ///< as above, but U and V bytes are swapped
-    AV_PIX_FMT_ARGB,      ///< packed ARGB 8:8:8:8, 32bpp, ARGBARGB...
-    AV_PIX_FMT_RGBA,      ///< packed RGBA 8:8:8:8, 32bpp, RGBARGBA...
-    AV_PIX_FMT_ABGR,      ///< packed ABGR 8:8:8:8, 32bpp, ABGRABGR...
-    AV_PIX_FMT_BGRA,      ///< packed BGRA 8:8:8:8, 32bpp, BGRABGRA...
-    AV_PIX_FMT_GRAY16BE,  ///<        Y        , 16bpp, big-endian
-    AV_PIX_FMT_GRAY16LE,  ///<        Y        , 16bpp, little-endian
-    AV_PIX_FMT_YUV440P,   ///< planar YUV 4:4:0 (1 Cr & Cb sample per 1x2 Y samples)
-    AV_PIX_FMT_YUVJ440P,  ///< planar YUV 4:4:0 full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV440P and setting color_range
-    AV_PIX_FMT_YUVA420P,  ///< planar YUV 4:2:0, 20bpp, (1 Cr & Cb sample per 2x2 Y & A samples)
-    AV_PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
-    AV_PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
-    AV_PIX_FMT_RGB565BE,  ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), big-endian
-    AV_PIX_FMT_RGB565LE,  ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), little-endian
-    AV_PIX_FMT_RGB555BE,  ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), big-endian   , X=unused/undefined
-    AV_PIX_FMT_RGB555LE,  ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_BGR565BE,  ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), big-endian
-    AV_PIX_FMT_BGR565LE,  ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), little-endian
-    AV_PIX_FMT_BGR555BE,  ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), big-endian   , X=unused/undefined
-    AV_PIX_FMT_BGR555LE,  ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_YUV420P,    ///< planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
+    AV_PIX_FMT_YUYV422,    ///< packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
+    AV_PIX_FMT_RGB24,      ///< packed RGB 8:8:8, 24bpp, RGBRGB...
+    AV_PIX_FMT_BGR24,      ///< packed RGB 8:8:8, 24bpp, BGRBGR...
+    AV_PIX_FMT_YUV422P,    ///< planar YUV 4:2:2, 16bpp, (1 Cr & Cb sample per 2x1 Y samples)
+    AV_PIX_FMT_YUV444P,    ///< planar YUV 4:4:4, 24bpp, (1 Cr & Cb sample per 1x1 Y samples)
+    AV_PIX_FMT_YUV410P,    ///< planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
+    AV_PIX_FMT_YUV411P,    ///< planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
+    AV_PIX_FMT_GRAY8,      ///<        Y        ,  8bpp
+    AV_PIX_FMT_MONOWHITE,  ///<        Y        ,  1bpp, 0 is white, 1 is black, in each byte pixels are ordered from the msb to the lsb
+    AV_PIX_FMT_MONOBLACK,  ///<        Y        ,  1bpp, 0 is black, 1 is white, in each byte pixels are ordered from the msb to the lsb
+    AV_PIX_FMT_PAL8,       ///< 8 bits with AV_PIX_FMT_RGB32 palette
+    AV_PIX_FMT_YUVJ420P,   ///< planar YUV 4:2:0, 12bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV420P and setting color_range
+    AV_PIX_FMT_YUVJ422P,   ///< planar YUV 4:2:2, 16bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV422P and setting color_range
+    AV_PIX_FMT_YUVJ444P,   ///< planar YUV 4:4:4, 24bpp, full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV444P and setting color_range
+    AV_PIX_FMT_UYVY422,    ///< packed YUV 4:2:2, 16bpp, Cb Y0 Cr Y1
+    AV_PIX_FMT_UYYVYY411,  ///< packed YUV 4:1:1, 12bpp, Cb Y0 Y1 Cr Y2 Y3
+    AV_PIX_FMT_BGR8,       ///< packed RGB 3:3:2,  8bpp, (msb)2B 3G 3R(lsb)
+    AV_PIX_FMT_BGR4,       ///< packed RGB 1:2:1 bitstream,  4bpp, (msb)1B 2G 1R(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
+    AV_PIX_FMT_BGR4_BYTE,  ///< packed RGB 1:2:1,  8bpp, (msb)1B 2G 1R(lsb)
+    AV_PIX_FMT_RGB8,       ///< packed RGB 3:3:2,  8bpp, (msb)2R 3G 3B(lsb)
+    AV_PIX_FMT_RGB4,       ///< packed RGB 1:2:1 bitstream,  4bpp, (msb)1R 2G 1B(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
+    AV_PIX_FMT_RGB4_BYTE,  ///< packed RGB 1:2:1,  8bpp, (msb)1R 2G 1B(lsb)
+    AV_PIX_FMT_NV12,       ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
+    AV_PIX_FMT_NV21,       ///< as above, but U and V bytes are swapped
+    AV_PIX_FMT_ARGB,       ///< packed ARGB 8:8:8:8, 32bpp, ARGBARGB...
+    AV_PIX_FMT_RGBA,       ///< packed RGBA 8:8:8:8, 32bpp, RGBARGBA...
+    AV_PIX_FMT_ABGR,       ///< packed ABGR 8:8:8:8, 32bpp, ABGRABGR...
+    AV_PIX_FMT_BGRA,       ///< packed BGRA 8:8:8:8, 32bpp, BGRABGRA...
+    AV_PIX_FMT_GRAY16BE,   ///<        Y        , 16bpp, big-endian
+    AV_PIX_FMT_GRAY16LE,   ///<        Y        , 16bpp, little-endian
+    AV_PIX_FMT_YUV440P,    ///< planar YUV 4:4:0 (1 Cr & Cb sample per 1x2 Y samples)
+    AV_PIX_FMT_YUVJ440P,   ///< planar YUV 4:4:0 full scale (JPEG), deprecated in favor of AV_PIX_FMT_YUV440P and setting color_range
+    AV_PIX_FMT_YUVA420P,   ///< planar YUV 4:2:0, 20bpp, (1 Cr & Cb sample per 2x2 Y & A samples)
+    AV_PIX_FMT_RGB48BE,    ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
+    AV_PIX_FMT_RGB48LE,    ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
+    AV_PIX_FMT_RGB565BE,   ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), big-endian
+    AV_PIX_FMT_RGB565LE,   ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), little-endian
+    AV_PIX_FMT_RGB555BE,   ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), big-endian   , X=unused/undefined
+    AV_PIX_FMT_RGB555LE,   ///< packed RGB 5:5:5, 16bpp, (msb)1X 5R 5G 5B(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_BGR565BE,   ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), big-endian
+    AV_PIX_FMT_BGR565LE,   ///< packed BGR 5:6:5, 16bpp, (msb)   5B 6G 5R(lsb), little-endian
+    AV_PIX_FMT_BGR555BE,   ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), big-endian   , X=unused/undefined
+    AV_PIX_FMT_BGR555LE,   ///< packed BGR 5:5:5, 16bpp, (msb)1X 5B 5G 5R(lsb), little-endian, X=unused/undefined
     AV_PIX_FMT_VAAPI_MOCO, ///< HW acceleration through VA API at motion compensation entry-point, Picture.data[3] contains a vaapi_render_state struct which contains macroblocks as well as various fields extracted from headers
     AV_PIX_FMT_VAAPI_IDCT, ///< HW acceleration through VA API at IDCT entry-point, Picture.data[3] contains a vaapi_render_state struct which contains fields extracted from headers
     AV_PIX_FMT_VAAPI_VLD,  ///< HW decoding through VA API, Picture.data[3] contains a VASurfaceID
     AV_PIX_FMT_VAAPI = AV_PIX_FMT_VAAPI_VLD,
-    AV_PIX_FMT_YUV420P16LE,             ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
-    AV_PIX_FMT_YUV420P16BE,             ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
-    AV_PIX_FMT_YUV422P16LE,             ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
-    AV_PIX_FMT_YUV422P16BE,             ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
-    AV_PIX_FMT_YUV444P16LE,             ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
-    AV_PIX_FMT_YUV444P16BE,             ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
-    AV_PIX_FMT_DXVA2_VLD,               ///< HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
-    AV_PIX_FMT_RGB444LE,                ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_RGB444BE,                ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), big-endian,    X=unused/undefined
-    AV_PIX_FMT_BGR444LE,                ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), little-endian, X=unused/undefined
-    AV_PIX_FMT_BGR444BE,                ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), big-endian,    X=unused/undefined
-    AV_PIX_FMT_YA8,                     ///< 8 bits gray, 8 bits alpha
-    AV_PIX_FMT_Y400A = AV_PIX_FMT_YA8,  ///< alias for AV_PIX_FMT_YA8
-    AV_PIX_FMT_GRAY8A = AV_PIX_FMT_YA8, ///< alias for AV_PIX_FMT_YA8
-    AV_PIX_FMT_BGR48BE,                 ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
-    AV_PIX_FMT_BGR48LE,                 ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
+    AV_PIX_FMT_YUV420P16LE,              ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
+    AV_PIX_FMT_YUV420P16BE,              ///< planar YUV 4:2:0, 24bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
+    AV_PIX_FMT_YUV422P16LE,              ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
+    AV_PIX_FMT_YUV422P16BE,              ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    AV_PIX_FMT_YUV444P16LE,              ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    AV_PIX_FMT_YUV444P16BE,              ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    AV_PIX_FMT_DXVA2_VLD,                ///< HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
+    AV_PIX_FMT_RGB444LE,                 ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_RGB444BE,                 ///< packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), big-endian,    X=unused/undefined
+    AV_PIX_FMT_BGR444LE,                 ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), little-endian, X=unused/undefined
+    AV_PIX_FMT_BGR444BE,                 ///< packed BGR 4:4:4, 16bpp, (msb)4X 4B 4G 4R(lsb), big-endian,    X=unused/undefined
+    AV_PIX_FMT_YA8,                      ///< 8 bits gray, 8 bits alpha
+    AV_PIX_FMT_Y400A = AV_PIX_FMT_YA8,   ///< alias for AV_PIX_FMT_YA8
+    AV_PIX_FMT_GRAY8A = AV_PIX_FMT_YA8,  ///< alias for AV_PIX_FMT_YA8
+    AV_PIX_FMT_BGR48BE,                  ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
+    AV_PIX_FMT_BGR48LE,                  ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
     AV_PIX_FMT_YUV420P9BE,               ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
     AV_PIX_FMT_YUV420P9LE,               ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
     AV_PIX_FMT_YUV420P10BE,              ///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
@@ -1051,7 +1046,7 @@ enum AVPixelFormat
     AV_PIX_FMT_X2RGB10BE, ///< packed RGB 10:10:10, 30bpp, (msb)2X 10R 10G 10B(lsb), big-endian, X=unused/undefined
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
-#define AV_PIX_FMT_NE(be, le) AV_PIX_FMT_##le
+// #define AV_PIX_FMT_NE(be, le) AV_PIX_FMT_##le
 #define AV_PIX_FMT_RGB32 AV_PIX_FMT_NE(ARGB, BGRA)
 #define AV_PIX_FMT_RGB32_1 AV_PIX_FMT_NE(RGBA, ABGR)
 #define AV_PIX_FMT_BGR32 AV_PIX_FMT_NE(ABGR, RGBA)
@@ -1196,9 +1191,9 @@ enum AVColorSpace
 enum AVColorRange
 {
     AVCOL_RANGE_UNSPECIFIED = 0,
-    
+
     AVCOL_RANGE_MPEG = 1,
-    
+
     AVCOL_RANGE_JPEG = 2,
     AVCOL_RANGE_NB ///< Not part of ABI
 };
@@ -1228,7 +1223,7 @@ FILE *av_fopen_utf8(const char *path, const char *mode);
 
 AVRational av_get_time_base_q(void);
 #define AV_FOURCC_MAX_STRING_SIZE 32
-#define av_fourcc2str(fourcc) av_fourcc_make_string((char[AV_FOURCC_MAX_STRING_SIZE]){0}, fourcc)
+// #define av_fourcc2str(fourcc) av_fourcc_make_string((char[AV_FOURCC_MAX_STRING_SIZE]){0}, fourcc)
 
 char *av_fourcc_make_string(char *buf, uint32_t fourcc);
 
@@ -1257,7 +1252,6 @@ void av_expr_free(AVExpr *e);
 double av_strtod(const char *numstr, char **tail);
 
 #define AVUTIL_PIXDESC_H
-
 
 typedef struct AVComponentDescriptor
 {
@@ -1367,7 +1361,6 @@ int av_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
 enum AVPixelFormat av_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, enum AVPixelFormat dst_pix_fmt2,
                                              enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
 
-
 void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],
                                 const AVPixFmtDescriptor *pixdesc);
 
@@ -1416,13 +1409,12 @@ int av_image_fill_black(uint8_t *dst_data[4], const ptrdiff_t dst_linesize[4],
                         enum AVPixelFormat pix_fmt, enum AVColorRange range,
                         int width, int height);
 
-
 #define AV_DICT_MATCH_CASE 1
-#define AV_DICT_IGNORE_SUFFIX 2   
-#define AV_DICT_DONT_STRDUP_KEY 4 
-#define AV_DICT_DONT_STRDUP_VAL 8 
+#define AV_DICT_IGNORE_SUFFIX 2
+#define AV_DICT_DONT_STRDUP_KEY 4
+#define AV_DICT_DONT_STRDUP_VAL 8
 #define AV_DICT_DONT_OVERWRITE 16
-#define AV_DICT_APPEND 32 
+#define AV_DICT_APPEND 32
 #define AV_DICT_MULTIKEY 64
 
 typedef struct AVDictionaryEntry
@@ -1473,7 +1465,6 @@ int av_find_info_tag(char *arg, int arg_size, const char *tag1, const char *info
 char *av_small_strptime(const char *p, const char *fmt, struct tm *dt);
 
 time_t av_timegm(struct tm *tm);
-
 
 enum AVSampleFormat
 {
@@ -1553,31 +1544,30 @@ int av_gettime_relative_is_monotonic(void);
 int av_usleep(unsigned usec);
 #define AVUTIL_BPRINT_H
 
-#define FF_PAD_STRUCTURE(name, size, ...)                                              \
-    struct ff_pad_helper_##name                                                        \
-    {                                                                                  \
-        __VA_ARGS__                                                                    \
-    };                                                                                 \
-    typedef struct name                                                                \
-    {                                                                                  \
-        __VA_ARGS__ char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
-    } name;
-
+// #define FF_PAD_STRUCTURE(name, size, ...)                                              \
+//     struct ff_pad_helper_##name                                                        \
+//     {                                                                                  \
+//         __VA_ARGS__                                                                    \
+//     };                                                                                 \
+//     typedef struct name                                                                \
+//     {                                                                                  \
+//         __VA_ARGS__ char reserved_padding[size - sizeof(struct ff_pad_helper_##name)]; \
+//     } name;
 
 struct ff_pad_helper_AVBPrint
 {
-    char *str;         
-    unsigned len;      
-    unsigned size;     
-    unsigned size_max; 
+    char *str;
+    unsigned len;
+    unsigned size;
+    unsigned size_max;
     char reserved_internal_buffer[1];
 };
 typedef struct AVBPrint
 {
-    char *str;         
-    unsigned len;      
-    unsigned size;     
-    unsigned size_max; 
+    char *str;
+    unsigned len;
+    unsigned size;
+    unsigned size_max;
     char reserved_internal_buffer[1];
     char reserved_padding[1024 - sizeof(struct ff_pad_helper_AVBPrint)];
 } AVBPrint;
@@ -1615,8 +1605,6 @@ int av_bprint_finalize(AVBPrint *buf, char **ret_str);
 void av_bprint_escape(AVBPrint *dstbuf, const char *src, const char *special_chars,
                       enum AVEscapeMode mode, int flags);
 #define AVFORMAT_AVFORMAT_H
-
-
 
 typedef struct AVBuffer AVBuffer;
 
@@ -1875,16 +1863,16 @@ typedef struct AVRegionOfInterest
     int bottom;
     int left;
     int right;
-    
+
     AVRational qoffset;
 } AVRegionOfInterest;
 typedef struct AVFrame
 {
 #define AV_NUM_DATA_POINTERS 8
-    
+
     uint8_t *data[8];
     int linesize[8];
-    
+
     uint8_t **extended_data;
     int width, height;
     int nb_samples;
@@ -1907,9 +1895,9 @@ typedef struct AVFrame
     int64_t reordered_opaque;
     int sample_rate;
     uint64_t channel_layout;
-    
+
     AVBufferRef *buf[8];
-    
+
     AVBufferRef **extended_buf;
     int nb_extended_buf;
     AVFrameSideData **side_data;
@@ -2037,7 +2025,6 @@ int av_frame_apply_cropping(AVFrame *frame, int flags);
 
 const char *av_frame_side_data_name(enum AVFrameSideDataType type);
 
-
 enum AVHWDeviceType
 {
     AV_HWDEVICE_TYPE_NONE,
@@ -2076,7 +2063,7 @@ typedef struct AVHWFramesContext
     void *hwctx;
     void (*free)(struct AVHWFramesContext *ctx);
     void *user_opaque;
-    
+
     AVBufferPool *pool;
     int initial_pool_size;
     enum AVPixelFormat format;
@@ -2150,6 +2137,8 @@ int av_hwframe_ctx_create_derived(AVBufferRef **derived_frame_ctx,
 #define AVCODEC_BSF_H
 
 #define AVCODEC_CODEC_ID_H
+#define AV_CODEC_ID_IFF_BYTERUN1 AV_CODEC_ID_IFF_ILBM
+#define AV_CODEC_ID_H265 AV_CODEC_ID_HEVC
 
 enum AVCodecID
 {
@@ -2290,7 +2279,6 @@ enum AVCodecID
     AV_CODEC_ID_ANM,
     AV_CODEC_ID_BINKVIDEO,
     AV_CODEC_ID_IFF_ILBM,
-#define AV_CODEC_ID_IFF_BYTERUN1 AV_CODEC_ID_IFF_ILBM
     AV_CODEC_ID_KGV1,
     AV_CODEC_ID_YOP,
     AV_CODEC_ID_VP8,
@@ -2328,7 +2316,6 @@ enum AVCodecID
     AV_CODEC_ID_WEBP,
     AV_CODEC_ID_HNM4_VIDEO,
     AV_CODEC_ID_HEVC,
-#define AV_CODEC_ID_H265 AV_CODEC_ID_HEVC
     AV_CODEC_ID_FIC,
     AV_CODEC_ID_ALIAS_PIX,
     AV_CODEC_ID_BRENDER_PIX,
@@ -2640,9 +2627,9 @@ enum AVCodecID
     AV_CODEC_ID_DVD_NAV,
     AV_CODEC_ID_TIMED_ID3,
     AV_CODEC_ID_BIN_DATA,
-    AV_CODEC_ID_PROBE = 0x19000,           ///< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
-    AV_CODEC_ID_MPEG2TS = 0x20000,         
-    AV_CODEC_ID_MPEG4SYSTEMS = 0x20001,    
+    AV_CODEC_ID_PROBE = 0x19000, ///< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
+    AV_CODEC_ID_MPEG2TS = 0x20000,
+    AV_CODEC_ID_MPEG4SYSTEMS = 0x20001,
     AV_CODEC_ID_FFMETADATA = 0x21000,      ///< Dummy codec for streams containing only metadata information.
     AV_CODEC_ID_WRAPPED_AVFRAME = 0x21001, ///< Passthrough codec, AVFrames wrapped in AVPacket
 };
@@ -2651,7 +2638,6 @@ enum AVMediaType avcodec_get_type(enum AVCodecID codec_id);
 
 const char *avcodec_get_name(enum AVCodecID id);
 #define AVCODEC_CODEC_PAR_H
-
 
 enum AVFieldOrder
 {
@@ -2711,7 +2697,7 @@ int avcodec_parameters_copy(AVCodecParameters *dst, const AVCodecParameters *src
 #define LIBAVCODEC_VERSION_INT AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 #define LIBAVCODEC_VERSION AV_VERSION(LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 #define LIBAVCODEC_BUILD LIBAVCODEC_VERSION_INT
-#define LIBAVCODEC_IDENT "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
+// #define LIBAVCODEC_IDENT "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
 #define FF_API_LOWRES (LIBAVCODEC_VERSION_MAJOR < 59)
 #define FF_API_DEBUG_MV (LIBAVCODEC_VERSION_MAJOR < 58)
 #define FF_API_AVCTX_TIMEBASE (LIBAVCODEC_VERSION_MAJOR < 59)
@@ -2748,9 +2734,9 @@ enum AVPacketSideDataType
 {
     AV_PKT_DATA_PALETTE,
     AV_PKT_DATA_NEW_EXTRADATA,
-    
+
     AV_PKT_DATA_PARAM_CHANGE,
-    
+
     AV_PKT_DATA_H263_MB_INFO,
     AV_PKT_DATA_REPLAYGAIN,
     AV_PKT_DATA_DISPLAYMATRIX,
@@ -3026,7 +3012,7 @@ int av_codec_is_decoder(const AVCodec *codec);
 enum
 {
     AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX = 0x01,
-    
+
     AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX = 0x02,
     AV_CODEC_HW_CONFIG_METHOD_INTERNAL = 0x04,
     AV_CODEC_HW_CONFIG_METHOD_AD_HOC = 0x08,
@@ -3041,7 +3027,6 @@ typedef struct AVCodecHWConfig
 
 const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index);
 #define AVCODEC_CODEC_DESC_H
-
 
 typedef struct AVCodecDescriptor
 {
@@ -3070,7 +3055,7 @@ const AVCodecDescriptor *avcodec_descriptor_get_by_name(const char *name);
 
 enum AVDiscard
 {
-    
+
     AVDISCARD_NONE = -16,    ///< discard nothing
     AVDISCARD_DEFAULT = 0,   ///< discard useless packets like 0 size packets in avi
     AVDISCARD_NONREF = 8,    ///< discard all non reference
@@ -3101,10 +3086,7 @@ typedef struct RcOverride
     int qscale; // If this is 0 then quality_factor will be used instead.
     float quality_factor;
 } RcOverride;
-/* encoding support
-   These flags can be passed in AVCodecContext.flags before initialization.
-   Note: Not everything is supported yet.
-*/
+
 #define AV_CODEC_FLAG_UNALIGNED (1 << 0)
 #define AV_CODEC_FLAG_QSCALE (1 << 1)
 #define AV_CODEC_FLAG_4MV (1 << 2)
@@ -3134,9 +3116,7 @@ typedef struct RcOverride
 #define AV_CODEC_FLAG2_EXPORT_MVS (1 << 28)
 #define AV_CODEC_FLAG2_SKIP_MANUAL (1 << 29)
 #define AV_CODEC_FLAG2_RO_FLUSH_NOOP (1 << 30)
-/* Exported side data.
-   These flags can be passed in AVCodecContext.export_side_data before initialization.
-*/
+
 #define AV_CODEC_EXPORT_DATA_MVS (1 << 0)
 #define AV_CODEC_EXPORT_DATA_PRFT (1 << 1)
 #define AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS (1 << 2)
@@ -3185,22 +3165,22 @@ typedef struct AVCodecContext
 #define FF_COMPRESSION_DEFAULT -1
     int flags;
     int flags2;
-    
+
     uint8_t *extradata;
     int extradata_size;
-    
+
     AVRational time_base;
     int ticks_per_frame;
-    
+
     int delay;
-    
+
     int width, height;
-    
+
     int coded_width, coded_height;
     int gop_size;
- 
+
     enum AVPixelFormat pix_fmt;
-   
+
     void (*draw_horiz_band)(struct AVCodecContext *s,
                             const AVFrame *src, int offset[8],
                             int y, int type, int height);
@@ -3285,13 +3265,10 @@ typedef struct AVCodecContext
     enum AVColorRange color_range;
     enum AVChromaLocation chroma_sample_location;
     int slices;
-    /** Field order
-     * - encoding: set by libavcodec
-     * - decoding: Set by user.
-     */
+
     enum AVFieldOrder field_order;
-    int sample_rate; ///< samples per second
-    int channels;    ///< number of audio channels
+    int sample_rate;                ///< samples per second
+    int channels;                   ///< number of audio channels
     enum AVSampleFormat sample_fmt; ///< sample format
     int frame_size;
     int frame_number;
@@ -3301,7 +3278,7 @@ typedef struct AVCodecContext
     uint64_t request_channel_layout;
     enum AVAudioServiceType audio_service_type;
     enum AVSampleFormat request_sample_fmt;
-    
+
     int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
 
     int refcounted_frames;
@@ -3361,7 +3338,7 @@ typedef struct AVCodecContext
 #define FF_BUG_MS 8192
 #define FF_BUG_TRUNCATED 16384
 #define FF_BUG_IEDGE 32768
- 
+
     int strict_std_compliance;
 #define FF_COMPLIANCE_VERY_STRICT 2
 #define FF_COMPLIANCE_STRICT 1
@@ -3434,7 +3411,7 @@ typedef struct AVCodecContext
     int active_thread_type;
     int thread_safe_callbacks;
     int (*execute)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg), void *arg2, int *ret, int count, int size);
-    
+
     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
     int nsse_weight;
     int profile;
@@ -3577,19 +3554,19 @@ typedef struct AVCodecContext
 #define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
     AVPacketSideData *coded_side_data;
     int nb_coded_side_data;
-    
+
     AVBufferRef *hw_frames_ctx;
     int sub_text_format;
 #define FF_SUB_TEXT_FMT_ASS 0
 #define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
     int trailing_padding;
     int64_t max_pixels;
-    
+
     AVBufferRef *hw_device_ctx;
     int hwaccel_flags;
-    
+
     int apply_cropping;
-    
+
     int extra_hw_frames;
     int discard_damaged_percentage;
     int64_t max_samples;
@@ -3656,7 +3633,7 @@ typedef struct AVHWAccel
 typedef struct AVPicture
 {
     uint8_t *data[8]; ///< pointers to the image data planes
-    int linesize[8]; ///< number of bytes per line
+    int linesize[8];  ///< number of bytes per line
 } AVPicture;
 
 enum AVSubtitleType
@@ -3766,12 +3743,18 @@ enum AVPictureStructure
     AV_PICTURE_STRUCTURE_FRAME,        //< coded as frame
 };
 
+#define AV_PARSER_PTS_NB 4
+#define PARSER_FLAG_COMPLETE_FRAMES 0x0001
+#define PARSER_FLAG_ONCE 0x0002
+#define PARSER_FLAG_FETCHED_OFFSET 0x0004
+#define PARSER_FLAG_USE_CODEC_TS 0x1000
+
 typedef struct AVCodecParserContext
 {
     void *priv_data;
     struct AVCodecParser *parser;
     int64_t frame_offset;
-    int64_t cur_offset; 
+    int64_t cur_offset;
     int64_t next_frame_offset;
     int pict_type;
     int repeat_pict;
@@ -3780,23 +3763,21 @@ typedef struct AVCodecParserContext
     int64_t last_pts;
     int64_t last_dts;
     int fetch_timestamp;
-#define AV_PARSER_PTS_NB 4
+
     int cur_frame_start_index;
     int64_t cur_frame_offset[4];
     int64_t cur_frame_pts[4];
     int64_t cur_frame_dts[4];
     int flags;
-#define PARSER_FLAG_COMPLETE_FRAMES 0x0001
-#define PARSER_FLAG_ONCE 0x0002
-/// Set if the parser has a valid file offset
-#define PARSER_FLAG_FETCHED_OFFSET 0x0004
-#define PARSER_FLAG_USE_CODEC_TS 0x1000
+
+    // Set if the parser has a valid file offset
+
     int64_t offset; ///< byte offset from starting packet start
     int64_t cur_frame_end[4];
     int key_frame;
     int64_t convergence_duration;
     int dts_sync_point;
-    
+
     int dts_ref_dts_delta;
 
     int pts_dts_delta;
@@ -3819,7 +3800,7 @@ typedef struct AVCodecParser
     int codec_ids[5];
     int priv_data_size;
     int (*parser_init)(AVCodecParserContext *s);
-    
+
     int (*parser_parse)(AVCodecParserContext *s,
                         AVCodecContext *avctx,
                         const uint8_t **poutbuf, int *poutbuf_size,
@@ -3979,7 +3960,7 @@ AVCPBProperties *av_cpb_properties_alloc(size_t *size);
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO)
 #define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO)
 #define LIBAVFORMAT_BUILD LIBAVFORMAT_VERSION_INT
-#define LIBAVFORMAT_IDENT "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
+// #define LIBAVFORMAT_IDENT "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
 #define FF_API_COMPUTE_PKT_FIELDS2 (LIBAVFORMAT_VERSION_MAJOR < 59)
 #define FF_API_OLD_OPEN_CALLBACKS (LIBAVFORMAT_VERSION_MAJOR < 59)
 #define FF_API_LAVF_AVCTX (LIBAVFORMAT_VERSION_MAJOR < 59)
@@ -4025,11 +4006,11 @@ typedef struct AVIODirEntry
 {
     char *name;
     int type;
-    int utf8; 
+    int utf8;
     int64_t size;
-    int64_t modification_timestamp;  
-    int64_t access_timestamp;        
-    int64_t status_change_timestamp; 
+    int64_t modification_timestamp;
+    int64_t access_timestamp;
+    int64_t status_change_timestamp;
     int64_t user_id;
     int64_t group_id;
     int64_t filemode;
@@ -4051,17 +4032,14 @@ enum AVIODataMarkerType
 };
 typedef struct AVIOContext
 {
-    
+
     const AVClass *av_class;
-    
+
     unsigned char *buffer;
     int buffer_size;
     unsigned char *buf_ptr;
-    unsigned char *buf_end; /**< End of the data, may be less than
-                                 buffer+buffer_size if the read function returned
-                                 less data than requested, e.g. for streams where
-                                 no more data has been received yet. */
-    void *opaque;           
+    unsigned char *buf_end;
+    void *opaque;
     int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
     int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
     int64_t (*seek)(void *opaque, int64_t offset, int whence);
@@ -4160,7 +4138,7 @@ int avio_feof(AVIOContext *s);
 int avio_printf(AVIOContext *s, const char *fmt, ...);
 
 void avio_print_string_array(AVIOContext *s, const char *strings[]);
-#define avio_print(s, ...) avio_print_string_array(s, (const char *[]){__VA_ARGS__, NULL})
+// #define avio_print(s, ...) avio_print_string_array(s, (const char *[]){__VA_ARGS__, NULL})
 
 void avio_flush(AVIOContext *s);
 
@@ -4221,7 +4199,6 @@ struct AVFormatContext;
 struct AVDeviceInfoList;
 struct AVDeviceCapabilitiesQuery;
 
-
 int av_get_packet(AVIOContext *s, AVPacket *pkt, int size);
 int av_append_packet(AVIOContext *s, AVPacket *pkt, int size);
 
@@ -4255,17 +4232,8 @@ typedef struct AVProbeData
 #define AVFMT_NOGENSEARCH 0x4000
 #define AVFMT_NO_BYTE_SEEK 0x8000
 #define AVFMT_ALLOW_FLUSH 0x10000
-#define AVFMT_TS_NONSTRICT 0x20000 /**< Format does not require strictly     \
-                                        increasing timestamps, but they must \
-                                        still be monotonic */
-#define AVFMT_TS_NEGATIVE 0x40000  /**< Format allows muxing negative                \
-                                         timestamps. If not set the timestamp        \
-                                         will be shifted in av_write_frame and       \
-                                         av_interleaved_write_frame so they          \
-                                         start from 0.                               \
-                                         The user or muxer can override this through \
-                                         AVFormatContext.avoid_negative_ts           \
-                                         */
+#define AVFMT_TS_NONSTRICT 0x20000
+#define AVFMT_TS_NEGATIVE 0x40000
 #define AVFMT_SEEK_TO_PTS 0x4000000
 
 typedef struct AVOutputFormat
@@ -4314,7 +4282,7 @@ typedef struct AVInputFormat
     const struct AVCodecTag *const *codec_tag;
     const AVClass *priv_class; ///< AVClass for the private context
     const char *mime_type;
- 
+
     struct AVInputFormat *next;
     int raw_codec_id;
     int priv_data_size;
@@ -4341,15 +4309,13 @@ enum AVStreamParseType
     AVSTREAM_PARSE_HEADERS,
     AVSTREAM_PARSE_TIMESTAMPS,
     AVSTREAM_PARSE_FULL_ONCE,
-    AVSTREAM_PARSE_FULL_RAW, /**< full parsing and repack with timestamp and position generation by parser for raw
-                                    this assumes that each packet in the file contains no demuxer level headers and
-                                    just codec level data, otherwise position generation would fail */
+    AVSTREAM_PARSE_FULL_RAW,
 };
 
 typedef struct AVIndexEntry
 {
     int64_t pos;
-    int64_t timestamp; 
+    int64_t timestamp;
 #define AVINDEX_KEYFRAME 0x0001
 #define AVINDEX_DISCARD_FRAME 0x0002
     int flags : 2;
@@ -4378,6 +4344,27 @@ typedef struct AVStreamInternal AVStreamInternal;
 #define AV_PTS_WRAP_IGNORE 0
 #define AV_PTS_WRAP_ADD_OFFSET 1
 #define AV_PTS_WRAP_SUB_OFFSET -1
+#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001
+#define MAX_STD_TIMEBASES (30 * 12 + 30 + 3 + 6)
+#define MAX_REORDER_DELAY 16
+
+typedef struct AVStreamInfo
+{
+    int64_t last_dts;
+    int64_t duration_gcd;
+    int duration_count;
+    int64_t rfps_duration_sum;
+    double (*duration_error)[2][(30 * 12 + 30 + 3 + 6)];
+    int64_t codec_info_duration;
+    int64_t codec_info_duration_fields;
+    int frame_delay_evidence;
+    int found_decoder;
+    int64_t last_duration;
+    int64_t fps_first_dts;
+    int fps_first_dts_idx;
+    int64_t fps_last_dts;
+    int fps_last_dts_idx;
+} AVStreamInfo;
 
 typedef struct AVStream
 {
@@ -4385,7 +4372,7 @@ typedef struct AVStream
     int id;
     AVCodecContext *codec;
     void *priv_data;
-    
+
     AVRational time_base;
     int64_t start_time;
     int64_t duration;
@@ -4396,33 +4383,16 @@ typedef struct AVStream
     AVDictionary *metadata;
     AVRational avg_frame_rate;
     AVPacket attached_pic;
-    
+
     AVPacketSideData *side_data;
     int nb_side_data;
     int event_flags;
-#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001
+
     AVRational r_frame_rate;
     char *recommended_encoder_configuration;
     AVCodecParameters *codecpar;
 
-#define MAX_STD_TIMEBASES (30 * 12 + 30 + 3 + 6)
-    struct
-    {
-        int64_t last_dts;
-        int64_t duration_gcd;
-        int duration_count;
-        int64_t rfps_duration_sum;
-        double (*duration_error)[2][(30 * 12 + 30 + 3 + 6)];
-        int64_t codec_info_duration;
-        int64_t codec_info_duration_fields;
-        int frame_delay_evidence;
-        int found_decoder;
-        int64_t last_duration;
-        int64_t fps_first_dts;
-        int fps_first_dts_idx;
-        int64_t fps_last_dts;
-        int fps_last_dts_idx;
-    } * info;
+    AVStreamInfo *info;
     int pts_wrap_bits;
     // Timestamp generation support:
     int64_t first_dts;
@@ -4435,9 +4405,8 @@ typedef struct AVStream
     struct AVCodecParserContext *parser;
     struct AVPacketList *last_in_packet_buffer;
     AVProbeData probe_data;
-#define MAX_REORDER_DELAY 16
     int64_t pts_buffer[16 + 1];
-    AVIndexEntry *index_entries; 
+    AVIndexEntry *index_entries;
     int nb_index_entries;
     unsigned int index_entries_allocated_size;
     int stream_identifier;
@@ -4497,12 +4466,8 @@ typedef struct AVProgram
     int64_t pts_wrap_reference; ///< reference dts for wrap detection
     int pts_wrap_behavior;      ///< behavior on wrap detection
 } AVProgram;
-#define AVFMTCTX_NOHEADER 0x0001   
-#define AVFMTCTX_UNSEEKABLE 0x0002 /**< signal that the stream is definitely    \
-                                         not seekable, and attempts to call the \
-                                         seek function will fail. For some      \
-                                         network protocols (e.g. HLS), this can \
-                                         change dynamically at runtime. */
+#define AVFMTCTX_NOHEADER 0x0001
+#define AVFMTCTX_UNSEEKABLE 0x0002
 
 typedef struct AVChapter
 {
@@ -4884,8 +4849,20 @@ AVRational av_stream_get_codec_timebase(const AVStream *st);
 #define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, LIBAVDEVICE_VERSION_MINOR, LIBAVDEVICE_VERSION_MICRO)
 #define LIBAVDEVICE_VERSION AV_VERSION(LIBAVDEVICE_VERSION_MAJOR, LIBAVDEVICE_VERSION_MINOR, LIBAVDEVICE_VERSION_MICRO)
 #define LIBAVDEVICE_BUILD LIBAVDEVICE_VERSION_INT
-#define LIBAVDEVICE_IDENT "Lavd" AV_STRINGIFY(LIBAVDEVICE_VERSION)
+// #define LIBAVDEVICE_IDENT "Lavd" AV_STRINGIFY(LIBAVDEVICE_VERSION)
 #define AVUTIL_OPT_H
+#define AV_OPT_FLAG_ENCODING_PARAM 1
+#define AV_OPT_FLAG_DECODING_PARAM 2
+#define AV_OPT_FLAG_AUDIO_PARAM 8
+#define AV_OPT_FLAG_VIDEO_PARAM 16
+#define AV_OPT_FLAG_SUBTITLE_PARAM 32
+#define AV_OPT_FLAG_EXPORT 64
+#define AV_OPT_FLAG_READONLY 128
+#define AV_OPT_FLAG_BSF_PARAM (1 << 8)
+#define AV_OPT_FLAG_RUNTIME_PARAM (1 << 15)
+#define AV_OPT_FLAG_FILTERING_PARAM (1 << 16)
+#define AV_OPT_FLAG_DEPRECATED (1 << 17)
+#define AV_OPT_FLAG_CHILD_CONSTS (1 << 18)
 
 enum AVOptionType
 {
@@ -4926,19 +4903,7 @@ typedef struct AVOption
     double min; ///< minimum valid value for the option
     double max; ///< maximum valid value for the option
     int flags;
-#define AV_OPT_FLAG_ENCODING_PARAM 1
-#define AV_OPT_FLAG_DECODING_PARAM 2
-#define AV_OPT_FLAG_AUDIO_PARAM 8
-#define AV_OPT_FLAG_VIDEO_PARAM 16
-#define AV_OPT_FLAG_SUBTITLE_PARAM 32
-#define AV_OPT_FLAG_EXPORT 64
-#define AV_OPT_FLAG_READONLY 128
-#define AV_OPT_FLAG_BSF_PARAM (1 << 8)
-#define AV_OPT_FLAG_RUNTIME_PARAM (1 << 15)
-#define AV_OPT_FLAG_FILTERING_PARAM (1 << 16)
-#define AV_OPT_FLAG_DEPRECATED (1 << 17)
-#define AV_OPT_FLAG_CHILD_CONSTS (1 << 18)
-    //FIXME think about enc-audio, ... style flags
+
     const char *unit;
 } AVOption;
 
@@ -4994,7 +4959,7 @@ int av_opt_eval_int64(void *obj, const AVOption *o, const char *val, int64_t *in
 int av_opt_eval_float(void *obj, const AVOption *o, const char *val, float *float_out);
 int av_opt_eval_double(void *obj, const AVOption *o, const char *val, double *double_out);
 int av_opt_eval_q(void *obj, const AVOption *o, const char *val, AVRational *q_out);
-#define AV_OPT_SEARCH_CHILDREN (1 << 0) 
+#define AV_OPT_SEARCH_CHILDREN (1 << 0)
 #define AV_OPT_SEARCH_FAKE_OBJ (1 << 1)
 #define AV_OPT_ALLOW_NULL (1 << 2)
 #define AV_OPT_MULTI_COMPONENT_RANGE (1 << 12)
@@ -5057,7 +5022,6 @@ int av_opt_is_set_to_default_by_name(void *obj, const char *name, int search_fla
 
 int av_opt_serialize(void *obj, int opt_flags, int flags, char **buffer,
                      const char key_val_sep, const char pairs_sep);
-
 
 unsigned avdevice_version(void);
 
@@ -5123,7 +5087,6 @@ int avdevice_dev_to_app_control_message(struct AVFormatContext *s,
                                         enum AVDevToAppMessageType type,
                                         void *data, size_t data_size);
 
-
 typedef struct AVDeviceCapabilitiesQuery
 {
     const AVClass *av_class;
@@ -5170,14 +5133,13 @@ int avdevice_list_input_sources(struct AVInputFormat *device, const char *device
 int avdevice_list_output_sinks(struct AVOutputFormat *device, const char *device_name,
                                AVDictionary *device_options, AVDeviceInfoList **device_list);
 
-
 #define LIBSWSCALE_VERSION_MAJOR 5
 #define LIBSWSCALE_VERSION_MINOR 8
 #define LIBSWSCALE_VERSION_MICRO 100
 #define LIBSWSCALE_VERSION_INT AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)
 #define LIBSWSCALE_VERSION AV_VERSION(LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)
 #define LIBSWSCALE_BUILD LIBSWSCALE_VERSION_INT
-#define LIBSWSCALE_IDENT "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
+// #define LIBSWSCALE_IDENT "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
 #define FF_API_SWS_VECTOR (LIBSWSCALE_VERSION_MAJOR < 6)
 
 unsigned swscale_version(void);
@@ -5356,16 +5318,14 @@ DCTContext *av_dct_init(int nbits, enum DCTTransformType type);
 void av_dct_calc(DCTContext *s, FFTSample *data);
 void av_dct_end(DCTContext *s);
 
-
 #define LIBSWRESAMPLE_VERSION_MAJOR 3
 #define LIBSWRESAMPLE_VERSION_MINOR 8
 #define LIBSWRESAMPLE_VERSION_MICRO 100
 #define LIBSWRESAMPLE_VERSION_INT AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, LIBSWRESAMPLE_VERSION_MINOR, LIBSWRESAMPLE_VERSION_MICRO)
 #define LIBSWRESAMPLE_VERSION AV_VERSION(LIBSWRESAMPLE_VERSION_MAJOR, LIBSWRESAMPLE_VERSION_MINOR, LIBSWRESAMPLE_VERSION_MICRO)
 #define LIBSWRESAMPLE_BUILD LIBSWRESAMPLE_VERSION_INT
-#define LIBSWRESAMPLE_IDENT "SwR" AV_STRINGIFY(LIBSWRESAMPLE_VERSION)
+// #define LIBSWRESAMPLE_IDENT "SwR" AV_STRINGIFY(LIBSWRESAMPLE_VERSION)
 #define SWR_FLAG_RESAMPLE 1
-
 
 enum SwrDitherType
 {
@@ -5460,7 +5420,7 @@ int swr_config_frame(SwrContext *swr, const AVFrame *out, const AVFrame *in);
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, LIBAVFILTER_VERSION_MINOR, LIBAVFILTER_VERSION_MICRO)
 #define LIBAVFILTER_VERSION AV_VERSION(LIBAVFILTER_VERSION_MAJOR, LIBAVFILTER_VERSION_MINOR, LIBAVFILTER_VERSION_MICRO)
 #define LIBAVFILTER_BUILD LIBAVFILTER_VERSION_INT
-#define LIBAVFILTER_IDENT "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
+// #define LIBAVFILTER_IDENT "Lavfi" AV_STRINGIFY(LIBAVFILTER_VERSION)
 #define FF_API_OLD_FILTER_OPTS_ERROR (LIBAVFILTER_VERSION_MAJOR < 8)
 #define FF_API_LAVR_OPTS (LIBAVFILTER_VERSION_MAJOR < 8)
 #define FF_API_FILTER_GET_SET (LIBAVFILTER_VERSION_MAJOR < 8)
@@ -5498,9 +5458,9 @@ typedef struct AVFilter
     const AVFilterPad *outputs;
     const AVClass *priv_class;
     int flags;
-    
+
     int (*preinit)(AVFilterContext *ctx);
-    
+
     int (*init)(AVFilterContext *ctx);
     int (*init_dict)(AVFilterContext *ctx, AVDictionary **options);
     void (*uninit)(AVFilterContext *ctx);
@@ -5554,29 +5514,31 @@ typedef struct AVFilterFormatsConfig
     AVFilterChannelLayouts *channel_layouts;
 } AVFilterFormatsConfig;
 
+enum AVLINKEnum
+{
+    AVLINK_UNINIT = 0, ///< not started
+    AVLINK_STARTINIT,  ///< started, but incomplete
+    AVLINK_INIT        ///< complete
+};
+
 struct AVFilterLink
 {
-    AVFilterContext *src;  ///< source filter
-    AVFilterPad *srcpad;   ///< output pad on the source filter
-    AVFilterContext *dst;  ///< dest filter
-    AVFilterPad *dstpad;   ///< input pad on the dest filter
-    enum AVMediaType type; ///< filter media type
+    AVFilterContext *src;           ///< source filter
+    AVFilterPad *srcpad;            ///< output pad on the source filter
+    AVFilterContext *dst;           ///< dest filter
+    AVFilterPad *dstpad;            ///< input pad on the dest filter
+    enum AVMediaType type;          ///< filter media type
     int w;                          ///< agreed upon image width
     int h;                          ///< agreed upon image height
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
-    uint64_t channel_layout; ///< channel layout of current buffer (see libavutil/channel_layout.h)
-    int sample_rate;         ///< samples per second
-    int format;              ///< agreed upon media format
+    uint64_t channel_layout;        ///< channel layout of current buffer (see libavutil/channel_layout.h)
+    int sample_rate;                ///< samples per second
+    int format;                     ///< agreed upon media format
     AVRational time_base;
 
     AVFilterFormatsConfig incfg;
     AVFilterFormatsConfig outcfg;
-    enum
-    {
-        AVLINK_UNINIT = 0, ///< not started
-        AVLINK_STARTINIT,  ///< started, but incomplete
-        AVLINK_INIT        ///< complete
-    } init_state;
+    enum AVLINKEnum init_state;
     struct AVFilterGraph *graph;
     int64_t current_pts;
     int64_t current_pts_us;
@@ -5645,12 +5607,12 @@ typedef struct AVFilterGraph
     unsigned nb_filters;
     char *scale_sws_opts;     ///< sws options to use for the auto-inserted scale filters
     char *resample_lavr_opts; ///< libavresample options to use for the auto-inserted resample filters
-    
+
     int thread_type;
     int nb_threads;
     AVFilterGraphInternal *internal;
     void *opaque;
-    
+
     avfilter_execute_func *execute;
     char *aresample_swr_opts; ///< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
     AVFilterLink **sink_links;
@@ -5715,7 +5677,6 @@ char *avfilter_graph_dump(AVFilterGraph *graph, const char *options);
 int avfilter_graph_request_oldest(AVFilterGraph *graph);
 
 #define AVFILTER_BUFFERSINK_H
-
 
 int av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags);
 #define AV_BUFFERSINK_FLAG_PEEK 1
@@ -5785,11 +5746,9 @@ AVBufferSrcParameters *av_buffersrc_parameters_alloc(void);
 
 int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *param);
 
-
 int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame);
 
 int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame);
-
 
 int av_buffersrc_add_frame_flags(AVFilterContext *buffer_src,
                                  AVFrame *frame, int flags);
@@ -5806,8 +5765,8 @@ int av_buffersrc_close(AVFilterContext *ctx, int64_t pts, unsigned flags);
 #define SDLCALL
 
 #define SDL_INLINE __inline__
-#define SDL_FORCE_INLINE __attribute__((always_inline)) static __inline__
-#define SDL_NORETURN __attribute__((noreturn))
+// #define SDL_FORCE_INLINE __attribute__((always_inline)) static __inline__
+// #define SDL_NORETURN __attribute__((noreturn))
 
 extern const char *SDL_GetPlatform(void);
 
@@ -5851,7 +5810,7 @@ extern const char *SDL_GetPlatform(void);
 #define SDL_FILESYSTEM_WINDOWS 1
 #define SDL_arraysize(array) (sizeof(array) / sizeof(array[0]))
 #define SDL_TABLESIZE(table) SDL_arraysize(table)
-#define SDL_STRINGIFY_ARG(arg) #arg
+// #define SDL_STRINGIFY_ARG(arg) #arg
 #define SDL_reinterpret_cast(type, expression) ((type)(expression))
 #define SDL_static_cast(type, expression) ((type)(expression))
 #define SDL_const_cast(type, expression) ((type)(expression))
@@ -5880,10 +5839,10 @@ typedef int32_t Sint32;
 #define SDL_MAX_UINT32 ((Uint32)0xFFFFFFFFu)
 #define SDL_MIN_UINT32 ((Uint32)0x00000000)
 typedef uint32_t Uint32;
-#define SDL_MAX_SINT64 ((Sint64)0x7FFFFFFFFFFFFFFFll)
+// #define SDL_MAX_SINT64 ((Sint64)0x7FFFFFFFFFFFFFFFll)
 #define SDL_MIN_SINT64 ((Sint64)(~0x7FFFFFFFFFFFFFFFll))
 typedef int64_t Sint64;
-#define SDL_MAX_UINT64 ((Uint64)0xFFFFFFFFFFFFFFFFull)
+// #define SDL_MAX_UINT64 ((Uint64)0xFFFFFFFFFFFFFFFFull)
 #define SDL_MIN_UINT64 ((Uint64)(0x0000000000000000ull))
 typedef uint64_t Uint64;
 #define SDL_PRIs64 "I64d"
@@ -5900,7 +5859,7 @@ typedef uint64_t Uint64;
 #define SDL_SCANF_FORMAT_STRING
 #define SDL_PRINTF_VARARG_FUNC(fmtargnumber) __attribute__((format(__printf__, fmtargnumber, fmtargnumber + 1)))
 #define SDL_SCANF_VARARG_FUNC(fmtargnumber) __attribute__((format(__scanf__, fmtargnumber, fmtargnumber + 1)))
-#define SDL_COMPILE_TIME_ASSERT(name, x) typedef int SDL_compile_time_assert_##name[(x)*2 - 1]
+// #define SDL_COMPILE_TIME_ASSERT(name, x) typedef int SDL_compile_time_assert_##name[(x)*2 - 1]
 
 typedef int SDL_compile_time_assert_uint8[(sizeof(Uint8) == 1) * 2 - 1];
 typedef int SDL_compile_time_assert_sint8[(sizeof(Sint8) == 1) * 2 - 1];
@@ -5921,7 +5880,7 @@ typedef int SDL_compile_time_assert_enum[(sizeof(SDL_DUMMY_ENUM) == sizeof(int))
 #define SDL_stack_free(data) SDL_free(data)
 
 extern void *SDL_malloc(size_t size);
-extern void * SDL_calloc(size_t nmemb, size_t size);
+extern void *SDL_calloc(size_t nmemb, size_t size);
 extern void *SDL_realloc(void *mem, size_t size);
 extern void SDL_free(void *mem);
 
@@ -5963,28 +5922,28 @@ extern void *SDL_memset(void *dst, int c, size_t len);
 #define SDL_zerop(x) SDL_memset((x), 0, sizeof(*(x)))
 #define SDL_zeroa(x) SDL_memset((x), 0, sizeof((x)))
 
-static inline void SDL_memset4(void *dst, Uint32 val, size_t dwords)
-{
-    size_t _n = (dwords + 3) / 4;
-    Uint32 *_p = ((Uint32 *)(dst));
-    Uint32 _val = (val);
-    if (dwords == 0)
-        return;
-    switch (dwords % 4)
-    {
-    case 0:
-        do
-        {
-            *_p++ = _val;
-        case 3:
-            *_p++ = _val;
-        case 2:
-            *_p++ = _val;
-        case 1:
-            *_p++ = _val;
-        } while (--_n);
-    }
-}
+// static inline void SDL_memset4(void *dst, Uint32 val, size_t dwords)
+// {
+//     size_t _n = (dwords + 3) / 4;
+//     Uint32 *_p = ((Uint32 *)(dst));
+//     Uint32 _val = (val);
+//     if (dwords == 0)
+//         return;
+//     switch (dwords % 4)
+//     {
+//     case 0:
+//         do
+//         {
+//             *_p++ = _val;
+//         case 3:
+//             *_p++ = _val;
+//         case 2:
+//             *_p++ = _val;
+//         case 1:
+//             *_p++ = _val;
+//         } while (--_n);
+//     }
+// }
 
 extern void *SDL_memcpy(void *dst, const void *src, size_t len);
 
@@ -6111,7 +6070,7 @@ extern int SDL_RegisterApp(char *name, Uint32 style, void *hInst);
 extern void SDL_UnregisterApp(void);
 #define SDL_assert_h_
 #define SDL_ASSERT_LEVEL 2
-#define SDL_TriggerBreakpoint() __asm__ __volatile__("int $3\n\t")
+// #define SDL_TriggerBreakpoint() __asm__ __volatile__("int $3\n\t")
 #define SDL_FUNCTION __func__
 #define SDL_FILE __FILE__
 #define SDL_LINE __LINE__
@@ -6145,24 +6104,24 @@ typedef struct SDL_AssertData
 extern SDL_AssertState SDL_ReportAssertion(SDL_AssertData *,
                                            const char *,
                                            const char *, int);
-#define SDL_enabled_assert(condition)                                                                                         \
-    do                                                                                                                        \
-    {                                                                                                                         \
-        while (!(condition))                                                                                                  \
-        {                                                                                                                     \
-            static struct SDL_AssertData sdl_assert_data = {0, 0, #condition, 0, 0, 0, 0};                                    \
-            const SDL_AssertState sdl_assert_state = SDL_ReportAssertion(&sdl_assert_data, SDL_FUNCTION, SDL_FILE, SDL_LINE); \
-            if (sdl_assert_state == SDL_ASSERTION_RETRY)                                                                      \
-            {                                                                                                                 \
-                continue; /* go again. */                                                                                     \
-            }                                                                                                                 \
-            else if (sdl_assert_state == SDL_ASSERTION_BREAK)                                                                 \
-            {                                                                                                                 \
-                SDL_TriggerBreakpoint();                                                                                      \
-            }                                                                                                                 \
-            break; /* not retrying. */                                                                                        \
-        }                                                                                                                     \
-    } while (SDL_NULL_WHILE_LOOP_CONDITION)
+// #define SDL_enabled_assert(condition)                                                                                         \
+//     do                                                                                                                        \
+//     {                                                                                                                         \
+//         while (!(condition))                                                                                                  \
+//         {                                                                                                                     \
+//             static struct SDL_AssertData sdl_assert_data = {0, 0, #condition, 0, 0, 0, 0};                                    \
+//             const SDL_AssertState sdl_assert_state = SDL_ReportAssertion(&sdl_assert_data, SDL_FUNCTION, SDL_FILE, SDL_LINE); \
+//             if (sdl_assert_state == SDL_ASSERTION_RETRY)                                                                      \
+//             {                                                                                                                 \
+//                 continue;                                                                                                     \
+//             }                                                                                                                 \
+//             else if (sdl_assert_state == SDL_ASSERTION_BREAK)                                                                 \
+//             {                                                                                                                 \
+//                 SDL_TriggerBreakpoint();                                                                                      \
+//             }                                                                                                                 \
+//             break;                                                                                                            \
+//         }                                                                                                                     \
+//     } while (SDL_NULL_WHILE_LOOP_CONDITION)
 #define SDL_assert(condition) SDL_enabled_assert(condition)
 #define SDL_assert_release(condition) SDL_enabled_assert(condition)
 #define SDL_assert_paranoid(condition) SDL_disabled_assert(condition)
@@ -6183,7 +6142,6 @@ extern void SDL_ResetAssertionReport(void);
 #define SDL_assert_state SDL_AssertState
 #define SDL_assert_data SDL_AssertData
 
-
 typedef int SDL_SpinLock;
 
 extern SDL_bool SDL_AtomicTryLock(SDL_SpinLock *lock);
@@ -6191,10 +6149,10 @@ extern SDL_bool SDL_AtomicTryLock(SDL_SpinLock *lock);
 extern void SDL_AtomicLock(SDL_SpinLock *lock);
 
 extern void SDL_AtomicUnlock(SDL_SpinLock *lock);
-#define SDL_CompilerBarrier() __asm__ __volatile__("" \
-                                                   :  \
-                                                   :  \
-                                                   : "memory")
+// #define SDL_CompilerBarrier() __asm__ __volatile__("" \
+//                                                    :  \
+//                                                    :  \
+//                                                    : "memory")
 extern void SDL_MemoryBarrierReleaseFunction(void);
 extern void SDL_MemoryBarrierAcquireFunction(void);
 #define SDL_MemoryBarrierRelease() SDL_CompilerBarrier()
@@ -6221,7 +6179,6 @@ extern void *SDL_AtomicSetPtr(void **a, void *v);
 
 extern void *SDL_AtomicGetPtr(void **a);
 
-
 extern int SDL_SetError(const char *fmt, ...);
 extern const char *SDL_GetError(void);
 extern void SDL_ClearError(void);
@@ -6244,42 +6201,42 @@ extern int SDL_Error(SDL_errorcode code);
 #define SDL_BIG_ENDIAN 4321
 #define SDL_BYTEORDER SDL_LIL_ENDIAN
 
-static inline Uint16
-SDL_Swap16(Uint16 x)
-{
-    __asm__("xchgb %b0,%h0"
-            : "=Q"(x)
-            : "0"(x));
-    return x;
-}
-static inline Uint32
-SDL_Swap32(Uint32 x)
-{
-    __asm__("bswapl %0"
-            : "=r"(x)
-            : "0"(x));
-    return x;
-}
-static inline Uint64
-SDL_Swap64(Uint64 x)
-{
-    __asm__("bswapq %0"
-            : "=r"(x)
-            : "0"(x));
-    return x;
-}
-static inline float
-SDL_SwapFloat(float x)
-{
-    union
-    {
-        float f;
-        Uint32 ui32;
-    } swapper;
-    swapper.f = x;
-    swapper.ui32 = SDL_Swap32(swapper.ui32);
-    return swapper.f;
-}
+// static inline Uint16
+// SDL_Swap16(Uint16 x)
+// {
+//     __asm__("xchgb %b0,%h0"
+//             : "=Q"(x)
+//             : "0"(x));
+//     return x;
+// }
+// static inline Uint32
+// SDL_Swap32(Uint32 x)
+// {
+//     __asm__("bswapl %0"
+//             : "=r"(x)
+//             : "0"(x));
+//     return x;
+// }
+// static inline Uint64
+// SDL_Swap64(Uint64 x)
+// {
+//     __asm__("bswapq %0"
+//             : "=r"(x)
+//             : "0"(x));
+//     return x;
+// }
+// static inline float
+// SDL_SwapFloat(float x)
+// {
+//     union
+//     {
+//         float f;
+//         Uint32 ui32;
+//     } swapper;
+//     swapper.f = x;
+//     swapper.ui32 = SDL_Swap32(swapper.ui32);
+//     return swapper.f;
+// }
 #define SDL_SwapLE16(X) (X)
 #define SDL_SwapLE32(X) (X)
 #define SDL_SwapLE64(X) (X)
@@ -6348,7 +6305,7 @@ typedef int (*SDL_ThreadFunction)(void *data);
 #define SDL_PASSED_BEGINTHREAD_ENDTHREAD
 
 typedef uintptr_t (*pfnSDL_CurrentBeginThread)(void *, unsigned, unsigned (*func)(void *),
-                                               void * /*arg*/, unsigned, unsigned * /* threadID */);
+                                               void *, unsigned, unsigned *);
 typedef void (*pfnSDL_CurrentEndThread)(unsigned code);
 #define SDL_beginthread _beginthreadex
 #define SDL_endthread _endthreadex
@@ -6607,7 +6564,6 @@ extern int SDL_BuildAudioCVT(SDL_AudioCVT *cvt,
                              int dst_rate);
 extern int SDL_ConvertAudio(SDL_AudioCVT *cvt);
 
-
 struct _SDL_AudioStream;
 typedef struct _SDL_AudioStream SDL_AudioStream;
 extern SDL_AudioStream *SDL_NewAudioStream(const SDL_AudioFormat src_format,
@@ -6645,7 +6601,6 @@ extern void SDL_UnlockAudioDevice(SDL_AudioDeviceID dev);
 
 extern void SDL_CloseAudio(void);
 extern void SDL_CloseAudioDevice(SDL_AudioDeviceID dev);
-
 
 extern int SDL_SetClipboardText(const char *text);
 
@@ -6944,7 +6899,6 @@ extern void SDL_GetRGBA(Uint32 pixel,
 
 extern void SDL_CalculateGammaRamp(float gamma, Uint16 *ramp);
 
-
 typedef struct SDL_Point
 {
     int x;
@@ -7014,22 +6968,13 @@ extern SDL_bool SDL_IntersectRectAndLine(const SDL_Rect *
                                          int *Y1, int *X2,
                                          int *Y2);
 
-
 typedef enum
 {
-    SDL_BLENDMODE_NONE = 0x00000000,  
-    SDL_BLENDMODE_BLEND = 0x00000001, /**< alpha blending
-                                              dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
-                                              dstA = srcA + (dstA * (1-srcA)) */
-    SDL_BLENDMODE_ADD = 0x00000002,   /**< additive blending
-                                              dstRGB = (srcRGB * srcA) + dstRGB
-                                              dstA = dstA */
-    SDL_BLENDMODE_MOD = 0x00000004,   /**< color modulate
-                                              dstRGB = srcRGB * dstRGB
-                                              dstA = dstA */
-    SDL_BLENDMODE_MUL = 0x00000008,   /**< color multiply
-                                              dstRGB = (srcRGB * dstRGB) + (dstRGB * (1-srcA))
-                                              dstA = (srcA * dstA) + (dstA * (1-srcA)) */
+    SDL_BLENDMODE_NONE = 0x00000000,
+    SDL_BLENDMODE_BLEND = 0x00000001,
+    SDL_BLENDMODE_ADD = 0x00000002,
+    SDL_BLENDMODE_MOD = 0x00000004,
+    SDL_BLENDMODE_MUL = 0x00000008,
     SDL_BLENDMODE_INVALID = 0x7FFFFFFF
 } SDL_BlendMode;
 
@@ -7196,7 +7141,6 @@ extern SDL_YUV_CONVERSION_MODE SDL_GetYUVConversionMode(void);
 
 extern SDL_YUV_CONVERSION_MODE SDL_GetYUVConversionModeForResolution(int width, int height);
 
-
 typedef struct
 {
     Uint32 format;
@@ -7222,9 +7166,7 @@ typedef enum
     SDL_WINDOW_MOUSE_FOCUS = 0x00000400,
     SDL_WINDOW_FULLSCREEN_DESKTOP = (SDL_WINDOW_FULLSCREEN | 0x00001000),
     SDL_WINDOW_FOREIGN = 0x00000800,
-    SDL_WINDOW_ALLOW_HIGHDPI = 0x00002000, /**< window should be created in high-DPI mode if supported.
-                                                     On macOS NSHighResolutionCapable must be set true in the
-                                                     application's Info.plist for this to have any effect. */
+    SDL_WINDOW_ALLOW_HIGHDPI = 0x00002000,
     SDL_WINDOW_MOUSE_CAPTURE = 0x00004000,
     SDL_WINDOW_ALWAYS_ON_TOP = 0x00008000,
     SDL_WINDOW_SKIP_TASKBAR = 0x00010000,
@@ -7247,15 +7189,13 @@ typedef enum
     SDL_WINDOWEVENT_NONE,
     SDL_WINDOWEVENT_SHOWN,
     SDL_WINDOWEVENT_HIDDEN,
-    SDL_WINDOWEVENT_EXPOSED, 
-    SDL_WINDOWEVENT_MOVED,   
+    SDL_WINDOWEVENT_EXPOSED,
+    SDL_WINDOWEVENT_MOVED,
     SDL_WINDOWEVENT_RESIZED,
-    SDL_WINDOWEVENT_SIZE_CHANGED, /**< The window size has changed, either as
-                                         a result of an API call or through the
-                                         system or user changing the window size. */
+    SDL_WINDOWEVENT_SIZE_CHANGED,
     SDL_WINDOWEVENT_MINIMIZED,
     SDL_WINDOWEVENT_MAXIMIZED,
-    SDL_WINDOWEVENT_RESTORED, 
+    SDL_WINDOWEVENT_RESTORED,
     SDL_WINDOWEVENT_ENTER,
     SDL_WINDOWEVENT_LEAVE,
     SDL_WINDOWEVENT_FOCUS_GAINED,
@@ -7540,7 +7480,6 @@ extern void SDL_GL_SwapWindow(SDL_Window *window);
 
 extern void SDL_GL_DeleteContext(SDL_GLContext context);
 
-
 typedef enum
 {
     SDL_SCANCODE_UNKNOWN = 0,
@@ -7589,51 +7528,11 @@ typedef enum
     SDL_SCANCODE_EQUALS = 46,
     SDL_SCANCODE_LEFTBRACKET = 47,
     SDL_SCANCODE_RIGHTBRACKET = 48,
-    SDL_SCANCODE_BACKSLASH = 49, /**< Located at the lower left of the return
-                                  *   key on ISO keyboards and at the right end
-                                  *   of the QWERTY row on ANSI keyboards.
-                                  *   Produces REVERSE SOLIDUS (backslash) and
-                                  *   VERTICAL LINE in a US layout, REVERSE
-                                  *   SOLIDUS and VERTICAL LINE in a UK Mac
-                                  *   layout, NUMBER SIGN and TILDE in a UK
-                                  *   Windows layout, DOLLAR SIGN and POUND SIGN
-                                  *   in a Swiss German layout, NUMBER SIGN and
-                                  *   APOSTROPHE in a German layout, GRAVE
-                                  *   ACCENT and POUND SIGN in a French Mac
-                                  *   layout, and ASTERISK and MICRO SIGN in a
-                                  *   French Windows layout.
-                                  */
-    SDL_SCANCODE_NONUSHASH = 50, /**< ISO USB keyboards actually use this code
-                                  *   instead of 49 for the same key, but all
-                                  *   OSes I've seen treat the two codes
-                                  *   identically. So, as an implementor, unless
-                                  *   your keyboard generates both of those
-                                  *   codes and your OS treats them differently,
-                                  *   you should generate SDL_SCANCODE_BACKSLASH
-                                  *   instead of this code. As a user, you
-                                  *   should not rely on this code because SDL
-                                  *   will never generate it with most (all?)
-                                  *   keyboards.
-                                  */
+    SDL_SCANCODE_BACKSLASH = 49,
+    SDL_SCANCODE_NONUSHASH = 50,
     SDL_SCANCODE_SEMICOLON = 51,
     SDL_SCANCODE_APOSTROPHE = 52,
-    SDL_SCANCODE_GRAVE = 53, /**< Located in the top left corner (on both ANSI
-                              *   and ISO keyboards). Produces GRAVE ACCENT and
-                              *   TILDE in a US Windows layout and in US and UK
-                              *   Mac layouts on ANSI keyboards, GRAVE ACCENT
-                              *   and NOT SIGN in a UK Windows layout, SECTION
-                              *   SIGN and PLUS-MINUS SIGN in US and UK Mac
-                              *   layouts on ISO keyboards, SECTION SIGN and
-                              *   DEGREE SIGN in a Swiss German layout (Mac:
-                              *   only on ISO keyboards), CIRCUMFLEX ACCENT and
-                              *   DEGREE SIGN in a German layout (Mac: only on
-                              *   ISO keyboards), SUPERSCRIPT TWO and TILDE in a
-                              *   French Windows layout, COMMERCIAL AT and
-                              *   NUMBER SIGN in a French Mac layout on ISO
-                              *   keyboards, and LESS-THAN SIGN and GREATER-THAN
-                              *   SIGN in a Swiss German, German, or French Mac
-                              *   layout on ANSI keyboards.
-                              */
+    SDL_SCANCODE_GRAVE = 53,
     SDL_SCANCODE_COMMA = 54,
     SDL_SCANCODE_PERIOD = 55,
     SDL_SCANCODE_SLASH = 56,
@@ -7653,7 +7552,7 @@ typedef enum
     SDL_SCANCODE_PRINTSCREEN = 70,
     SDL_SCANCODE_SCROLLLOCK = 71,
     SDL_SCANCODE_PAUSE = 72,
-    SDL_SCANCODE_INSERT = 73, 
+    SDL_SCANCODE_INSERT = 73,
     SDL_SCANCODE_HOME = 74,
     SDL_SCANCODE_PAGEUP = 75,
     SDL_SCANCODE_DELETE = 76,
@@ -7663,7 +7562,7 @@ typedef enum
     SDL_SCANCODE_LEFT = 80,
     SDL_SCANCODE_DOWN = 81,
     SDL_SCANCODE_UP = 82,
-    SDL_SCANCODE_NUMLOCKCLEAR = 83, 
+    SDL_SCANCODE_NUMLOCKCLEAR = 83,
     SDL_SCANCODE_KP_DIVIDE = 84,
     SDL_SCANCODE_KP_MULTIPLY = 85,
     SDL_SCANCODE_KP_MINUS = 86,
@@ -7680,20 +7579,9 @@ typedef enum
     SDL_SCANCODE_KP_9 = 97,
     SDL_SCANCODE_KP_0 = 98,
     SDL_SCANCODE_KP_PERIOD = 99,
-    SDL_SCANCODE_NONUSBACKSLASH = 100, /**< This is the additional key that ISO
-                                        *   keyboards have over ANSI ones,
-                                        *   located between left shift and Y.
-                                        *   Produces GRAVE ACCENT and TILDE in a
-                                        *   US or UK Mac layout, REVERSE SOLIDUS
-                                        *   (backslash) and VERTICAL LINE in a
-                                        *   US or UK Windows layout, and
-                                        *   LESS-THAN SIGN and GREATER-THAN SIGN
-                                        *   in a Swiss German, German, or French
-                                        *   layout. */
+    SDL_SCANCODE_NONUSBACKSLASH = 100,
     SDL_SCANCODE_APPLICATION = 101,
-    SDL_SCANCODE_POWER = 102, /**< The USB document says this is a status flag,
-                               *   not a physical key - but some Mac keyboards
-                               *   do have a power key. */
+    SDL_SCANCODE_POWER = 102,
     SDL_SCANCODE_KP_EQUALS = 103,
     SDL_SCANCODE_F13 = 104,
     SDL_SCANCODE_F14 = 105,
@@ -7723,7 +7611,7 @@ typedef enum
     SDL_SCANCODE_VOLUMEDOWN = 129,
     SDL_SCANCODE_KP_COMMA = 133,
     SDL_SCANCODE_KP_EQUALSAS400 = 134,
-    SDL_SCANCODE_INTERNATIONAL1 = 135, 
+    SDL_SCANCODE_INTERNATIONAL1 = 135,
     SDL_SCANCODE_INTERNATIONAL2 = 136,
     SDL_SCANCODE_INTERNATIONAL3 = 137,
     SDL_SCANCODE_INTERNATIONAL4 = 138,
@@ -7807,10 +7695,7 @@ typedef enum
     SDL_SCANCODE_RSHIFT = 229,
     SDL_SCANCODE_RALT = 230,
     SDL_SCANCODE_RGUI = 231,
-    SDL_SCANCODE_MODE = 257, /**< I'm not sure if this is really not covered
-                                 *   by any of the above, but since there's a
-                                 *   special KMOD_MODE for it I'm adding it here
-                                 */
+    SDL_SCANCODE_MODE = 257,
     SDL_SCANCODE_AUDIONEXT = 258,
     SDL_SCANCODE_AUDIOPREV = 259,
     SDL_SCANCODE_AUDIOSTOP = 260,
@@ -7830,7 +7715,7 @@ typedef enum
     SDL_SCANCODE_AC_BOOKMARKS = 274,
     SDL_SCANCODE_BRIGHTNESSDOWN = 275,
     SDL_SCANCODE_BRIGHTNESSUP = 276,
-    SDL_SCANCODE_DISPLAYSWITCH = 277, 
+    SDL_SCANCODE_DISPLAYSWITCH = 277,
     SDL_SCANCODE_KBDILLUMTOGGLE = 278,
     SDL_SCANCODE_KBDILLUMDOWN = 279,
     SDL_SCANCODE_KBDILLUMUP = 280,
@@ -7840,7 +7725,7 @@ typedef enum
     SDL_SCANCODE_APP2 = 284,
     SDL_SCANCODE_AUDIOREWIND = 285,
     SDL_SCANCODE_AUDIOFASTFORWARD = 286,
-    SDL_NUM_SCANCODES = 512 
+    SDL_NUM_SCANCODES = 512
 } SDL_Scancode;
 
 typedef Sint32 SDL_Keycode;
@@ -8163,7 +8048,6 @@ extern SDL_bool SDL_HasScreenKeyboardSupport(void);
 
 extern SDL_bool SDL_IsScreenKeyboardShown(SDL_Window *window);
 
-
 typedef struct SDL_Cursor SDL_Cursor;
 
 typedef enum
@@ -8235,7 +8119,6 @@ extern int SDL_ShowCursor(int toggle);
 #define SDL_BUTTON_RMASK SDL_BUTTON(SDL_BUTTON_RIGHT)
 #define SDL_BUTTON_X1MASK SDL_BUTTON(SDL_BUTTON_X1)
 #define SDL_BUTTON_X2MASK SDL_BUTTON(SDL_BUTTON_X2)
-
 
 struct _SDL_Joystick;
 typedef struct _SDL_Joystick SDL_Joystick;
@@ -8514,7 +8397,6 @@ extern void SDL_GameControllerClose(SDL_GameController *gamecontroller);
 
 #define SDL_QuitRequested() (SDL_PumpEvents(), (SDL_PeepEvents(NULL, 0, SDL_PEEKEVENT, SDL_QUIT, SDL_QUIT) > 0))
 
-
 typedef Sint64 SDL_TouchID;
 typedef Sint64 SDL_FingerID;
 
@@ -8546,7 +8428,6 @@ extern int SDL_GetNumTouchFingers(SDL_TouchID touchID);
 
 extern SDL_Finger *SDL_GetTouchFinger(SDL_TouchID touchID, int index);
 
-
 typedef Sint64 SDL_GestureID;
 
 extern int SDL_RecordGesture(SDL_TouchID touchId);
@@ -8564,30 +8445,12 @@ typedef enum
 {
     SDL_FIRSTEVENT = 0,
     SDL_QUIT = 0x100,
-    SDL_APP_TERMINATING,         /**< The application is being terminated by the OS
-                                     Called on iOS in applicationWillTerminate()
-                                     Called on Android in onDestroy()
-                                */
-    SDL_APP_LOWMEMORY,           /**< The application is low on memory, free memory if possible.
-                                     Called on iOS in applicationDidReceiveMemoryWarning()
-                                     Called on Android in onLowMemory()
-                                */
-    SDL_APP_WILLENTERBACKGROUND, /**< The application is about to enter the background
-                                     Called on iOS in applicationWillResignActive()
-                                     Called on Android in onPause()
-                                */
-    SDL_APP_DIDENTERBACKGROUND,  /**< The application did enter the background and may not get CPU for some time
-                                     Called on iOS in applicationDidEnterBackground()
-                                     Called on Android in onPause()
-                                */
-    SDL_APP_WILLENTERFOREGROUND, /**< The application is about to enter the foreground
-                                     Called on iOS in applicationWillEnterForeground()
-                                     Called on Android in onResume()
-                                */
-    SDL_APP_DIDENTERFOREGROUND,  /**< The application is now interactive
-                                     Called on iOS in applicationDidBecomeActive()
-                                     Called on Android in onResume()
-                                */
+    SDL_APP_TERMINATING,
+    SDL_APP_LOWMEMORY,
+    SDL_APP_WILLENTERBACKGROUND,
+    SDL_APP_DIDENTERBACKGROUND,
+    SDL_APP_WILLENTERFOREGROUND,
+    SDL_APP_DIDENTERFOREGROUND,
     SDL_DISPLAYEVENT = 0x150,
     SDL_WINDOWEVENT = 0x200,
     SDL_SYSWMEVENT,
@@ -8595,9 +8458,7 @@ typedef enum
     SDL_KEYUP,
     SDL_TEXTEDITING,
     SDL_TEXTINPUT,
-    SDL_KEYMAPCHANGED, /**< Keymap changed due to a system event such as an
-                                     input language or keyboard layout change.
-                                */
+    SDL_KEYMAPCHANGED,
     SDL_MOUSEMOTION = 0x400,
     SDL_MOUSEBUTTONDOWN,
     SDL_MOUSEBUTTONUP,
@@ -8631,9 +8492,7 @@ typedef enum
     SDL_SENSORUPDATE = 0x1200,
     SDL_RENDER_TARGETS_RESET = 0x2000,
     SDL_RENDER_DEVICE_RESET,
-    /** Events ::SDL_USEREVENT through ::SDL_LASTEVENT are for your use,
-     *  and should be allocated with SDL_RegisterEvents()
-     */
+
     SDL_USEREVENT = 0x8000,
     SDL_LASTEVENT = 0xFFFF
 } SDL_EventType;
@@ -8771,13 +8630,7 @@ typedef struct SDL_JoyHatEvent
     Uint32 timestamp;
     SDL_JoystickID which;
     Uint8 hat;
-    Uint8 value; /**< The hat position value.
-                         *   \sa ::SDL_HAT_LEFTUP ::SDL_HAT_UP ::SDL_HAT_RIGHTUP
-                         *   \sa ::SDL_HAT_LEFT ::SDL_HAT_CENTERED ::SDL_HAT_RIGHT
-                         *   \sa ::SDL_HAT_LEFTDOWN ::SDL_HAT_DOWN ::SDL_HAT_RIGHTDOWN
-                         *
-                         *   Note that zero means the POV is centered.
-                         */
+    Uint8 value;
     Uint8 padding1;
     Uint8 padding2;
 } SDL_JoyHatEvent;
@@ -9019,7 +8872,6 @@ extern Uint32 SDL_RegisterEvents(int numevents);
 extern char *SDL_GetBasePath(void);
 extern char *SDL_GetPrefPath(const char *org, const char *app);
 
-
 struct _SDL_Haptic;
 typedef struct _SDL_Haptic SDL_Haptic;
 #define SDL_HAPTIC_CONSTANT (1u << 0)
@@ -9066,9 +8918,7 @@ typedef struct SDL_HapticConstant
 
 typedef struct SDL_HapticPeriodic
 {
-    Uint16 type; /**< ::SDL_HAPTIC_SINE, ::SDL_HAPTIC_LEFTRIGHT,
-                             ::SDL_HAPTIC_TRIANGLE, ::SDL_HAPTIC_SAWTOOTHUP or
-                             ::SDL_HAPTIC_SAWTOOTHDOWN */
+    Uint16 type;
     SDL_HapticDirection direction;
     Uint32 length;
     Uint16 delay;
@@ -9085,7 +8935,7 @@ typedef struct SDL_HapticPeriodic
 } SDL_HapticPeriodic;
 typedef struct SDL_HapticCondition
 {
-    Uint16 type; 
+    Uint16 type;
     SDL_HapticDirection direction;
     Uint32 length;
     Uint16 delay;
@@ -9331,7 +9181,6 @@ extern void SDL_DelHintCallback(const char *name,
 
 extern void SDL_ClearHints(void);
 
-
 extern void *SDL_LoadObject(const char *sofile);
 
 extern void *SDL_LoadFunction(void *handle,
@@ -9362,7 +9211,7 @@ typedef enum
     SDL_LOG_CATEGORY_RESERVED8,
     SDL_LOG_CATEGORY_RESERVED9,
     SDL_LOG_CATEGORY_RESERVED10,
-    
+
     SDL_LOG_CATEGORY_CUSTOM
 } SDL_LogCategory;
 
@@ -9475,7 +9324,6 @@ extern SDL_MetalView SDL_Metal_CreateView(SDL_Window *window);
 
 extern void SDL_Metal_DestroyView(SDL_MetalView view);
 
-
 typedef enum
 {
     SDL_POWERSTATE_UNKNOWN,
@@ -9490,9 +9338,9 @@ extern SDL_PowerState SDL_GetPowerInfo(int *secs, int *pct);
 typedef enum
 {
     SDL_RENDERER_SOFTWARE = 0x00000001,
-    SDL_RENDERER_ACCELERATED = 0x00000002,  
-    SDL_RENDERER_PRESENTVSYNC = 0x00000004, 
-    SDL_RENDERER_TARGETTEXTURE = 0x00000008 
+    SDL_RENDERER_ACCELERATED = 0x00000002,
+    SDL_RENDERER_PRESENTVSYNC = 0x00000004,
+    SDL_RENDERER_TARGETTEXTURE = 0x00000008
 } SDL_RendererFlags;
 
 typedef struct SDL_RendererInfo
@@ -9823,7 +9671,6 @@ typedef struct SDL_WindowShapeMode
 extern int SDL_SetWindowShape(SDL_Window *window, SDL_Surface *shape, SDL_WindowShapeMode *shape_mode);
 extern int SDL_GetShapedWindowMode(SDL_Window *window, SDL_WindowShapeMode *shape_mode);
 
-
 typedef void (*SDL_WindowsMessageHook)(void *userdata, void *hWnd, unsigned int message, Uint64 wParam, Sint64 lParam);
 extern void SDL_SetWindowsMessageHook(SDL_WindowsMessageHook callback, void *userdata);
 
@@ -9843,7 +9690,6 @@ extern void SDL_OnApplicationWillResignActive(void);
 extern void SDL_OnApplicationDidEnterBackground(void);
 extern void SDL_OnApplicationWillEnterForeground(void);
 extern void SDL_OnApplicationDidBecomeActive(void);
-
 
 extern Uint32 SDL_GetTicks(void);
 #define SDL_TICKS_PASSED(A, B) ((Sint32)((B) - (A)) <= 0)
@@ -9966,10 +9812,6 @@ typedef struct SpecifierOpt
     } u;
 } SpecifierOpt;
 
-typedef struct OptionDef
-{
-    const char *name;
-    int flags;
 #define HAS_ARG 0x0001
 #define OPT_BOOL 0x0002
 #define OPT_EXPERT 0x0004
@@ -9982,15 +9824,19 @@ typedef struct OptionDef
 #define OPT_INT64 0x0400
 #define OPT_EXIT 0x0800
 #define OPT_DATA 0x1000
-#define OPT_PERFILE 0x2000 
+#define OPT_PERFILE 0x2000
 #define OPT_OFFSET 0x4000
-#define OPT_SPEC 0x8000 /* option is to be stored in an array of SpecifierOpt.          \
-                                   Implies OPT_OFFSET. Next element after the offset is \
-                                   an int containing element count in the array. */
+#define OPT_SPEC 0x8000
 #define OPT_TIME 0x10000
 #define OPT_DOUBLE 0x20000
 #define OPT_INPUT 0x40000
 #define OPT_OUTPUT 0x80000
+
+typedef struct OptionDef
+{
+    const char *name;
+    int flags;
+
     union
     {
         void *dst_ptr;
@@ -10003,8 +9849,8 @@ typedef struct OptionDef
 
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
                        int rej_flags, int alt_flags);
-#define CMDUTILS_COMMON_OPTIONS_AVDEVICE {"sources", OPT_EXIT | HAS_ARG, {.func_arg = show_sources}, "list sources of the input device", "device"}, {"sinks", OPT_EXIT | HAS_ARG, {.func_arg = show_sinks}, "list sinks of the output device", "device"},
-#define CMDUTILS_COMMON_OPTIONS {"L", OPT_EXIT, {.func_arg = show_license}, "show license"}, {"h", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"?", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"-help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"version", OPT_EXIT, {.func_arg = show_version}, "show version"}, {"buildconf", OPT_EXIT, {.func_arg = show_buildconf}, "show build configuration"}, {"formats", OPT_EXIT, {.func_arg = show_formats}, "show available formats"}, {"muxers", OPT_EXIT, {.func_arg = show_muxers}, "show available muxers"}, {"demuxers", OPT_EXIT, {.func_arg = show_demuxers}, "show available demuxers"}, {"devices", OPT_EXIT, {.func_arg = show_devices}, "show available devices"}, {"codecs", OPT_EXIT, {.func_arg = show_codecs}, "show available codecs"}, {"decoders", OPT_EXIT, {.func_arg = show_decoders}, "show available decoders"}, {"encoders", OPT_EXIT, {.func_arg = show_encoders}, "show available encoders"}, {"bsfs", OPT_EXIT, {.func_arg = show_bsfs}, "show available bit stream filters"}, {"protocols", OPT_EXIT, {.func_arg = show_protocols}, "show available protocols"}, {"filters", OPT_EXIT, {.func_arg = show_filters}, "show available filters"}, {"pix_fmts", OPT_EXIT, {.func_arg = show_pix_fmts}, "show available pixel formats"}, {"layouts", OPT_EXIT, {.func_arg = show_layouts}, "show standard channel layouts"}, {"sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts}, "show available audio sample formats"}, {"colors", OPT_EXIT, {.func_arg = show_colors}, "show available color names"}, {"loglevel", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"v", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"report", 0, {.func_arg = opt_report}, "generate a report"}, {"max_alloc", HAS_ARG, {.func_arg = opt_max_alloc}, "set maximum size of a single allocated block", "bytes"}, {"cpuflags", HAS_ARG | OPT_EXPERT, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags"}, {"hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner}, "do not show program banner", "hide_banner"}, CMDUTILS_COMMON_OPTIONS_AVDEVICE
+// #define CMDUTILS_COMMON_OPTIONS_AVDEVICE {"sources", OPT_EXIT | HAS_ARG, {.func_arg = show_sources}, "list sources of the input device", "device"}, {"sinks", OPT_EXIT | HAS_ARG, {.func_arg = show_sinks}, "list sinks of the output device", "device"},
+// #define CMDUTILS_COMMON_OPTIONS {"L", OPT_EXIT, {.func_arg = show_license}, "show license"}, {"h", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"?", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"-help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"version", OPT_EXIT, {.func_arg = show_version}, "show version"}, {"buildconf", OPT_EXIT, {.func_arg = show_buildconf}, "show build configuration"}, {"formats", OPT_EXIT, {.func_arg = show_formats}, "show available formats"}, {"muxers", OPT_EXIT, {.func_arg = show_muxers}, "show available muxers"}, {"demuxers", OPT_EXIT, {.func_arg = show_demuxers}, "show available demuxers"}, {"devices", OPT_EXIT, {.func_arg = show_devices}, "show available devices"}, {"codecs", OPT_EXIT, {.func_arg = show_codecs}, "show available codecs"}, {"decoders", OPT_EXIT, {.func_arg = show_decoders}, "show available decoders"}, {"encoders", OPT_EXIT, {.func_arg = show_encoders}, "show available encoders"}, {"bsfs", OPT_EXIT, {.func_arg = show_bsfs}, "show available bit stream filters"}, {"protocols", OPT_EXIT, {.func_arg = show_protocols}, "show available protocols"}, {"filters", OPT_EXIT, {.func_arg = show_filters}, "show available filters"}, {"pix_fmts", OPT_EXIT, {.func_arg = show_pix_fmts}, "show available pixel formats"}, {"layouts", OPT_EXIT, {.func_arg = show_layouts}, "show standard channel layouts"}, {"sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts}, "show available audio sample formats"}, {"colors", OPT_EXIT, {.func_arg = show_colors}, "show available color names"}, {"loglevel", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"v", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"report", 0, {.func_arg = opt_report}, "generate a report"}, {"max_alloc", HAS_ARG, {.func_arg = opt_max_alloc}, "set maximum size of a single allocated block", "bytes"}, {"cpuflags", HAS_ARG | OPT_EXPERT, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags"}, {"hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner}, "do not show program banner", "hide_banner"}, CMDUTILS_COMMON_OPTIONS_AVDEVICE
 
 void show_help_children(const AVClass *class, int flags);
 
@@ -10129,16 +9975,16 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define GROW_ARRAY(array, nb_elems) array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
 #define GET_PIX_FMT_NAME(pix_fmt) const char *name = av_get_pix_fmt_name(pix_fmt);
 #define GET_CODEC_NAME(id) const char *name = avcodec_descriptor_get(id)->name;
-#define GET_SAMPLE_FMT_NAME(sample_fmt) const char *name = av_get_sample_fmt_name(sample_fmt)
-#define GET_SAMPLE_RATE_NAME(rate) \
-    char name[16];                 \
-    snprintf(name, sizeof(name), "%d", rate);
-#define GET_CH_LAYOUT_NAME(ch_layout) \
-    char name[16];                    \
-    snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
-#define GET_CH_LAYOUT_DESC(ch_layout) \
-    char name[128];                   \
-    av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
+// #define GET_SAMPLE_FMT_NAME(sample_fmt) const char *name = av_get_sample_fmt_name(sample_fmt)
+// #define GET_SAMPLE_RATE_NAME(rate) \
+//     char name[16];                 \
+//     snprintf(name, sizeof(name), "%d", rate);
+// #define GET_CH_LAYOUT_NAME(ch_layout) \
+//     char name[16];                    \
+//     snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
+// #define GET_CH_LAYOUT_DESC(ch_layout) \
+//     char name[128];                   \
+//     av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
 
 double get_rotation(AVStream *st);
 
@@ -10264,6 +10110,15 @@ typedef struct Decoder
     SDL_Thread *decoder_tid;
 } Decoder;
 
+enum ShowMode
+{
+    SHOW_MODE_NONE = -1,
+    SHOW_MODE_VIDEO = 0,
+    SHOW_MODE_WAVES,
+    SHOW_MODE_RDFT,
+    SHOW_MODE_NB
+};
+
 typedef struct VideoState
 {
     SDL_Thread *read_tid;
@@ -10314,14 +10169,7 @@ typedef struct VideoState
     struct SwrContext *swr_ctx;
     int frame_drops_early;
     int frame_drops_late;
-    enum ShowMode
-    {
-        SHOW_MODE_NONE = -1,
-        SHOW_MODE_VIDEO = 0,
-        SHOW_MODE_WAVES,
-        SHOW_MODE_RDFT,
-        SHOW_MODE_NB
-    } show_mode;
+    enum ShowMode show_mode;
     int16_t sample_array[(8 * 65536)];
     int sample_array_index;
     int last_i_start;
@@ -10380,8 +10228,8 @@ static int alwaysontop;
 static int startup_volume = 100;
 static int show_status = -1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
-static int64_t start_time = ((int64_t)0x8000000000000000ULL);
-static int64_t duration = ((int64_t)0x8000000000000000ULL);
+// static int64_t start_time = ((int64_t)0x8000000000000000ULL);
+// static int64_t duration = ((int64_t)0x8000000000000000ULL);
 static int fast = 0;
 static int genpts = 0;
 static int lowres = 0;
@@ -10421,11 +10269,12 @@ static SDL_Renderer *renderer;
 static SDL_RendererInfo renderer_info = {0};
 static SDL_AudioDeviceID audio_dev;
 
-static const struct TextureFormatEntry
+struct TextureFormatEntry
 {
     enum AVPixelFormat format;
     int texture_fmt;
-} sdl_texture_format_map[] = {
+};
+static const struct TextureFormatEntry sdl_texture_format_map[] = {
     {AV_PIX_FMT_RGB8, SDL_PIXELFORMAT_RGB332},
     {AV_PIX_FMT_RGB444LE, SDL_PIXELFORMAT_RGB444},
     {AV_PIX_FMT_RGB555LE, SDL_PIXELFORMAT_RGB555},
@@ -10529,7 +10378,7 @@ static int packet_queue_init(PacketQueue *q)
         av_log(
             ((void *)0), 8, "SDL_CreateMutex(): %s\n", SDL_GetError());
         return (-(
-            12)) ;
+            12));
     }
     q->cond = SDL_CreateCond();
     if (!q->cond)
@@ -10537,7 +10386,7 @@ static int packet_queue_init(PacketQueue *q)
         av_log(
             ((void *)0), 8, "SDL_CreateCond(): %s\n", SDL_GetError());
         return (-(
-            12)) ;
+            12));
     }
     q->abort_request = 1;
     return 0;
@@ -10635,14 +10484,14 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
     d->avctx = avctx;
     d->queue = queue;
     d->empty_queue_cond = empty_queue_cond;
-    d->start_pts = ((int64_t)0x8000000000000000ULL);
+    // d->start_pts = ((int64_t)0x8000000000000000ULL);
     d->pkt_serial = -1;
 }
 
 static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
 {
     int ret = (-(
-        11)) ;
+        11));
     for (;;)
     {
         AVPacket pkt;
@@ -10672,20 +10521,20 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
                     ret = avcodec_receive_frame(d->avctx, frame);
                     if (ret >= 0)
                     {
-                        AVRational tb = (AVRational){1, frame->sample_rate};
-                        if (frame->pts != ((int64_t)0x8000000000000000ULL))
-                            frame->pts = av_rescale_q(frame->pts, d->avctx->pkt_timebase, tb);
-                        else if (d->next_pts != ((int64_t)0x8000000000000000ULL))
-                            frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
-                        if (frame->pts != ((int64_t)0x8000000000000000ULL))
-                        {
-                            d->next_pts = frame->pts + frame->nb_samples;
-                            d->next_pts_tb = tb;
-                        }
+                        // AVRational tb = (AVRational){1, frame->sample_rate};
+                        // if (frame->pts != ((int64_t)0x8000000000000000ULL))
+                        //     frame->pts = av_rescale_q(frame->pts, d->avctx->pkt_timebase, tb);
+                        // else if (d->next_pts != ((int64_t)0x8000000000000000ULL))
+                        //     frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
+                        // if (frame->pts != ((int64_t)0x8000000000000000ULL))
+                        // {
+                        //     d->next_pts = frame->pts + frame->nb_samples;
+                        //     d->next_pts_tb = tb;
+                        // }
                     }
                     break;
                 }
-                if (ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) /*|< End of file*/)
+                if (ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))))
                 {
                     d->finished = d->pkt_serial;
                     avcodec_flush_buffers(d->avctx);
@@ -10694,7 +10543,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
                 if (ret >= 0)
                     return 1;
             } while (ret != (-(
-                                11)) );
+                                11)));
         }
         do
         {
@@ -10730,7 +10579,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
                 if (ret < 0)
                 {
                     ret = (-(
-                        11)) ;
+                        11));
                 }
                 else
                 {
@@ -10739,13 +10588,13 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
                         d->packet_pending = 1;
                         av_packet_move_ref(&d->pkt, &pkt);
                     }
-                    ret = got_frame ? 0 : (pkt.data ? (-(11))  : (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) /*|< End of file*/);
+                    ret = got_frame ? 0 : (pkt.data ? (-(11)) : (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))));
                 }
             }
             else
             {
                 if (avcodec_send_packet(d->avctx, &pkt) == (-(
-                                                               11)) )
+                                                               11)))
                 {
                     av_log(d->avctx, 16, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
                     d->packet_pending = 1;
@@ -10778,14 +10627,14 @@ static int frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int 
         av_log(
             ((void *)0), 8, "SDL_CreateMutex(): %s\n", SDL_GetError());
         return (-(
-            12)) ;
+            12));
     }
     if (!(f->cond = SDL_CreateCond()))
     {
         av_log(
             ((void *)0), 8, "SDL_CreateCond(): %s\n", SDL_GetError());
         return (-(
-            12)) ;
+            12));
     }
     f->pktq = pktq;
     f->max_size = ((max_size) > (((9) > (((3) > (16) ? (3) : (16))) ? (9) : (((3) > (16) ? (3) : (16))))) ? (((9) > (((3) > (16) ? (3) : (16))) ? (9) : (((3) > (16) ? (3) : (16))))) : (max_size));
@@ -10793,7 +10642,7 @@ static int frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int 
     for (i = 0; i < f->max_size; i++)
         if (!(f->queue[i].frame = av_frame_alloc()))
             return (-(
-                12)) ;
+                12));
     return 0;
 }
 
@@ -11188,7 +11037,7 @@ static void video_audio_display(VideoState *s)
         n = 2 * channels;
         delay = s->audio_write_buf_size;
         delay /= n;
-        
+
         if (audio_callback_time)
         {
             time_diff = av_gettime_relative() - audio_callback_time;
@@ -11296,7 +11145,7 @@ static void video_audio_display(VideoState *s)
                 }
                 av_rdft_calc(s->rdft, data[ch]);
             }
-            
+
             if (!SDL_LockTexture(s->vis_texture, &rect, (void **)&pixels, &pitch))
             {
                 pitch >>= 2;
@@ -11638,9 +11487,9 @@ static void stream_seek(VideoState *is, int64_t pos, int64_t rel, int seek_by_by
     {
         is->seek_pos = pos;
         is->seek_rel = rel;
-        is->seek_flags &= ~2 /*|< seeking based on position in bytes*/;
+        is->seek_flags &= ~2;
         if (seek_by_bytes)
-            is->seek_flags |= 2 /*|< seeking based on position in bytes*/;
+            is->seek_flags |= 2;
         is->seek_req = 1;
         SDL_CondSignal(is->continue_read_thread);
     }
@@ -11652,7 +11501,7 @@ static void stream_toggle_pause(VideoState *is)
     {
         is->frame_timer += av_gettime_relative() / 1000000.0 - is->vidclk.last_updated;
         if (is->read_pause_return != (-(
-                                         40)) )
+                                         40)))
         {
             is->vidclk.paused = 0;
         }
@@ -11692,11 +11541,9 @@ static double compute_target_delay(double delay, VideoState *is)
     double sync_threshold, diff = 0;
     if (get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)
     {
-        
+
         diff = get_clock(&is->vidclk) - get_master_clock(is);
-        /* skip or repeat frame. We take into account the
-           delay to compute the threshold. I still don't know
-           if it is the best guess */
+
         sync_threshold = ((0.04) > (((0.1) > (delay) ? (delay) : (0.1))) ? (0.04) : (((0.1) > (delay) ? (delay) : (0.1))));
         if (!__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(
                                                                     diff),
@@ -12041,7 +11888,7 @@ static int configure_filtergraph(AVFilterGraph *graph, const char *filtergraph,
         if (!outputs || !inputs)
         {
             ret = (-(
-                12)) ;
+                12));
             goto fail;
         }
         outputs->name = av_strdup("in");
@@ -12109,8 +11956,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         }
     }
     pix_fmts[nb_pix_fmts] = AV_PIX_FMT_NONE;
-    while ((e = av_dict_get(sws_dict, "", e, 2 
-                            )))
+    while ((e = av_dict_get(sws_dict, "", e, 2)))
     {
         if (!strcmp(e->key, "sws_flags"))
         {
@@ -12143,9 +11989,8 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     if (ret < 0)
         goto fail;
     if ((ret = (av_int_list_length_for_size(sizeof(*(pix_fmts)), pix_fmts, AV_PIX_FMT_NONE) > 0x7fffffff / sizeof(*(pix_fmts)) ? (-(
-                                                                                                                                     22))                                                                                                                                                                      
-                                                                                                                               : av_opt_set_bin(filt_out, "pix_fmts", (const uint8_t *)(pix_fmts), av_int_list_length_for_size(sizeof(*(pix_fmts)), pix_fmts, AV_PIX_FMT_NONE) * sizeof(*(pix_fmts)), (1 << 0) 
-                                                                                                                                                ))) < 0)
+                                                                                                                                     22))
+                                                                                                                               : av_opt_set_bin(filt_out, "pix_fmts", (const uint8_t *)(pix_fmts), av_int_list_length_for_size(sizeof(*(pix_fmts)), pix_fmts, AV_PIX_FMT_NONE) * sizeof(*(pix_fmts)), (1 << 0)))) < 0)
         goto fail;
     last_filter = filt_out;
 
@@ -12276,10 +12121,9 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
     avfilter_graph_free(&is->agraph);
     if (!(is->agraph = avfilter_graph_alloc()))
         return (-(
-            12)) ;
+            12));
     is->agraph->nb_threads = filter_nbthreads;
-    while ((e = av_dict_get(swr_opts, "", e, 2 
-                            )))
+    while ((e = av_dict_get(swr_opts, "", e, 2)))
         av_strlcatf(aresample_swr_opts, sizeof(aresample_swr_opts), "%s=%s:", e->key, e->value);
     if (strlen(aresample_swr_opts))
         aresample_swr_opts[strlen(aresample_swr_opts) - 1] = '\0';
@@ -12307,39 +12151,37 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
     if (ret < 0)
         goto end;
     if ((ret = (av_int_list_length_for_size(sizeof(*(sample_fmts)), sample_fmts, AV_SAMPLE_FMT_NONE) > 0x7fffffff / sizeof(*(sample_fmts)) ? (-(
-                                                                                                                                                 22))                                                                                                                                                                                          
-                                                                                                                                           : av_opt_set_bin(filt_asink, "sample_fmts", (const uint8_t *)(sample_fmts), av_int_list_length_for_size(sizeof(*(sample_fmts)), sample_fmts, AV_SAMPLE_FMT_NONE) * sizeof(*(sample_fmts)), (1 << 0) 
-                                                                                                                                           
-                                                                                                                                                            ))) < 0)
+                                                                                                                                                 22))
+                                                                                                                                           : av_opt_set_bin(filt_asink, "sample_fmts", (const uint8_t *)(sample_fmts), av_int_list_length_for_size(sizeof(*(sample_fmts)), sample_fmts, AV_SAMPLE_FMT_NONE) * sizeof(*(sample_fmts)), (1 << 0)
+
+                                                                                                                                                                ))) < 0)
         goto end;
-    if ((ret = av_opt_set_int(filt_asink, "all_channel_counts", 1, (1 << 0) 
-                              )) < 0)
+    if ((ret = av_opt_set_int(filt_asink, "all_channel_counts", 1, (1 << 0))) < 0)
         goto end;
     if (force_output_format)
     {
         channel_layouts[0] = is->audio_tgt.channel_layout;
         channels[0] = is->audio_tgt.channel_layout ? -1 : is->audio_tgt.channels;
         sample_rates[0] = is->audio_tgt.freq;
-        if ((ret = av_opt_set_int(filt_asink, "all_channel_counts", 0, (1 << 0) 
-                                  )) < 0)
+        if ((ret = av_opt_set_int(filt_asink, "all_channel_counts", 0, (1 << 0))) < 0)
             goto end;
         if ((ret = (av_int_list_length_for_size(sizeof(*(channel_layouts)), channel_layouts, -1) > 0x7fffffff / sizeof(*(channel_layouts)) ? (-(
-                                                                                                                                                 22))                                                                                                                                                                                              
-                                                                                                                                           : av_opt_set_bin(filt_asink, "channel_layouts", (const uint8_t *)(channel_layouts), av_int_list_length_for_size(sizeof(*(channel_layouts)), channel_layouts, -1) * sizeof(*(channel_layouts)), (1 << 0) 
-                                                                                                                                           
-                                                                                                                                                            ))) < 0)
+                                                                                                                                                 22))
+                                                                                                                                           : av_opt_set_bin(filt_asink, "channel_layouts", (const uint8_t *)(channel_layouts), av_int_list_length_for_size(sizeof(*(channel_layouts)), channel_layouts, -1) * sizeof(*(channel_layouts)), (1 << 0)
+
+                                                                                                                                                                ))) < 0)
             goto end;
         if ((ret = (av_int_list_length_for_size(sizeof(*(channels)), channels, -1) > 0x7fffffff / sizeof(*(channels)) ? (-(
-                                                                                                                            22))                                                                                                                                                                 
-                                                                                                                      : av_opt_set_bin(filt_asink, "channel_counts", (const uint8_t *)(channels), av_int_list_length_for_size(sizeof(*(channels)), channels, -1) * sizeof(*(channels)), (1 << 0) 
-                                                                                                                      
-                                                                                                                                       ))) < 0)
+                                                                                                                            22))
+                                                                                                                      : av_opt_set_bin(filt_asink, "channel_counts", (const uint8_t *)(channels), av_int_list_length_for_size(sizeof(*(channels)), channels, -1) * sizeof(*(channels)), (1 << 0)
+
+                                                                                                                                           ))) < 0)
             goto end;
         if ((ret = (av_int_list_length_for_size(sizeof(*(sample_rates)), sample_rates, -1) > 0x7fffffff / sizeof(*(sample_rates)) ? (-(
-                                                                                                                                        22))                                                                                                                                                                               
-                                                                                                                                  : av_opt_set_bin(filt_asink, "sample_rates", (const uint8_t *)(sample_rates), av_int_list_length_for_size(sizeof(*(sample_rates)), sample_rates, -1) * sizeof(*(sample_rates)), (1 << 0) 
-                                                                                                                                  
-                                                                                                                                                   ))) < 0)
+                                                                                                                                        22))
+                                                                                                                                  : av_opt_set_bin(filt_asink, "sample_rates", (const uint8_t *)(sample_rates), av_int_list_length_for_size(sizeof(*(sample_rates)), sample_rates, -1) * sizeof(*(sample_rates)), (1 << 0)
+
+                                                                                                                                                       ))) < 0)
             goto end;
     }
     if ((ret = configure_filtergraph(is->agraph, afilters, filt_asrc, filt_asink)) < 0)
@@ -12366,7 +12208,7 @@ static int audio_thread(void *arg)
     int ret = 0;
     if (!frame)
         return (-(
-            12)) ;
+            12));
     do
     {
         if ((got_frame = decoder_decode_frame(&is->auddec, frame,
@@ -12417,10 +12259,10 @@ static int audio_thread(void *arg)
                 if (is->audioq.serial != is->auddec.pkt_serial)
                     break;
             }
-            if (ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) )
+            if (ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))))
                 is->auddec.finished = is->auddec.pkt_serial;
         }
-    } while (ret >= 0 || ret == (-(11))  || ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) );
+    } while (ret >= 0 || ret == (-(11)) || ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))));
 the_end:
     avfilter_graph_free(&is->agraph);
     av_frame_free(&frame);
@@ -12436,7 +12278,7 @@ static int decoder_start(Decoder *d, int (*fn)(void *), const char *thread_name,
         av_log(
             ((void *)0), 16, "SDL_CreateThread(): %s\n", SDL_GetError());
         return (-(
-            12)) ;
+            12));
     }
     return 0;
 }
@@ -12464,7 +12306,7 @@ static int video_thread(void *arg)
     int last_vfilter_idx = 0;
     if (!frame)
         return (-(
-            12)) ;
+            12));
     for (;;)
     {
         ret = get_video_frame(is, frame);
@@ -12486,7 +12328,7 @@ static int video_thread(void *arg)
             if (!graph)
             {
                 ret = (-(
-                    12)) ;
+                    12));
                 goto the_end;
             }
             graph->nb_threads = filter_nbthreads;
@@ -12516,7 +12358,7 @@ static int video_thread(void *arg)
             ret = av_buffersink_get_frame_flags(filt_out, frame, 0);
             if (ret < 0)
             {
-                if (ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) /*|< End of file*/)
+                if (ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))))
                     is->viddec.finished = is->viddec.pkt_serial;
                 ret = 0;
                 break;
@@ -12643,7 +12485,7 @@ static int synchronize_audio(VideoState *is, int nb_samples)
         }
         else
         {
-            
+
             is->audio_diff_avg_count = 0;
             is->audio_diff_cum = 0;
         }
@@ -12733,7 +12575,7 @@ static int audio_decode_frame(VideoState *is)
         av_fast_malloc(&is->audio_buf1, &is->audio_buf1_size, out_size);
         if (!is->audio_buf1)
             return (-(
-                12)) ;
+                12));
         len2 = swr_convert(is->swr_ctx, out, out_count, in, af->frame->nb_samples);
         if (len2 < 0)
         {
@@ -12815,7 +12657,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
         {
             memset(stream, 0, len1);
             if (!is->muted && is->audio_buf)
-                SDL_MixAudioFormat(stream, (uint8_t *)is->audio_buf + is->audio_buf_index, 0x8010 /**< Signed 16-bit samples */, len1, is->audio_volume);
+                SDL_MixAudioFormat(stream, (uint8_t *)is->audio_buf + is->audio_buf_index, 0x8010, len1, is->audio_volume);
         }
         len -= len1;
         stream += len1;
@@ -12861,7 +12703,7 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
     if (!wanted_channel_layout || wanted_nb_channels != av_get_channel_layout_nb_channels(wanted_channel_layout))
     {
         wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels);
-        wanted_channel_layout &= ~(0x20000000 /*|< Stereo downmix.*/ | 0x40000000 /*|< See AV_CH_STEREO_LEFT.*/);
+        wanted_channel_layout &= ~(0x20000000 | 0x40000000);
     }
     wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout);
     wanted_spec.channels = wanted_nb_channels;
@@ -12874,7 +12716,7 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
     }
     while (next_sample_rate_idx && next_sample_rates[next_sample_rate_idx] >= wanted_spec.freq)
         next_sample_rate_idx--;
-    wanted_spec.format = 0x8010 /**< Signed 16-bit samples */;
+    wanted_spec.format = 0x8010;
     wanted_spec.silence = 0;
     wanted_spec.samples = ((512) > (2 << av_log2(wanted_spec.freq / 30)) ? (512) : (2 << av_log2(wanted_spec.freq / 30)));
     wanted_spec.callback = sdl_audio_callback;
@@ -12900,7 +12742,7 @@ static int audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb
         }
         wanted_channel_layout = av_get_default_channel_layout(wanted_spec.channels);
     }
-    if (spec.format != 0x8010 /**< Signed 16-bit samples */)
+    if (spec.format != 0x8010)
     {
         av_log(
             ((void *)0), 16,
@@ -12956,7 +12798,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         ((void *)0));
     if (!avctx)
         return (-(
-            12)) ;
+            12));
     ret = avcodec_parameters_to_context(avctx, ic->streams[stream_index]->codecpar);
     if (ret < 0)
         goto fail;
@@ -12990,7 +12832,7 @@ static int stream_component_open(VideoState *is, int stream_index)
                 ((void *)0), 24,
                 "No decoder could be found for codec %s\n", avcodec_get_name(avctx->codec_id));
         ret = (-(
-            22)) ;
+            22));
         goto fail;
     }
     avctx->codec_id = codec->id;
@@ -13016,12 +12858,11 @@ static int stream_component_open(VideoState *is, int stream_index)
         goto fail;
     }
     if ((t = av_dict_get(opts, "",
-                         ((void *)0), 2 
-                         )))
+                         ((void *)0), 2)))
     {
         av_log(
             ((void *)0), 16, "Option %s not found.\n", t->key);
-        ret = (-(int)((0xF8) | (('O') << 8) | (('P') << 16) | ((unsigned)('T') << 24))) /*|< Option not found*/;
+        ret = (-(int)((0xF8) | (('O') << 8) | (('P') << 16) | ((unsigned)('T') << 24)));
         goto fail;
     }
     is->eof = 0;
@@ -13050,12 +12891,12 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_buf_index = 0;
         is->audio_diff_avg_coef = exp(log(0.01) / 20);
         is->audio_diff_avg_count = 0;
-        
+
         is->audio_diff_threshold = (double)(is->audio_hw_buf_size) / is->audio_tgt.bytes_per_sec;
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
         decoder_init(&is->auddec, avctx, &is->audioq, is->continue_read_thread);
-        if ((is->ic->iformat->flags & (0x2000 /**< Format does not allow to fall back on binary search via read_timestamp */ | 0x4000 /**< Format does not allow to fall back on generic search */ | 0x8000 /**< Format does not allow seeking by bytes */)) && !is->ic->iformat->read_seek)
+        if ((is->ic->iformat->flags & (0x2000 | 0x4000 | 0x8000)) && !is->ic->iformat->read_seek)
         {
             is->auddec.start_pts = is->audio_st->start_time;
             is->auddec.start_pts_tb = is->audio_st->time_base;
@@ -13133,7 +12974,7 @@ static int read_thread(void *arg)
         av_log(
             ((void *)0), 8, "SDL_CreateMutex(): %s\n", SDL_GetError());
         ret = (-(
-            12)) ;
+            12));
         goto fail;
     }
     memset(st_index, -1, sizeof(st_index));
@@ -13144,15 +12985,15 @@ static int read_thread(void *arg)
         av_log(
             ((void *)0), 8, "Could not allocate context.\n");
         ret = (-(
-            12)) ;
+            12));
         goto fail;
     }
     ic->interrupt_callback.callback = decode_interrupt_cb;
     ic->interrupt_callback.opaque = is;
     if (!av_dict_get(format_opts, "scan_all_pmts",
-                     ((void *)0), 1 /**< Only get an entry with exact-case key match. Only relevant in av_dict_get(). */))
+                     ((void *)0), 1))
     {
-        av_dict_set(&format_opts, "scan_all_pmts", "1", 16 /*|< Don't overwrite existing entries.*/);
+        av_dict_set(&format_opts, "scan_all_pmts", "1", 16);
         scan_all_pmts_set = 1;
     }
     err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
@@ -13164,19 +13005,18 @@ static int read_thread(void *arg)
     }
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts",
-                    ((void *)0), 1 /**< Only get an entry with exact-case key match. Only relevant in av_dict_get(). */);
+                    ((void *)0), 1);
     if ((t = av_dict_get(format_opts, "",
-                         ((void *)0), 2 
-                         )))
+                         ((void *)0), 2)))
     {
         av_log(
             ((void *)0), 16, "Option %s not found.\n", t->key);
-        ret = (-(int)((0xF8) | (('O') << 8) | (('P') << 16) | ((unsigned)('T') << 24))) /*|< Option not found*/;
+        ret = (-(int)((0xF8) | (('O') << 8) | (('P') << 16) | ((unsigned)('T') << 24)));
         goto fail;
     }
     is->ic = ic;
     if (genpts)
-        ic->flags |= 0x0001 /*|< Generate missing pts even if it requires parsing future frames.*/;
+        ic->flags |= 0x0001;
     av_format_inject_global_side_data(ic);
     if (find_stream_info)
     {
@@ -13198,8 +13038,8 @@ static int read_thread(void *arg)
     if (ic->pb)
         ic->pb->eof_reached = 0; // FIXME hack, ffplay maybe should not use avio_feof() to test for the end
     if (seek_by_bytes < 0)
-        seek_by_bytes = !!(ic->iformat->flags & 0x0200 /**< Format allows timestamp discontinuities. Note, muxers always require valid (monotone) timestamps */) && strcmp("ogg", ic->iformat->name);
-    is->max_frame_duration = (ic->iformat->flags & 0x0200 /**< Format allows timestamp discontinuities. Note, muxers always require valid (monotone) timestamps */) ? 10.0 : 3600.0;
+        seek_by_bytes = !!(ic->iformat->flags & 0x0200) && strcmp("ogg", ic->iformat->name);
+    is->max_frame_duration = (ic->iformat->flags & 0x0200) ? 10.0 : 3600.0;
     if (!window_title && (t = av_dict_get(ic->metadata, "title",
                                           ((void *)0), 0)))
         window_title = av_asprintf("%s - %s", t->value, input_filename);
@@ -13342,7 +13182,7 @@ static int read_thread(void *arg)
                     packet_queue_flush(&is->videoq);
                     packet_queue_put(&is->videoq, &flush_pkt);
                 }
-                if (is->seek_flags & 2 /*|< seeking based on position in bytes*/)
+                if (is->seek_flags & 2)
                 {
                     set_clock(&is->extclk,
                               __builtin_nan(""), 0);
@@ -13390,14 +13230,14 @@ static int read_thread(void *arg)
             }
             else if (autoexit)
             {
-                ret = (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) /*|< End of file*/;
+                ret = (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24)));
                 goto fail;
             }
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0)
         {
-            if ((ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) /*|< End of file*/ || avio_feof(ic->pb)) && !is->eof)
+            if ((ret == (-(int)(('E') | (('O') << 8) | (('F') << 16) | ((unsigned)(' ') << 24))) || avio_feof(ic->pb)) && !is->eof)
             {
                 if (is->video_stream >= 0)
                     packet_queue_put_nullpacket(&is->videoq, is->video_stream);
@@ -13937,7 +13777,7 @@ static int opt_format(void *optctx, const char *opt, const char *arg)
         av_log(
             ((void *)0), 8, "Unknown input format: %s\n", arg);
         return (-(
-            22)) ;
+            22));
     }
     return 0;
 }
@@ -14010,7 +13850,7 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
             "No media specifier was specified in '%s' in option '%s'\n",
             arg, opt);
         return (-(
-            22)) ;
+            22));
     }
     spec++;
     switch (spec[0])
@@ -14029,95 +13869,95 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
             ((void *)0), 16,
             "Invalid media specifier '%s' in option '%s'\n", spec, opt);
         return (-(
-            22)) ;
+            22));
     }
     return 0;
 }
 
 static int dummy;
 
-static const OptionDef options[] = {
-    {"L", 0x0800, {.func_arg = show_license}, "show license"},
-    {"h", 0x0800, {.func_arg = show_help}, "show help", "topic"},
-    {"?", 0x0800, {.func_arg = show_help}, "show help", "topic"},
-    {"help", 0x0800, {.func_arg = show_help}, "show help", "topic"},
-    {"-help", 0x0800, {.func_arg = show_help}, "show help", "topic"},
-    {"version", 0x0800, {.func_arg = show_version}, "show version"},
-    {"buildconf", 0x0800, {.func_arg = show_buildconf}, "show build configuration"},
-    {"formats", 0x0800, {.func_arg = show_formats}, "show available formats"},
-    {"muxers", 0x0800, {.func_arg = show_muxers}, "show available muxers"},
-    {"demuxers", 0x0800, {.func_arg = show_demuxers}, "show available demuxers"},
-    {"devices", 0x0800, {.func_arg = show_devices}, "show available devices"},
-    {"codecs", 0x0800, {.func_arg = show_codecs}, "show available codecs"},
-    {"decoders", 0x0800, {.func_arg = show_decoders}, "show available decoders"},
-    {"encoders", 0x0800, {.func_arg = show_encoders}, "show available encoders"},
-    {"bsfs", 0x0800, {.func_arg = show_bsfs}, "show available bit stream filters"},
-    {"protocols", 0x0800, {.func_arg = show_protocols}, "show available protocols"},
-    {"filters", 0x0800, {.func_arg = show_filters}, "show available filters"},
-    {"pix_fmts", 0x0800, {.func_arg = show_pix_fmts}, "show available pixel formats"},
-    {"layouts", 0x0800, {.func_arg = show_layouts}, "show standard channel layouts"},
-    {"sample_fmts", 0x0800, {.func_arg = show_sample_fmts}, "show available audio sample formats"},
-    {"colors", 0x0800, {.func_arg = show_colors}, "show available color names"},
-    {"loglevel", 0x0001, {.func_arg = opt_loglevel}, "set logging level", "loglevel"},
-    {"v", 0x0001, {.func_arg = opt_loglevel}, "set logging level", "loglevel"},
-    {"report", 0, {.func_arg = opt_report}, "generate a report"},
-    {"max_alloc", 0x0001, {.func_arg = opt_max_alloc}, "set maximum size of a single allocated block", "bytes"},
-    {"cpuflags", 0x0001 | 0x0004, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags"},
-    {"hide_banner", 0x0002 | 0x0004, {&hide_banner}, "do not show program banner", "hide_banner"},
-    {"sources", 0x0800 | 0x0001, {.func_arg = show_sources}, "list sources of the input device", "device"},
-    {"sinks", 0x0800 | 0x0001, {.func_arg = show_sinks}, "list sinks of the output device", "device"},
-    {"x", 0x0001, {.func_arg = opt_width}, "force displayed width", "width"},
-    {"y", 0x0001, {.func_arg = opt_height}, "force displayed height", "height"},
-    {"s", 0x0001 | 0x0010, {.func_arg = opt_frame_size}, "set frame size (WxH or abbreviation)", "size"},
-    {"fs", 0x0002, {&is_full_screen}, "force full screen"},
-    {"an", 0x0002, {&audio_disable}, "disable audio"},
-    {"vn", 0x0002, {&video_disable}, "disable video"},
-    {"sn", 0x0002, {&subtitle_disable}, "disable subtitling"},
-    {"ast", 0x0008 | 0x0001 | 0x0004, {&wanted_stream_spec[AVMEDIA_TYPE_AUDIO]}, "select desired audio stream", "stream_specifier"},
-    {"vst", 0x0008 | 0x0001 | 0x0004, {&wanted_stream_spec[AVMEDIA_TYPE_VIDEO]}, "select desired video stream", "stream_specifier"},
-    {"sst", 0x0008 | 0x0001 | 0x0004, {&wanted_stream_spec[AVMEDIA_TYPE_SUBTITLE]}, "select desired subtitle stream", "stream_specifier"},
-    {"ss", 0x0001, {.func_arg = opt_seek}, "seek to a given position in seconds", "pos"},
-    {"t", 0x0001, {.func_arg = opt_duration}, "play  \"duration\" seconds of audio/video", "duration"},
-    {"bytes", 0x0080 | 0x0001, {&seek_by_bytes}, "seek by bytes 0=off 1=on -1=auto", "val"},
-    {"seek_interval", 0x0100 | 0x0001, {&seek_interval}, "set seek interval for left/right keys, in seconds", "seconds"},
-    {"nodisp", 0x0002, {&display_disable}, "disable graphical display"},
-    {"noborder", 0x0002, {&borderless}, "borderless window"},
-    {"alwaysontop", 0x0002, {&alwaysontop}, "window always on top"},
-    {"volume", 0x0080 | 0x0001, {&startup_volume}, "set startup volume 0=min 100=max", "volume"},
-    {"f", 0x0001, {.func_arg = opt_format}, "force format", "fmt"},
-    {"pix_fmt", 0x0001 | 0x0004 | 0x0010, {.func_arg = opt_frame_pix_fmt}, "set pixel format", "format"},
-    {"stats", 0x0002 | 0x0004, {&show_status}, "show status", ""},
-    {"fast", 0x0002 | 0x0004, {&fast}, "non spec compliant optimizations", ""},
-    {"genpts", 0x0002 | 0x0004, {&genpts}, "generate pts", ""},
-    {"drp", 0x0080 | 0x0001 | 0x0004, {&decoder_reorder_pts}, "let decoder reorder pts 0=off 1=on -1=auto", ""},
-    {"lowres", 0x0080 | 0x0001 | 0x0004, {&lowres}, "", ""},
-    {"sync", 0x0001 | 0x0004, {.func_arg = opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type"},
-    {"autoexit", 0x0002 | 0x0004, {&autoexit}, "exit at the end", ""},
-    {"exitonkeydown", 0x0002 | 0x0004, {&exit_on_keydown}, "exit on key down", ""},
-    {"exitonmousedown", 0x0002 | 0x0004, {&exit_on_mousedown}, "exit on mouse down", ""},
-    {"loop", 0x0080 | 0x0001 | 0x0004, {&loop}, "set number of times the playback shall be looped", "loop count"},
-    {"framedrop", 0x0002 | 0x0004, {&framedrop}, "drop frames when cpu is too slow", ""},
-    {"infbuf", 0x0002 | 0x0004, {&infinite_buffer}, "don't limit the input buffer size (useful with realtime streams)", ""},
-    {"window_title", 0x0008 | 0x0001, {&window_title}, "set window title", "window title"},
-    {"left", 0x0080 | 0x0001 | 0x0004, {&screen_left}, "set the x position for the left of the window", "x pos"},
-    {"top", 0x0080 | 0x0001 | 0x0004, {&screen_top}, "set the y position for the top of the window", "y pos"},
-    {"vf", 0x0004 | 0x0001, {.func_arg = opt_add_vfilter}, "set video filters", "filter_graph"},
-    {"af", 0x0008 | 0x0001, {&afilters}, "set audio filters", "filter_graph"},
-    {"rdftspeed", 0x0080 | 0x0001 | 0x0020 | 0x0004, {&rdftspeed}, "rdft speed", "msecs"},
-    {"showmode", 0x0001, {.func_arg = opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode"},
-    {"default", 0x0001 | 0x0020 | 0x0010 | 0x0004, {.func_arg = opt_default}, "generic catch all option", ""},
-    {"i", 0x0002, {&dummy}, "read specified file", "input_file"},
-    {"codec", 0x0001, {.func_arg = opt_codec}, "force decoder", "decoder_name"},
-    {"acodec", 0x0001 | 0x0008 | 0x0004, {&audio_codec_name}, "force audio decoder", "decoder_name"},
-    {"scodec", 0x0001 | 0x0008 | 0x0004, {&subtitle_codec_name}, "force subtitle decoder", "decoder_name"},
-    {"vcodec", 0x0001 | 0x0008 | 0x0004, {&video_codec_name}, "force video decoder", "decoder_name"},
-    {"autorotate", 0x0002, {&autorotate}, "automatically rotate video", ""},
-    {"find_stream_info", 0x0002 | 0x40000 | 0x0004, {&find_stream_info}, "read and decode the streams to fill missing information with heuristics"},
-    {"filter_threads", 0x0001 | 0x0080 | 0x0004, {&filter_nbthreads}, "number of filter threads per graph"},
-    {
-        ((void *)0),
-    },
-};
+// static const OptionDef options[] = {
+//     {"L", 0x0800, {.func_arg = show_license}, "show license"},
+//     {"h", 0x0800, {.func_arg = show_help}, "show help", "topic"},
+//     {"?", 0x0800, {.func_arg = show_help}, "show help", "topic"},
+//     {"help", 0x0800, {.func_arg = show_help}, "show help", "topic"},
+//     {"-help", 0x0800, {.func_arg = show_help}, "show help", "topic"},
+//     {"version", 0x0800, {.func_arg = show_version}, "show version"},
+//     {"buildconf", 0x0800, {.func_arg = show_buildconf}, "show build configuration"},
+//     {"formats", 0x0800, {.func_arg = show_formats}, "show available formats"},
+//     {"muxers", 0x0800, {.func_arg = show_muxers}, "show available muxers"},
+//     {"demuxers", 0x0800, {.func_arg = show_demuxers}, "show available demuxers"},
+//     {"devices", 0x0800, {.func_arg = show_devices}, "show available devices"},
+//     {"codecs", 0x0800, {.func_arg = show_codecs}, "show available codecs"},
+//     {"decoders", 0x0800, {.func_arg = show_decoders}, "show available decoders"},
+//     {"encoders", 0x0800, {.func_arg = show_encoders}, "show available encoders"},
+//     {"bsfs", 0x0800, {.func_arg = show_bsfs}, "show available bit stream filters"},
+//     {"protocols", 0x0800, {.func_arg = show_protocols}, "show available protocols"},
+//     {"filters", 0x0800, {.func_arg = show_filters}, "show available filters"},
+//     {"pix_fmts", 0x0800, {.func_arg = show_pix_fmts}, "show available pixel formats"},
+//     {"layouts", 0x0800, {.func_arg = show_layouts}, "show standard channel layouts"},
+//     {"sample_fmts", 0x0800, {.func_arg = show_sample_fmts}, "show available audio sample formats"},
+//     {"colors", 0x0800, {.func_arg = show_colors}, "show available color names"},
+//     {"loglevel", 0x0001, {.func_arg = opt_loglevel}, "set logging level", "loglevel"},
+//     {"v", 0x0001, {.func_arg = opt_loglevel}, "set logging level", "loglevel"},
+//     {"report", 0, {.func_arg = opt_report}, "generate a report"},
+//     {"max_alloc", 0x0001, {.func_arg = opt_max_alloc}, "set maximum size of a single allocated block", "bytes"},
+//     {"cpuflags", 0x0001 | 0x0004, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags"},
+//     {"hide_banner", 0x0002 | 0x0004, {&hide_banner}, "do not show program banner", "hide_banner"},
+//     {"sources", 0x0800 | 0x0001, {.func_arg = show_sources}, "list sources of the input device", "device"},
+//     {"sinks", 0x0800 | 0x0001, {.func_arg = show_sinks}, "list sinks of the output device", "device"},
+//     {"x", 0x0001, {.func_arg = opt_width}, "force displayed width", "width"},
+//     {"y", 0x0001, {.func_arg = opt_height}, "force displayed height", "height"},
+//     {"s", 0x0001 | 0x0010, {.func_arg = opt_frame_size}, "set frame size (WxH or abbreviation)", "size"},
+//     {"fs", 0x0002, {&is_full_screen}, "force full screen"},
+//     {"an", 0x0002, {&audio_disable}, "disable audio"},
+//     {"vn", 0x0002, {&video_disable}, "disable video"},
+//     {"sn", 0x0002, {&subtitle_disable}, "disable subtitling"},
+//     {"ast", 0x0008 | 0x0001 | 0x0004, {&wanted_stream_spec[AVMEDIA_TYPE_AUDIO]}, "select desired audio stream", "stream_specifier"},
+//     {"vst", 0x0008 | 0x0001 | 0x0004, {&wanted_stream_spec[AVMEDIA_TYPE_VIDEO]}, "select desired video stream", "stream_specifier"},
+//     {"sst", 0x0008 | 0x0001 | 0x0004, {&wanted_stream_spec[AVMEDIA_TYPE_SUBTITLE]}, "select desired subtitle stream", "stream_specifier"},
+//     {"ss", 0x0001, {.func_arg = opt_seek}, "seek to a given position in seconds", "pos"},
+//     {"t", 0x0001, {.func_arg = opt_duration}, "play  \"duration\" seconds of audio/video", "duration"},
+//     {"bytes", 0x0080 | 0x0001, {&seek_by_bytes}, "seek by bytes 0=off 1=on -1=auto", "val"},
+//     {"seek_interval", 0x0100 | 0x0001, {&seek_interval}, "set seek interval for left/right keys, in seconds", "seconds"},
+//     {"nodisp", 0x0002, {&display_disable}, "disable graphical display"},
+//     {"noborder", 0x0002, {&borderless}, "borderless window"},
+//     {"alwaysontop", 0x0002, {&alwaysontop}, "window always on top"},
+//     {"volume", 0x0080 | 0x0001, {&startup_volume}, "set startup volume 0=min 100=max", "volume"},
+//     {"f", 0x0001, {.func_arg = opt_format}, "force format", "fmt"},
+//     {"pix_fmt", 0x0001 | 0x0004 | 0x0010, {.func_arg = opt_frame_pix_fmt}, "set pixel format", "format"},
+//     {"stats", 0x0002 | 0x0004, {&show_status}, "show status", ""},
+//     {"fast", 0x0002 | 0x0004, {&fast}, "non spec compliant optimizations", ""},
+//     {"genpts", 0x0002 | 0x0004, {&genpts}, "generate pts", ""},
+//     {"drp", 0x0080 | 0x0001 | 0x0004, {&decoder_reorder_pts}, "let decoder reorder pts 0=off 1=on -1=auto", ""},
+//     {"lowres", 0x0080 | 0x0001 | 0x0004, {&lowres}, "", ""},
+//     {"sync", 0x0001 | 0x0004, {.func_arg = opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type"},
+//     {"autoexit", 0x0002 | 0x0004, {&autoexit}, "exit at the end", ""},
+//     {"exitonkeydown", 0x0002 | 0x0004, {&exit_on_keydown}, "exit on key down", ""},
+//     {"exitonmousedown", 0x0002 | 0x0004, {&exit_on_mousedown}, "exit on mouse down", ""},
+//     {"loop", 0x0080 | 0x0001 | 0x0004, {&loop}, "set number of times the playback shall be looped", "loop count"},
+//     {"framedrop", 0x0002 | 0x0004, {&framedrop}, "drop frames when cpu is too slow", ""},
+//     {"infbuf", 0x0002 | 0x0004, {&infinite_buffer}, "don't limit the input buffer size (useful with realtime streams)", ""},
+//     {"window_title", 0x0008 | 0x0001, {&window_title}, "set window title", "window title"},
+//     {"left", 0x0080 | 0x0001 | 0x0004, {&screen_left}, "set the x position for the left of the window", "x pos"},
+//     {"top", 0x0080 | 0x0001 | 0x0004, {&screen_top}, "set the y position for the top of the window", "y pos"},
+//     {"vf", 0x0004 | 0x0001, {.func_arg = opt_add_vfilter}, "set video filters", "filter_graph"},
+//     {"af", 0x0008 | 0x0001, {&afilters}, "set audio filters", "filter_graph"},
+//     {"rdftspeed", 0x0080 | 0x0001 | 0x0020 | 0x0004, {&rdftspeed}, "rdft speed", "msecs"},
+//     {"showmode", 0x0001, {.func_arg = opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode"},
+//     {"default", 0x0001 | 0x0020 | 0x0010 | 0x0004, {.func_arg = opt_default}, "generic catch all option", ""},
+//     {"i", 0x0002, {&dummy}, "read specified file", "input_file"},
+//     {"codec", 0x0001, {.func_arg = opt_codec}, "force decoder", "decoder_name"},
+//     {"acodec", 0x0001 | 0x0008 | 0x0004, {&audio_codec_name}, "force audio decoder", "decoder_name"},
+//     {"scodec", 0x0001 | 0x0008 | 0x0004, {&subtitle_codec_name}, "force subtitle decoder", "decoder_name"},
+//     {"vcodec", 0x0001 | 0x0008 | 0x0004, {&video_codec_name}, "force video decoder", "decoder_name"},
+//     {"autorotate", 0x0002, {&autorotate}, "automatically rotate video", ""},
+//     {"find_stream_info", 0x0002 | 0x40000 | 0x0004, {&find_stream_info}, "read and decode the streams to fill missing information with heuristics"},
+//     {"filter_threads", 0x0001 | 0x0080 | 0x0004, {&filter_nbthreads}, "number of filter threads per graph"},
+//     {
+//         ((void *)0),
+//     },
+// };
 
 static void show_usage(void)
 {
@@ -14136,9 +13976,9 @@ void show_help_default(const char *opt, const char *arg)
     show_help_options(options, "Main options:", 0, 0x0004, 0);
     show_help_options(options, "Advanced options:", 0x0004, 0, 0);
     printf("\n");
-    show_help_children(avcodec_get_class(), 2 /*|< a generic parameter which can be set by the user for demuxing or decoding*/);
-    show_help_children(avformat_get_class(), 2 /*|< a generic parameter which can be set by the user for demuxing or decoding*/);
-    show_help_children(avfilter_get_class(), (1 << 16) /*|< a generic parameter which can be set by the user for filtering*/);
+    show_help_children(avcodec_get_class(), 2);
+    show_help_children(avformat_get_class(), 2);
+    show_help_children(avfilter_get_class(), (1 << 16));
     printf("\nWhile playing:\n"
            "q, ESC              quit\n"
            "f                   toggle full screen\n"
@@ -14190,7 +14030,7 @@ int main(int argc, char **argv)
     {
         video_disable = 1;
     }
-    flags = 0x00000020u /**< SDL_INIT_VIDEO implies SDL_INIT_EVENTS */ | 0x00000010u | 0x00000001u;
+    flags = 0x00000020u | 0x00000010u | 0x00000001u;
     if (audio_disable)
         flags &= ~0x00000010u;
     else
@@ -14199,7 +14039,7 @@ int main(int argc, char **argv)
             SDL_setenv("SDL_AUDIO_ALSA_SET_BUFFER_SIZE", "1", 1);
     }
     if (display_disable)
-        flags &= ~0x00000020u /**< SDL_INIT_VIDEO implies SDL_INIT_EVENTS */;
+        flags &= ~0x00000020u;
     if (SDL_Init(flags))
     {
         av_log(
