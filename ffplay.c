@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
-#include <gcrypt.h>
 #include <inttypes.h>
 #include <math.h>
 #include <limits.h>
@@ -24,7 +23,6 @@
 #include <unistd.h>
 #include <iconv.h>
 #include <fcntl.h>
-#include <soxr.h>
 #include <fcntl.h>
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -3121,95 +3119,13 @@ typedef struct RcOverride
 #define AV_CODEC_EXPORT_DATA_PRFT (1 << 1)
 #define AV_CODEC_EXPORT_DATA_VIDEO_ENC_PARAMS (1 << 2)
 
-typedef struct AVPanScan
-{
-    int id;
-    int width;
-    int height;
-    int16_t position[3][2];
-} AVPanScan;
 
-typedef struct AVCPBProperties
-{
-    int max_bitrate;
-    int min_bitrate;
-    int avg_bitrate;
-    int buffer_size;
-    uint64_t vbv_delay;
-} AVCPBProperties;
-
-typedef struct AVProducerReferenceTime
-{
-    int64_t wallclock;
-    int flags;
-} AVProducerReferenceTime;
 #define AV_GET_BUFFER_FLAG_REF (1 << 0)
 
-struct AVCodecInternal;
-typedef struct AVCodecContext
-{
-    const AVClass *av_class;
-    int log_level_offset;
-    enum AVMediaType codec_type;
-    const struct AVCodec *codec;
-    enum AVCodecID codec_id;
-
-    unsigned int codec_tag;
-    void *priv_data;
-    struct AVCodecInternal *internal;
-    void *opaque;
-    int64_t bit_rate;
-    int bit_rate_tolerance;
-    int global_quality;
-    int compression_level;
 #define FF_COMPRESSION_DEFAULT -1
-    int flags;
-    int flags2;
-
-    uint8_t *extradata;
-    int extradata_size;
-
-    AVRational time_base;
-    int ticks_per_frame;
-
-    int delay;
-
-    int width, height;
-
-    int coded_width, coded_height;
-    int gop_size;
-
-    enum AVPixelFormat pix_fmt;
-
-    void (*draw_horiz_band)(struct AVCodecContext *s,
-                            const AVFrame *src, int offset[8],
-                            int y, int type, int height);
-
-    enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat *fmt);
-    int max_b_frames;
-    float b_quant_factor;
-    int b_frame_strategy;
-    float b_quant_offset;
-    int has_b_frames;
-    int mpeg_quant;
-    float i_quant_factor;
-    float i_quant_offset;
-    float lumi_masking;
-    float temporal_cplx_masking;
-    float spatial_cplx_masking;
-    float p_masking;
-    float dark_masking;
-    int slice_count;
-    int prediction_method;
 #define FF_PRED_LEFT 0
 #define FF_PRED_PLANE 1
 #define FF_PRED_MEDIAN 2
-    int *slice_offset;
-    AVRational sample_aspect_ratio;
-    int me_cmp;
-    int me_sub_cmp;
-    int mb_cmp;
-    int ildct_cmp;
 #define FF_CMP_SAD 0
 #define FF_CMP_SSE 1
 #define FF_CMP_SATD 2
@@ -3227,102 +3143,16 @@ typedef struct AVCodecContext
 #define FF_CMP_DCT264 14
 #define FF_CMP_MEDIAN_SAD 15
 #define FF_CMP_CHROMA 256
-    int dia_size;
-    int last_predictor_count;
-    int pre_me;
-    int me_pre_cmp;
-    int pre_dia_size;
-    int me_subpel_quality;
-    int me_range;
-    int slice_flags;
 #define SLICE_FLAG_CODED_ORDER 0x0001
 #define SLICE_FLAG_ALLOW_FIELD 0x0002
 #define SLICE_FLAG_ALLOW_PLANE 0x0004
-    int mb_decision;
 #define FF_MB_DECISION_SIMPLE 0
 #define FF_MB_DECISION_BITS 1
 #define FF_MB_DECISION_RD 2
-    uint16_t *intra_matrix;
-    uint16_t *inter_matrix;
-    int scenechange_threshold;
-    int noise_reduction;
-    int intra_dc_precision;
-    int skip_top;
-    int skip_bottom;
-    int mb_lmin;
-    int mb_lmax;
-    int me_penalty_compensation;
-    int bidir_refine;
-    int brd_scale;
-    int keyint_min;
-    int refs;
-    int chromaoffset;
-    int mv0_threshold;
-    int b_sensitivity;
-    enum AVColorPrimaries color_primaries;
-    enum AVColorTransferCharacteristic color_trc;
-    enum AVColorSpace colorspace;
-    enum AVColorRange color_range;
-    enum AVChromaLocation chroma_sample_location;
-    int slices;
-
-    enum AVFieldOrder field_order;
-    int sample_rate;                ///< samples per second
-    int channels;                   ///< number of audio channels
-    enum AVSampleFormat sample_fmt; ///< sample format
-    int frame_size;
-    int frame_number;
-    int block_align;
-    int cutoff;
-    uint64_t channel_layout;
-    uint64_t request_channel_layout;
-    enum AVAudioServiceType audio_service_type;
-    enum AVSampleFormat request_sample_fmt;
-
-    int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
-
-    int refcounted_frames;
-    float qcompress; ///< amount of qscale change between easy & hard scenes (0.0-1.0)
-    float qblur;     ///< amount of qscale smoothing over time (0.0-1.0)
-    int qmin;
-    int qmax;
-    int max_qdiff;
-    int rc_buffer_size;
-    int rc_override_count;
-    RcOverride *rc_override;
-    int64_t rc_max_rate;
-    int64_t rc_min_rate;
-    float rc_max_available_vbv_use;
-    float rc_min_vbv_overflow_use;
-    int rc_initial_buffer_occupancy;
 #define FF_CODER_TYPE_VLC 0
 #define FF_CODER_TYPE_AC 1
 #define FF_CODER_TYPE_RAW 2
 #define FF_CODER_TYPE_RLE 3
-    int coder_type;
-    int context_model;
-    int frame_skip_threshold;
-    int frame_skip_factor;
-    int frame_skip_exp;
-    int frame_skip_cmp;
-    int trellis;
-    int min_prediction_order;
-    int max_prediction_order;
-    int64_t timecode_frame_start;
-    void (*rtp_callback)(struct AVCodecContext *avctx, void *data, int size, int mb_nb);
-    int rtp_payload_size;
-    int mv_bits;
-    int header_bits;
-    int i_tex_bits;
-    int p_tex_bits;
-    int i_count;
-    int p_count;
-    int skip_count;
-    int misc_bits;
-    int frame_bits;
-    char *stats_out;
-    char *stats_in;
-    int workaround_bugs;
 #define FF_BUG_AUTODETECT 1
 #define FF_BUG_XVID_ILACE 4
 #define FF_BUG_UMP4 8
@@ -3338,18 +3168,14 @@ typedef struct AVCodecContext
 #define FF_BUG_MS 8192
 #define FF_BUG_TRUNCATED 16384
 #define FF_BUG_IEDGE 32768
-
-    int strict_std_compliance;
 #define FF_COMPLIANCE_VERY_STRICT 2
 #define FF_COMPLIANCE_STRICT 1
 #define FF_COMPLIANCE_NORMAL 0
 #define FF_COMPLIANCE_UNOFFICIAL -1
 #define FF_COMPLIANCE_EXPERIMENTAL -2
-    int error_concealment;
 #define FF_EC_GUESS_MVS 1
 #define FF_EC_DEBLOCK 2
 #define FF_EC_FAVOR_INTER 256
-    int debug;
 #define FF_DEBUG_PICT_INFO 1
 #define FF_DEBUG_RC 2
 #define FF_DEBUG_BITSTREAM 4
@@ -3365,7 +3191,6 @@ typedef struct AVCodecContext
 #define FF_DEBUG_THREADS 0x00010000
 #define FF_DEBUG_GREEN_MD 0x00800000
 #define FF_DEBUG_NOMC 0x01000000
-    int err_recognition;
 #define AV_EF_CRCCHECK (1 << 0)
 #define AV_EF_BITSTREAM (1 << 1)
 #define AV_EF_BUFFER (1 << 2)
@@ -3374,18 +3199,12 @@ typedef struct AVCodecContext
 #define AV_EF_CAREFUL (1 << 16)
 #define AV_EF_COMPLIANT (1 << 17)
 #define AV_EF_AGGRESSIVE (1 << 18)
-    int64_t reordered_opaque;
-    const struct AVHWAccel *hwaccel;
-    void *hwaccel_context;
-    uint64_t error[8];
-    int dct_algo;
 #define FF_DCT_AUTO 0
 #define FF_DCT_FASTINT 1
 #define FF_DCT_INT 2
 #define FF_DCT_MMX 3
 #define FF_DCT_ALTIVEC 5
 #define FF_DCT_FAAN 6
-    int idct_algo;
 #define FF_IDCT_AUTO 0
 #define FF_IDCT_INT 1
 #define FF_IDCT_SIMPLE 2
@@ -3400,21 +3219,8 @@ typedef struct AVCodecContext
 #define FF_IDCT_SIMPLENEON 22
 #define FF_IDCT_NONE 24
 #define FF_IDCT_SIMPLEAUTO 128
-    int bits_per_coded_sample;
-    int bits_per_raw_sample;
-    int lowres;
-    AVFrame *coded_frame;
-    int thread_count;
-    int thread_type;
 #define FF_THREAD_FRAME 1
 #define FF_THREAD_SLICE 2
-    int active_thread_type;
-    int thread_safe_callbacks;
-    int (*execute)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg), void *arg2, int *ret, int count, int size);
-
-    int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
-    int nsse_weight;
-    int profile;
 #define FF_PROFILE_UNKNOWN -99
 #define FF_PROFILE_RESERVED -100
 #define FF_PROFILE_AAC_MAIN 0
@@ -3514,8 +3320,225 @@ typedef struct AVCodecContext
 #define FF_PROFILE_ARIB_PROFILE_C 1
 #define FF_PROFILE_KLVA_SYNC 0
 #define FF_PROFILE_KLVA_ASYNC 1
-    int level;
 #define FF_LEVEL_UNKNOWN -99
+
+#define FF_SUB_CHARENC_MODE_DO_NOTHING -1
+#define FF_SUB_CHARENC_MODE_AUTOMATIC 0
+#define FF_SUB_CHARENC_MODE_PRE_DECODER 1
+#define FF_SUB_CHARENC_MODE_IGNORE 2
+#define FF_DEBUG_VIS_MV_P_FOR 0x00000001
+#define FF_DEBUG_VIS_MV_B_FOR 0x00000002
+#define FF_DEBUG_VIS_MV_B_BACK 0x00000004
+#define FF_CODEC_PROPERTY_LOSSLESS 0x00000001
+#define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
+#define FF_SUB_TEXT_FMT_ASS 0
+#define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
+
+#define AV_HWACCEL_CODEC_CAP_EXPERIMENTAL 0x0200
+#define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
+#define AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH (1 << 1)
+#define AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH (1 << 2)
+
+
+typedef struct AVPanScan
+{
+    int id;
+    int width;
+    int height;
+    int16_t position[3][2];
+} AVPanScan;
+
+typedef struct AVCPBProperties
+{
+    int max_bitrate;
+    int min_bitrate;
+    int avg_bitrate;
+    int buffer_size;
+    uint64_t vbv_delay;
+} AVCPBProperties;
+
+typedef struct AVProducerReferenceTime
+{
+    int64_t wallclock;
+    int flags;
+} AVProducerReferenceTime;
+
+struct AVCodecInternal;
+typedef struct AVCodecContext
+{
+    const AVClass *av_class;
+    int log_level_offset;
+    enum AVMediaType codec_type;
+    const struct AVCodec *codec;
+    enum AVCodecID codec_id;
+
+    unsigned int codec_tag;
+    void *priv_data;
+    struct AVCodecInternal *internal;
+    void *opaque;
+    int64_t bit_rate;
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+
+    uint8_t *extradata;
+    int extradata_size;
+
+    AVRational time_base;
+    int ticks_per_frame;
+
+    int delay;
+
+    int width, height;
+
+    int coded_width, coded_height;
+    int gop_size;
+
+    enum AVPixelFormat pix_fmt;
+
+    void (*draw_horiz_band)(struct AVCodecContext *s,
+                            const AVFrame *src, int offset[8],
+                            int y, int type, int height);
+
+    enum AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat *fmt);
+    int max_b_frames;
+    float b_quant_factor;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames;
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+
+    int *slice_offset;
+    AVRational sample_aspect_ratio;
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int me_range;
+    int slice_flags;
+    int mb_decision;
+    uint16_t *intra_matrix;
+    uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int mv0_threshold;
+    int b_sensitivity;
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace colorspace;
+    enum AVColorRange color_range;
+    enum AVChromaLocation chroma_sample_location;
+    int slices;
+
+    enum AVFieldOrder field_order;
+    int sample_rate;                ///< samples per second
+    int channels;                   ///< number of audio channels
+    enum AVSampleFormat sample_fmt; ///< sample format
+    int frame_size;
+    int frame_number;
+    int block_align;
+    int cutoff;
+    uint64_t channel_layout;
+    uint64_t request_channel_layout;
+    enum AVAudioServiceType audio_service_type;
+    enum AVSampleFormat request_sample_fmt;
+
+    int (*get_buffer2)(struct AVCodecContext *s, AVFrame *frame, int flags);
+
+    int refcounted_frames;
+    float qcompress; ///< amount of qscale change between easy & hard scenes (0.0-1.0)
+    float qblur;     ///< amount of qscale smoothing over time (0.0-1.0)
+    int qmin;
+    int qmax;
+    int max_qdiff;
+    int rc_buffer_size;
+    int rc_override_count;
+    RcOverride *rc_override;
+    int64_t rc_max_rate;
+    int64_t rc_min_rate;
+    float rc_max_available_vbv_use;
+    float rc_min_vbv_overflow_use;
+    int rc_initial_buffer_occupancy;
+
+    int coder_type;
+    int context_model;
+    int frame_skip_threshold;
+    int frame_skip_factor;
+    int frame_skip_exp;
+    int frame_skip_cmp;
+    int trellis;
+    int min_prediction_order;
+    int max_prediction_order;
+    int64_t timecode_frame_start;
+    void (*rtp_callback)(struct AVCodecContext *avctx, void *data, int size, int mb_nb);
+    int rtp_payload_size;
+    int mv_bits;
+    int header_bits;
+    int i_tex_bits;
+    int p_tex_bits;
+    int i_count;
+    int p_count;
+    int skip_count;
+    int misc_bits;
+    int frame_bits;
+    char *stats_out;
+    char *stats_in;
+    int workaround_bugs;
+
+    int strict_std_compliance;
+    int error_concealment;
+    int debug;
+    int err_recognition;
+    int64_t reordered_opaque;
+    const struct AVHWAccel *hwaccel;
+    void *hwaccel_context;
+    uint64_t error[8];
+    int dct_algo;
+    int idct_algo;
+    int bits_per_coded_sample;
+    int bits_per_raw_sample;
+    int lowres;
+    AVFrame *coded_frame;
+    int thread_count;
+    int thread_type;
+
+    int active_thread_type;
+    int thread_safe_callbacks;
+    int (*execute)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg), void *arg2, int *ret, int count, int size);
+
+    int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
+    int nsse_weight;
+    int profile;
+
+    int level;
     enum AVDiscard skip_loop_filter;
     enum AVDiscard skip_idct;
     enum AVDiscard skip_frame;
@@ -3535,30 +3558,22 @@ typedef struct AVCodecContext
     int64_t pts_correction_last_dts;       /// DTS of the last frame
     char *sub_charenc;
     int sub_charenc_mode;
-#define FF_SUB_CHARENC_MODE_DO_NOTHING -1
-#define FF_SUB_CHARENC_MODE_AUTOMATIC 0
-#define FF_SUB_CHARENC_MODE_PRE_DECODER 1
-#define FF_SUB_CHARENC_MODE_IGNORE 2
 
     int skip_alpha;
     int seek_preroll;
     int debug_mv;
-#define FF_DEBUG_VIS_MV_P_FOR 0x00000001
-#define FF_DEBUG_VIS_MV_B_FOR 0x00000002
-#define FF_DEBUG_VIS_MV_B_BACK 0x00000004
+
     uint16_t *chroma_intra_matrix;
     uint8_t *dump_separator;
     char *codec_whitelist;
     unsigned properties;
-#define FF_CODEC_PROPERTY_LOSSLESS 0x00000001
-#define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
+
     AVPacketSideData *coded_side_data;
     int nb_coded_side_data;
 
     AVBufferRef *hw_frames_ctx;
     int sub_text_format;
-#define FF_SUB_TEXT_FMT_ASS 0
-#define FF_SUB_TEXT_FMT_ASS_WITH_TIMINGS 1
+
     int trailing_padding;
     int64_t max_pixels;
 
@@ -3625,10 +3640,6 @@ typedef struct AVHWAccel
     int caps_internal;
     int (*frame_params)(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx);
 } AVHWAccel;
-#define AV_HWACCEL_CODEC_CAP_EXPERIMENTAL 0x0200
-#define AV_HWACCEL_FLAG_IGNORE_LEVEL (1 << 0)
-#define AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH (1 << 1)
-#define AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH (1 << 2)
 
 typedef struct AVPicture
 {
@@ -11925,6 +11936,19 @@ fail:
     return ret;
 }
 
+#define INSERT_FILT(name, arg)                                                                                       \
+    do                                                                                                               \
+    {                                                                                                                \
+        AVFilterContext *filt_ctx;                                                                                   \
+        ret = avfilter_graph_create_filter(&filt_ctx, avfilter_get_by_name(name), "ffplay_" name, arg, NULL, graph); \
+        if (ret < 0)                                                                                                 \
+            goto fail;                                                                                               \
+        ret = avfilter_link(filt_ctx, 0, last_filter, 0);                                                            \
+        if (ret < 0)                                                                                                 \
+            goto fail;                                                                                               \
+        last_filter = filt_ctx;                                                                                      \
+    } while (0)
+
 static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const char *vfilters, AVFrame *frame)
 {
     enum AVPixelFormat pix_fmts[(sizeof(sdl_texture_format_map) / sizeof((sdl_texture_format_map)[0]))];
@@ -11994,18 +12018,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         goto fail;
     last_filter = filt_out;
 
-#define INSERT_FILT(name, arg)                                                                                       \
-    do                                                                                                               \
-    {                                                                                                                \
-        AVFilterContext *filt_ctx;                                                                                   \
-        ret = avfilter_graph_create_filter(&filt_ctx, avfilter_get_by_name(name), "ffplay_" name, arg, NULL, graph); \
-        if (ret < 0)                                                                                                 \
-            goto fail;                                                                                               \
-        ret = avfilter_link(filt_ctx, 0, last_filter, 0);                                                            \
-        if (ret < 0)                                                                                                 \
-            goto fail;                                                                                               \
-        last_filter = filt_ctx;                                                                                      \
-    } while (0)
+
     if (autorotate)
     {
         double theta = get_rotation(is->video_st);

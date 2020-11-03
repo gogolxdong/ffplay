@@ -1,9 +1,30 @@
 import math
-import ffmpeg, sdl2, sdl2/audio
+import ffmpeg except AVBPrint
+import sdl2, sdl2/audio
+import strutils
+
 when defined(windows):
   import winim
 elif defined(posix):
   import posix
+
+template `+`*[T](p: ptr T, off: int): ptr T =
+  cast[ptr type(p[])](cast[ByteAddress](p) +% off * sizeof(p[]))
+
+template `+=`*[T](p: ptr T, off: int) =
+  p = p + off
+
+template `-`*[T](p: ptr T, off: int): ptr T =
+  cast[ptr type(p[])](cast[ByteAddress](p) -% off * sizeof(p[]))
+
+template `-=`*[T](p: ptr T, off: int) =
+  p = p - off
+
+template `[]`*[T](p: ptr T, off: int): T =
+  (p + off)[]
+
+template `[]=`*[T](p: ptr T, off: int, val: T) =
+  (p + off)[] = val
 
 const
   FFMPEG_CONFIGURATION* = "--target-os=mingw32 --arch=x86_64 --disable-debug --disable-stripping --disable-doc --disable-w32threads --disable-static --enable-shared --enable-sdl2 --enable-vulkan --enable-dxva2 --enable-d3d11va --enable-gpl --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-lzma --enable-libsnappy --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-libbluray --enable-libcaca --enable-libdav1d --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-libass --enable-libfreetype --enable-libfribidi --enable-libvidstab --enable-libzimg --enable-libmfx --enable-libcdio --enable-libgme --enable-libmodplug --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libwavpack --enable-libilbc --enable-libgsm --enable-libopus --enable-libspeex --enable-libvorbis --enable-libbs2b --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint"
@@ -43,7 +64,7 @@ const
   SAMPLE_CORRECTION_PERCENT_MAX* = 10
   EXTERNAL_CLOCK_SPEED_MIN* = 0.9
   EXTERNAL_CLOCK_SPEED_MAX* = 1.01
-  EXTERNAL_CLOCK_SPEED_STEP* = 0.001
+  EXTERNAL_CLOCK_SPEED_STEP* = 0.001'f64
   AUDIO_DIFF_AVG_NB* = 20
   REFRESH_RATE* = 0.01
   SAMPLE_ARRAY_SIZE* = (8 * 65536)
@@ -52,8 +73,7 @@ const
   VIDEO_PICTURE_QUEUE_SIZE* = 3
   SUBPICTURE_QUEUE_SIZE* = 16
   SAMPLE_QUEUE_SIZE* = 9
-  FRAME_QUEUE_SIZE* = max(SAMPLE_QUEUE_SIZE, max(VIDEO_PICTURE_QUEUE_SIZE,
-      SUBPICTURE_QUEUE_SIZE))
+  FRAME_QUEUE_SIZE* = max(SAMPLE_QUEUE_SIZE, max(VIDEO_PICTURE_QUEUE_SIZE,SUBPICTURE_QUEUE_SIZE))
   SWS_FAST_BILINEAR* = 1
   SWS_BILINEAR* = 2
   SWS_BICUBIC* = 4
@@ -232,21 +252,19 @@ type
     SDL_BLENDFACTOR_DST_ALPHA = 0x00000009, ## *< dstA, dstA, dstA, dstA
     SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA = 0x0000000A
 
-template SDL_DEFINE_PIXELFORMAT*(t, order, layout, bits, bytes: untyped): untyped =
-  ((1 shl 28) or (t.int shl 24) or (order.int shl 20) or (layout.int shl 16) or (bits.int shl 8) or (bytes.int shl 0))
+
 
 template INSERT_FILT(name, arg: untyped): void =
     while true:
       var filt_ctx: ptr AVFilterContext
-      ret = avfilter_graph_create_filter(addr(filt_ctx), avfilter_get_by_name(name), "ffplay_", name, arg, nil, graph)
-      if ret < 0:
-        break fail
-      ret = avfilter_link(filt_ctx, 0, last_filter, 0)
-      if ret < 0:
-        break fail
+      result = avfilter_graph_create_filter(addr(filt_ctx), avfilter_get_by_name(name), name, arg, nil, graph)
+      if result < 0:
+        echo "fail"
+      result = avfilter_link(filt_ctx, 0, last_filter, 0)
+      if result < 0:
+        echo "fail"
       last_filter = filt_ctx
-      if not 0:
-        break
+      break
 
 template `+`*[T](p: ptr T, off: int): ptr T =
   cast[ptr type(p[])](cast[ByteAddress](p) +% off * sizeof(p[]))
@@ -295,48 +313,9 @@ type
     SDL_PACKEDLAYOUT_1555, SDL_PACKEDLAYOUT_5551, SDL_PACKEDLAYOUT_565,
     SDL_PACKEDLAYOUT_8888, SDL_PACKEDLAYOUT_2101010, SDL_PACKEDLAYOUT_1010102
 
-type
-  SDL_PixelFormatEnum* = enum
-    SDL_PIXELFORMAT_UNKNOWN, 
-    # SDL_PIXELFORMAT_INDEX1LSB = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX1, SDL_BITMAPORDER_4321, 0, 1, 0), 
-    # SDL_PIXELFORMAT_INDEX1MSB = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX1, SDL_BITMAPORDER_1234, 0, 1, 0), 
-    # SDL_PIXELFORMAT_INDEX4LSB = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX4, SDL_BITMAPORDER_4321, 0, 4, 0), 
-    # SDL_PIXELFORMAT_INDEX4MSB = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX4, SDL_BITMAPORDER_1234, 0, 4, 0), 
-    # SDL_PIXELFORMAT_INDEX8 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_INDEX8, 0, 0, 8, 1), 
-    # SDL_PIXELFORMAT_RGB332 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED8, SDL_PACKEDORDER_XRGB, SDL_PACKEDLAYOUT_332, 8, 1), 
-    # SDL_PIXELFORMAT_RGB444 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB, SDL_PACKEDLAYOUT_4444, 12, 2), 
-    # SDL_PIXELFORMAT_BGR444 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR, SDL_PACKEDLAYOUT_4444, 12, 2), 
-    # SDL_PIXELFORMAT_RGB555 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB, SDL_PACKEDLAYOUT_1555, 15, 2), 
-    # SDL_PIXELFORMAT_BGR555 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR, SDL_PACKEDLAYOUT_1555, 15, 2), 
-    # SDL_PIXELFORMAT_ARGB4444 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ARGB, SDL_PACKEDLAYOUT_4444, 16, 2), 
-    # SDL_PIXELFORMAT_RGBA4444 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_RGBA, SDL_PACKEDLAYOUT_4444, 16, 2), 
-    # SDL_PIXELFORMAT_ABGR4444 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ABGR, SDL_PACKEDLAYOUT_4444, 16, 2), 
-    # SDL_PIXELFORMAT_BGRA4444 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_BGRA, SDL_PACKEDLAYOUT_4444, 16, 2), 
-    # SDL_PIXELFORMAT_ARGB1555 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ARGB, SDL_PACKEDLAYOUT_1555, 16, 2), 
-    # SDL_PIXELFORMAT_RGBA5551 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_RGBA, SDL_PACKEDLAYOUT_5551, 16, 2), 
-    # SDL_PIXELFORMAT_ABGR1555 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_ABGR, SDL_PACKEDLAYOUT_1555, 16, 2), 
-    # SDL_PIXELFORMAT_BGRA5551 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_BGRA, SDL_PACKEDLAYOUT_5551, 16, 2), 
-    # SDL_PIXELFORMAT_RGB565 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XRGB, SDL_PACKEDLAYOUT_565, 16, 2), 
-    # SDL_PIXELFORMAT_BGR565 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED16, SDL_PACKEDORDER_XBGR, SDL_PACKEDLAYOUT_565, 16, 2), 
-    # SDL_PIXELFORMAT_RGB24 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_ARRAYU8, SDL_ARRAYORDER_RGB, 0, 24, 3), 
-    # SDL_PIXELFORMAT_BGR24 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_ARRAYU8, SDL_ARRAYORDER_BGR, 0, 24, 3), 
-    # SDL_PIXELFORMAT_RGB888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_XRGB, SDL_PACKEDLAYOUT_8888, 24, 4), 
-    # SDL_PIXELFORMAT_RGBX8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_RGBX, SDL_PACKEDLAYOUT_8888, 24, 4), 
-    # SDL_PIXELFORMAT_BGR888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_XBGR, SDL_PACKEDLAYOUT_8888, 24, 4), 
-    # SDL_PIXELFORMAT_BGRX8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_BGRX, SDL_PACKEDLAYOUT_8888, 24, 4), 
-    # SDL_PIXELFORMAT_ARGB8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ARGB, SDL_PACKEDLAYOUT_8888, 32, 4), 
-    # SDL_PIXELFORMAT_RGBA8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_RGBA, SDL_PACKEDLAYOUT_8888, 32, 4), 
-    # SDL_PIXELFORMAT_ABGR8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ABGR, SDL_PACKEDLAYOUT_8888, 32, 4), 
-    # SDL_PIXELFORMAT_BGRA8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_BGRA, SDL_PACKEDLAYOUT_8888, 32, 4), 
-    # SDL_PIXELFORMAT_ARGB2101010 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ARGB, SDL_PACKEDLAYOUT_2101010, 32,4),                   ##  Aliases for RGBA byte arrays of color data, for the current platform
-    # SDL_PIXELFORMAT_YV12 = SDL_DEFINE_PIXELFOURCC('Y', 'V', '1', '2'), ## *< Planar mode: Y + V + U  (3 planes)
-    # SDL_PIXELFORMAT_IYUV = SDL_DEFINE_PIXELFOURCC('I', 'Y', 'U', 'V'), ## *< Planar mode: Y + U + V  (3 planes)
-    # SDL_PIXELFORMAT_YUY2 = SDL_DEFINE_PIXELFOURCC('Y', 'U', 'Y', '2'), ## *< Packed mode: Y0+U0+Y1+V0 (1 plane)
-    # SDL_PIXELFORMAT_UYVY = SDL_DEFINE_PIXELFOURCC('U', 'Y', 'V', 'Y'), ## *< Packed mode: U0+Y0+V0+Y1 (1 plane)
-    # SDL_PIXELFORMAT_YVYU = SDL_DEFINE_PIXELFOURCC('Y', 'V', 'Y', 'U'), ## *< Packed mode: Y0+V0+Y1+U0 (1 plane)
-    # SDL_PIXELFORMAT_NV12 = SDL_DEFINE_PIXELFOURCC('N', 'V', '1', '2'), ## *< Planar mode: Y + U/V interleaved  (2 planes)
-    # SDL_PIXELFORMAT_NV21 = SDL_DEFINE_PIXELFOURCC('N', 'V', '2', '1'), ## *< Planar mode: Y + V/U interleaved  (2 planes)
-    # SDL_PIXELFORMAT_EXTERNAL_OES = SDL_DEFINE_PIXELFOURCC('O', 'E', 'S', ' ') ## *< Android video texture format
+template SDL_DEFINE_PIXELFORMAT*(t, order, layout, bits, bytes: untyped): untyped =
+  ((1 shl 28) or (t.int shl 24) or (order.int shl 20) or (layout.int shl 16) or (bits.int shl 8) or (bytes.int shl 0))
+
 
 const
   SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_ABGR8888
@@ -344,6 +323,43 @@ const
   SDL_PIXELFORMAT_BGRA32 = SDL_PIXELFORMAT_ARGB8888
   SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_RGBA8888
 
+type SDL_cond {.importc, header:"<sdl2/SDL_mutex.h>"} = object
+
+type
+  SDL_ThreadFunction* = proc (data: pointer): cint
+
+const
+  SDL_PASSED_BEGINTHREAD_ENDTHREAD* = true
+
+
+const
+  SDL_RELEASED* = 0
+  SDL_PRESSED* = 1
+
+# const
+#   SDL_beginthread* = _beginthreadex
+#   SDL_endthread* = _endthreadex
+
+# proc SDL_CreateThread*(fn: SDL_ThreadFunction; name: cstring; data: pointer;pfnBeginThread: pfnSDL_CurrentBeginThread;pfnEndThread: pfnSDL_CurrentEndThread): ptr SDL_Thread
+# proc SDL_CreateThreadWithStackSize*(fn: proc (a1: pointer): cint; name: cstring;stacksize: csize_t; data: pointer;pfnBeginThread: pfnSDL_CurrentBeginThread;pfnEndThread: pfnSDL_CurrentEndThread): ptr SDL_Thread
+# template SDL_CreateThread*(fn, name, data: untyped): untyped =
+#   SDL_CreateThread(fn, name, data,
+#                    cast[pfnSDL_CurrentBeginThread](SDL_beginthread),
+#                    cast[pfnSDL_CurrentEndThread](SDL_endthread))
+
+# template SDL_CreateThreadWithStackSize*(fn, name, stacksize, data: untyped): untyped =
+#   SDL_CreateThreadWithStackSize(fn, name, data, cast[pfnSDL_CurrentBeginThread](_beginthreadex),
+#                                 cast[pfnSDL_CurrentEndThread](SDL_endthread))
+
+# proc SDL_GetThreadName*(thread: ptr SDL_Thread): cstring
+# proc SDL_ThreadID*(): SDL_threadID
+# proc SDL_GetThreadID*(thread: ptr SDL_Thread): SDL_threadID
+# proc SDL_SetThreadPriority*(priority: SDL_ThreadPriority): cint
+# proc SDL_WaitThread*(thread: ptr SDL_Thread; status: ptr cint)
+# proc SDL_DetachThread*(thread: ptr SDL_Thread)
+# proc SDL_TLSCreate*(): SDL_TLSID
+# proc SDL_TLSGet*(id: SDL_TLSID): pointer
+# proc SDL_TLSSet*(id: SDL_TLSID; value: pointer; destructor: proc (a1: pointer)): cint
 
 
 var sws_flags*: cuint = SWS_BICUBIC
@@ -431,17 +447,17 @@ type
     start_pts_tb*: AVRational
     next_pts*: int64
     next_pts_tb*: AVRational
-    # decoder_tid*: ptr SDL_Thread
+    decoder_tid*: Thread[pointer]
 
   ShowMode* = enum
     SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT,
     SHOW_MODE_NB
 
-type SwrContext {.header:"<libswresample/swresample_internal.h>",importc:"struct SwrContext"} = object
+# type SwrContext {.header:"<libswresample/swresample_internal.h>",importc:"struct SwrContext"} = object
 
 type
   VideoState* {.bycopy.} = object
-    # read_tid*: ptr SDL_Thread
+    read_tid*: Thread[pointer]
     iformat*: ptr AVInputFormat
     abort_request*: cint
     force_refresh*: cint
@@ -647,7 +663,13 @@ var renderer_info*: RendererInfo
 
 var audio_dev*: AudioDeviceID
 
-const sdl_texture_format_map: seq[(AVPixelFormat,int)] = @[]
+type TextureFormatEntry = tuple
+  format:AVPixelFormat
+  texture_fmt: uint32
+
+const sdl_texture_format_map: seq[TextureFormatEntry] = @[
+  (AV_PIX_FMT_RGB8, SDL_PIXELFORMAT_RGB332)
+]
 ##  static const struct TextureFormatEntry
 ##  {
 ##      enum AVPixelFormat format;
@@ -688,8 +710,7 @@ proc cmp_audio_fmts*(fmt1: AVSampleFormat; channel_count1: int64;
   else:
     return cint channel_count1 != channel_count2 or fmt1 != fmt2
 
-proc get_valid_channel_layout*(channel_layout: int64; channels: cint): int64 {.
-    inline.} =
+proc get_valid_channel_layout*(channel_layout: int64; channels: cint): int64 {.inline.} =
   if av_get_channel_layout_nb_channels(channel_layout.uint64) == channels:
     return channel_layout
   else:
@@ -720,13 +741,13 @@ proc packet_queue_put_private*(q: ptr PacketQueue; pkt: ptr AVPacket): cint =
   return 0
 
 proc packet_queue_put*(q: ptr PacketQueue; pkt: ptr AVPacket): cint =
-  var ret: cint
+  var result: cint
 #   SDL_LockMutex(q.mutex)
-  ret = packet_queue_put_private(q, pkt)
+  result = packet_queue_put_private(q, pkt)
 #   SDL_UnlockMutex(q.mutex)
-  if pkt != addr(flush_pkt) and ret < 0:
+  if pkt != addr(flush_pkt) and result < 0:
     av_packet_unref(pkt)
-  return ret
+  return result
 
 proc packet_queue_put_nullpacket*(q: ptr PacketQueue; stream_index: cint): cint =
   var
@@ -793,11 +814,11 @@ proc packet_queue_start*(q: ptr PacketQueue) =
 proc packet_queue_get*(q: ptr PacketQueue; pkt: ptr AVPacket; b: cint;
                       serial: ptr cint): cint =
   var pkt1: ptr MyAVPacketList
-  var ret: cint
+  var result: cint
 #   SDL_LockMutex(q.mutex)
   while true:
     if q.abort_request != 0:
-      ret = -1
+      result = -1
       break
     pkt1 = q.first_pkt
     if pkt1 != nil:
@@ -811,19 +832,16 @@ proc packet_queue_get*(q: ptr PacketQueue; pkt: ptr AVPacket; b: cint;
       if serial != nil:
         serial[] = pkt1.serial
     #   av_free(pkt1)
-      ret = 1
+      result = 1
       break
     elif b == 0:
-      ret = 0
+      result = 0
       break
     # else:
     #   SDL_CondWait(q.cond, q.mutex)
 #   SDL_UnlockMutex(q.mutex)
-  return ret
+  return result
 
-type SDL_cond {.importc, header:"<sdl2/SDL_mutex.h>"} = object
-
-  
 
 proc decoder_init*(d: ptr Decoder; avctx: ptr AVCodecContext; queue: ptr PacketQueue; empty_queue_cond: SDL_cond) =
   #memset(d, 0, sizeof((Decoder)))
@@ -833,8 +851,10 @@ proc decoder_init*(d: ptr Decoder; avctx: ptr AVCodecContext; queue: ptr PacketQ
   d.start_pts = AV_NOPTS_VALUE
   d.pkt_serial = -1
 
+proc av_rescale_q*(a: int64; bq: AVRational; cq: AVRational): int64
+
 proc decoder_decode_frame*(d: ptr Decoder; frame: ptr AVFrame; sub: ptr AVSubtitle): cint =
-  var ret: cint = AVERROR(EAGAIN)
+  var result: cint = AVERROR(EAGAIN)
   while true:
     var pkt: AVPacket
     if d.queue.serial == d.pkt_serial:
@@ -843,31 +863,31 @@ proc decoder_decode_frame*(d: ptr Decoder; frame: ptr AVFrame; sub: ptr AVSubtit
           return -1
         case d.avctx.codec_type
         of AVMEDIA_TYPE_VIDEO:
-          ret = avcodec_receive_frame(d.avctx, frame)
-          if ret >= 0:
+          result = avcodec_receive_frame(d.avctx, frame)
+          if result >= 0:
             if decoder_reorder_pts == -1:
               frame.pts = frame.best_effort_timestamp
             elif decoder_reorder_pts == 0:
               frame.pts = frame.pkt_dts
         of AVMEDIA_TYPE_AUDIO:
-          ret = avcodec_receive_frame(d.avctx, frame)
-          if ret >= 0:
+          result = avcodec_receive_frame(d.avctx, frame)
+          if result >= 0:
             var tb = AVRational(num:1.cint, den:frame.sample_rate)
-            # if frame.pts != AV_NOPTS_VALUE: 
-            #   frame.pts = av_rescale_q(frame.pts, d.avctx.pkt_timebase, tb)
-            # elif d.next_pts != AV_NOPTS_VALUE:
-            #   frame.pts = av_rescale_q(d.next_pts, d.next_pts_tb, tb)
+            if frame.pts != AV_NOPTS_VALUE: 
+              frame.pts = av_rescale_q(frame.pts, d.avctx.pkt_timebase, tb)
+            elif d.next_pts != AV_NOPTS_VALUE:
+              frame.pts = av_rescale_q(d.next_pts, d.next_pts_tb, tb)
             if frame.pts != AV_NOPTS_VALUE:
               d.next_pts = frame.pts + frame.nb_samples
               d.next_pts_tb = tb
         else:discard
-        if ret == AVERROR_EOF:
+        if result == AVERROR_EOF:
           d.finished = d.pkt_serial
           avcodec_flush_buffers(d.avctx)
           return 0
-        if ret >= 0:
+        if result >= 0:
           return 1
-        if not (ret != AVERROR(EAGAIN)):
+        if not (result != AVERROR(EAGAIN)):
           break
     while true:
       if d.queue.nb_packets == 0: discard
@@ -891,14 +911,14 @@ proc decoder_decode_frame*(d: ptr Decoder; frame: ptr AVFrame; sub: ptr AVSubtit
     else:
       if d.avctx.codec_type == AVMEDIA_TYPE_SUBTITLE:
         var got_frame: cint = 0
-        ret = avcodec_decode_subtitle2(d.avctx, sub, addr(got_frame), addr(pkt))
-        if ret < 0:
-          ret = AVERROR(EAGAIN)
+        result = avcodec_decode_subtitle2(d.avctx, sub, addr(got_frame), addr(pkt))
+        if result < 0:
+          result = AVERROR(EAGAIN)
         else:
           if got_frame != 0 and pkt.data == nil:
             d.packet_pending = 1
             av_packet_move_ref(addr(d.pkt), addr(pkt))
-          ret = if got_frame != 0: 0 else: (if pkt.data != nil: AVERROR(EAGAIN) else: AVERROR_EOF)
+          result = if got_frame != 0: 0 else: (if pkt.data != nil: AVERROR(EAGAIN) else: AVERROR_EOF)
       else:
         if avcodec_send_packet(d.avctx, addr(pkt)) == AVERROR(EAGAIN):
           echo("Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n")
@@ -925,7 +945,7 @@ proc frame_queue_init*(f: ptr FrameQueue; pktq: ptr PacketQueue; max_size: cint;
 #     echo(nil, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError())
 #     return AVERROR(ENOMEM)
   f.pktq = pktq
-  f.max_size = FFMIN(max_size, FRAME_QUEUE_SIZE)
+  f.max_size = min(max_size, FRAME_QUEUE_SIZE)
   f.keep_last = not not keep_last
   i = 0
   while i < f.max_size:
@@ -1141,14 +1161,13 @@ proc calculate_display_rect*(rect: ptr sdl2.Rect; scr_xleft: cint; scr_ytop: cin
   rect.h = max(cast[cint](height), 1)
 
 proc get_sdl_pix_fmt_and_blendmode*(format: cint; sdl_pix_fmt: ptr uint32;sdl_blendmode: var BlendMode) =
-  var i: cint
   sdl_blendmode = BlendMode_None
   sdl_pix_fmt[] = SDL_PIXELFORMAT_UNKNOWN.uint32
   if format == AV_PIX_FMT_RGB32.cint or format == AV_PIX_FMT_RGB32_1.cint or format == AV_PIX_FMT_BGR32.cint or format == AV_PIX_FMT_BGR32_1.cint:
     sdl_blendmode = BlendMode_Blend
-  for (format, texture_fmt) in sdl_texture_format_map:
-    if format == format:
-      sdl_pix_fmt[] = texture_fmt.uint32
+  for e in sdl_texture_format_map:
+    if format == e.format.cint:
+      sdl_pix_fmt[] = e.texture_fmt.uint32
       return
 
 proc updateYUVTexture*(texture:var TexturePtr; rect: ptr sdl2.Rect;
@@ -1156,7 +1175,7 @@ proc updateYUVTexture*(texture:var TexturePtr; rect: ptr sdl2.Rect;
                           Upitch: cint; Vplane: ptr uint8; Vpitch: cint): cint {.importc.}
 
 proc upload_texture*(tex: var TexturePtr; frame: ptr AVFrame;img_convert_ctx: ptr ptr SwsContext): cint =
-  var ret: cint = 0
+  var result: cint = 0
   var sdl_pix_fmt: uint32
   var sdl_blendmode: BlendMode
   get_sdl_pix_fmt_and_blendmode(frame.format, addr(sdl_pix_fmt), sdl_blendmode)
@@ -1174,21 +1193,21 @@ proc upload_texture*(tex: var TexturePtr; frame: ptr AVFrame;img_convert_ctx: pt
         unlockTexture(tex)
     else:
       echo("Cannot initialize the conversion context\n")
-      ret = -1
+      result = -1
   of SDL_PIXELFORMAT_IYUV.uint32:
     if frame.linesize[0] > 0 and frame.linesize[1] > 0 and frame.linesize[2] > 0:
-      ret = updateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0], frame.linesize[0],frame.data[1], frame.linesize[1], frame.data[2],frame.linesize[2])
+      result = updateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0], frame.linesize[0],frame.data[1], frame.linesize[1], frame.data[2],frame.linesize[2])
     elif frame.linesize[0] < 0 and frame.linesize[1] < 0 and frame.linesize[2] < 0:
-      ret = updateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0] + frame.linesize[0] * (frame.height - 1), -frame.linesize[0], frame.data[1] + frame.linesize[1] * (AV_CEIL_RSHIFT(frame.height, 1) - 1),-frame.linesize[1], frame.data[2] + frame.linesize[2] * (AV_CEIL_RSHIFT(frame.height, 1) - 1), -frame.linesize[2])
+      result = updateYUVTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0] + frame.linesize[0] * (frame.height - 1), -frame.linesize[0], frame.data[1] + frame.linesize[1] * (AV_CEIL_RSHIFT(frame.height, 1) - 1),-frame.linesize[1], frame.data[2] + frame.linesize[2] * (AV_CEIL_RSHIFT(frame.height, 1) - 1), -frame.linesize[2])
     else:
       echo("Mixed negative and positive linesizes are not supported.\n")
       return -1
   else:
     if frame.linesize[0] < 0:
-      ret = cint updateTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0] + frame.linesize[0] * (frame.height - 1), -frame.linesize[0])
+      result = cint updateTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0] + frame.linesize[0] * (frame.height - 1), -frame.linesize[0])
     else:
-      ret = cint updateTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0], frame.linesize[0])
-  return ret
+      result = cint updateTexture(tex, cast[ptr sdl2.Rect](nil), frame.data[0], frame.linesize[0])
+  return result
 
 type
   SDL_YUV_CONVERSION_MODE* = enum
@@ -1287,6 +1306,7 @@ proc av_gettime*(): int64 =
 proc av_gettime_relative*(): int64 =
   return av_gettime() + 42 * 60 * 60 * 1000000
 
+
 proc video_audio_display*(s: ptr VideoState) =
   var
     i: cint
@@ -1330,7 +1350,7 @@ proc video_audio_display*(s: ptr VideoState) =
     x = compute_mod(s.sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE)
     i_start = x
     if s.show_mode == SHOW_MODE_WAVES:
-      h = int.low
+      h = int.low.cint
       i = 0
       while i < 1000:
         var idx: cint = (SAMPLE_ARRAY_SIZE + x - i) mod SAMPLE_ARRAY_SIZE
@@ -1347,7 +1367,7 @@ proc video_audio_display*(s: ptr VideoState) =
   else:
     i_start = s.last_i_start
   if s.show_mode == SHOW_MODE_WAVES:
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255)
+    setDrawColor(renderer, 255, 255, 255, 255)
     h = s.height div nb_display_channels
     h2 = (h * 9) div 20
     ch = 0
@@ -1369,15 +1389,15 @@ proc video_audio_display*(s: ptr VideoState) =
           dec(i, SAMPLE_ARRAY_SIZE)
         inc(x)
       inc(ch)
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255)
+    setDrawColor(renderer, 0, 0, 255, 255)
     ch = 1
     while ch < nb_display_channels:
       y = s.ytop + ch * h
       fill_rectangle(s.xleft, y, s.width, 1)
       inc(ch)
   else:
-    if realloc_texture(addr(s.vis_texture), SDL_PIXELFORMAT_ARGB8888, s.width,
-                      s.height, SDL_BLENDMODE_NONE, 1) < 0:
+    if realloc_texture(s.vis_texture, SDL_PIXELFORMAT_ARGB8888, s.width,
+                      s.height, BlendMode_None, 1) < 0:
       return
     nb_display_channels = min(nb_display_channels, 2)
     if rdft_bits != s.rdft_bits:
@@ -1385,15 +1405,14 @@ proc video_audio_display*(s: ptr VideoState) =
       av_free(s.rdft_data)
       s.rdft = av_rdft_init(rdft_bits, DFT_R2C)
       s.rdft_bits = rdft_bits
-      s.rdft_data = av_malloc_array(nb_freq, 4 * sizeof((s.rdft_data[])))
-    if not s.rdft or not s.rdft_data:
-      echo(nil, AV_LOG_ERROR,
-           "Failed to allocate buffers for RDFT, switching to waves display\n")
+      s.rdft_data = cast[ptr FFTSample](av_malloc_array(nb_freq, 4 * sizeof((s.rdft_data[]))))
+    if s.rdft == nil or  s.rdft_data == nil:
+      echo("Failed to allocate buffers for RDFT, switching to waves display\n")
       s.show_mode = SHOW_MODE_WAVES
     else:
       var data: array[2, ptr FFTSample]
-      ##  sdl2.Rect rect = {.x = s->xpos, .y = 0, .w = 1, .h = s->height};
-      var pixels: ptr uint32_t
+      var rect: sdl2.Rect = (x:s.xpos, y:0.cint,w:1.cint,h:s.height)
+      var pixels: ptr uint32
       var pitch: cint
       ch = 0
       while ch < nb_display_channels:
@@ -1401,30 +1420,26 @@ proc video_audio_display*(s: ptr VideoState) =
         i = i_start + ch
         x = 0
         while x < 2 * nb_freq:
-          var w: cdouble = (x - nb_freq) * (1.0 div nb_freq)
-          data[ch][x] = s.sample_array[i] * (1.0 - w * w)
+          var w: cdouble = cdouble (x - nb_freq) * (1 div nb_freq)
+          data[ch][x] = s.sample_array[i].float * (1 - w * w)
           inc(i, channels)
           if i >= SAMPLE_ARRAY_SIZE:
             dec(i, SAMPLE_ARRAY_SIZE)
           inc(x)
         av_rdft_calc(s.rdft, data[ch])
         inc(ch)
-      if not lockTexture(s.vis_texture, addr(rect), cast[ptr pointer](addr(pixels)),
-                      addr(pitch)):
+      if not lockTexture(s.vis_texture, addr(rect), cast[ptr pointer](addr(pixels)), addr(pitch)):
         pitch = pitch shr 2
-        inc(pixels, pitch * s.height)
+        pixels += pitch * s.height
         y = 0
         while y < s.height:
-          var w: cdouble = 1 div sqrt(nb_freq)
-          var a: cint = sqrt(w *
-              sqrt(data[0][2 * y + 0] * data[0][2 * y + 0] +
-              data[0][2 * y + 1] * data[0][2 * y + 1]))
-          var b: cint = if (nb_display_channels == 2): sqrt(
-              w * hypot(data[1][2 * y + 0], data[1][2 * y + 1])) else: a
+          var w: cdouble = cdouble 1 div sqrt(nb_freq.float).int
+          var a: uint32 = uint32 sqrt(w * sqrt(data[0][2 * y + 0] * data[0][2 * y + 0] + data[0][2 * y + 1] * data[0][2 * y + 1]))
+          var b: uint32 = if nb_display_channels == 2: sqrt(w * hypot(data[1][2 * y + 0], data[1][2 * y + 1])).uint32 else: a
           a = min(a, 255)
           b = min(b, 255)
-          dec(pixels, pitch)
-          pixels[] = (a shl 16) + (b shl 8) + ((a + b) shr 1)
+          pixels -= pitch
+          pixels[] =  (a shl 16) + (b shl 8) + ((a + b) shr 1)
           inc(y)
         unlockTexture(s.vis_texture)
       copy(renderer, s.vis_texture, nil, nil)
@@ -1436,19 +1451,19 @@ proc video_audio_display*(s: ptr VideoState) =
 proc stream_component_close*(vs: ptr VideoState; stream_index: cint) =
   var ic: ptr AVFormatContext = vs.ic
   var codecpar: ptr AVCodecParameters
-  if stream_index < 0 or stream_index >= ic.nb_streams:
+  if stream_index < 0 or stream_index >= ic.nb_streams.cint:
     return
   codecpar = ic.streams[stream_index].codecpar
   case codecpar.codec_type
   of AVMEDIA_TYPE_AUDIO:
     decoder_abort(addr(vs.auddec), addr(vs.sampq))
-    SDL_CloseAudioDevice(audio_dev)
+    closeAudioDevice(audio_dev)
     decoder_destroy(addr(vs.auddec))
     swr_free(addr(vs.swr_ctx))
     av_freep(addr(vs.audio_buf1))
     vs.audio_buf1_size = 0
     vs.audio_buf = nil
-    if vs.rdft:
+    if vs.rdft != nil:
       av_rdft_end(vs.rdft)
       av_freep(addr(vs.rdft_data))
       vs.rdft = nil
@@ -1460,7 +1475,7 @@ proc stream_component_close*(vs: ptr VideoState; stream_index: cint) =
     decoder_abort(addr(vs.subdec), addr(vs.subpq))
     decoder_destroy(addr(vs.subdec))
   else:
-    nil
+    discard
   ic.streams[stream_index].`discard` = AVDISCARD_ALL
   case codecpar.codec_type
   of AVMEDIA_TYPE_AUDIO:
@@ -1473,12 +1488,12 @@ proc stream_component_close*(vs: ptr VideoState; stream_index: cint) =
     vs.subtitle_st = nil
     vs.subtitle_stream = -1
   else:
-    nil
+    discard
 
 proc stream_close*(vs: ptr VideoState) =
   ##  XXX: use a special url_shutdown call to abort parse cleanly
   vs.abort_request = 1
-  SDL_WaitThread(vs.read_tid, nil)
+  # SDL_WaitThread(vs.read_tid, nil)
   ##  close each stream
   if vs.audio_stream >= 0:
     stream_component_close(vs, vs.audio_stream)
@@ -1494,42 +1509,55 @@ proc stream_close*(vs: ptr VideoState) =
   frame_queue_destory(addr(vs.pictq))
   frame_queue_destory(addr(vs.sampq))
   frame_queue_destory(addr(vs.subpq))
-  SDL_DestroyCond(vs.continue_read_thread)
+  # SDL_DestroyCond(vs.continue_read_thread)
   sws_freeContext(vs.img_convert_ctx)
   sws_freeContext(vs.sub_convert_ctx)
   av_free(vs.filename)
-  if vs.vis_texture:
-    SDL_DestroyTexture(vs.vis_texture)
-  if vs.vid_texture:
-    SDL_DestroyTexture(vs.vid_texture)
-  if vs.sub_texture:
-    SDL_DestroyTexture(vs.sub_texture)
+  if vs.vis_texture != nil:
+    destroy(vs.vis_texture)
+  if vs.vid_texture != nil:
+    destroy(vs.vid_texture)
+  if vs.sub_texture != nil:
+    destroy(vs.sub_texture)
   av_free(vs)
 
+var sws_dict*: ptr AVDictionary
+
+var swr_opts*: ptr AVDictionary
+
+var
+  format_opts*: ptr AVDictionary
+  codec_opts*: ptr AVDictionary
+  resample_opts*: ptr AVDictionary
+
+proc uninit_opts*() =
+  av_dict_free(addr(swr_opts))
+  av_dict_free(addr(sws_dict))
+  av_dict_free(addr(format_opts))
+  av_dict_free(addr(codec_opts))
+  av_dict_free(addr(resample_opts))
+
+
 proc do_exit*(vs: ptr VideoState) =
-  if vs:
+  if vs != nil:
     stream_close(vs)
-  if renderer:
-    SDL_DestroyRenderer(renderer)
-  if window:
-    SDL_DestroyWindow(window)
+  if renderer != nil:
+    destroy(renderer)
+  if window != nil:
+    destroyWindow(window)
   uninit_opts()
-  when CONFIG_AVFILTER:
-    av_freep(addr(vfilters_list))
-  avformat_network_deinit()
-  if show_status:
-    printf("\n")
-  SDL_Quit()
-  echo(nil, AV_LOG_QUIET, "%s", "")
-  exit(0)
+  av_freep(addr(vfilters_list))
+  discard avformat_network_deinit()
+  sdl2.quit()
+  system.quit(0)
 
 proc sigterm_handler*(sig: cint) =
-  exit(123)
+  system.quit(123)
 
 proc set_default_window_size*(width: cint; height: cint; sar: AVRational) =
   var rect: sdl2.Rect
-  var max_width: cint = if screen_width: screen_width else: int.high
-  var max_height: cint = if screen_height: screen_height else: int.high
+  var max_width: cint =  if screen_width: screen_width else: int.high.cint
+  var max_height: cint = if screen_height: screen_height else: int.high.cint
   if max_width == int.high and max_height == int.high:
     max_height = height
   calculate_display_rect(addr(rect), 0, 0, max_width, max_height, width, height, sar)
@@ -1542,14 +1570,14 @@ proc video_open*(vs: ptr VideoState): cint =
     h: cint
   w = if screen_width: screen_width else: default_width
   h = if screen_height: screen_height else: default_height
-  if not window_title:
+  if window_title == nil:
     window_title = input_filename
-  SDL_SetWindowTitle(window, window_title)
-  SDL_SetWindowSize(window, w, h)
-  SDL_SetWindowPosition(window, screen_left, screen_top)
+  setTitle(window, window_title)
+  setSize(window, w, h)
+  setPosition(window, screen_left, screen_top)
   if is_full_screen:
-    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP)
-  SDL_ShowWindow(window)
+    discard setFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP)
+  showWindow(window)
   vs.width = w
   vs.height = h
   return 0
@@ -1557,15 +1585,15 @@ proc video_open*(vs: ptr VideoState): cint =
 ##  display the current picture, if any
 
 proc video_display*(vs: ptr VideoState) =
-  if not vs.width:
-    video_open(vs)
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-  SDL_RenderClear(renderer)
-  if vs.audio_st and vs.show_mode != SHOW_MODE_VIDEO:
+  if vs.width == 0:
+    discard video_open(vs)
+  setDrawColor(renderer, 0, 0, 0, 255)
+  clear(renderer)
+  if vs.audio_st != nil and vs.show_mode != SHOW_MODE_VIDEO:
     video_audio_display(vs)
-  elif vs.video_st:
+  elif vs.video_st != nil:
     video_image_display(vs)
-  SDL_RenderPresent(renderer)
+  present(renderer)
 
 
 
@@ -1575,7 +1603,7 @@ proc get_clock*(c: ptr Clock): cdouble =
   if c.paused:
     return c.pts
   else:
-    var time: cdouble = av_gettime_relative() div 1000000.0
+    var time: cdouble = cdouble av_gettime_relative() div 1000000
     return c.pts_drift + time - (time - c.last_updated) * (1.0 - c.speed)
 
 proc set_clock_at*(c: ptr Clock; pts: cdouble; serial: cint; time: cdouble) =
@@ -1585,7 +1613,7 @@ proc set_clock_at*(c: ptr Clock; pts: cdouble; serial: cint; time: cdouble) =
   c.serial = serial
 
 proc set_clock*(c: ptr Clock; pts: cdouble; serial: cint) =
-  var time: cdouble = av_gettime_relative() div 1000000.0
+  var time: cdouble = cdouble av_gettime_relative() div 1000000
   set_clock_at(c, pts, serial, time)
 
 proc set_clock_speed*(c: ptr Clock; speed: cdouble) =
@@ -1598,21 +1626,22 @@ proc init_clock*(c: ptr Clock; queue_serial: ptr cint) =
   c.queue_serial = queue_serial
   set_clock(c, NAN, -1)
 
+
+
 proc sync_clock_to_slave*(c: ptr Clock; slave: ptr Clock) =
   var clock: cdouble = get_clock(c)
   var slave_clock: cdouble = get_clock(slave)
-  if not isnan(slave_clock) and
-      (isnan(clock) or fabs(clock - slave_clock) > AV_NOSYNC_THRESHOLD):
+  if slave_clock != Nan and (clock == Nan or abs(clock - slave_clock) > AV_NOSYNC_THRESHOLD):
     set_clock(c, slave_clock, slave.serial)
 
 proc get_master_sync_type*(vs: ptr VideoState): cint =
   if vs.av_sync_type == AV_SYNC_VIDEO_MASTER:
-    if vs.video_st:
+    if vs.video_st != nil:
       return AV_SYNC_VIDEO_MASTER
     else:
       return AV_SYNC_AUDIO_MASTER
   elif vs.av_sync_type == AV_SYNC_AUDIO_MASTER:
-    if vs.audio_st:
+    if vs.audio_st != nil:
       return AV_SYNC_AUDIO_MASTER
     else:
       return AV_SYNC_EXTERNAL_CLOCK
@@ -1641,15 +1670,14 @@ proc check_external_clock_speed*(vs: ptr VideoState) =
         vs.extclk.speed - EXTERNAL_CLOCK_SPEED_STEP))
   elif (vs.video_stream < 0 or
       vs.videoq.nb_packets > EXTERNAL_CLOCK_MAX_FRAMES) and
-      (vs.audio_stream < 0 or
+      (vs.audio_stream < 0 or 
       vs.audioq.nb_packets > EXTERNAL_CLOCK_MAX_FRAMES):
-    set_clock_speed(addr(vs.extclk), FFMIN(EXTERNAL_CLOCK_SPEED_MAX,
+    set_clock_speed(addr(vs.extclk), min(EXTERNAL_CLOCK_SPEED_MAX,
         vs.extclk.speed + EXTERNAL_CLOCK_SPEED_STEP))
   else:
     var speed: cdouble = vs.extclk.speed
     if speed != 1.0:
-      set_clock_speed(addr(vs.extclk), speed +
-          EXTERNAL_CLOCK_SPEED_STEP * (1.0 - speed) div fabs(1.0 - speed))
+      set_clock_speed(addr(vs.extclk), speed + EXTERNAL_CLOCK_SPEED_STEP * (1.0 - speed) / abs(1.0 - speed))
 
 ##  seek in the stream
 
@@ -1661,19 +1689,21 @@ proc stream_seek*(vs: ptr VideoState; pos: int64; rel: int64; seek_by_bytes: cin
     if seek_by_bytes:
       vs.seek_flags = vs.seek_flags or AVSEEK_FLAG_BYTE
     vs.seek_req = 1
-    SDL_CondSignal(vs.continue_read_thread)
+    # SDL_CondSignal(vs.continue_read_thread)
 
 ##  pause or resume the video
 
 proc stream_toggle_pause*(vs: ptr VideoState) =
   if vs.paused:
-    inc(vs.frame_timer,
-        av_gettime_relative() div 1000000.0 - vs.vidclk.last_updated)
+    vs.frame_timer += cdouble av_gettime_relative() div 1000000 - vs.vidclk.last_updated.int64
     if vs.read_pause_return != AVERROR(ENOSYS):
       vs.vidclk.paused = 0
     set_clock(addr(vs.vidclk), get_clock(addr(vs.vidclk)), vs.vidclk.serial)
   set_clock(addr(vs.extclk), get_clock(addr(vs.extclk)), vs.extclk.serial)
-  vs.paused = vs.audclk.paused = vs.vidclk.paused = vs.extclk.paused = not vs.paused
+  vs.paused= not vs.paused
+  vs.audclk.paused= not vs.paused
+  vs.vidclk.paused = not vs.paused
+  vs.extclk.paused = not vs.paused
 
 proc toggle_pause*(vs: ptr VideoState) =
   stream_toggle_pause(vs)
@@ -1683,8 +1713,8 @@ proc toggle_mute*(vs: ptr VideoState) =
   vs.muted = not vs.muted
 
 proc update_volume*(vs: ptr VideoState; sign: cint; step: cdouble) =
-  var volume_level: cdouble = if vs.audio_volume: (20 * log(vs.audio_volume div cast[cdouble](SDL_MIX_MAXVOLUME)) div log(10)) else: -1000.0
-  var new_volume: cint = lrint(SDL_MIX_MAXVOLUME * pow(10.0, (volume_level + sign * step) div 20.0))
+  var volume_level: cdouble = if vs.audio_volume: (20 * ln(float64 vs.audio_volume div SDL_MIX_MAXVOLUME) / ln(10.0)) else: -1000.0
+  var new_volume: cint = cint round(SDL_MIX_MAXVOLUME * pow(10.0, (volume_level + sign.cdouble * step) / 20.0))
   vs.audio_volume = av_clip_c(if vs.audio_volume == new_volume: (vs.audio_volume + sign) else: new_volume, 0, SDL_MIX_MAXVOLUME)
 
 proc step_to_next_frame*(vs: ptr VideoState) =
@@ -1699,28 +1729,24 @@ proc compute_target_delay*(delay: cdouble; vs: ptr VideoState): cdouble =
     diff: cdouble = 0
   ##  update delay to follow master synchronisation source
   if get_master_sync_type(vs) != AV_SYNC_VIDEO_MASTER:
-    ##  if video is slave, we try to correct big delays by
-    ##            duplicating or deleting a frame
+    ##  if video is slave, we try to correct big delays by duplicating or deleting a frame
     diff = get_clock(addr(vs.vidclk)) - get_master_clock(vs)
-    ##  skip or repeat frame. We take into account the
-    ##            delay to compute the threshold. I still don't know
-    ##            if it is the best guess
-    sync_threshold = max(AV_SYNC_THRESHOLD_MIN,
-                         FFMIN(AV_SYNC_THRESHOLD_MAX, delay))
-    if not isnan(diff) and fabs(diff) < vs.max_frame_duration:
+    ##  skip or repeat frame. We take into account the delay to compute the threshold. I still don't know if it is the best guess
+    sync_threshold = max(AV_SYNC_THRESHOLD_MIN, min(AV_SYNC_THRESHOLD_MAX, delay))
+    if diff != Nan and abs(diff) < vs.max_frame_duration:
       if diff <= -sync_threshold:
-        delay = max(0, delay + diff)
+        result = max(0, delay + diff)
       elif diff >= sync_threshold and delay > AV_SYNC_FRAMEDUP_THRESHOLD:
-        delay = delay + diff
+        result = delay + diff
       elif diff >= sync_threshold:
-        delay = 2 * delay
-  echo(nil, AV_LOG_TRACE, "video: delay=%0.3f A-V=%f\n", delay, -diff)
+        result = 2 * delay
+  echo("video: delay=%0.3f A-V=%f\n", delay, -diff)
   return delay
 
 proc vp_duration*(vs: ptr VideoState; vp: ptr Frame; nextvp: ptr Frame): cdouble =
   if vp.serial == nextvp.serial:
     var duration: cdouble = nextvp.pts - vp.pts
-    if isnan(duration) or duration <= 0 or duration > vs.max_frame_duration:
+    if duration == Nan or duration <= 0 or duration > vs.max_frame_duration:
       return vp.duration
     else:
       return duration
@@ -1734,23 +1760,55 @@ proc update_video_pts*(vs: ptr VideoState; pts: cdouble; pos: int64; serial: cin
 
 ##  called to display each frame
 
+type
+  ff_pad_helper_AVBPrint* {.bycopy.} = object
+    str*: cstring
+    len*: cuint
+    size*: cuint
+    size_max*: cuint
+    reserved_internal_buffer*: array[1, char]
+
+  AVBPrint* {.bycopy.} = object
+    str*: cstring
+    len*: cuint
+    size*: cuint
+    size_max*: cuint
+    reserved_internal_buffer*: array[1, char]
+    reserved_padding*: array[1024 - sizeof(ff_pad_helper_AVBPrint), char]
+
+proc av_bprint_init*(buf: ptr AVBPrint; size_init: cuint; size_max: cuint)
+proc av_bprint_init_for_buffer*(buf: ptr AVBPrint; buffer: cstring; size: cuint)
+proc av_bprintf*(buf: ptr AVBPrint; fmt: cstring) {.varargs.}
+proc av_vbprintf*(buf: ptr AVBPrint; fmt: cstring; vl_arg: varargs[untyped])
+proc av_bprint_chars*(buf: ptr AVBPrint; c: char; n: cuint)
+
+
+proc av_bprint_get_buffer*(buf: ptr AVBPrint; size: cuint; mem: ptr ptr cuchar;
+                          actual_size: ptr cuint)
+proc av_bprint_clear*(buf: ptr AVBPrint)
+proc av_bprint_finalize*(buf: ptr AVBPrint; ret_str: cstringArray): cint
+
+const
+  AV_BPRINT_SIZE_UNLIMITED* = uint64.high
+  AV_BPRINT_SIZE_AUTOMATIC* = 1
+  AV_BPRINT_SIZE_COUNT_ONLY* = 0
+
+
 proc video_refresh*(opaque: pointer; remaining_time: ptr cdouble) =
-  var vs: ptr VideoState = opaque
+  var vs: ptr VideoState = cast[ptr VideoState](opaque)
   var time: cdouble
   var
     sp: ptr Frame
     sp2: ptr Frame
-  if not vs.paused and get_master_sync_type(vs) == AV_SYNC_EXTERNAL_CLOCK and
-      vs.realtime:
+  if vs.paused == 0 and get_master_sync_type(vs) == AV_SYNC_EXTERNAL_CLOCK and vs.realtime != 0:
     check_external_clock_speed(vs)
-  if not display_disable and vs.show_mode != SHOW_MODE_VIDEO and vs.audio_st:
-    time = av_gettime_relative() div 1000000.0
-    if vs.force_refresh or vs.last_vis_time + rdftspeed < time:
+  if display_disable == 0 and vs.show_mode != SHOW_MODE_VIDEO and vs.audio_st != nil:
+    time = cdouble av_gettime_relative().int / 1000000
+    if vs.force_refresh != 0 or vs.last_vis_time + rdftspeed < time:
       video_display(vs)
       vs.last_vis_time = time
-    remaining_time[] = FFMIN(remaining_time[],
-                           vs.last_vis_time + rdftspeed - time)
-  if vs.video_st:
+    remaining_time[] = min(remaining_time[],vs.last_vis_time + rdftspeed - time)
+  if vs.video_st != nil:
     if frame_queue_nb_remaining(addr(vs.pictq)) == 0:
       ##  nothing to do, no picture to display in the queue
     else:
@@ -1766,35 +1824,35 @@ proc video_refresh*(opaque: pointer; remaining_time: ptr cdouble) =
       vp = frame_queue_peek(addr(vs.pictq))
       if vp.serial != vs.videoq.serial:
         frame_queue_next(addr(vs.pictq))
-        break retry
+        echo "retry"
       if lastvp.serial != vp.serial:
-        vs.frame_timer = av_gettime_relative() div 1000000.0
+        vs.frame_timer = cdouble av_gettime_relative() div 1000000
       if vs.paused:
-        break display
+        echo "display"
       last_duration = vp_duration(vs, lastvp, vp)
       delay = compute_target_delay(last_duration, vs)
-      time = av_gettime_relative() div 1000000.0
+      time = cdouble av_gettime_relative() div 1000000
       if time < vs.frame_timer + delay:
-        remaining_time[] = FFMIN(vs.frame_timer + delay - time, remaining_time[])
-        break display
-      inc(vs.frame_timer, delay)
+        remaining_time[] = min(vs.frame_timer + delay - time, remaining_time[])
+        echo "display"
+      vs.frame_timer += delay
       if delay > 0 and time - vs.frame_timer > AV_SYNC_THRESHOLD_MAX:
         vs.frame_timer = time
-      SDL_LockMutex(vs.pictq.mutex)
-      if not isnan(vp.pts):
+      # SDL_LockMutex(vs.pictq.mutex)
+      if vp.pts != Nan:
         update_video_pts(vs, vp.pts, vp.pos, vp.serial)
-      SDL_UnlockMutex(vs.pictq.mutex)
+      # SDL_UnlockMutex(vs.pictq.mutex)
       if frame_queue_nb_remaining(addr(vs.pictq)) > 1:
         var nextvp: ptr Frame = frame_queue_peek_next(addr(vs.pictq))
         duration = vp_duration(vs, vp, nextvp)
-        if not vs.step and
+        if vs.step == 0 and
             (framedrop > 0 or
-            (framedrop and get_master_sync_type(vs) != AV_SYNC_VIDEO_MASTER)) and
+            (framedrop != 0 and get_master_sync_type(vs) != AV_SYNC_VIDEO_MASTER)) and
             time > vs.frame_timer + duration:
           inc(vs.frame_drops_late)
           frame_queue_next(addr(vs.pictq))
-          break retry
-      if vs.subtitle_st:
+          echo "retry"
+      if vs.subtitle_st != nil:
         while frame_queue_nb_remaining(addr(vs.subpq)) > 0:
           sp = frame_queue_peek(addr(vs.subpq))
           if frame_queue_nb_remaining(addr(vs.subpq)) > 1:
@@ -1804,28 +1862,20 @@ proc video_refresh*(opaque: pointer; remaining_time: ptr cdouble) =
           if sp.serial != vs.subtitleq.serial or
               (vs.vidclk.pts >
               (sp.pts + (cast[cfloat](sp.sub.end_display_time div 1000)))) or
-              (sp2 and
+              (sp2 != nil and
               vs.vidclk.pts >
               (sp2.pts + (cast[cfloat](sp2.sub.start_display_time div 1000)))):
             if sp.uploaded:
-              var i: cint
-              i = 0
-              while i < sp.sub.num_rects:
-                var sub_rect: ptr AVSubtitleRect = sp.sub.rects[i]
+              for i in 0.. sp.sub.num_rects-1:
+                var sub_rect: ptr AVSubtitleRect = sp.sub.rects[i.int]
                 var pixels: ptr uint8
                 var
                   pitch: cint
-                  j: cint
-                if not lockTexture(vs.sub_texture,
-                                     cast[ptr sdl2.Rect](sub_rect),
-                                     cast[ptr pointer](addr(pixels)), addr(pitch)):
-                  j = 0
-                  while j < sub_rect.h:
-                    #memset(pixels, 0, sub_rect.w shl 2)
-                    inc(j)
-                    inc(pixels, pitch)
+                if not lockTexture(vs.sub_texture, cast[ptr sdl2.Rect](sub_rect), cast[ptr pointer](addr(pixels)), addr(pitch)):
+                  for j in 0.. sub_rect.h-1:
+                    # memset(pixels, 0, sub_rect.w shl 2)
+                    pixels += pitch
                   unlockTexture(vs.sub_texture)
-                inc(i)
             frame_queue_next(addr(vs.subpq))
           else:
             break
@@ -1834,8 +1884,8 @@ proc video_refresh*(opaque: pointer; remaining_time: ptr cdouble) =
       if vs.step and not vs.paused:
         stream_toggle_pause(vs)
     ##  display picture
-    if not display_disable and vs.force_refresh and
-        vs.show_mode == SHOW_MODE_VIDEO and vs.pictq.rindex_shown:
+    if display_disable == 0 and vs.force_refresh != 0 and
+        vs.show_mode == SHOW_MODE_VIDEO and vs.pictq.rindex_shown != 0:
       video_display(vs)
   vs.force_refresh = 0
   if show_status:
@@ -1848,43 +1898,42 @@ proc video_refresh*(opaque: pointer; remaining_time: ptr cdouble) =
       sqsize: cint
     var av_diff: cdouble
     cur_time = av_gettime_relative()
-    if not last_time or (cur_time - last_time) >= 30000:
+    if last_time == 0 or (cur_time - last_time) >= 30000:
       aqsize = 0
       vqsize = 0
       sqsize = 0
-      if vs.audio_st:
+      if vs.audio_st != nil:
         aqsize = vs.audioq.size
-      if vs.video_st:
+      if vs.video_st != nil:
         vqsize = vs.videoq.size
-      if vs.subtitle_st:
+      if vs.subtitle_st != nil:
         sqsize = vs.subtitleq.size
       av_diff = 0
-      if vs.audio_st and vs.video_st:
+      if vs.audio_st != nil and vs.video_st != nil:
         av_diff = get_clock(addr(vs.audclk)) - get_clock(addr(vs.vidclk))
-      elif vs.video_st:
+      elif vs.video_st != nil:
         av_diff = get_master_clock(vs) - get_clock(addr(vs.vidclk))
-      elif vs.audio_st:
+      elif vs.audio_st != nil:
         av_diff = get_master_clock(vs) - get_clock(addr(vs.audclk))
       av_bprint_init(addr(buf), 0, AV_BPRINT_SIZE_AUTOMATIC)
       av_bprintf(addr(buf),
-                 "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%", PRId64,
-                 "/%", PRId64, "   \c", get_master_clock(vs), if (
-          vs.audio_st and vs.video_st): "A-V" else: (
-          if vs.video_st: "M-V" else: (if vs.audio_st: "M-A" else: "   ")),
+                 "%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%", "lld",
+                 "/%", "lld", "   \c", get_master_clock(vs), if (
+          vs.audio_st != nil and vs.video_st != nil): "A-V" else: (
+          if vs.video_st != nil: "M-V" else: (if vs.audio_st != nil: "M-A" else: "   ")),
                  av_diff, vs.frame_drops_early + vs.frame_drops_late,
-                 aqsize div 1024, vqsize div 1024, sqsize, if vs.video_st: vs.viddec.avctx.pts_correction_num_faulty_dts else: 0, if vs.video_st: vs.viddec.avctx.pts_correction_num_faulty_pts else: 0)
+                 aqsize div 1024, vqsize div 1024, sqsize, if vs.video_st != nil: vs.viddec.avctx.pts_correction_num_faulty_dts else: 0, if vs.video_st != nil: vs.viddec.avctx.pts_correction_num_faulty_pts else: 0)
       if show_status == 1 and AV_LOG_INFO > av_log_get_level():
-        fprintf(stderr, "%s", buf.str)
+        echo buf.str
       else:
-        echo(nil, AV_LOG_INFO, "%s", buf.str)
-      fflush(stderr)
-      av_bprint_finalize(addr(buf), nil)
+        echo(buf.str)
+      discard av_bprint_finalize(addr(buf), nil)
       last_time = cur_time
 
 proc queue_picture*(vs: ptr VideoState; src_frame: ptr AVFrame; pts: cdouble;
                    duration: cdouble; pos: int64; serial: cint): cint =
-  var vp: ptr Frame
-  if not (vp = frame_queue_peek_writable(addr(vs.pictq))):
+  var vp: ptr Frame = frame_queue_peek_writable(addr(vs.pictq))
+  if vp == nil:
     return -1
   vp.sar = src_frame.sample_aspect_ratio
   vp.uploaded = 0
@@ -1901,23 +1950,23 @@ proc queue_picture*(vs: ptr VideoState; src_frame: ptr AVFrame; pts: cdouble;
   return 0
 
 proc get_video_frame*(vs: ptr VideoState; frame: ptr AVFrame): cint =
-  var got_picture: cint
-  if (got_picture = decoder_decode_frame(addr(vs.viddec), frame, nil)) < 0:
+  var got_picture: cint = decoder_decode_frame(addr(vs.viddec), frame, nil)
+  if got_picture < 0:
     return -1
   if got_picture:
     var dpts: cdouble = NAN
     if frame.pts != AV_NOPTS_VALUE:
-      dpts = av_q2d(vs.video_st.time_base) * frame.pts
+      dpts = av_q2d(vs.video_st.time_base) * frame.pts.cdouble
     frame.sample_aspect_ratio = av_guess_sample_aspect_ratio(vs.ic,
         vs.video_st, frame)
     if framedrop > 0 or
-        (framedrop and get_master_sync_type(vs) != AV_SYNC_VIDEO_MASTER):
+        (framedrop != 0 and get_master_sync_type(vs) != AV_SYNC_VIDEO_MASTER):
       if frame.pts != AV_NOPTS_VALUE:
         var diff: cdouble = dpts - get_master_clock(vs)
-        if not isnan(diff) and fabs(diff) < AV_NOSYNC_THRESHOLD and
+        if diff != Nan and abs(diff) < AV_NOSYNC_THRESHOLD and
             diff - vs.frame_last_filter_delay < 0 and
             vs.viddec.pkt_serial == vs.vidclk.serial and
-            vs.videoq.nb_packets:
+            vs.videoq.nb_packets != 0:
           inc(vs.frame_drops_early)
           av_frame_unref(frame)
           got_picture = 0
@@ -1927,18 +1976,17 @@ proc configure_filtergraph*(graph: ptr AVFilterGraph; filtergraph: cstring;
                            source_ctx: ptr AVFilterContext;
                            sink_ctx: ptr AVFilterContext): cint =
   var
-    ret: cint
+    result: cint
     i: cint
-  var nb_filters: cint = graph.nb_filters
+  var nb_filters: cint = cint graph.nb_filters
   var
     outputs: ptr AVFilterInOut = nil
     inputs: ptr AVFilterInOut = nil
-  if filtergraph:
+  if filtergraph != nil:
     outputs = avfilter_inout_alloc()
     inputs = avfilter_inout_alloc()
-    if not outputs or not inputs:
-      ret = AVERROR(ENOMEM)
-      break fail
+    if outputs == nil or inputs == nil:
+      return AVERROR(ENOMEM)
     outputs.name = av_strdup("in")
     outputs.filter_ctx = source_ctx
     outputs.pad_idx = 0
@@ -1947,26 +1995,34 @@ proc configure_filtergraph*(graph: ptr AVFilterGraph; filtergraph: cstring;
     inputs.filter_ctx = sink_ctx
     inputs.pad_idx = 0
     inputs.next = nil
-    if (ret = avfilter_graph_parse_ptr(graph, filtergraph, addr(inputs),
-                                    addr(outputs), nil)) < 0:
-      break fail
+    if avfilter_graph_parse_ptr(graph, filtergraph, addr(inputs),addr(outputs), nil) < 0:
+      echo  "fail"
   else:
-    if (ret = avfilter_link(source_ctx, 0, sink_ctx, 0)) < 0:
-      break fail
-  ##  Reorder the filters to ensure that inputs of the custom filters are merged first
+    if avfilter_link(source_ctx, 0, sink_ctx, 0) < 0:
+       echo  "fail"
   ##  for (i = 0; i < graph->nb_filters - nb_filters; i++)
   ##      FFSWAP(AVFilterContext *, graph->filters[i], graph->filters[i + nb_filters]);
-  ret = avfilter_graph_config(graph, nil)
+  result = avfilter_graph_config(graph, nil)
   avfilter_inout_free(addr(outputs))
   avfilter_inout_free(addr(inputs))
-  return ret
+  return result
 
-proc configure_video_filters*(graph: ptr AVFilterGraph; vs: ptr VideoState;
-                             vfilters: cstring; frame: ptr AVFrame): cint =
-  var pix_fmts: array[FF_ARRAY_ELEMS(sdl_texture_format_map), AVPixelFormat]
-  var sws_flags_str: array[512, char] = ""
+proc av_strstart*(str: cstring; pfx: cstring; `ptr`: cstringArray): cint
+proc av_stristart*(str: cstring; pfx: cstring; `ptr`: cstringArray): cint
+proc av_stristr*(haystack: cstring; needle: cstring): cstring
+proc av_strnstr*(haystack: cstring; needle: cstring; hay_length: csize_t): cstring
+proc av_strlcpy*(dst: cstring; src: cstring; size: csize_t): csize_t
+proc av_strlcat*(dst: cstring; src: cstring; size: csize_t): csize_t
+proc av_strlcatf*(dst: cstring; size: csize_t; fmt: cstring, args:varargs[auto]): csize_t 
+
+proc snprintf(dst: cstring; size: csize_t; fmt: cstring, args:varargs[untyped]) {.importc.}
+
+proc get_rotation(st: ptr AVStream): cdouble {.importc.}
+
+proc configure_video_filters*(graph: ptr AVFilterGraph; vs: ptr VideoState;vfilters: cstring; frame: ptr AVFrame): cint =
+  var pix_fmts: array[sizeof(sdl_texture_format_map), AVPixelFormat]
+  var sws_flags_str: array[512, char]
   var buffersrc_args: array[256, char]
-  var ret: cint
   var
     filt_src: ptr AVFilterContext = nil
     filt_out: ptr AVFilterContext = nil
@@ -1975,130 +2031,122 @@ proc configure_video_filters*(graph: ptr AVFilterGraph; vs: ptr VideoState;
   var fr: AVRational = av_guess_frame_rate(vs.ic, vs.video_st, nil)
   var e: ptr AVDictionaryEntry = nil
   var nb_pix_fmts: cint = 0
-  var
-    i: cint
-    j: cint
-  i = 0
-  while i < renderer_info.num_texture_formats:
-    j = 0
-    while j < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1:
-      if renderer_info.texture_formats[i] ==
-          sdl_texture_format_map[j].texture_fmt:
-        pix_fmts[inc(nb_pix_fmts)] = sdl_texture_format_map[j].format
+  for i in 0.. renderer_info.num_texture_formats-1:
+    for j in 0.. sdl_texture_format_map.high:
+      if renderer_info.texture_formats[i] == sdl_texture_format_map[j].texture_fmt.uint32:
+        pix_fmts[nb_pix_fmts] = sdl_texture_format_map[j].format
+        nb_pix_fmts.inc
         break
-      inc(j)
-    inc(i)
   pix_fmts[nb_pix_fmts] = AV_PIX_FMT_NONE
-  while (e = av_dict_get(sws_dict, "", e, AV_DICT_IGNORE_SUFFIX)):
-    if not strcmp(e.key, "sws_flags"):
-      av_strlcatf(sws_flags_str, sizeof((sws_flags_str)), "%s=%s:", "flags", e.value)
+  e = av_dict_get(sws_dict, "", e, AV_DICT_IGNORE_SUFFIX)
+  while e != nil:
+    if e.key == "sws_flags":
+      discard av_strlcatf(sws_flags_str, sizeof(sws_flags_str).csize_t, "%s=%s:".cstring, "flags".cstring, e.value)
     else:
-      av_strlcatf(sws_flags_str, sizeof((sws_flags_str)), "%s=%s:", e.key, e.value)
-  if len(sws_flags_str):
+      discard av_strlcatf(sws_flags_str, sizeof(sws_flags_str).csize_t, "%s=%s:".cstring, e.key, e.value)
+  if len(sws_flags_str) != 0:
     sws_flags_str[len(sws_flags_str) - 1] = '\x00'
   graph.scale_sws_opts = av_strdup(sws_flags_str)
-  snprintf(buffersrc_args, sizeof((buffersrc_args)),
+  snprintf(buffersrc_args, sizeof((buffersrc_args)).csize_t,
            "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
            frame.width, frame.height, frame.format, vs.video_st.time_base.num,
            vs.video_st.time_base.den, codecpar.sample_aspect_ratio.num,
-           max(codecpar.sample_aspect_ratio.den, 1))
-  if fr.num and fr.den:
-    av_strlcatf(buffersrc_args, sizeof((buffersrc_args)), ":frame_rate=%d/%d",
-                fr.num, fr.den)
-  if (ret = avfilter_graph_create_filter(addr(filt_src),
-                                      avfilter_get_by_name("buffer"),
-                                      "ffplay_buffer", buffersrc_args, nil, graph)) <
-      0:
-    break fail
-  ret = avfilter_graph_create_filter(addr(filt_out),
-                                   avfilter_get_by_name("buffersink"),
-                                   "ffplay_buffersink", nil, nil, graph)
-  if ret < 0:
-    break fail
-  if (ret = av_opt_set_int_list(filt_out, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE,
-                             AV_OPT_SEARCH_CHILDREN)) < 0:
-    break fail
+           max(codecpar.sample_aspect_ratio.den, 1.cint))
+  if fr.num != 0 and fr.den != 0:
+    discard av_strlcatf(buffersrc_args, sizeof((buffersrc_args)).csize_t, ":frame_rate=%d/%d", fr.num, fr.den)
+  if avfilter_graph_create_filter(addr(filt_src),avfilter_get_by_name("buffer"),"ffplay_buffer", buffersrc_args, nil, graph) < 0:
+    echo "fail"
+  result = avfilter_graph_create_filter(addr(filt_out),avfilter_get_by_name("buffersink"),"ffplay_buffersink", nil, nil, graph)
+  if result < 0:
+    echo "fail"
+  if av_opt_set_bin(filt_out, "pix_fmts", cast[ptr uint8](pix_fmts.addr), AV_PIX_FMT_NONE.cint,AV_OPT_SEARCH_CHILDREN) < 0:
+    echo "fail"
   last_filter = filt_out
-  ##  Note: this macro adds a filter before the lastly added filter, so the
-  ##  processing order of the filters is in reverse
-
-
+  ##  Note: this macro adds a filter before the lastly added filter, so the processing order of the filters is in reverse
   if autorotate:
     var theta: cdouble = get_rotation(vs.video_st)
-    if fabs(theta - 90) < 1.0:
-      INSERT_FILT("transpose", "clock")
-    elif fabs(theta - 180) < 1.0:
+    if abs(theta - 90) < 1.0:
+      INSERT_FILT("transpose", "clock".cstring)
+    elif abs(theta - 180) < 1.0:
       INSERT_FILT("hflip", nil)
       INSERT_FILT("vflip", nil)
-    elif fabs(theta - 270) < 1.0:
-      INSERT_FILT("transpose", "cclock")
-    elif fabs(theta) > 1.0:
+    elif abs(theta - 270) < 1.0:
+      INSERT_FILT("transpose", "cclock".cstring)
+    elif abs(theta) > 1.0:
       var rotate_buf: array[64, char]
-      snprintf(rotate_buf, sizeof((rotate_buf)), "%f*PI/180", theta)
+      snprintf(rotate_buf, sizeof(rotate_buf).csize_t, "%f*PI/180", theta)
       INSERT_FILT("rotate", rotate_buf)
-  if (ret = configure_filtergraph(graph, vfilters, filt_src, last_filter)) < 0:
-    break fail
+  result = configure_filtergraph(graph, vfilters, filt_src, last_filter) < 0
+  if result < 0:
+    echo "fail"
   vs.in_video_filter = filt_src
   vs.out_video_filter = filt_out
-  return ret
+  return result
 
 proc configure_audio_filters*(vs: ptr VideoState; afilters: cstring; force_output_format: cint): cint =
-  var sample_fmts: UncheckedArray[AVSampleFormat] = [AV_SAMPLE_FMT_S16,
-      AV_SAMPLE_FMT_NONE]
-  var sample_rates: array[2, cint] = [0, -1]
-  var channel_layouts: array[2, int64] = [0, -1]
-  var channels: array[2, cint] = [0, -1]
+  var sample_fmts: seq[AVSampleFormat] = @[AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE]
+  var sample_rates: array[2, cint] = [0.cint, -1]
+  var channel_layouts: array[2, int64] = [0'i64, -1]
+  var channels: array[2, cint] = [0.cint, -1]
   var
     filt_asrc: ptr AVFilterContext = nil
     filt_asink: ptr AVFilterContext = nil
-  var aresample_swr_opts: array[512, char] = ""
+  var aresample_swr_opts: array[512, char]
   var e: ptr AVDictionaryEntry = nil
   var asrc_args: array[256, char]
-  var ret: cint
   avfilter_graph_free(addr(vs.agraph))
-  if not (vs.agraph = avfilter_graph_alloc()):
+  vs.agraph = avfilter_graph_alloc()
+  if vs.agraph == nil:
     return AVERROR(ENOMEM)
   vs.agraph.nb_threads = filter_nbthreads
-  while (e = av_dict_get(swr_opts, "", e, AV_DICT_IGNORE_SUFFIX)):
-    av_strlcatf(aresample_swr_opts, sizeof((aresample_swr_opts)), "%s=%s:", e.key, e.value)
-  if len(aresample_swr_opts):
+  e = av_dict_get(swr_opts, "", e, AV_DICT_IGNORE_SUFFIX)
+  while e != nil:
+    discard av_strlcatf(aresample_swr_opts, sizeof(aresample_swr_opts).csize_t, "%s=%s:", e.key, e.value)
+  if len(aresample_swr_opts) != 0:
     aresample_swr_opts[len(aresample_swr_opts) - 1] = '\x00'
-  av_opt_set(vs.agraph, "aresample_swr_opts", aresample_swr_opts, 0)
-  ret = snprintf(asrc_args, sizeof((asrc_args)), "sample_rate=%d:sample_fmt=%s:channels=%d:time_base=%d/%d", vs.audio_filter_src.freq, av_get_sample_fmt_name(vs.audio_filter_src.fmt), vs.audio_filter_src.channels, 1, vs.audio_filter_src.freq)
-  if vs.audio_filter_src.channel_layout:
-    snprintf(asrc_args + ret, sizeof((asrc_args)) - ret, ":channel_layout=0x%", PRIx64, vs.audio_filter_src.channel_layout)
-  ret = avfilter_graph_create_filter(addr(filt_asrc),avfilter_get_by_name("abuffer"), "ffplay_abuffer", asrc_args, nil, vs.agraph)
-  if ret < 0:
-    goto e
-  ret = avfilter_graph_create_filter(addr(filt_asink), avfilter_get_by_name("abuffersink"), "ffplay_abuffersink", nil, nil, vs.agraph)
-  if ret < 0:
-    goto e
-  if (ret = av_opt_set_int_list(filt_asink, "sample_fmts", sample_fmts, AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN)) < 0:
-    goto e
-  if (ret = av_opt_set_int(filt_asink, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN)) < 0:
-    goto e
+  discard av_opt_set(vs.agraph, "aresample_swr_opts", aresample_swr_opts, 0)
+  snprintf(asrc_args, sizeof(asrc_args).csize_t, "sample_rate=%d:sample_fmt=%s:channels=%d:time_base=%d/%d", vs.audio_filter_src.freq, av_get_sample_fmt_name(vs.audio_filter_src.fmt), vs.audio_filter_src.channels, 1, vs.audio_filter_src.freq)
+  if vs.audio_filter_src.channel_layout != 0:
+    snprintf(asrc_args + result, sizeof(asrc_args).csize_t - result.csize_t, ":channel_layout=0x%", "llx", vs.audio_filter_src.channel_layout)
+  result = avfilter_graph_create_filter(addr(filt_asrc),avfilter_get_by_name("abuffer"), "ffplay_abuffer", asrc_args, nil, vs.agraph)
+  if result < 0:
+    echo "avfilter_graph_create_filter error"
+  result = avfilter_graph_create_filter(addr(filt_asink), avfilter_get_by_name("abuffersink"), "ffplay_abuffersink", nil, nil, vs.agraph)
+  if result < 0:
+    echo "avfilter_graph_create_filter error"
+  result = av_opt_set_bin(filt_asink, "sample_fmts", cast[ptr uint8](sample_fmts.addr), AV_SAMPLE_FMT_NONE.cint, AV_OPT_SEARCH_CHILDREN.cint)
+  if result < 0:
+    echo "avfilter_graph_create_filter error"
+  result = av_opt_set_int(filt_asink, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN.cint)
+  if result < 0:
+    echo "avfilter_graph_create_filter error"
   if force_output_format:
     channel_layouts[0] = vs.audio_tgt.channel_layout
-    channels[0] = if vs.audio_tgt.channel_layout: -1 else: vs.audio_tgt.channels
+    channels[0] = if vs.audio_tgt.channel_layout != 0: -1 else: vs.audio_tgt.channels
     sample_rates[0] = vs.audio_tgt.freq
-    if (ret = av_opt_set_int(filt_asink, "all_channel_counts", 0, AV_OPT_SEARCH_CHILDREN)) < 0:
-      goto e
-    if (ret = av_opt_set_int_list(filt_asink, "channel_layouts", channel_layouts, -1,AV_OPT_SEARCH_CHILDREN)) < 0:
-      goto e
-    if (ret = av_opt_set_int_list(filt_asink, "channel_counts", channels, -1, AV_OPT_SEARCH_CHILDREN)) < 0:
-      goto e
-    if (ret = av_opt_set_int_list(filt_asink, "sample_rates", sample_rates, -1, AV_OPT_SEARCH_CHILDREN)) < 0:
-      goto e
-  if (ret = configure_filtergraph(vs.agraph, afilters, filt_asrc, filt_asink)) < 0:
-    goto e
+    result = av_opt_set_int(filt_asink, "all_channel_counts", 0, AV_OPT_SEARCH_CHILDREN.cint)
+    if result < 0:
+      echo "avfilter_graph_create_filter error"
+    result = av_opt_set_bin(filt_asink, "channel_layouts", cast[ptr uint8](channel_layouts.addr), -1,AV_OPT_SEARCH_CHILDREN)
+    if result < 0:
+      echo "avfilter_graph_create_filter error"
+    result = av_opt_set_bin(filt_asink, "channel_counts", cast[ptr uint8](channels.addr), -1, AV_OPT_SEARCH_CHILDREN)
+    if result < 0:
+      echo "avfilter_graph_create_filter error"
+    result = av_opt_set_bin(filt_asink, "sample_rates", cast[ptr uint8](sample_rates.addr), -1, AV_OPT_SEARCH_CHILDREN)
+    if result < 0:
+      echo "avfilter_graph_create_filter error"
+  result = configure_filtergraph(vs.agraph, afilters, filt_asrc, filt_asink)
+  if result < 0:
+    echo "avfilter_graph_create_filter error"
   vs.in_audio_filter = filt_asrc
   vs.out_audio_filter = filt_asink
-  if ret < 0:
+  if result < 0:
     avfilter_graph_free(addr(vs.agraph))
-  return ret
+  return result
 
 proc audio_thread*(arg: pointer): cint =
-  var vs: ptr VideoState = arg
+  var vs: ptr VideoState = cast[ptr VideoState](arg)
   var frame: ptr AVFrame = av_frame_alloc()
   var af: ptr Frame
   var last_serial: cint = -1
@@ -2106,119 +2154,111 @@ proc audio_thread*(arg: pointer): cint =
   var reconfigure: cint
   var got_frame: cint = 0
   var tb: AVRational
-  var ret: cint = 0
-  if not frame:
+  var result: cint = 0
+  if frame == nil:
     return AVERROR(ENOMEM)
   while true:
-    if (got_frame = decoder_decode_frame(addr(vs.auddec), frame, nil)) < 0:
-      break the_end
+    got_frame = decoder_decode_frame(addr(vs.auddec), frame, nil)
+    if got_frame < 0:
+      echo "the end"
     if got_frame:
-      ##  tb = (AVRational){1, frame->sample_rate};
-      dec_channel_layout = get_valid_channel_layout(frame.channel_layout,
-          frame.channels)
-      reconfigure = cmp_audio_fmts(vs.audio_filter_src.fmt,
-                                 vs.audio_filter_src.channels, frame.format,
-                                 frame.channels) or
-          vs.audio_filter_src.channel_layout != dec_channel_layout or
-          vs.audio_filter_src.freq != frame.sample_rate or
-          vs.auddec.pkt_serial != last_serial
+      tb = AVRational(num:1, den:frame.sample_rate)
+      dec_channel_layout = get_valid_channel_layout(frame.channel_layout.int64,frame.channels)
+      reconfigure = cmp_audio_fmts(vs.audio_filter_src.fmt, vs.audio_filter_src.channels, frame.format.AVSampleFormat,frame.channels)
+      reconfigure = reconfigure != 0 or vs.audio_filter_src.channel_layout != dec_channel_layout or vs.audio_filter_src.freq != frame.sample_rate or vs.auddec.pkt_serial != last_serial
       if reconfigure:
         var
           buf1: array[1024, char]
           buf2: array[1024, char]
-        av_get_channel_layout_string(buf1, sizeof((buf1)), -1,
-                                     vs.audio_filter_src.channel_layout)
-        av_get_channel_layout_string(buf2, sizeof((buf2)), -1, dec_channel_layout)
-        echo(nil, AV_LOG_DEBUG, "Audio frame changed from rate:%d ch:%d fmt:%s layout:%s serial:%d to rate:%d ch:%d fmt:%s layout:%s serial:%d\n",
+        av_get_channel_layout_string(buf1, sizeof(buf1).cint, -1,vs.audio_filter_src.channel_layout.uint64)
+        av_get_channel_layout_string(buf2, sizeof(buf2).cint, -1, dec_channel_layout.uint64)
+        echo("Audio frame changed from rate:%d ch:%d fmt:%s layout:%s serial:%d to rate:%d ch:%d fmt:%s layout:%s serial:%d\n",
                vs.audio_filter_src.freq, vs.audio_filter_src.channels,
                av_get_sample_fmt_name(vs.audio_filter_src.fmt), buf1,
                last_serial, frame.sample_rate, frame.channels,
-               av_get_sample_fmt_name(frame.format), buf2, vs.auddec.pkt_serial)
-        vs.audio_filter_src.fmt = frame.format
+               av_get_sample_fmt_name(frame.format.AVSampleFormat), buf2, vs.auddec.pkt_serial)
+        vs.audio_filter_src.fmt = frame.format.AVSampleFormat
         vs.audio_filter_src.channels = frame.channels
         vs.audio_filter_src.channel_layout = dec_channel_layout
         vs.audio_filter_src.freq = frame.sample_rate
         last_serial = vs.auddec.pkt_serial
-        if (ret = configure_audio_filters(vs, afilters, 1)) < 0:
-          break the_end
-      if (ret = av_buffersrc_add_frame(vs.in_audio_filter, frame)) < 0:
-        break the_end
-      while (ret = av_buffersink_get_frame_flags(vs.out_audio_filter, frame, 0)) >=
-          0:
+        result = configure_audio_filters(vs, afilters, 1)
+        if result < 0:
+          echo "the_end"
+      result = av_buffersrc_add_frame(vs.in_audio_filter, frame)
+      if result < 0:
+        echo "the_end"
+      result = av_buffersink_get_frame_flags(vs.out_audio_filter, frame, 0)
+      while result >= 0:
         tb = av_buffersink_get_time_base(vs.out_audio_filter)
-        if not (af = frame_queue_peek_writable(addr(vs.sampq))):
-          break the_end
-        af.pts = if (frame.pts == AV_NOPTS_VALUE): NAN else: frame.pts * av_q2d(tb)
+        af = frame_queue_peek_writable(addr(vs.sampq))
+        if af == nil:
+          echo "the_end"
+        af.pts = if frame.pts == AV_NOPTS_VALUE: Nan else: frame.pts.cdouble * av_q2d(tb)
         af.pos = frame.pkt_pos
         af.serial = vs.auddec.pkt_serial
-        ##  af->duration = av_q2d((AVRational){frame->nb_samples, frame->sample_rate});
+        af.duration = av_q2d(AVRational(num:frame.nb_samples, den:frame.sample_rate));
         av_frame_move_ref(af.frame, frame)
         frame_queue_push(addr(vs.sampq))
         if vs.audioq.serial != vs.auddec.pkt_serial:
           break
-      if ret == AVERROR_EOF:
+      if result == AVERROR_EOF:
         vs.auddec.finished = vs.auddec.pkt_serial
-    if not (ret >= 0 or ret == AVERROR(EAGAIN) or ret == AVERROR_EOF):
+    if not (result >= 0 or result == AVERROR(EAGAIN) or result == AVERROR_EOF):
       break
   avfilter_graph_free(addr(vs.agraph))
   av_frame_free(addr(frame))
-  return ret
+  return result
 
-proc decoder_start*(d: ptr Decoder; fn: proc (a1: pointer): cint; thread_name: cstring;
-                   arg: pointer): cint =
+proc decoder_start*(d: ptr Decoder; fn: proc (a1: pointer){.thread.}; thread_name: cstring; arg: pointer): cint =
   packet_queue_start(d.queue)
-  d.decoder_tid = SDL_CreateThread(fn, thread_name, arg)
-  if not d.decoder_tid:
-    echo(nil, AV_LOG_ERROR, "SDL_CreateThread(): %s\n", SDL_GetError())
-    return AVERROR(ENOMEM)
-  return 0
+  # d.decoder_tid = SDL_CreateThread(fn, thread_name, arg)
+  createThread[pointer](d.decoder_tid,fn, arg)
 
 proc video_thread*(arg: pointer): cint =
-  var vs: ptr VideoState = arg
+  var vs: ptr VideoState = cast[ptr VideoState](arg)
   var frame: ptr AVFrame = av_frame_alloc()
   var pts: cdouble
   var duration: cdouble
-  var ret: cint
+  var result: cint
   var tb: AVRational = vs.video_st.time_base
   var frame_rate: AVRational = av_guess_frame_rate(vs.ic, vs.video_st, nil)
-  var graph: ptr AVFilterGraph = nil
+  var graph: ptr AVFilterGraph
   var
-    filt_out: ptr AVFilterContext = nil
-    filt_in: ptr AVFilterContext = nil
+    filt_out: ptr AVFilterContext
+    filt_in: ptr AVFilterContext
   var last_w: cint = 0
   var last_h: cint = 0
-  var last_format: AVPixelFormat = -2
+  var last_format = -2
   var last_serial: cint = -1
   var last_vfilter_idx: cint = 0
-  if not frame:
+  if frame == nil:
     return AVERROR(ENOMEM)
   while true:
-    ret = get_video_frame(vs, frame)
-    if ret < 0:
-      break the_end
-    if not ret:
+    result = get_video_frame(vs, frame)
+    if result < 0:
+      echo "the_end"
+    if result == 0:
       continue
-    if last_w != frame.width or last_h != frame.height or last_format != frame.format or
+    if last_w != frame.width or last_h != frame.height or last_format.cint != frame.format or
         last_serial != vs.viddec.pkt_serial or
         last_vfilter_idx != vs.vfilter_idx:
-      echo(nil, AV_LOG_DEBUG, "Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d\n",
-             last_w, last_h, cast[cstring](av_x_if_null(
-          av_get_pix_fmt_name(last_format), "none")), last_serial, frame.width,
-             frame.height, cast[cstring](av_x_if_null(
-          av_get_pix_fmt_name(frame.format), "none")), vs.viddec.pkt_serial)
+      echo("Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d\n",
+             last_w, last_h, cast[cstring](av_x_if_null(av_get_pix_fmt_name(last_format.AVPixelFormat), "none".cstring)), last_serial, frame.width,
+             frame.height, cast[cstring](av_x_if_null(av_get_pix_fmt_name(frame.format.AVPixelFormat), "none".cstring)), vs.viddec.pkt_serial)
       avfilter_graph_free(addr(graph))
       graph = avfilter_graph_alloc()
-      if not graph:
-        ret = AVERROR(ENOMEM)
-        break the_end
+      if graph == nil:
+        result = AVERROR(ENOMEM)
+        echo "the_end"
       graph.nb_threads = filter_nbthreads
-      if (ret = configure_video_filters(graph, vs, if vfilters_list: vfilters_list[
-          vs.vfilter_idx] else: nil, frame)) < 0:
-        var event: SDL_Event
-        event.`type` = FF_QUIT_EVENT
+      result = configure_video_filters(graph, vs, if vfilters_list != nil: vfilters_list[vs.vfilter_idx] else: nil, frame)
+      if result < 0:
+        var event: Event
+        event.type = FF_QUIT_EVENT
         event.user.data1 = vs
-        SDL_PushEvent(addr(event))
-        break the_end
+        discard pushEvent(addr(event))
+        echo "the_end"
       filt_in = vs.in_video_filter
       filt_out = vs.out_video_filter
       last_w = frame.width
@@ -2227,81 +2267,61 @@ proc video_thread*(arg: pointer): cint =
       last_serial = vs.viddec.pkt_serial
       last_vfilter_idx = vs.vfilter_idx
       frame_rate = av_buffersink_get_frame_rate(filt_out)
-    ret = av_buffersrc_add_frame(filt_in, frame)
-    if ret < 0:
-      break the_end
-    while ret >= 0:
-      vs.frame_last_returned_time = av_gettime_relative() div 1000000.0
-      ret = av_buffersink_get_frame_flags(filt_out, frame, 0)
-      if ret < 0:
-        if ret == AVERROR_EOF:
+    result = av_buffersrc_add_frame(filt_in, frame)
+    if result < 0:
+      echo "the_end"
+    while result >= 0:
+      vs.frame_last_returned_time = av_gettime_relative().float64 / 1000000.0
+      result = av_buffersink_get_frame_flags(filt_out, frame, 0)
+      if result < 0:
+        if result == AVERROR_EOF:
           vs.viddec.finished = vs.viddec.pkt_serial
-        ret = 0
+        result = 0
         break
-      vs.frame_last_filter_delay = av_gettime_relative() div 1000000.0 -
+      vs.frame_last_filter_delay = av_gettime_relative().float64 / 1000000.0 -
           vs.frame_last_returned_time
-      if fabs(vs.frame_last_filter_delay) > AV_NOSYNC_THRESHOLD div 10.0:
+      if abs(vs.frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0:
         vs.frame_last_filter_delay = 0
       tb = av_buffersink_get_time_base(filt_out)
       ##  duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
-      pts = if (frame.pts == AV_NOPTS_VALUE): NAN else: frame.pts * av_q2d(tb)
-      ret = queue_picture(vs, frame, pts, duration, frame.pkt_pos,
-                        vs.viddec.pkt_serial)
+      pts = if (frame.pts == AV_NOPTS_VALUE): Nan else: frame.pts.cdouble * av_q2d(tb)
+      result = queue_picture(vs, frame, pts, duration, frame.pkt_pos, vs.viddec.pkt_serial)
       av_frame_unref(frame)
       if vs.videoq.serial != vs.viddec.pkt_serial:
         break
-    if ret < 0:
-      break the_end
-  when CONFIG_AVFILTER:
-    avfilter_graph_free(addr(graph))
+    if result < 0:
+      echo "the_end"
+  avfilter_graph_free(addr(graph))
   av_frame_free(addr(frame))
   return 0
 
 proc subtitle_thread*(arg: pointer): cint =
-  var vs: ptr VideoState = arg
+  var vs: ptr VideoState = cast[ptr VideoState](arg)
   var sp: ptr Frame
   var got_subtitle: cint
   var pts: cdouble
   while true:
-    if not (sp = frame_queue_peek_writable(addr(vs.subpq))):
+    sp = frame_queue_peek_writable(addr(vs.subpq))
+    if sp == nil:
       return 0
-    if (got_subtitle = decoder_decode_frame(addr(vs.subdec), nil, addr(sp.sub))) <
-        0:
+    got_subtitle = decoder_decode_frame(addr(vs.subdec), nil, addr(sp.sub))
+    if got_subtitle < 0:
       break
     pts = 0
-    if got_subtitle and sp.sub.format == 0:
+    if got_subtitle != 0 and sp.sub.format == 0:
       if sp.sub.pts != AV_NOPTS_VALUE:
-        pts = sp.sub.pts div cast[cdouble](AV_TIME_BASE)
+        pts = sp.sub.pts.cdouble / cast[cdouble](AV_TIME_BASE)
       sp.pts = pts
       sp.serial = vs.subdec.pkt_serial
       sp.width = vs.subdec.avctx.width
       sp.height = vs.subdec.avctx.height
       sp.uploaded = 0
-      ##  now we can update the picture count
       frame_queue_push(addr(vs.subpq))
     elif got_subtitle:
       avsubtitle_free(addr(sp.sub))
   return 0
 
-##  copy samples for viewing in editor window
 
-proc update_sample_display*(vs: ptr VideoState; samples: ptr cshort;
-                           samples_size: cint) =
-  var
-    size: cint
-    len: cint
-  size = samples_size div sizeof((short))
-  while size > 0:
-    len = SAMPLE_ARRAY_SIZE - vs.sample_array_index
-    if len > size:
-      len = size
-    memcpy(vs.sample_array + vs.sample_array_index, samples,
-           len * sizeof((short)))
-    inc(samples, len)
-    inc(vs.sample_array_index, len)
-    if vs.sample_array_index >= SAMPLE_ARRAY_SIZE:
-      vs.sample_array_index = 0
-    dec(size, len)
 
 ##  return the wanted number of samples to get better sync if sync_type is video
 ##  or external master clock
@@ -2317,7 +2337,7 @@ proc synchronize_audio*(vs: ptr VideoState; nb_samples: cint): cint =
       min_nb_samples: cint
       max_nb_samples: cint
     diff = get_clock(addr(vs.audclk)) - get_master_clock(vs)
-    if not isnan(diff) and fabs(diff) < AV_NOSYNC_THRESHOLD:
+    if diff != Nan and abs(diff) < AV_NOSYNC_THRESHOLD:
       vs.audio_diff_cum = diff + vs.audio_diff_avg_coef * vs.audio_diff_cum
       if vs.audio_diff_avg_count < AUDIO_DIFF_AVG_NB:
         ##  not enough measures to have a correct estimate
@@ -2325,21 +2345,17 @@ proc synchronize_audio*(vs: ptr VideoState; nb_samples: cint): cint =
       else:
         ##  estimate the A-V difference
         avg_diff = vs.audio_diff_cum * (1.0 - vs.audio_diff_avg_coef)
-        if fabs(avg_diff) >= vs.audio_diff_threshold:
-          wanted_nb_samples = nb_samples + (int)(diff * vs.audio_src.freq)
-          min_nb_samples = ((nb_samples * (100 - SAMPLE_CORRECTION_PERCENT_MAX) div
-              100))
-          max_nb_samples = ((nb_samples * (100 + SAMPLE_CORRECTION_PERCENT_MAX) div
-              100))
+        if abs(avg_diff) >= vs.audio_diff_threshold:
+          wanted_nb_samples = cint nb_samples + (int)(diff * vs.audio_src.freq.cdouble)
+          min_nb_samples = ((nb_samples * (100 - SAMPLE_CORRECTION_PERCENT_MAX) div 100))
+          max_nb_samples = ((nb_samples * (100 + SAMPLE_CORRECTION_PERCENT_MAX) div 100))
           wanted_nb_samples = av_clip_c(wanted_nb_samples, min_nb_samples,
                                     max_nb_samples)
-        echo(nil, AV_LOG_TRACE,
-               "diff=%f adiff=%f sample_diff=%d apts=%0.3f %f\n", diff, avg_diff,
+        echo("diff=%f adiff=%f sample_diff=%d apts=%0.3f %f\n", diff, avg_diff,
                wanted_nb_samples - nb_samples, vs.audio_clock,
                vs.audio_diff_threshold)
     else:
-      ##  too big difference : may be initial PTS errors, so
-      ##                reset A-V filter
+      ##  too big difference : may be initial PTS errors, so reset A-V filter
       vs.audio_diff_avg_count = 0
       vs.audio_diff_cum = 0
   return wanted_nb_samples
@@ -2351,6 +2367,8 @@ proc synchronize_audio*(vs: ptr VideoState; nb_samples: cint): cint =
 ##  stored in is->audio_buf, with size in bytes given by the return
 ##  value.
 ##
+
+proc av_usleep*(usec: cuint): cint
 
 proc audio_decode_frame*(vs: ptr VideoState): cint =
   var
@@ -2367,31 +2385,26 @@ proc audio_decode_frame*(vs: ptr VideoState): cint =
       if (av_gettime_relative() - audio_callback_time) >
           1000000 * vs.audio_hw_buf_size div vs.audio_tgt.bytes_per_sec div 2:
         return -1
-      av_usleep(1000)
-    if not (af = frame_queue_peek_readable(addr(vs.sampq))):
+      discard av_usleep(1000)
+    af = frame_queue_peek_readable(addr(vs.sampq))
+    if af == nil:
       return -1
     frame_queue_next(addr(vs.sampq))
-    if not (af.serial != vs.audioq.serial):
+    if af.serial == vs.audioq.serial:
       break
   data_size = av_samples_get_buffer_size(nil, af.frame.channels,
-                                       af.frame.nb_samples, af.frame.format, 1)
-  dec_channel_layout = if (af.frame.channel_layout and
-      af.frame.channels ==
-      av_get_channel_layout_nb_channels(af.frame.channel_layout)): af.frame.channel_layout else: av_get_default_channel_layout(
-      af.frame.channels)
+                                       af.frame.nb_samples, af.frame.format.AVSampleFormat, 1)
+  dec_channel_layout = if (af.frame.channel_layout != 0 and af.frame.channels == av_get_channel_layout_nb_channels(af.frame.channel_layout)): af.frame.channel_layout.int64 else: av_get_default_channel_layout(af.frame.channels)
   wanted_nb_samples = synchronize_audio(vs, af.frame.nb_samples)
-  if af.frame.format != vs.audio_src.fmt or
-      dec_channel_layout != vs.audio_src.channel_layout or
-      af.frame.sample_rate != vs.audio_src.freq or
-      (wanted_nb_samples != af.frame.nb_samples and not vs.swr_ctx):
+  if af.frame.format != vs.audio_src.fmt.cint or dec_channel_layout != vs.audio_src.channel_layout or af.frame.sample_rate != vs.audio_src.freq or (wanted_nb_samples != af.frame.nb_samples and vs.swr_ctx == nil):
     swr_free(addr(vs.swr_ctx))
     vs.swr_ctx = swr_alloc_set_opts(nil, vs.audio_tgt.channel_layout,
                                     vs.audio_tgt.fmt, vs.audio_tgt.freq,
-                                    dec_channel_layout, af.frame.format,
+                                    dec_channel_layout, af.frame.format.AVSampleFormat,
                                     af.frame.sample_rate, 0, nil)
-    if not vs.swr_ctx or swr_init(vs.swr_ctx) < 0:
-      echo(nil, AV_LOG_ERROR, "Cannot create sample rate converter for conversion of %d Hz %s %d channels to %d Hz %s %d channels!\n",
-             af.frame.sample_rate, av_get_sample_fmt_name(af.frame.format),
+    if vs.swr_ctx == nil or swr_init(vs.swr_ctx) < 0:
+      echo("Cannot create sample rate converter for conversion of %d Hz %s %d channels to %d Hz %s %d channels!\n",
+             af.frame.sample_rate, av_get_sample_fmt_name(af.frame.format.AVSampleFormat),
              af.frame.channels, vs.audio_tgt.freq,
              av_get_sample_fmt_name(vs.audio_tgt.fmt), vs.audio_tgt.channels)
       swr_free(addr(vs.swr_ctx))
@@ -2399,190 +2412,233 @@ proc audio_decode_frame*(vs: ptr VideoState): cint =
     vs.audio_src.channel_layout = dec_channel_layout
     vs.audio_src.channels = af.frame.channels
     vs.audio_src.freq = af.frame.sample_rate
-    vs.audio_src.fmt = af.frame.format
-  if vs.swr_ctx:
+    vs.audio_src.fmt = af.frame.format.AVSampleFormat
+  if vs.swr_ctx != nil:
     var `in`: ptr ptr uint8 = cast[ptr ptr uint8](af.frame.extended_data)
     var `out`: ptr ptr uint8 = addr(vs.audio_buf1)
-    var out_count: cint = cast[int64](wanted_nb_samples * vs.audio_tgt.freq div
-        af.frame.sample_rate) + 256
+    var out_count: cint = cast[cint](wanted_nb_samples * vs.audio_tgt.freq div af.frame.sample_rate) + 256
     var out_size: cint = av_samples_get_buffer_size(nil, vs.audio_tgt.channels,
         out_count, vs.audio_tgt.fmt, 0)
     var len2: cint
     if out_size < 0:
-      echo(nil, AV_LOG_ERROR, "av_samples_get_buffer_size() failed\n")
+      echo("av_samples_get_buffer_size() failed\n")
       return -1
     if wanted_nb_samples != af.frame.nb_samples:
       if swr_set_compensation(vs.swr_ctx, (
           wanted_nb_samples - af.frame.nb_samples) * vs.audio_tgt.freq div
           af.frame.sample_rate, wanted_nb_samples * vs.audio_tgt.freq div
           af.frame.sample_rate) < 0:
-        echo(nil, AV_LOG_ERROR, "swr_set_compensation() failed\n")
+        echo("swr_set_compensation() failed\n")
         return -1
     av_fast_malloc(addr(vs.audio_buf1), addr(vs.audio_buf1_size), out_size)
-    if not vs.audio_buf1:
+    if vs.audio_buf1 == nil:
       return AVERROR(ENOMEM)
     len2 = swr_convert(vs.swr_ctx, `out`, out_count, `in`, af.frame.nb_samples)
     if len2 < 0:
-      echo(nil, AV_LOG_ERROR, "swr_convert() failed\n")
+      echo("swr_convert() failed\n")
       return -1
     if len2 == out_count:
-      echo(nil, AV_LOG_WARNING, "audio buffer is probably too small\n")
+      echo("audio buffer is probably too small\n")
       if swr_init(vs.swr_ctx) < 0:
         swr_free(addr(vs.swr_ctx))
     vs.audio_buf = vs.audio_buf1
-    resampled_data_size = len2 * vs.audio_tgt.channels *
-        av_get_bytes_per_sample(vs.audio_tgt.fmt)
+    resampled_data_size = len2 * vs.audio_tgt.channels * av_get_bytes_per_sample(vs.audio_tgt.fmt)
   else:
     vs.audio_buf = af.frame.data[0]
     resampled_data_size = data_size
   audio_clock0 = vs.audio_clock
   ##  update the audio clock with the pts
-  if not isnan(af.pts):
-    vs.audio_clock = af.pts +
-        cast[cdouble](af.frame.nb_samples div af.frame.sample_rate)
+  if af.pts != Nan:
+    vs.audio_clock = af.pts + cast[cdouble](af.frame.nb_samples div af.frame.sample_rate)
   else:
-    vs.audio_clock = NAN
+    vs.audio_clock = Nan
   vs.audio_clock_serial = af.serial
   return resampled_data_size
 
-##  prepare a new audio buffer
+const
+  SDL_AUDIO_MASK_BITSIZE* = (0x000000FF)
+  SDL_AUDIO_MASK_DATATYPE* = (1 shl 8)
+  SDL_AUDIO_MASK_ENDIAN* = (1 shl 12)
+  SDL_AUDIO_MASK_SIGNED* = (1 shl 15)
 
-proc sdl_audio_callback*(opaque: pointer; stream: ptr uint8; len: cint) =
-  var vs: ptr VideoState = opaque
+template SDL_AUDIO_BITSIZE*(x: untyped): untyped =
+  (x and SDL_AUDIO_MASK_BITSIZE)
+
+template SDL_AUDIO_ISFLOAT*(x: untyped): untyped =
+  (x and SDL_AUDIO_MASK_DATATYPE)
+
+template SDL_AUDIO_ISBIGENDIAN*(x: untyped): untyped =
+  (x and SDL_AUDIO_MASK_ENDIAN)
+
+template SDL_AUDIO_ISSIGNED*(x: untyped): untyped =
+  (x and SDL_AUDIO_MASK_SIGNED)
+
+template SDL_AUDIO_ISINT*(x: untyped): untyped =
+  (not SDL_AUDIO_ISFLOAT(x))
+
+template SDL_AUDIO_ISLITTLEENDIAN*(x: untyped): untyped =
+  (not SDL_AUDIO_ISBIGENDIAN(x))
+
+template SDL_AUDIO_ISUNSIGNED*(x: untyped): untyped =
+  (not SDL_AUDIO_ISSIGNED(x))
+
+const
+  AUDIO_U8* = 0x00000008
+  AUDIO_S8* = 0x00008008
+  AUDIO_U16LSB* = 0x00000010
+  AUDIO_S16LSB* = 0x00008010
+  AUDIO_U16MSB* = 0x00001010
+  AUDIO_S16MSB* = 0x00009010
+  AUDIO_U16* = AUDIO_U16LSB
+  AUDIO_S16* = AUDIO_S16LSB
+  AUDIO_S32LSB* = 0x00008020
+  AUDIO_S32MSB* = 0x00009020
+  AUDIO_S32* = AUDIO_S32LSB
+  AUDIO_F32LSB* = 0x00008120
+  AUDIO_F32MSB* = 0x00009120
+  AUDIO_F32* = AUDIO_F32LSB
+  AUDIO_U16SYS* = AUDIO_U16LSB
+  AUDIO_S16SYS* = AUDIO_S16LSB
+  AUDIO_S32SYS* = AUDIO_S32LSB
+  AUDIO_F32SYS* = AUDIO_F32LSB
+  SDL_AUDIO_ALLOW_FREQUENCY_CHANGE* = 0x00000001
+  SDL_AUDIO_ALLOW_FORMAT_CHANGE* = 0x00000002
+  SDL_AUDIO_ALLOW_CHANNELS_CHANGE* = 0x00000004
+  SDL_AUDIO_ALLOW_SAMPLES_CHANGE* = 0x00000008
+
+
+proc sdl_audio_callback*(opaque: pointer; stream:var ptr uint8; len: var cint) =
+  var vs: ptr VideoState = cast[ptr VideoState](opaque)
   var
     audio_size: cint
     len1: cint
   audio_callback_time = av_gettime_relative()
   while len > 0:
-    if vs.audio_buf_index >= vs.audio_buf_size:
+    if vs.audio_buf_index.cuint >= vs.audio_buf_size:
       audio_size = audio_decode_frame(vs)
       if audio_size < 0:
-        ##  if error, just output silence
         vs.audio_buf = nil
-        vs.audio_buf_size = SDL_AUDIO_MIN_BUFFER_SIZE div
-            vs.audio_tgt.frame_size * vs.audio_tgt.frame_size
+        vs.audio_buf_size = cuint SDL_AUDIO_MIN_BUFFER_SIZE div vs.audio_tgt.frame_size * vs.audio_tgt.frame_size
       else:
         if vs.show_mode != SHOW_MODE_VIDEO:
-          update_sample_display(vs, cast[ptr int16](vs.audio_buf), audio_size)
-        vs.audio_buf_size = audio_size
+          var
+            size: cint
+            len: cint
+          size = cint audio_size div sizeof(cshort)
+          while size > 0:
+            len = SAMPLE_ARRAY_SIZE - vs.sample_array_index
+            if len > size:
+              len = size
+            copyMem(vs.sample_array[vs.sample_array_index].addr, cast[ptr int16](vs.audio_buf),len * sizeof((cshort)))
+            vs.audio_buf += len * 2
+            vs.sample_array_index += len
+            if vs.sample_array_index >= SAMPLE_ARRAY_SIZE:
+              vs.sample_array_index = 0
+            size -= len
+        vs.audio_buf_size = cuint audio_size
       vs.audio_buf_index = 0
-    len1 = vs.audio_buf_size - vs.audio_buf_index
+    len1 = vs.audio_buf_size.cint - vs.audio_buf_index
     if len1 > len:
       len1 = len
-    if not vs.muted and vs.audio_buf and
-        vs.audio_volume == SDL_MIX_MAXVOLUME:
-      memcpy(stream, cast[ptr uint8](vs.audio_buf) + vs.audio_buf_index, len1)
+    if vs.muted == 0 and vs.audio_buf != nil and vs.audio_volume == SDL_MIX_MAXVOLUME:
+      copyMem(stream, vs.audio_buf + vs.audio_buf_index, len1)
     else:
-      #memset(stream, 0, len1)
-      if not vs.muted and vs.audio_buf:
-        SDL_MixAudioFormat(stream, cast[ptr uint8](vs.audio_buf) +
-            vs.audio_buf_index, AUDIO_S16SYS, len1, vs.audio_volume)
-    dec(len, len1)
-    inc(stream, len1)
-    inc(vs.audio_buf_index, len1)
-  vs.audio_write_buf_size = vs.audio_buf_size - vs.audio_buf_index
+      if vs.muted == 0 and vs.audio_buf != nil:
+        mixAudioFormat(stream, vs.audio_buf + vs.audio_buf_index, AUDIO_S16SYS, len1.uint32, vs.audio_volume)
+    len = len - len1
+    stream += len1
+    vs.audio_buf_index += len1
+  vs.audio_write_buf_size = vs.audio_buf_size.cint - vs.audio_buf_index
   ##  Let's assume the audio driver that is used by SDL has two periods.
-  if not isnan(vs.audio_clock):
-    set_clock_at(addr(vs.audclk), vs.audio_clock -
-        (double)(2 * vs.audio_hw_buf_size + vs.audio_write_buf_size) div
-        vs.audio_tgt.bytes_per_sec, vs.audio_clock_serial,
-                 audio_callback_time div 1000000.0)
+  if vs.audio_clock != Nan:
+    set_clock_at(addr(vs.audclk), vs.audio_clock - (cdouble)(2 * vs.audio_hw_buf_size + vs.audio_write_buf_size) / vs.audio_tgt.bytes_per_sec.cdouble, vs.audio_clock_serial, audio_callback_time.float64 / 1000000.0)
     sync_clock_to_slave(addr(vs.extclk), addr(vs.audclk))
 
-proc audio_open*(opaque: pointer; wanted_channel_layout: int64;
-                wanted_nb_channels: cint; wanted_sample_rate: cint;
+
+proc SDL_getenv*(name: cstring): cstring
+proc audio_open*(opaque: pointer; wanted_channel_layout: var int64;
+                wanted_nb_channels: var cint; wanted_sample_rate: cint;
                 audio_hw_params: ptr AudioParams): cint =
   var
-    wanted_spec: SDL_AudioSpec
-    spec: SDL_AudioSpec
+    wanted_spec: AudioSpec
+    spec: AudioSpec
   var env: cstring
-  var next_nb_channels: UncheckedArray[cint] = [0, 0, 1, 6, 2, 6, 4, 6]
-  var next_sample_rates: UncheckedArray[cint] = [0, 44100, 48000, 96000, 192000]
-  var next_sample_rate_idx: cint = FF_ARRAY_ELEMS(next_sample_rates) - 1
+  var next_nb_channels: seq[cint] = @[0.cint, 0, 1, 6, 2, 6, 4, 6]
+  var next_sample_rates: seq[cint] = @[0.cint, 44100, 48000, 96000, 192000]
+  var next_sample_rate_idx: cint = sizeof(next_sample_rates) - 1
   env = SDL_getenv("SDL_AUDIO_CHANNELS")
-  if env:
-    wanted_nb_channels = atoi(env)
+  if env != nil:
+    wanted_nb_channels = cint parseInt($env)
     wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels)
-  if not wanted_channel_layout or
-      wanted_nb_channels !=
-      av_get_channel_layout_nb_channels(wanted_channel_layout):
+  if wanted_channel_layout == 0 or wanted_nb_channels != av_get_channel_layout_nb_channels(wanted_channel_layout.uint64):
     wanted_channel_layout = av_get_default_channel_layout(wanted_nb_channels)
-    wanted_channel_layout = wanted_channel_layout and
-        not AV_CH_LAYOUT_STEREO_DOWNMIX
-  wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout)
-  wanted_spec.channels = wanted_nb_channels
+    wanted_channel_layout = wanted_channel_layout and not AV_CH_LAYOUT_STEREO_DOWNMIX
+  wanted_nb_channels = av_get_channel_layout_nb_channels(wanted_channel_layout.uint64)
+  wanted_spec.channels = uint8 wanted_nb_channels
   wanted_spec.freq = wanted_sample_rate
   if wanted_spec.freq <= 0 or wanted_spec.channels <= 0:
-    echo(nil, AV_LOG_ERROR, "Invalid sample rate or channel count!\n")
+    echo("Invalid sample rate or channel count!\n")
     return -1
-  while next_sample_rate_idx and
-      next_sample_rates[next_sample_rate_idx] >= wanted_spec.freq:
-    dec(next_sample_rate_idx)
+  while next_sample_rate_idx != 0 and next_sample_rates[next_sample_rate_idx] >= wanted_spec.freq:
+    next_sample_rate_idx.dec
   wanted_spec.format = AUDIO_S16SYS
   wanted_spec.silence = 0
-  wanted_spec.samples = max(SDL_AUDIO_MIN_BUFFER_SIZE, 2 shl
-      av_log2(wanted_spec.freq div SDL_AUDIO_MAX_CALLBACKS_PER_SEC))
-  wanted_spec.callback = sdl_audio_callback
+  wanted_spec.samples = uint16 max(SDL_AUDIO_MIN_BUFFER_SIZE, 2 shl av_log2(cuint wanted_spec.freq div SDL_AUDIO_MAX_CALLBACKS_PER_SEC))
+  # wanted_spec.callback = sdl_audio_callback
   wanted_spec.userdata = opaque
-  while not (audio_dev = SDL_OpenAudioDevice(nil, 0, addr(wanted_spec), addr(spec),
-      SDL_AUDIO_ALLOW_FREQUENCY_CHANGE or SDL_AUDIO_ALLOW_CHANNELS_CHANGE)):
-    echo(nil, AV_LOG_WARNING, "SDL_OpenAudio (%d channels, %d Hz): %s\n",
-           wanted_spec.channels, wanted_spec.freq, SDL_GetError())
-    wanted_spec.channels = next_nb_channels[FFMIN(7, wanted_spec.channels)]
-    if not wanted_spec.channels:
-      wanted_spec.freq = next_sample_rates[dec(next_sample_rate_idx)]
-      wanted_spec.channels = wanted_nb_channels
-      if not wanted_spec.freq:
-        echo(nil, AV_LOG_ERROR,
-               "No more combinations to try, audio open failed\n")
+  audio_dev = openAudioDevice(nil, 0, addr(wanted_spec), addr(spec), SDL_AUDIO_ALLOW_FREQUENCY_CHANGE or SDL_AUDIO_ALLOW_CHANNELS_CHANGE)
+  while audio_dev == 0:
+    # echo("SDL_OpenAudio (%d channels, %d Hz): %s\n", wanted_spec.channels, wanted_spec.freq, SDL_GetError())
+    wanted_spec.channels = uint8 next_nb_channels[min(7.uint8, wanted_spec.channels)]
+    if wanted_spec.channels == 0:
+      wanted_spec.freq = next_sample_rates[next_sample_rate_idx]
+      next_sample_rate_idx.dec
+      wanted_spec.channels = uint8 wanted_nb_channels
+      if wanted_spec.freq == 0:
+        echo("No more combinations to try, audio open failed\n")
         return -1
-    wanted_channel_layout = av_get_default_channel_layout(wanted_spec.channels)
+    wanted_channel_layout = av_get_default_channel_layout(wanted_spec.channels.cint)
   if spec.format != AUDIO_S16SYS:
-    echo(nil, AV_LOG_ERROR, "SDL advised audio format %d is not supported!\n",
-           spec.format)
+    echo("SDL advised audio format %d is not supported!\n", spec.format)
     return -1
   if spec.channels != wanted_spec.channels:
-    wanted_channel_layout = av_get_default_channel_layout(spec.channels)
-    if not wanted_channel_layout:
-      echo(nil, AV_LOG_ERROR,
-             "SDL advised channel count %d is not supported!\n", spec.channels)
+    wanted_channel_layout = av_get_default_channel_layout(spec.channels.cint)
+    if wanted_channel_layout != 0:
+      echo("SDL advised channel count %d is not supported!\n", spec.channels)
       return -1
   audio_hw_params.fmt = AV_SAMPLE_FMT_S16
   audio_hw_params.freq = spec.freq
   audio_hw_params.channel_layout = wanted_channel_layout
-  audio_hw_params.channels = spec.channels
-  audio_hw_params.frame_size = av_samples_get_buffer_size(nil,
-      audio_hw_params.channels, 1, audio_hw_params.fmt, 1)
-  audio_hw_params.bytes_per_sec = av_samples_get_buffer_size(nil,
-      audio_hw_params.channels, audio_hw_params.freq, audio_hw_params.fmt, 1)
+  audio_hw_params.channels = cint spec.channels
+  audio_hw_params.frame_size = av_samples_get_buffer_size(nil, audio_hw_params.channels, 1, audio_hw_params.fmt, 1)
+  audio_hw_params.bytes_per_sec = av_samples_get_buffer_size(nil, audio_hw_params.channels, audio_hw_params.freq, audio_hw_params.fmt, 1)
   if audio_hw_params.bytes_per_sec <= 0 or audio_hw_params.frame_size <= 0:
-    echo(nil, AV_LOG_ERROR, "av_samples_get_buffer_size failed\n")
+    echo("av_samples_get_buffer_size failed\n")
     return -1
-  return spec.size
+  return spec.size.cint
 
 ##  open a given stream. Return 0 if OK
+proc avcodec_alloc_context3*(codec: ptr AVCodec): ptr AVCodecContext
 
 proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
   var ic: ptr AVFormatContext = vs.ic
   var avctx: ptr AVCodecContext
   var codec: ptr AVCodec
-  var forced_codec_name: cstring = nil
-  var opts: ptr AVDictionary = nil
-  var t: ptr AVDictionaryEntry = nil
+  var forced_codec_name: cstring
+  var opts: ptr AVDictionary
+  var t: ptr AVDictionaryEntry
   var
     sample_rate: cint
     nb_channels: cint
   var channel_layout: int64
-  var ret: cint = 0
+  var result: cint = 0
   var stream_lowres: cint = lowres
-  if stream_index < 0 or stream_index >= ic.nb_streams:
+  if stream_index < 0.cint or stream_index >= ic.nb_streams.cint:
     return -1
   avctx = avcodec_alloc_context3(nil)
-  if not avctx:
-    return AVERROR(ENOMEM)
-  ret = avcodec_parameters_to_context(avctx, ic.streams[stream_index].codecpar)
-  if ret < 0:
-    break fail
+  result = avcodec_parameters_to_context(avctx, ic.streams[stream_index].codecpar)
+  if result < 0:
+    echo "fail avcodec_parameters_to_context"
   avctx.pkt_timebase = ic.streams[stream_index].time_base
   codec = avcodec_find_decoder(avctx.codec_id)
   case avctx.codec_type
@@ -2597,14 +2653,13 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
     forced_codec_name = video_codec_name
   if forced_codec_name:
     codec = avcodec_find_decoder_by_name(forced_codec_name)
-  if not codec:
+  if codec == 0:
     if forced_codec_name:
-      echo(nil, AV_LOG_WARNING, "No codec could be found with name \'%s\'\n",
-             forced_codec_name)
+      echo("No codec could be found with name \'%s\'\n",forced_codec_name)
     else:
       echo(nil, AV_LOG_WARNING, "No decoder could be found for codec %s\n",
              avcodec_get_name(avctx.codec_id))
-    ret = AVERROR(EINVAL)
+    result = AVERROR(EINVAL)
     break fail
   avctx.codec_id = codec.id
   if stream_lowres > codec.max_lowres:
@@ -2624,11 +2679,11 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
   if avctx.codec_type == AVMEDIA_TYPE_VIDEO or
       avctx.codec_type == AVMEDIA_TYPE_AUDIO:
     av_dict_set(addr(opts), "refcounted_frames", "1", 0)
-  if (ret = avcodec_open2(avctx, codec, addr(opts))) < 0:
+  if (result = avcodec_open2(avctx, codec, addr(opts))) < 0:
     break fail
   if (t = av_dict_get(opts, "", nil, AV_DICT_IGNORE_SUFFIX)):
     echo(nil, AV_LOG_ERROR, "Option %s not found.\n", t.key)
-    ret = AVERROR_OPTION_NOT_FOUND
+    result = AVERROR_OPTION_NOT_FOUND
     break fail
   vs.eof = 0
   ic.streams[stream_index].`discard` = AVDISCARD_DEFAULT
@@ -2640,26 +2695,26 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
     vs.audio_filter_src.channel_layout = get_valid_channel_layout(
         avctx.channel_layout, avctx.channels)
     vs.audio_filter_src.fmt = avctx.sample_fmt
-    if (ret = configure_audio_filters(vs, afilters, 0)) < 0:
+    if (result = configure_audio_filters(vs, afilters, 0)) < 0:
       break fail
     sink = vs.out_audio_filter
     sample_rate = av_buffersink_get_sample_rate(sink)
     nb_channels = av_buffersink_get_channels(sink)
     channel_layout = av_buffersink_get_channel_layout(sink)
     ##  prepare audio output
-    if (ret = audio_open(vs, channel_layout, nb_channels, sample_rate,
+    if (result = audio_open(vs, channel_layout, nb_channels, sample_rate,
                       addr(vs.audio_tgt))) < 0:
       break fail
-    vs.audio_hw_buf_size = ret
+    vs.audio_hw_buf_size = result
     vs.audio_src = vs.audio_tgt
     vs.audio_buf_size = 0
     vs.audio_buf_index = 0
     ##  init averaging filter
-    vs.audio_diff_avg_coef = exp(log(0.01) div AUDIO_DIFF_AVG_NB)
+    vs.audio_diff_avg_coef = exp(ln(0.01) div AUDIO_DIFF_AVG_NB)
     vs.audio_diff_avg_count = 0
     ##  since we do not have a precise anough audio FIFO fullness,
     ##            we correct audio sync only if larger than this threshold
-    vs.audio_diff_threshold = (double)(vs.audio_hw_buf_size) div
+    vs.audio_diff_threshold = (cdouble)(vs.audio_hw_buf_size) div
         vs.audio_tgt.bytes_per_sec
     vs.audio_stream = stream_index
     vs.audio_st = ic.streams[stream_index]
@@ -2670,7 +2725,7 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
         not vs.ic.iformat.read_seek:
       vs.auddec.start_pts = vs.audio_st.start_time
       vs.auddec.start_pts_tb = vs.audio_st.time_base
-    if (ret = decoder_start(addr(vs.auddec), audio_thread, "audio_decoder", vs)) <
+    if (result = decoder_start(addr(vs.auddec), audio_thread, "audio_decoder", vs)) <
         0:
       break `out`
     SDL_PauseAudioDevice(audio_dev, 0)
@@ -2679,7 +2734,7 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
     vs.video_st = ic.streams[stream_index]
     decoder_init(addr(vs.viddec), avctx, addr(vs.videoq),
                  vs.continue_read_thread)
-    if (ret = decoder_start(addr(vs.viddec), video_thread, "video_decoder", vs)) <
+    if (result = decoder_start(addr(vs.viddec), video_thread, "video_decoder", vs)) <
         0:
       break `out`
     vs.queue_attachments_req = 1
@@ -2688,7 +2743,7 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
     vs.subtitle_st = ic.streams[stream_index]
     decoder_init(addr(vs.subdec), avctx, addr(vs.subtitleq),
                  vs.continue_read_thread)
-    if (ret = decoder_start(addr(vs.subdec), subtitle_thread, "subtitle_decoder",
+    if (result = decoder_start(addr(vs.subdec), subtitle_thread, "subtitle_decoder",
                          vs)) < 0:
       break `out`
   else:
@@ -2696,7 +2751,7 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint =
   break `out`
   avcodec_free_context(addr(avctx))
   av_dict_free(addr(opts))
-  return ret
+  return result
 
 proc decode_interrupt_cb*(ctx: pointer): cint =
   var vs: ptr VideoState = ctx
@@ -2725,7 +2780,7 @@ proc read_thread*(arg: pointer): cint =
   var
     err: cint
     i: cint
-    ret: cint
+    result: cint
   var st_index: array[AVMEDIA_TYPE_NB, cint]
   var
     pkt1: AVPacket
@@ -2738,14 +2793,14 @@ proc read_thread*(arg: pointer): cint =
   var pkt_ts: int64
   if not wait_mutex:
     echo(nil, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError())
-    ret = AVERROR(ENOMEM)
+    result = AVERROR(ENOMEM)
     break fail
   #memset(st_index, -1, sizeof((st_index)))
   vs.eof = 0
   ic = avformat_alloc_context()
   if not ic:
     echo(nil, AV_LOG_FATAL, "Could not allocate context.\n")
-    ret = AVERROR(ENOMEM)
+    result = AVERROR(ENOMEM)
     break fail
   ic.interrupt_callback.callback = decode_interrupt_cb
   ic.interrupt_callback.opaque = vs
@@ -2755,13 +2810,13 @@ proc read_thread*(arg: pointer): cint =
   err = avformat_open_input(addr(ic), vs.filename, vs.iformat, addr(format_opts))
   if err < 0:
     print_error(vs.filename, err)
-    ret = -1
+    result = -1
     break fail
   if scan_all_pmts_set:
     av_dict_set(addr(format_opts), "scan_all_pmts", nil, AV_DICT_MATCH_CASE)
   if (t = av_dict_get(format_opts, "", nil, AV_DICT_IGNORE_SUFFIX)):
-    echo(nil, AV_LOG_ERROR, "Option %s not found.\n", t.key)
-    ret = AVERROR_OPTION_NOT_FOUND
+    echo("Option %s not found.\n", t.key)
+    result = AVERROR_OPTION_NOT_FOUND
     break fail
   vs.ic = ic
   if genpts:
@@ -2777,9 +2832,8 @@ proc read_thread*(arg: pointer): cint =
       inc(i)
     av_freep(addr(opts))
     if err < 0:
-      echo(nil, AV_LOG_WARNING, "%s: could not find codec parameters\n",
-             vs.filename)
-      ret = -1
+      echo("%s: could not find codec parameters\n",vs.filename)
+      result = -1
       break fail
   if ic.pb:
     ic.pb.eof_reached = 0
@@ -2795,8 +2849,8 @@ proc read_thread*(arg: pointer): cint =
     ##  add the stream start time
     if ic.start_time != AV_NOPTS_VALUE:
       inc(timestamp, ic.start_time)
-    ret = avformat_seek_file(ic, -1, int64.low, timestamp, int64.high, 0)
-    if ret < 0:
+    result = avformat_seek_file(ic, -1, int64.low, timestamp, int64.high, 0)
+    if result < 0:
       echo(nil, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
              vs.filename, cast[cdouble](timestamp div AV_TIME_BASE))
   vs.realtime = is_realtime(ic)
@@ -2805,18 +2859,16 @@ proc read_thread*(arg: pointer): cint =
   i = 0
   while i < ic.nb_streams:
     var st: ptr AVStream = ic.streams[i]
-    var `type`: AVMediaType = st.codecpar.codec_type
+    var t: AVMediaType = st.codecpar.codec_type
     st.`discard` = AVDISCARD_ALL
-    if `type` >= 0 and wanted_stream_spec[`type`] and st_index[`type`] == -1:
-      if avformat_match_stream_specifier(ic, st, wanted_stream_spec[`type`]) > 0:
-        st_index[`type`] = i
+    if t >= 0 and wanted_stream_spec[t] and st_index[t] == -1:
+      if avformat_match_stream_specifier(ic, st, wanted_stream_spec[t]) > 0:
+        st_index[t] = i
     inc(i)
   i = 0
   while i < AVMEDIA_TYPE_NB:
     if wanted_stream_spec[i] and st_index[i] == -1:
-      echo(nil, AV_LOG_ERROR,
-             "Stream specifier %s does not match any %s stream\n",
-             wanted_stream_spec[i], av_get_media_type_string(i))
+      echo("Stream specifier %s does not match any %s stream\n",wanted_stream_spec[i], av_get_media_type_string(i))
       st_index[i] = int.high
     inc(i)
   if not video_disable:
@@ -2839,17 +2891,16 @@ proc read_thread*(arg: pointer): cint =
       set_default_window_size(codecpar.width, codecpar.height, sar)
   if st_index[AVMEDIA_TYPE_AUDIO] >= 0:
     stream_component_open(vs, st_index[AVMEDIA_TYPE_AUDIO])
-  ret = -1
+  result = -1
   if st_index[AVMEDIA_TYPE_VIDEO] >= 0:
-    ret = stream_component_open(vs, st_index[AVMEDIA_TYPE_VIDEO])
+    result = stream_component_open(vs, st_index[AVMEDIA_TYPE_VIDEO])
   if vs.show_mode == SHOW_MODE_NONE:
-    vs.show_mode = if ret >= 0: SHOW_MODE_VIDEO else: SHOW_MODE_RDFT
+    vs.show_mode = if result >= 0: SHOW_MODE_VIDEO else: SHOW_MODE_RDFT
   if st_index[AVMEDIA_TYPE_SUBTITLE] >= 0:
     stream_component_open(vs, st_index[AVMEDIA_TYPE_SUBTITLE])
   if vs.video_stream < 0 and vs.audio_stream < 0:
-    echo(nil, AV_LOG_FATAL,
-           "Failed to open file \'%s\' or configure filtergraph\n", vs.filename)
-    ret = -1
+    echo("Failed to open file \'%s\' or configure filtergraph\n", vs.filename)
+    result = -1
     break fail
   if infinite_buffer < 0 and vs.realtime:
     infinite_buffer = 1
@@ -2867,7 +2918,7 @@ proc read_thread*(arg: pointer): cint =
         (ic.pb and not strncmp(input_filename, "mmsh:", 5))):
       ##  wait 10 ms to avoid trying to get another packet
       ##  XXX: horrible
-      SDL_Delay(10)
+      # SDL_Delay(10)
       continue
     if vs.seek_req:
       var seek_target: int64 = vs.seek_pos
@@ -2875,9 +2926,9 @@ proc read_thread*(arg: pointer): cint =
       var seek_max: int64 = if vs.seek_rel < 0: seek_target - vs.seek_rel - 2 else: int64.high
       ##  FIXME the +-2 is due to rounding being not done in the correct direction in generation
       ##       of the seek_pos/seek_rel variables
-      ret = avformat_seek_file(vs.ic, -1, seek_min, seek_target, seek_max,
+      result = avformat_seek_file(vs.ic, -1, seek_min, seek_target, seek_max,
                              vs.seek_flags)
-      if ret < 0:
+      if result < 0:
         echo(nil, AV_LOG_ERROR, "%s: error while seeking\n", vs.ic.url)
       else:
         if vs.audio_stream >= 0:
@@ -2903,7 +2954,7 @@ proc read_thread*(arg: pointer): cint =
       if vs.video_st and
           (vs.video_st.disposition and AV_DISPOSITION_ATTACHED_PIC):
         var copy: AVPacket
-        if (ret = av_packet_ref(addr(copy), addr(vs.video_st.attached_pic))) < 0:
+        if (result = av_packet_ref(addr(copy), addr(vs.video_st.attached_pic))) < 0:
           break fail
         packet_queue_put(addr(vs.videoq), addr(copy))
         packet_queue_put_nullpacket(addr(vs.videoq), vs.video_stream)
@@ -2917,9 +2968,9 @@ proc read_thread*(arg: pointer): cint =
         stream_has_enough_packets(vs.subtitle_st, vs.subtitle_stream,
                                   addr(vs.subtitleq)))):
       ##  wait 10 ms
-      SDL_LockMutex(wait_mutex)
-      SDL_CondWaitTimeout(vs.continue_read_thread, wait_mutex, 10)
-      SDL_UnlockMutex(wait_mutex)
+      # SDL_LockMutex(wait_mutex)
+      # SDL_CondWaitTimeout(vs.continue_read_thread, wait_mutex, 10)
+      # SDL_UnlockMutex(wait_mutex)
       continue
     if not vs.paused and
         (not vs.audio_st or
@@ -2931,11 +2982,11 @@ proc read_thread*(arg: pointer): cint =
       if loop != 1 and (not loop or dec(loop)):
         stream_seek(vs, if start_time != AV_NOPTS_VALUE: start_time else: 0, 0, 0)
       elif autoexit:
-        ret = AVERROR_EOF
+        result = AVERROR_EOF
         break fail
-    ret = av_read_frame(ic, pkt)
-    if ret < 0:
-      if (ret == AVERROR_EOF or avio_feof(ic.pb)) and not vs.eof:
+    result = av_read_frame(ic, pkt)
+    if result < 0:
+      if (result == AVERROR_EOF or avio_feof(ic.pb)) and not vs.eof:
         if vs.video_stream >= 0:
           packet_queue_put_nullpacket(addr(vs.videoq), vs.video_stream)
         if vs.audio_stream >= 0:
@@ -2948,9 +2999,9 @@ proc read_thread*(arg: pointer): cint =
           break fail
         else:
           break
-      SDL_LockMutex(wait_mutex)
-      SDL_CondWaitTimeout(vs.continue_read_thread, wait_mutex, 10)
-      SDL_UnlockMutex(wait_mutex)
+      # SDL_LockMutex(wait_mutex)
+      # SDL_CondWaitTimeout(vs.continue_read_thread, wait_mutex, 10)
+      # SDL_UnlockMutex(wait_mutex)
       continue
     else:
       vs.eof = 0
@@ -2961,7 +3012,7 @@ proc read_thread*(arg: pointer): cint =
         (pkt_ts -
         (if stream_start_time != AV_NOPTS_VALUE: stream_start_time else: 0)) *
         av_q2d(ic.streams[pkt.stream_index].time_base) -
-        (double)(if start_time != AV_NOPTS_VALUE: start_time else: 0) div 1000000 <=
+        (cdouble)(if start_time != AV_NOPTS_VALUE: start_time else: 0) div 1000000 <=
         (cast[cdouble](duration div 1000000))
     if pkt.stream_index == vs.audio_stream and pkt_in_play_range:
       packet_queue_put(addr(vs.audioq), pkt)
@@ -2972,65 +3023,61 @@ proc read_thread*(arg: pointer): cint =
       packet_queue_put(addr(vs.subtitleq), pkt)
     else:
       av_packet_unref(pkt)
-  ret = 0
+  result = 0
   if ic and not vs.ic:
     avformat_close_input(addr(ic))
-  if ret != 0:
+  if result != 0:
     var event: SDL_Event
-    event.`type` = FF_QUIT_EVENT
+    event.t = FF_QUIT_EVENT
     event.user.data1 = vs
-    SDL_PushEvent(addr(event))
-  SDL_DestroyMutex(wait_mutex)
+    pushEvent(addr(event))
+  # SDL_DestroyMutex(wait_mutex)
   return 0
 
 proc stream_open*(filename: cstring; iformat: ptr AVInputFormat): ptr VideoState =
   var vs: ptr VideoState
   vs = av_mallocz(sizeof((VideoState)))
-  if not vs:
+  if vs == nil:
     return nil
   vs.last_video_stream = vs.video_stream = -1
   vs.last_audio_stream = vs.audio_stream = -1
   vs.last_subtitle_stream = vs.subtitle_stream = -1
   vs.filename = av_strdup(filename)
-  if not vs.filename:
-    break fail
+  if vs.filename == nil:
+    echo "fail"
   vs.iformat = iformat
   vs.ytop = 0
   vs.xleft = 0
   ##  start video display
-  if frame_queue_init(addr(vs.pictq), addr(vs.videoq),
-                     VIDEO_PICTURE_QUEUE_SIZE, 1) < 0:
-    break fail
-  if frame_queue_init(addr(vs.subpq), addr(vs.subtitleq),
-                     SUBPICTURE_QUEUE_SIZE, 0) < 0:
-    break fail
+  if frame_queue_init(addr(vs.pictq), addr(vs.videoq), VIDEO_PICTURE_QUEUE_SIZE, 1) < 0:
+    echo "fail"
+  if frame_queue_init(addr(vs.subpq), addr(vs.subtitleq),SUBPICTURE_QUEUE_SIZE, 0) < 0:
+    echo "fail"
   if frame_queue_init(addr(vs.sampq), addr(vs.audioq), SAMPLE_QUEUE_SIZE, 1) < 0:
-    break fail
+    echo "fail"
   if packet_queue_init(addr(vs.videoq)) < 0 or
       packet_queue_init(addr(vs.audioq)) < 0 or
       packet_queue_init(addr(vs.subtitleq)) < 0:
-    break fail
-  if not (vs.continue_read_thread = SDL_CreateCond()):
-    echo(nil, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError())
-    break fail
+    echo "fail"
+  # vs.continue_read_thread = SDL_CreateCond()
+  # if vs.continue_read_thread == nil:
+  #   echo("SDL_CreateCond(): %s\n", SDL_GetError())
   init_clock(addr(vs.vidclk), addr(vs.videoq.serial))
   init_clock(addr(vs.audclk), addr(vs.audioq.serial))
   init_clock(addr(vs.extclk), addr(vs.extclk.serial))
   vs.audio_clock_serial = -1
   if startup_volume < 0:
-    echo(nil, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume)
+    echo("-volume=%d < 0, setting to 0\n", startup_volume)
   if startup_volume > 100:
-    echo(nil, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n",
-           startup_volume)
+    echo("-volume=%d > 100, setting to 100\n",startup_volume)
   startup_volume = av_clip_c(startup_volume, 0, 100)
-  startup_volume = av_clip_c(SDL_MIX_MAXVOLUME * startup_volume div 100, 0,
-                         SDL_MIX_MAXVOLUME)
+  startup_volume = av_clip_c(SDL_MIX_MAXVOLUME * startup_volume div 100, 0, SDL_MIX_MAXVOLUME)
   vs.audio_volume = startup_volume
   vs.muted = 0
   vs.av_sync_type = av_sync_type
-  vs.read_tid = SDL_CreateThread(read_thread, "read_thread", vs)
-  if not vs.read_tid:
-    echo(nil, AV_LOG_FATAL, "SDL_CreateThread(): %s\n", SDL_GetError())
+  createThread(vs.read_tid,read_thread vs)
+  if vs.read_tid == nil:
+    echo("SDL_CreateThread(): %s\n", SDL_GetError())
     stream_close(vs)
     return nil
   return vs
@@ -3042,7 +3089,7 @@ proc stream_cycle_channel*(vs: ptr VideoState; codec_type: cint) =
     stream_index: cint
   var old_index: cint
   var st: ptr AVStream
-  var p: ptr AVProgram = nil
+  var p: ptr AVProgram
   var nb_streams: cint = vs.ic.nb_streams
   if codec_type == AVMEDIA_TYPE_VIDEO:
     start_index = vs.last_video_stream
@@ -3090,8 +3137,7 @@ proc stream_cycle_channel*(vs: ptr VideoState; codec_type: cint) =
         nil
   if p and stream_index != -1:
     stream_index = p.stream_index[stream_index]
-  echo(nil, AV_LOG_INFO, "Switch %s stream from #%d to #%d\n",
-         av_get_media_type_string(codec_type), old_index, stream_index)
+  echo("Switch %s stream from #%d to #%d\n",av_get_media_type_string(codec_type), old_index, stream_index)
   stream_component_close(vs, old_index)
   stream_component_open(vs, stream_index)
 
@@ -3143,10 +3189,8 @@ proc seek_chapter*(vs: ptr VideoState; incr: cint) =
   i = max(i, 0)
   if i >= vs.ic.nb_chapters:
     return
-  echo(nil, AV_LOG_VERBOSE, "Seeking to chapter %d.\n", i)
-  stream_seek(vs, av_rescale_q(vs.ic.chapters[i].start,
-                                vs.ic.chapters[i].time_base, AV_TIME_BASE_Q), 0,
-              0)
+  echo("Seeking to chapter %d.\n", i)
+  stream_seek(vs, av_rescale_q(vs.ic.chapters[i].start, vs.ic.chapters[i].time_base, AV_TIME_BASE_Q), 0,0)
 
 ##  handle an event sent by the GUI
 
@@ -3159,7 +3203,7 @@ proc event_loop*(cur_stream: ptr VideoState) =
   while true:
     var x: cdouble
     refresh_loop_wait_event(cur_stream, addr(event))
-    case event.`type`
+    case event.t
     of SDL_KEYDOWN:
       if exit_on_keydown or event.key.keysym.sym == SDLK_ESCAPE or
           event.key.keysym.sym == SDLK_q:
@@ -3263,7 +3307,7 @@ proc event_loop*(cur_stream: ptr VideoState) =
         SDL_ShowCursor(1)
         cursor_hidden = 0
       cursor_last_shown = av_gettime_relative()
-      if event.`type` == SDL_MOUSEBUTTONDOWN:
+      if event.t == SDL_MOUSEBUTTONDOWN:
         if event.button.button != SDL_BUTTON_RIGHT:
           break
         x = event.button.x
@@ -3307,7 +3351,7 @@ proc event_loop*(cur_stream: ptr VideoState) =
         screen_width = cur_stream.width = event.window.data1
         screen_height = cur_stream.height = event.window.data2
         if cur_stream.vis_texture:
-          SDL_DestroyTexture(cur_stream.vis_texture)
+          destroy(cur_stream.vis_texture)
           cur_stream.vis_texture = nil
       of SDL_WINDOWEVENT_EXPOSED:
         cur_stream.force_refresh = 1
@@ -3466,7 +3510,7 @@ proc show_help_default*(opt: cstring; arg: cstring) =
   show_help_children(avcodec_get_class(), AV_OPT_FLAG_DECODING_PARAM)
   show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM)
   show_help_children(avfilter_get_class(), AV_OPT_FLAG_FILTERING_PARAM)
-  printf("\nWhile playing:\nq, ESC              quit\nf                   toggle full screen\np, SPC              pause\nm                   toggle mute\n9, 0                decrease and increase volume respectively\n/, *                decrease and increase volume respectively\na                   cycle audio channel in the current program\nv                   cycle video channel\nt                   cycle subtitle channel in the current program\nc                   cycle program\nw                   cycle video filters or show modes\ns                   activate frame-step mode\nleft/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\ndown/up             seek backward/forward 1 minute\npage down/page up   seek backward/forward 10 minutes\nright mouse click   seek to percentage in file corresponding to fraction of width\nleft double-click   toggle full screen\n")
+  printf("\nWhile playing:\nq, ESC              quit\nf                   toggle full screen\np, SPC              pause\nm                   toggle mute\n9, 0                decrease and increase volume respectively\n/, *                decrease and increase volume respectively\na                   cycle audio channel in the current program\nv                   cycle video channel\nt                   cycle subtitle channel in the current program\nc                   cycle program\nw                   cycle video filters or show modes\ns                   activate frame-step mode\nleft/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\ndown/up             seek backward/forward 1 minute\npage down/page up   seek backward/forward 10 minutes\nright mouse click   seek to percentage in file corresponding to fraction of width\nleft cdouble-click   toggle full screen\n")
 
 ##  Called from the main
 

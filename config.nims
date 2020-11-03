@@ -1,0 +1,4 @@
+--threads:on
+--define:release
+--profiler:on
+--stacktrace:on
