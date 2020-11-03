@@ -7,6 +7,18 @@ import math
 import posix
 import sequtils
 
+when defined(SDL_Static):
+  static: echo "SDL_Static option is deprecated and will soon be removed. Instead please use --dynlibOverride:SDL2."
+
+else:
+  when defined(windows):
+    const LibName* = "SDL2.dll"
+  elif defined(macosx):
+    const LibName* = "libSDL2.dylib"
+  elif defined(openbsd):
+    const LibName* = "libSDL2.so.0.6"
+  else:
+    const LibName* = "libSDL2.so"
 
 template `+`*[T](p: ptr T, off: int): ptr T =
   cast[ptr type(p[])](cast[ByteAddress](p) +% off * sizeof(p[]))
@@ -2310,7 +2322,7 @@ const
 # template av_assert0*(cond: untyped): void =
 #   while true:
 #     if not (cond):
-#       av_log(nil, AV_LOG_PANIC, "Assertion %s failed at %s:%d\n",
+#       av_log(nil, AV_LOG_PANIC, "Assertion %s failed at %s:%d",
 #              AV_STRINGIFY(cond), __FILE__, __LINE__)
 #       abort()
 #     if not 0:
@@ -2912,7 +2924,7 @@ const
   SDL_MAIN_AVAILABLE* = true
   SDLMAIN_DECLSPEC* = true
   SDL_ASSERT_LEVEL* = 2
-  #SDL_TriggerBreakpoint() __asm__ __volatile__("int $3\n\t")
+  #SDL_TriggerBreakpoint() __asm__ __volatile__("int $3\t")
   # SDL_FUNCTION* = __func__
   # SDL_FILE* = __FILE__
   # SDL_LINE* = __LINE__
@@ -3735,6 +3747,25 @@ type
     AVFMT_DURATION_FROM_STREAM, ## /< Duration estimated from a stream with a known duration
     AVFMT_DURATION_FROM_BITRATE ## /< Duration estimated from bitrate (less accurate)
 
+  SDL_BlendMode* = enum
+    SDL_BLENDMODE_NONE = 0x00000000, SDL_BLENDMODE_BLEND = 0x00000001,
+    SDL_BLENDMODE_ADD = 0x00000002, SDL_BLENDMODE_MOD = 0x00000004,
+    SDL_BLENDMODE_MUL = 0x00000008, SDL_BLENDMODE_INVALID = 0x7FFFFFFF
+  SDL_BlendOperation* = enum
+    SDL_BLENDOPERATION_ADD = 0x00000001, SDL_BLENDOPERATION_SUBTRACT = 0x00000002,
+    SDL_BLENDOPERATION_REV_SUBTRACT = 0x00000003,
+    SDL_BLENDOPERATION_MINIMUM = 0x00000004,
+    SDL_BLENDOPERATION_MAXIMUM = 0x00000005
+  SDL_BlendFactor* = enum
+    SDL_BLENDFACTOR_ZERO = 0x00000001, SDL_BLENDFACTOR_ONE = 0x00000002,
+    SDL_BLENDFACTOR_SRC_COLOR = 0x00000003,
+    SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR = 0x00000004,
+    SDL_BLENDFACTOR_SRC_ALPHA = 0x00000005,
+    SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA = 0x00000006,
+    SDL_BLENDFACTOR_DST_COLOR = 0x00000007,
+    SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR = 0x00000008,
+    SDL_BLENDFACTOR_DST_ALPHA = 0x00000009,
+    SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA = 0x0000000A
 type
   AVCodecParameters* {.bycopy.} = object
     codec_type*: AVMediaType
@@ -6129,58 +6160,22 @@ proc SDL_Error*(code: SDL_errorcode): cint
 ##      swapper.ui32 = SDL_Swap32(swapper.ui32);
 ##      return swapper.f;
 ##  }
+type 
+  SDL_semaphore* {.bycopy.} = object
+
+  SDL_sem* = SDL_semaphore
+
+
+type
+  SDL_cond* {.bycopy.} = object
 
 type
   SDL_mutex* {.bycopy.} = object
 
 
-proc SDL_CreateMutex*(): ptr SDL_mutex
-proc SDL_LockMutex*(mutex: ptr SDL_mutex): cint {.discardable.}
-proc SDL_TryLockMutex*(mutex: ptr SDL_mutex): cint {.discardable.}
-template SDL_mutexV*(m: untyped): untyped =
-  SDL_UnlockMutex(m)
-
-proc SDL_UnlockMutex*(mutex: ptr SDL_mutex): cint {.discardable.}
-proc SDL_DestroyMutex*(mutex: ptr SDL_mutex)
-type
-  SDL_semaphore* {.bycopy.} = object
-
-  SDL_sem* = SDL_semaphore
-
-proc SDL_CreateSemaphore*(initial_value: uint32): ptr SDL_sem
-proc SDL_DestroySemaphore*(sem: ptr SDL_sem)
-proc SDL_SemWait*(sem: ptr SDL_sem): cint
-proc SDL_SemTryWait*(sem: ptr SDL_sem): cint
-proc SDL_SemWaitTimeout*(sem: ptr SDL_sem; ms: uint32): cint
-proc SDL_SemPost*(sem: ptr SDL_sem): cint
-proc SDL_SemValue*(sem: ptr SDL_sem): uint32
-type
-  SDL_cond* {.bycopy.} = object
-
-
-proc SDL_CreateCond*(): ptr SDL_cond
-proc SDL_DestroyCond*(cond: ptr SDL_cond)
-proc SDL_CondSignal*(cond: ptr SDL_cond): cint {.discardable.}
-proc SDL_CondBroadcast*(cond: ptr SDL_cond): cint {.discardable.}
-proc SDL_CondWait*(cond: ptr SDL_cond; mutex: ptr SDL_mutex): cint {.discardable.} 
-proc SDL_CondWaitTimeout*(cond: ptr SDL_cond; mutex: ptr SDL_mutex; ms: uint32): cint {.discardable.}
 
 
 
-proc SDL_CreateThread*(fn: SDL_ThreadFunction; name: cstring; data: pointer;): ptr SDL_Thread
-proc SDL_CreateThreadWithStackSize*(fn: proc (a1: pointer): cint; name: cstring;
-                                   stacksize: csize_t; data: pointer;
-                                   pfnBeginThread: pfnSDL_CurrentBeginThread;
-                                   pfnEndThread: pfnSDL_CurrentEndThread): ptr SDL_Thread
-proc SDL_GetThreadName*(thread: ptr SDL_Thread): cstring
-# proc SDL_ThreadID*(): SDL_threadID
-proc SDL_GetThreadID*(thread: ptr SDL_Thread): SDL_threadID
-proc SDL_SetThreadPriority*(priority: SDL_ThreadPriority): cint
-proc SDL_WaitThread*(thread: ptr SDL_Thread; status: ptr cint)
-proc SDL_DetachThread*(thread: ptr SDL_Thread)
-proc SDL_TLSCreate*(): SDL_TLSID
-proc SDL_TLSGet*(id: SDL_TLSID): pointer
-proc SDL_TLSSet*(id: SDL_TLSID; value: pointer; destructor: proc (a1: pointer)): cint
 type
   INNER_C_STRUCT_playground_6684* {.bycopy.} = object
     data*: pointer
@@ -6216,34 +6211,7 @@ type
     hidden*: INNER_C_UNION_playground_6678
 
 
-proc SDL_RWFromFile*(file: cstring; mode: cstring): ptr SDL_RWops
-proc SDL_RWFromFP*(fp: pointer; autoclose: SDL_bool): ptr SDL_RWops
-proc SDL_RWFromMem*(mem: pointer; size: cint): ptr SDL_RWops
-proc SDL_RWFromConstMem*(mem: pointer; size: cint): ptr SDL_RWops
-proc SDL_AllocRW*(): ptr SDL_RWops
-proc SDL_FreeRW*(area: ptr SDL_RWops)
-proc SDL_RWsize*(context: ptr SDL_RWops): int64
-proc SDL_RWseek*(context: ptr SDL_RWops; offset: int64; whence: cint): int64
-proc SDL_RWtell*(context: ptr SDL_RWops): int64
-proc SDL_RWread*(context: ptr SDL_RWops; `ptr`: pointer; size: csize_t; maxnum: csize_t): csize_t
-proc SDL_RWwrite*(context: ptr SDL_RWops; `ptr`: pointer; size: csize_t; num: csize_t): csize_t
-proc SDL_RWclose*(context: ptr SDL_RWops): cint
-proc SDL_LoadFile_RW*(src: ptr SDL_RWops; datasize: ptr csize_t; freesrc: cint): pointer
-proc SDL_LoadFile*(file: cstring; datasize: ptr csize_t): pointer
-proc SDL_ReadU8*(src: ptr SDL_RWops): uint8
-proc SDL_ReadLE16*(src: ptr SDL_RWops): uint16
-proc SDL_ReadBE16*(src: ptr SDL_RWops): uint16
-proc SDL_ReadLE32*(src: ptr SDL_RWops): uint32
-proc SDL_ReadBE32*(src: ptr SDL_RWops): uint32
-proc SDL_ReadLE64*(src: ptr SDL_RWops): uint64
-proc SDL_ReadBE64*(src: ptr SDL_RWops): uint64
-proc SDL_WriteU8*(dst: ptr SDL_RWops; value: uint8): csize_t
-proc SDL_WriteLE16*(dst: ptr SDL_RWops; value: uint16): csize_t
-proc SDL_WriteBE16*(dst: ptr SDL_RWops; value: uint16): csize_t
-proc SDL_WriteLE32*(dst: ptr SDL_RWops; value: uint32): csize_t
-proc SDL_WriteBE32*(dst: ptr SDL_RWops; value: uint32): csize_t
-proc SDL_WriteLE64*(dst: ptr SDL_RWops; value: uint64): csize_t
-proc SDL_WriteBE64*(dst: ptr SDL_RWops; value: uint64): csize_t
+
 type
   SDL_AudioFormat* = uint16
   SDL_AudioCallback* = proc (userdata: pointer; stream: ptr uint8; len: cint)
@@ -6272,118 +6240,12 @@ type
     filter_index*: cint
 
   SDL_AudioFilter* = proc (cvt: ptr SDL_AudioCVT; format: SDL_AudioFormat)
-
-
-
-proc SDL_GetNumAudioDrivers*(): cint
-proc SDL_GetAudioDriver*(index: cint): cstring
-proc SDL_AudioInit*(driver_name: cstring): cint
-proc SDL_AudioQuit*()
-proc SDL_GetCurrentAudioDriver*(): cstring
-proc SDL_OpenAudio*(desired: ptr SDL_AudioSpec; obtained: ptr SDL_AudioSpec): cint
-type
   SDL_AudioDeviceID* = uint32
 
-proc SDL_GetNumAudioDevices*(iscapture: cint): cint
-proc SDL_GetAudioDeviceName*(index: cint; iscapture: cint): cstring
-proc SDL_OpenAudioDevice*(device: cstring; iscapture: cint;
-                         desired: ptr SDL_AudioSpec; obtained: ptr SDL_AudioSpec;
-                         allowed_changes: cint): SDL_AudioDeviceID
-type
   SDL_AudioStatus* = enum
     SDL_AUDIO_STOPPED = 0, SDL_AUDIO_PLAYING, SDL_AUDIO_PAUSED
-
-
-proc SDL_GetAudioStatus*(): SDL_AudioStatus
-proc SDL_GetAudioDeviceStatus*(dev: SDL_AudioDeviceID): SDL_AudioStatus
-proc SDL_PauseAudio*(pause_on: cint)
-proc SDL_PauseAudioDevice*(dev: SDL_AudioDeviceID; pause_on: cint)
-proc SDL_LoadWAV_RW*(src: ptr SDL_RWops; freesrc: cint; spec: ptr SDL_AudioSpec;
-                    audio_buf: ptr ptr uint8; audio_len: ptr uint32): ptr SDL_AudioSpec
-proc SDL_FreeWAV*(audio_buf: ptr uint8)
-proc SDL_BuildAudioCVT*(cvt: ptr SDL_AudioCVT; src_format: SDL_AudioFormat;
-                       src_channels: uint8; src_rate: cint;
-                       dst_format: SDL_AudioFormat; dst_channels: uint8;
-                       dst_rate: cint): cint
-proc SDL_ConvertAudio*(cvt: ptr SDL_AudioCVT): cint
-
-type
   SDL_AudioStream* {.bycopy.} = object
 
-
-proc SDL_NewAudioStream*(src_format: SDL_AudioFormat; src_channels: uint8;
-                        src_rate: cint; dst_format: SDL_AudioFormat;
-                        dst_channels: uint8; dst_rate: cint): ptr SDL_AudioStream
-proc SDL_AudioStreamPut*(stream: ptr SDL_AudioStream; buf: pointer; len: cint): cint
-proc SDL_AudioStreamGet*(stream: ptr SDL_AudioStream; buf: pointer; len: cint): cint
-proc SDL_AudioStreamAvailable*(stream: ptr SDL_AudioStream): cint
-proc SDL_AudioStreamFlush*(stream: ptr SDL_AudioStream): cint
-proc SDL_AudioStreamClear*(stream: ptr SDL_AudioStream)
-proc SDL_FreeAudioStream*(stream: ptr SDL_AudioStream)
-proc SDL_MixAudio*(dst: ptr uint8; src: ptr uint8; len: uint32; volume: cint)
-proc SDL_MixAudioFormat*(dst: ptr uint8; src: ptr uint8; format: SDL_AudioFormat;
-                        len: uint32; volume: cint)
-proc SDL_QueueAudio*(dev: SDL_AudioDeviceID; data: pointer; len: uint32): cint
-proc SDL_DequeueAudio*(dev: SDL_AudioDeviceID; data: pointer; len: uint32): uint32
-proc SDL_GetQueuedAudioSize*(dev: SDL_AudioDeviceID): uint32
-proc SDL_ClearQueuedAudio*(dev: SDL_AudioDeviceID)
-proc SDL_LockAudio*()
-proc SDL_LockAudioDevice*(dev: SDL_AudioDeviceID)
-proc SDL_UnlockAudio*()
-proc SDL_UnlockAudioDevice*(dev: SDL_AudioDeviceID)
-proc SDL_CloseAudio*()
-proc SDL_CloseAudioDevice*(dev: SDL_AudioDeviceID)
-proc SDL_SetClipboardText*(text: cstring): cint
-proc SDL_GetClipboardText*(): cstring
-proc SDL_HasClipboardText*(): SDL_bool
-proc SDL_GetCPUCount*(): cint
-proc SDL_GetCPUCacheLineSize*(): cint
-proc SDL_HasRDTSC*(): SDL_bool
-proc SDL_HasAltiVec*(): SDL_bool
-proc SDL_HasMMX*(): SDL_bool
-proc SDL_Has3DNow*(): SDL_bool
-proc SDL_HasSSE*(): SDL_bool
-proc SDL_HasSSE2*(): SDL_bool
-proc SDL_HasSSE3*(): SDL_bool
-proc SDL_HasSSE41*(): SDL_bool
-proc SDL_HasSSE42*(): SDL_bool
-proc SDL_HasAVX*(): SDL_bool
-proc SDL_HasAVX2*(): SDL_bool
-proc SDL_HasAVX512F*(): SDL_bool
-proc SDL_HasARMSIMD*(): SDL_bool
-proc SDL_HasNEON*(): SDL_bool
-proc SDL_GetSystemRAM*(): cint
-proc SDL_SIMDGetAlignment*(): csize_t
-proc SDL_SIMDAlloc*(len: csize_t): pointer
-proc SDL_SIMDFree*(`ptr`: pointer)
-# const
-#   SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_ABGR8888
-#   SDL_PIXELFORMAT_ARGB32 = SDL_PIXELFORMAT_BGRA8888
-#   SDL_PIXELFORMAT_BGRA32 = SDL_PIXELFORMAT_ARGB8888
-#   SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_RGBA8888
-
-proc SDL_GetPixelFormatName*(format: uint32): cstring
-proc SDL_PixelFormatEnumToMasks*(format: uint32; bpp: ptr cint; Rmask: ptr uint32;
-                                Gmask: ptr uint32; Bmask: ptr uint32;
-                                Amask: ptr uint32): SDL_bool
-proc SDL_MasksToPixelFormatEnum*(bpp: cint; Rmask: uint32; Gmask: uint32;
-                                Bmask: uint32; Amask: uint32): uint32
-proc SDL_AllocFormat*(pixel_format: uint32): ptr SDL_PixelFormat
-proc SDL_FreeFormat*(format: ptr SDL_PixelFormat)
-proc SDL_AllocPalette*(ncolors: cint): ptr SDL_Palette
-proc SDL_SetPixelFormatPalette*(format: ptr SDL_PixelFormat;
-                               palette: ptr SDL_Palette): cint
-proc SDL_SetPaletteColors*(palette: ptr SDL_Palette; colors: ptr SDL_Color;
-                          firstcolor: cint; ncolors: cint): cint
-proc SDL_FreePalette*(palette: ptr SDL_Palette)
-proc SDL_MapRGB*(format: ptr SDL_PixelFormat; r: uint8; g: uint8; b: uint8): uint32
-proc SDL_MapRGBA*(format: ptr SDL_PixelFormat; r: uint8; g: uint8; b: uint8; a: uint8): uint32
-proc SDL_GetRGB*(pixel: uint32; format: ptr SDL_PixelFormat; r: ptr uint8; g: ptr uint8;
-                b: ptr uint8)
-proc SDL_GetRGBA*(pixel: uint32; format: ptr SDL_PixelFormat; r: ptr uint8; g: ptr uint8;
-                 b: ptr uint8; a: ptr uint8)
-proc SDL_CalculateGammaRamp*(gamma: cfloat; ramp: ptr uint16)
-type
   SDL_Point*  = tuple
     x: cint
     y: cint
@@ -6404,54 +6266,6 @@ type
     w: cfloat
     h: cfloat
 
-
-proc SDL_PointInRect*(p: ptr SDL_Point; r: ptr SDL_Rect): SDL_bool {.inline.} =
-  return if ((p.x >= r.x) and (p.x < (r.x + r.w)) and (p.y >= r.y) and (p.y < (r.y + r.h))): SDL_TRUE else: SDL_FALSE
-
-proc SDL_RectEmpty*(r: ptr SDL_Rect): SDL_bool {.inline.} =
-  return if ( r == nil or (r.w <= 0) or (r.h <= 0)): SDL_TRUE else: SDL_FALSE
-
-proc SDL_RectEquals*(a: ptr SDL_Rect; b: ptr SDL_Rect): SDL_bool {.inline.} =
-  return if (a != nil and b != nil and (a.x == b.x) and (a.y == b.y) and (a.w == b.w) and (a.h == b.h)): SDL_TRUE else: SDL_FALSE
-
-proc SDL_HasIntersection*(A: ptr SDL_Rect; B: ptr SDL_Rect): SDL_bool
-proc SDL_IntersectRect*(A: ptr SDL_Rect; B: ptr SDL_Rect; result: ptr SDL_Rect): SDL_bool
-proc SDL_UnionRect*(A: ptr SDL_Rect; B: ptr SDL_Rect; result: ptr SDL_Rect)
-proc SDL_EnclosePoints*(points: ptr SDL_Point; count: cint; clip: ptr SDL_Rect;
-                       result: ptr SDL_Rect): SDL_bool
-proc SDL_IntersectRectAndLine*(rect: ptr SDL_Rect; X1: ptr cint; Y1: ptr cint;
-                              X2: ptr cint; Y2: ptr cint): SDL_bool
-type
-  SDL_BlendMode* = enum
-    SDL_BLENDMODE_NONE = 0x00000000, SDL_BLENDMODE_BLEND = 0x00000001,
-    SDL_BLENDMODE_ADD = 0x00000002, SDL_BLENDMODE_MOD = 0x00000004,
-    SDL_BLENDMODE_MUL = 0x00000008, SDL_BLENDMODE_INVALID = 0x7FFFFFFF
-  SDL_BlendOperation* = enum
-    SDL_BLENDOPERATION_ADD = 0x00000001, SDL_BLENDOPERATION_SUBTRACT = 0x00000002,
-    SDL_BLENDOPERATION_REV_SUBTRACT = 0x00000003,
-    SDL_BLENDOPERATION_MINIMUM = 0x00000004,
-    SDL_BLENDOPERATION_MAXIMUM = 0x00000005
-  SDL_BlendFactor* = enum
-    SDL_BLENDFACTOR_ZERO = 0x00000001, SDL_BLENDFACTOR_ONE = 0x00000002,
-    SDL_BLENDFACTOR_SRC_COLOR = 0x00000003,
-    SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR = 0x00000004,
-    SDL_BLENDFACTOR_SRC_ALPHA = 0x00000005,
-    SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA = 0x00000006,
-    SDL_BLENDFACTOR_DST_COLOR = 0x00000007,
-    SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR = 0x00000008,
-    SDL_BLENDFACTOR_DST_ALPHA = 0x00000009,
-    SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA = 0x0000000A
-
-
-
-
-proc SDL_ComposeCustomBlendMode*(srcColorFactor: SDL_BlendFactor;
-                                dstColorFactor: SDL_BlendFactor;
-                                colorOperation: SDL_BlendOperation;
-                                srcAlphaFactor: SDL_BlendFactor;
-                                dstAlphaFactor: SDL_BlendFactor;
-                                alphaOperation: SDL_BlendOperation): SDL_BlendMode
-type
   SDL_BlitMap = object
   SDL_Surface* {.bycopy.} = object
     flags*: uint32
@@ -6472,57 +6286,6 @@ type
     SDL_YUV_CONVERSION_JPEG, SDL_YUV_CONVERSION_BT601, SDL_YUV_CONVERSION_BT709,
     SDL_YUV_CONVERSION_AUTOMATIC
 
-
-proc SDL_CreateRGBSurface*(flags: uint32; width: cint; height: cint; depth: cint;
-                          Rmask: uint32; Gmask: uint32; Bmask: uint32; Amask: uint32): ptr SDL_Surface
-proc SDL_CreateRGBSurfaceWithFormat*(flags: uint32; width: cint; height: cint;
-                                    depth: cint; format: uint32): ptr SDL_Surface
-proc SDL_CreateRGBSurfaceFrom*(pixels: pointer; width: cint; height: cint; depth: cint;
-                              pitch: cint; Rmask: uint32; Gmask: uint32;
-                              Bmask: uint32; Amask: uint32): ptr SDL_Surface
-proc SDL_CreateRGBSurfaceWithFormatFrom*(pixels: pointer; width: cint; height: cint;
-                                        depth: cint; pitch: cint; format: uint32): ptr SDL_Surface
-proc SDL_FreeSurface*(surface: ptr SDL_Surface)
-proc SDL_SetSurfacePalette*(surface: ptr SDL_Surface; palette: ptr SDL_Palette): cint
-proc SDL_LockSurface*(surface: ptr SDL_Surface): cint
-proc SDL_UnlockSurface*(surface: ptr SDL_Surface)
-proc SDL_LoadBMP_RW*(src: ptr SDL_RWops; freesrc: cint): ptr SDL_Surface
-proc SDL_SaveBMP_RW*(surface: ptr SDL_Surface; dst: ptr SDL_RWops; freedst: cint): cint
-proc SDL_SetSurfaceRLE*(surface: ptr SDL_Surface; flag: cint): cint
-proc SDL_SetColorKey*(surface: ptr SDL_Surface; flag: cint; key: uint32): cint
-proc SDL_HasColorKey*(surface: ptr SDL_Surface): SDL_bool
-proc SDL_GetColorKey*(surface: ptr SDL_Surface; key: ptr uint32): cint
-proc SDL_SetSurfaceColorMod*(surface: ptr SDL_Surface; r: uint8; g: uint8; b: uint8): cint
-proc SDL_GetSurfaceColorMod*(surface: ptr SDL_Surface; r: ptr uint8; g: ptr uint8;
-                            b: ptr uint8): cint
-proc SDL_SetSurfaceAlphaMod*(surface: ptr SDL_Surface; alpha: uint8): cint
-proc SDL_GetSurfaceAlphaMod*(surface: ptr SDL_Surface; alpha: ptr uint8): cint
-proc SDL_SetSurfaceBlendMode*(surface: ptr SDL_Surface; blendMode: SDL_BlendMode): cint
-proc SDL_GetSurfaceBlendMode*(surface: ptr SDL_Surface; blendMode: ptr SDL_BlendMode): cint
-proc SDL_SetClipRect*(surface: ptr SDL_Surface; rect: ptr SDL_Rect): SDL_bool
-proc SDL_GetClipRect*(surface: ptr SDL_Surface; rect: ptr SDL_Rect)
-proc SDL_DuplicateSurface*(surface: ptr SDL_Surface): ptr SDL_Surface
-proc SDL_ConvertSurface*(src: ptr SDL_Surface; fmt: ptr SDL_PixelFormat; flags: uint32): ptr SDL_Surface
-proc SDL_ConvertSurfaceFormat*(src: ptr SDL_Surface; pixel_format: uint32;
-                              flags: uint32): ptr SDL_Surface
-proc SDL_ConvertPixels*(width: cint; height: cint; src_format: uint32; src: pointer;
-                       src_pitch: cint; dst_format: uint32; dst: pointer;
-                       dst_pitch: cint): cint
-proc SDL_FillRect*(dst: ptr SDL_Surface; rect: ptr SDL_Rect; color: uint32): cint
-proc SDL_FillRects*(dst: ptr SDL_Surface; rects: ptr SDL_Rect; count: cint; color: uint32): cint
-proc SDL_UpperBlit*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect; dst: ptr SDL_Surface;
-                   dstrect: ptr SDL_Rect): cint
-proc SDL_LowerBlit*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect; dst: ptr SDL_Surface;
-                   dstrect: ptr SDL_Rect): cint
-proc SDL_SoftStretch*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect;
-                     dst: ptr SDL_Surface; dstrect: ptr SDL_Rect): cint
-proc SDL_UpperBlitScaled*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect;
-                         dst: ptr SDL_Surface; dstrect: ptr SDL_Rect): cint
-proc SDL_LowerBlitScaled*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect;
-                         dst: ptr SDL_Surface; dstrect: ptr SDL_Rect): cint
-proc SDL_SetYUVConversionMode*(mode: SDL_YUV_CONVERSION_MODE)
-proc SDL_GetYUVConversionMode*(): SDL_YUV_CONVERSION_MODE
-proc SDL_GetYUVConversionModeForResolution*(width: cint; height: cint): SDL_YUV_CONVERSION_MODE
 type
   SDL_DisplayMode* {.bycopy.} = object
     format*: uint32
@@ -6530,7 +6293,53 @@ type
     h*: cint
     refresh_rate*: cint
     driverdata*: pointer
+type
+  SDL_SystemCursor* = enum
+    SDL_SYSTEM_CURSOR_ARROW, SDL_SYSTEM_CURSOR_IBEAM, SDL_SYSTEM_CURSOR_WAIT,
+    SDL_SYSTEM_CURSOR_CROSSHAIR, SDL_SYSTEM_CURSOR_WAITARROW,
+    SDL_SYSTEM_CURSOR_SIZENWSE, SDL_SYSTEM_CURSOR_SIZENESW,
+    SDL_SYSTEM_CURSOR_SIZEWE, SDL_SYSTEM_CURSOR_SIZENS, SDL_SYSTEM_CURSOR_SIZEALL,
+    SDL_SYSTEM_CURSOR_NO, SDL_SYSTEM_CURSOR_HAND, SDL_NUM_SYSTEM_CURSORS
+  SDL_MouseWheelDirection* = enum
+    SDL_MOUSEWHEEL_NORMAL, SDL_MOUSEWHEEL_FLIPPED
 
+  SDL_Joystick* {.bycopy.} = object
+
+  SDL_JoystickGUID* {.bycopy.} = object
+    data*: array[16, uint8]
+
+  SDL_JoystickType* = enum
+    SDL_JOYSTICK_TYPE_UNKNOWN, SDL_JOYSTICK_TYPE_GAMECONTROLLER,
+    SDL_JOYSTICK_TYPE_WHEEL, SDL_JOYSTICK_TYPE_ARCADE_STICK,
+    SDL_JOYSTICK_TYPE_FLIGHT_STICK, SDL_JOYSTICK_TYPE_DANCE_PAD,
+    SDL_JOYSTICK_TYPE_GUITAR, SDL_JOYSTICK_TYPE_DRUM_KIT,
+    SDL_JOYSTICK_TYPE_ARCADE_PAD, SDL_JOYSTICK_TYPE_THROTTLE
+  SDL_JoystickPowerLevel* = enum
+    SDL_JOYSTICK_POWER_UNKNOWN = -1, SDL_JOYSTICK_POWER_EMPTY,
+    SDL_JOYSTICK_POWER_LOW, SDL_JOYSTICK_POWER_MEDIUM, SDL_JOYSTICK_POWER_FULL,
+    SDL_JOYSTICK_POWER_WIRED, SDL_JOYSTICK_POWER_MAX
+  SDL_GameController* {.bycopy.} = object
+
+  INNER_C_STRUCT_playground_8495* {.bycopy.} = object
+    hat*: cint
+    hat_mask*: cint
+
+  INNER_C_UNION_playground_8491* {.bycopy.} = object {.union.}
+    button*: cint
+    axis*: cint
+    hat*: INNER_C_STRUCT_playground_8495
+
+  SDL_GameControllerType* = enum
+    SDL_CONTROLLER_TYPE_UNKNOWN = 0, SDL_CONTROLLER_TYPE_XBOX360,
+    SDL_CONTROLLER_TYPE_XBOXONE, SDL_CONTROLLER_TYPE_PS3, SDL_CONTROLLER_TYPE_PS4,
+    SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO
+  SDL_GameControllerBindType* = enum
+    SDL_CONTROLLER_BINDTYPE_NONE = 0, SDL_CONTROLLER_BINDTYPE_BUTTON,
+    SDL_CONTROLLER_BINDTYPE_AXIS, SDL_CONTROLLER_BINDTYPE_HAT
+  SDL_GameControllerButtonBind* {.bycopy.} = object
+    bindType*: SDL_GameControllerBindType
+    value*: INNER_C_UNION_playground_8491
+  SDL_Cursor = object
   SDL_Window = object
   SDL_WindowFlags* = enum
     SDL_WINDOW_FULLSCREEN = 0x00000001, SDL_WINDOW_OPENGL = 0x00000002,
@@ -6588,266 +6397,6 @@ type
   # SDL_GLContextResetNotification* = enum
   #   SDL_GL_CONTEXT_RESET_NO_NOTIFICATION = 0x00000000,
   #   SDL_GL_CONTEXT_RESET_LOSE_CONTEXT = 0x00000001
-
-
-proc SDL_GetNumVideoDrivers*(): cint
-proc SDL_GetVideoDriver*(index: cint): cstring
-proc SDL_VideoInit*(driver_name: cstring): cint
-proc SDL_VideoQuit*()
-proc SDL_GetCurrentVideoDriver*(): cstring
-proc SDL_GetNumVideoDisplays*(): cint
-proc SDL_GetDisplayName*(displayIndex: cint): cstring
-proc SDL_GetDisplayBounds*(displayIndex: cint; rect: ptr SDL_Rect): cint
-proc SDL_GetDisplayUsableBounds*(displayIndex: cint; rect: ptr SDL_Rect): cint
-proc SDL_GetDisplayDPI*(displayIndex: cint; ddpi: ptr cfloat; hdpi: ptr cfloat;
-                       vdpi: ptr cfloat): cint
-proc SDL_GetDisplayOrientation*(displayIndex: cint): SDL_DisplayOrientation
-proc SDL_GetNumDisplayModes*(displayIndex: cint): cint
-proc SDL_GetDisplayMode*(displayIndex: cint; modeIndex: cint;
-                        mode: ptr SDL_DisplayMode): cint
-proc SDL_GetDesktopDisplayMode*(displayIndex: cint; mode: ptr SDL_DisplayMode): cint
-proc SDL_GetCurrentDisplayMode*(displayIndex: cint; mode: ptr SDL_DisplayMode): cint
-proc SDL_GetClosestDisplayMode*(displayIndex: cint; mode: ptr SDL_DisplayMode;
-                               closest: ptr SDL_DisplayMode): ptr SDL_DisplayMode
-proc SDL_GetWindowDisplayIndex*(window: ptr SDL_Window): cint
-proc SDL_SetWindowDisplayMode*(window: ptr SDL_Window; mode: ptr SDL_DisplayMode): cint
-proc SDL_GetWindowDisplayMode*(window: ptr SDL_Window; mode: ptr SDL_DisplayMode): cint
-proc SDL_GetWindowPixelFormat*(window: ptr SDL_Window): uint32
-proc SDL_CreateWindow*(title: cstring; x: cint; y: cint; w: cint; h: cint; flags: uint32): ptr SDL_Window
-proc SDL_CreateWindowFrom*(data: pointer): ptr SDL_Window
-proc SDL_GetWindowID*(window: ptr SDL_Window): uint32
-proc SDL_GetWindowFromID*(id: uint32): ptr SDL_Window
-proc SDL_GetWindowFlags*(window: ptr SDL_Window): uint32
-proc SDL_SetWindowTitle*(window: ptr SDL_Window; title: cstring)
-proc SDL_GetWindowTitle*(window: ptr SDL_Window): cstring
-proc SDL_SetWindowIcon*(window: ptr SDL_Window; icon: ptr SDL_Surface)
-proc SDL_SetWindowData*(window: ptr SDL_Window; name: cstring; userdata: pointer): pointer
-proc SDL_GetWindowData*(window: ptr SDL_Window; name: cstring): pointer
-proc SDL_SetWindowPosition*(window: ptr SDL_Window; x: cint; y: cint)
-proc SDL_GetWindowPosition*(window: ptr SDL_Window; x: ptr cint; y: ptr cint)
-proc SDL_SetWindowSize*(window: ptr SDL_Window; w: cint; h: cint)
-proc SDL_GetWindowSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
-proc SDL_GetWindowBordersSize*(window: ptr SDL_Window; top: ptr cint; left: ptr cint; bottom: ptr cint; right: ptr cint): cint {.discardable.}
-proc SDL_SetWindowMinimumSize*(window: ptr SDL_Window; min_w: cint; min_h: cint)
-proc SDL_GetWindowMinimumSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
-proc SDL_SetWindowMaximumSize*(window: ptr SDL_Window; max_w: cint; max_h: cint)
-proc SDL_GetWindowMaximumSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
-proc SDL_SetWindowBordered*(window: ptr SDL_Window; bordered: SDL_bool)
-proc SDL_SetWindowResizable*(window: ptr SDL_Window; resizable: SDL_bool)
-proc SDL_ShowWindow*(window: ptr SDL_Window)
-proc SDL_HideWindow*(window: ptr SDL_Window)
-proc SDL_RaiseWindow*(window: ptr SDL_Window)
-proc SDL_MaximizeWindow*(window: ptr SDL_Window)
-proc SDL_MinimizeWindow*(window: ptr SDL_Window)
-proc SDL_RestoreWindow*(window: ptr SDL_Window)
-proc SDL_SetWindowFullscreen*(window: ptr SDL_Window; flags: uint32): cint {.discardable.}
-proc SDL_GetWindowSurface*(window: ptr SDL_Window): ptr SDL_Surface
-proc SDL_UpdateWindowSurface*(window: ptr SDL_Window): cint
-proc SDL_UpdateWindowSurfaceRects*(window: ptr SDL_Window; rects: ptr SDL_Rect;
-                                  numrects: cint): cint
-proc SDL_SetWindowGrab*(window: ptr SDL_Window; grabbed: SDL_bool)
-proc SDL_GetWindowGrab*(window: ptr SDL_Window): SDL_bool
-proc SDL_GetGrabbedWindow*(): ptr SDL_Window
-proc SDL_SetWindowBrightness*(window: ptr SDL_Window; brightness: cfloat): cint
-proc SDL_GetWindowBrightness*(window: ptr SDL_Window): cfloat
-proc SDL_SetWindowOpacity*(window: ptr SDL_Window; opacity: cfloat): cint
-proc SDL_GetWindowOpacity*(window: ptr SDL_Window; out_opacity: ptr cfloat): cint
-proc SDL_SetWindowModalFor*(modal_window: ptr SDL_Window;
-                           parent_window: ptr SDL_Window): cint
-proc SDL_SetWindowInputFocus*(window: ptr SDL_Window): cint
-proc SDL_SetWindowGammaRamp*(window: ptr SDL_Window; red: ptr uint16;
-                            green: ptr uint16; blue: ptr uint16): cint
-proc SDL_GetWindowGammaRamp*(window: ptr SDL_Window; red: ptr uint16;
-                            green: ptr uint16; blue: ptr uint16): cint
-type
-  SDL_HitTestResult* = enum
-    SDL_HITTEST_NORMAL, SDL_HITTEST_DRAGGABLE, SDL_HITTEST_RESIZE_TOPLEFT,
-    SDL_HITTEST_RESIZE_TOP, SDL_HITTEST_RESIZE_TOPRIGHT, SDL_HITTEST_RESIZE_RIGHT,
-    SDL_HITTEST_RESIZE_BOTTOMRIGHT, SDL_HITTEST_RESIZE_BOTTOM,
-    SDL_HITTEST_RESIZE_BOTTOMLEFT, SDL_HITTEST_RESIZE_LEFT
-  SDL_HitTest* = proc (win: ptr SDL_Window; area: ptr SDL_Point; data: pointer): SDL_HitTestResult 
-
-
-proc SDL_SetWindowHitTest*(window: ptr SDL_Window; callback: SDL_HitTest; callback_data: pointer): cint {.discardable.}
-proc SDL_DestroyWindow*(window: ptr SDL_Window)
-proc SDL_IsScreenSaverEnabled*(): SDL_bool
-proc SDL_EnableScreenSaver*()
-proc SDL_DisableScreenSaver*()
-proc SDL_GL_LoadLibrary*(path: cstring): cint
-proc SDL_GL_GetProcAddress*(`proc`: cstring): pointer
-proc SDL_GL_UnloadLibrary*()
-proc SDL_GL_ExtensionSupported*(extension: cstring): SDL_bool
-proc SDL_GL_ResetAttributes*()
-proc SDL_GL_SetAttribute*(attr: SDL_GLattr; value: cint): cint
-proc SDL_GL_GetAttribute*(attr: SDL_GLattr; value: ptr cint): cint
-proc SDL_GL_CreateContext*(window: ptr SDL_Window): SDL_GLContext
-proc SDL_GL_MakeCurrent*(window: ptr SDL_Window; context: SDL_GLContext): cint
-proc SDL_GL_GetCurrentWindow*(): ptr SDL_Window
-proc SDL_GL_GetCurrentContext*(): SDL_GLContext
-proc SDL_GL_GetDrawableSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
-proc SDL_GL_SetSwapInterval*(interval: cint): cint
-proc SDL_GL_GetSwapInterval*(): cint
-proc SDL_GL_SwapWindow*(window: ptr SDL_Window)
-proc SDL_GL_DeleteContext*(context: SDL_GLContext)
-proc SDL_GetKeyboardFocus*(): ptr SDL_Window
-proc SDL_GetKeyboardState*(numkeys: ptr cint): ptr uint8
-proc SDL_GetModState*(): SDL_Keymod
-proc SDL_SetModState*(modstate: SDL_Keymod)
-proc SDL_GetKeyFromScancode*(scancode: SDL_ScanCode): SDL_KeyCode
-proc SDL_GetScancodeFromKey*(key: SDL_KeyCode): SDL_ScanCode
-proc SDL_GetScancodeName*(scancode: SDL_ScanCode): cstring
-proc SDL_GetScancodeFromName*(name: cstring): SDL_ScanCode
-proc SDL_GetKeyName*(key: SDL_KeyCode): cstring
-proc SDL_GetKeyFromName*(name: cstring): SDL_KeyCode
-proc SDL_StartTextInput*()
-proc SDL_IsTextInputActive*(): SDL_bool
-proc SDL_StopTextInput*()
-proc SDL_SetTextInputRect*(rect: ptr SDL_Rect)
-proc SDL_HasScreenKeyboardSupport*(): SDL_bool
-proc SDL_IsScreenKeyboardShown*(window: ptr SDL_Window): SDL_bool
-
-type
-  SDL_SystemCursor* = enum
-    SDL_SYSTEM_CURSOR_ARROW, SDL_SYSTEM_CURSOR_IBEAM, SDL_SYSTEM_CURSOR_WAIT,
-    SDL_SYSTEM_CURSOR_CROSSHAIR, SDL_SYSTEM_CURSOR_WAITARROW,
-    SDL_SYSTEM_CURSOR_SIZENWSE, SDL_SYSTEM_CURSOR_SIZENESW,
-    SDL_SYSTEM_CURSOR_SIZEWE, SDL_SYSTEM_CURSOR_SIZENS, SDL_SYSTEM_CURSOR_SIZEALL,
-    SDL_SYSTEM_CURSOR_NO, SDL_SYSTEM_CURSOR_HAND, SDL_NUM_SYSTEM_CURSORS
-  SDL_MouseWheelDirection* = enum
-    SDL_MOUSEWHEEL_NORMAL, SDL_MOUSEWHEEL_FLIPPED
-
-  SDL_Joystick* {.bycopy.} = object
-
-  SDL_JoystickGUID* {.bycopy.} = object
-    data*: array[16, uint8]
-
-  SDL_JoystickType* = enum
-    SDL_JOYSTICK_TYPE_UNKNOWN, SDL_JOYSTICK_TYPE_GAMECONTROLLER,
-    SDL_JOYSTICK_TYPE_WHEEL, SDL_JOYSTICK_TYPE_ARCADE_STICK,
-    SDL_JOYSTICK_TYPE_FLIGHT_STICK, SDL_JOYSTICK_TYPE_DANCE_PAD,
-    SDL_JOYSTICK_TYPE_GUITAR, SDL_JOYSTICK_TYPE_DRUM_KIT,
-    SDL_JOYSTICK_TYPE_ARCADE_PAD, SDL_JOYSTICK_TYPE_THROTTLE
-  SDL_JoystickPowerLevel* = enum
-    SDL_JOYSTICK_POWER_UNKNOWN = -1, SDL_JOYSTICK_POWER_EMPTY,
-    SDL_JOYSTICK_POWER_LOW, SDL_JOYSTICK_POWER_MEDIUM, SDL_JOYSTICK_POWER_FULL,
-    SDL_JOYSTICK_POWER_WIRED, SDL_JOYSTICK_POWER_MAX
-  SDL_GameController* {.bycopy.} = object
-
-  INNER_C_STRUCT_playground_8495* {.bycopy.} = object
-    hat*: cint
-    hat_mask*: cint
-
-  INNER_C_UNION_playground_8491* {.bycopy.} = object {.union.}
-    button*: cint
-    axis*: cint
-    hat*: INNER_C_STRUCT_playground_8495
-
-  SDL_GameControllerType* = enum
-    SDL_CONTROLLER_TYPE_UNKNOWN = 0, SDL_CONTROLLER_TYPE_XBOX360,
-    SDL_CONTROLLER_TYPE_XBOXONE, SDL_CONTROLLER_TYPE_PS3, SDL_CONTROLLER_TYPE_PS4,
-    SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO
-  SDL_GameControllerBindType* = enum
-    SDL_CONTROLLER_BINDTYPE_NONE = 0, SDL_CONTROLLER_BINDTYPE_BUTTON,
-    SDL_CONTROLLER_BINDTYPE_AXIS, SDL_CONTROLLER_BINDTYPE_HAT
-  SDL_GameControllerButtonBind* {.bycopy.} = object
-    bindType*: SDL_GameControllerBindType
-    value*: INNER_C_UNION_playground_8491
-  SDL_Cursor = object
-
-proc SDL_GetMouseFocus*(): ptr SDL_Window
-proc SDL_GetMouseState*(x: ptr cint; y: ptr cint): uint32
-proc SDL_GetGlobalMouseState*(x: ptr cint; y: ptr cint): uint32
-proc SDL_GetRelativeMouseState*(x: ptr cint; y: ptr cint): uint32
-proc SDL_WarpMouseInWindow*(window: ptr SDL_Window; x: cint; y: cint)
-proc SDL_WarpMouseGlobal*(x: cint; y: cint): cint
-proc SDL_SetRelativeMouseMode*(enabled: SDL_bool): cint
-proc SDL_CaptureMouse*(enabled: SDL_bool): cint
-proc SDL_GetRelativeMouseMode*(): SDL_bool
-proc SDL_CreateCursor*(data: ptr uint8; mask: ptr uint8; w: cint; h: cint; hot_x: cint; hot_y: cint): ptr SDL_Cursor
-proc SDL_CreateColorCursor*(surface: ptr SDL_Surface; hot_x: cint; hot_y: cint): ptr SDL_Cursor
-proc SDL_CreateSystemCursor*(id: SDL_SystemCursor): ptr SDL_Cursor
-proc SDL_SetCursor*(cursor: ptr SDL_Cursor)
-proc SDL_GetCursor*(): ptr SDL_Cursor
-proc SDL_GetDefaultCursor*(): ptr SDL_Cursor
-proc SDL_FreeCursor*(cursor: ptr SDL_Cursor)
-proc SDL_ShowCursor*(toggle: cint): cint {.discardable.}
-
-
-
-
-proc SDL_LockJoysticks*()
-proc SDL_UnlockJoysticks*()
-proc SDL_NumJoysticks*(): cint
-proc SDL_JoystickNameForIndex*(device_index: cint): cstring
-proc SDL_JoystickGetDevicePlayerIndex*(device_index: cint): cint
-proc SDL_JoystickGetDeviceGUID*(device_index: cint): SDL_JoystickGUID
-proc SDL_JoystickGetDeviceVendor*(device_index: cint): uint16
-proc SDL_JoystickGetDeviceProduct*(device_index: cint): uint16
-proc SDL_JoystickGetDeviceProductVersion*(device_index: cint): uint16
-proc SDL_JoystickGetDeviceType*(device_index: cint): SDL_JoystickType
-proc SDL_JoystickGetDeviceInstanceID*(device_index: cint): int32
-proc SDL_JoystickOpen*(device_index: cint): ptr SDL_Joystick
-proc SDL_JoystickFromInstanceID*(instance_id: int32): ptr SDL_Joystick
-proc SDL_JoystickFromPlayerIndex*(player_index: cint): ptr SDL_Joystick
-proc SDL_JoystickName*(joystick: ptr SDL_Joystick): cstring
-proc SDL_JoystickGetPlayerIndex*(joystick: ptr SDL_Joystick): cint
-proc SDL_JoystickSetPlayerIndex*(joystick: ptr SDL_Joystick; player_index: cint)
-proc SDL_JoystickGetGUID*(joystick: ptr SDL_Joystick): SDL_JoystickGUID
-proc SDL_JoystickGetVendor*(joystick: ptr SDL_Joystick): uint16
-proc SDL_JoystickGetProduct*(joystick: ptr SDL_Joystick): uint16
-proc SDL_JoystickGetProductVersion*(joystick: ptr SDL_Joystick): uint16
-proc SDL_JoystickGetType*(joystick: ptr SDL_Joystick): SDL_JoystickType
-proc SDL_JoystickGetGUIDString*(guid: SDL_JoystickGUID; pszGUID: cstring; cbGUID: cint)
-proc SDL_JoystickGetGUIDFromString*(pchGUID: cstring): SDL_JoystickGUID
-proc SDL_JoystickGetAttached*(joystick: ptr SDL_Joystick): SDL_bool
-proc SDL_JoystickInstanceID*(joystick: ptr SDL_Joystick): int32
-proc SDL_JoystickNumAxes*(joystick: ptr SDL_Joystick): cint
-proc SDL_JoystickNumBalls*(joystick: ptr SDL_Joystick): cint
-proc SDL_JoystickNumHats*(joystick: ptr SDL_Joystick): cint
-proc SDL_JoystickNumButtons*(joystick: ptr SDL_Joystick): cint
-proc SDL_JoystickUpdate*()
-proc SDL_JoystickEventState*(state: cint): cint
-proc SDL_JoystickGetAxis*(joystick: ptr SDL_Joystick; axis: cint): int16
-proc SDL_JoystickGetAxisInitialState*(joystick: ptr SDL_Joystick; axis: cint;
-                                     state: ptr int16): SDL_bool
-proc SDL_JoystickGetHat*(joystick: ptr SDL_Joystick; hat: cint): uint8
-proc SDL_JoystickGetBall*(joystick: ptr SDL_Joystick; ball: cint; dx: ptr cint;
-                         dy: ptr cint): cint
-proc SDL_JoystickGetButton*(joystick: ptr SDL_Joystick; button: cint): uint8
-proc SDL_JoystickRumble*(joystick: ptr SDL_Joystick; low_frequency_rumble: uint16;
-                        high_frequency_rumble: uint16; duration_ms: uint32): cint
-proc SDL_JoystickClose*(joystick: ptr SDL_Joystick)
-proc SDL_JoystickCurrentPowerLevel*(joystick: ptr SDL_Joystick): SDL_JoystickPowerLevel
-
-
-
-
-
-proc SDL_GameControllerAddMappingsFromRW*(rw: ptr SDL_RWops; freerw: cint): cint
-proc SDL_GameControllerAddMapping*(mappingString: cstring): cint
-proc SDL_GameControllerNumMappings*(): cint
-proc SDL_GameControllerMappingForIndex*(mapping_index: cint): cstring
-proc SDL_GameControllerMappingForGUID*(guid: SDL_JoystickGUID): cstring
-proc SDL_GameControllerMapping*(gamecontroller: ptr SDL_GameController): cstring
-proc SDL_IsGameController*(joystick_index: cint): SDL_bool
-proc SDL_GameControllerNameForIndex*(joystick_index: cint): cstring
-proc SDL_GameControllerTypeForIndex*(joystick_index: cint): SDL_GameControllerType
-proc SDL_GameControllerMappingForDeviceIndex*(joystick_index: cint): cstring
-proc SDL_GameControllerOpen*(joystick_index: cint): ptr SDL_GameController
-proc SDL_GameControllerFromInstanceID*(joyid: int32): ptr SDL_GameController
-proc SDL_GameControllerFromPlayerIndex*(player_index: cint): ptr SDL_GameController
-proc SDL_GameControllerName*(gamecontroller: ptr SDL_GameController): cstring
-proc SDL_GameControllerGetType*(gamecontroller: ptr SDL_GameController): SDL_GameControllerType
-proc SDL_GameControllerGetPlayerIndex*(gamecontroller: ptr SDL_GameController): cint
-proc SDL_GameControllerSetPlayerIndex*(gamecontroller: ptr SDL_GameController;
-                                      player_index: cint)
-proc SDL_GameControllerGetVendor*(gamecontroller: ptr SDL_GameController): uint16
-proc SDL_GameControllerGetProduct*(gamecontroller: ptr SDL_GameController): uint16
-proc SDL_GameControllerGetProductVersion*(gamecontroller: ptr SDL_GameController): uint16
-proc SDL_GameControllerGetAttached*(gamecontroller: ptr SDL_GameController): SDL_bool
-proc SDL_GameControllerGetJoystick*(gamecontroller: ptr SDL_GameController): ptr SDL_Joystick
-proc SDL_GameControllerEventState*(state: cint): cint
-proc SDL_GameControllerUpdate*()
 type
   SDL_GameControllerAxis* = enum
     SDL_CONTROLLER_AXIS_INVALID = -1, SDL_CONTROLLER_AXIS_LEFTX,
@@ -6865,68 +6414,45 @@ type
     SDL_CONTROLLER_BUTTON_DPAD_DOWN, SDL_CONTROLLER_BUTTON_DPAD_LEFT,
     SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SDL_CONTROLLER_BUTTON_MAX
 
-proc SDL_GameControllerGetAxisFromString*(pchString: cstring): SDL_GameControllerAxis
-proc SDL_GameControllerGetStringForAxis*(axis: SDL_GameControllerAxis): cstring
-proc SDL_GameControllerGetBindForAxis*(gamecontroller: ptr SDL_GameController;
-                                      axis: SDL_GameControllerAxis): SDL_GameControllerButtonBind
-proc SDL_GameControllerGetAxis*(gamecontroller: ptr SDL_GameController;
-                               axis: SDL_GameControllerAxis): int16
+
+type
+  SDL_HitTestResult* = enum
+    SDL_HITTEST_NORMAL, SDL_HITTEST_DRAGGABLE, SDL_HITTEST_RESIZE_TOPLEFT,
+    SDL_HITTEST_RESIZE_TOP, SDL_HITTEST_RESIZE_TOPRIGHT, SDL_HITTEST_RESIZE_RIGHT,
+    SDL_HITTEST_RESIZE_BOTTOMRIGHT, SDL_HITTEST_RESIZE_BOTTOM,
+    SDL_HITTEST_RESIZE_BOTTOMLEFT, SDL_HITTEST_RESIZE_LEFT
+  SDL_HitTest* = proc (win: ptr SDL_Window; area: ptr SDL_Point; data: pointer): SDL_HitTestResult 
 
 
 
-proc SDL_GameControllerGetButtonFromString*(pchString: cstring): SDL_GameControllerButton
-proc SDL_GameControllerGetStringForButton*(button: SDL_GameControllerButton): cstring
-proc SDL_GameControllerGetBindForButton*(gamecontroller: ptr SDL_GameController;
-                                        button: SDL_GameControllerButton): SDL_GameControllerButtonBind
-proc SDL_GameControllerGetButton*(gamecontroller: ptr SDL_GameController;
-                                 button: SDL_GameControllerButton): uint8
-proc SDL_GameControllerRumble*(gamecontroller: ptr SDL_GameController;
-                              low_frequency_rumble: uint16;
-                              high_frequency_rumble: uint16; duration_ms: uint32): cint
-proc SDL_GameControllerClose*(gamecontroller: ptr SDL_GameController)
+
+# const
+#   SDL_PIXELFORMAT_RGBA32 = SDL_PIXELFORMAT_ABGR8888
+#   SDL_PIXELFORMAT_ARGB32 = SDL_PIXELFORMAT_BGRA8888
+#   SDL_PIXELFORMAT_BGRA32 = SDL_PIXELFORMAT_ARGB8888
+#   SDL_PIXELFORMAT_ABGR32 = SDL_PIXELFORMAT_RGBA8888
+
+proc SDL_PointInRect*(p: ptr SDL_Point; r: ptr SDL_Rect): SDL_bool {.inline.} =
+  return if ((p.x >= r.x) and (p.x < (r.x + r.w)) and (p.y >= r.y) and (p.y < (r.y + r.h))): SDL_TRUE else: SDL_FALSE
+
+proc SDL_RectEmpty*(r: ptr SDL_Rect): SDL_bool {.inline.} =
+  return if ( r == nil or (r.w <= 0) or (r.h <= 0)): SDL_TRUE else: SDL_FALSE
+
+proc SDL_RectEquals*(a: ptr SDL_Rect; b: ptr SDL_Rect): SDL_bool {.inline.} =
+  return if (a != nil and b != nil and (a.x == b.x) and (a.y == b.y) and (a.w == b.w) and (a.h == b.h)): SDL_TRUE else: SDL_FALSE
 
 
-proc SDL_GetNumTouchDevices*(): cint
-proc SDL_GetTouchDevice*(index: cint): SDL_TouchID
-proc SDL_GetTouchDeviceType*(touchID: SDL_TouchID): SDL_TouchDeviceType
-proc SDL_GetNumTouchFingers*(touchID: SDL_TouchID): cint
-proc SDL_GetTouchFinger*(touchID: SDL_TouchID; index: cint): ptr SDL_Finger
 
-
-proc SDL_RecordGesture*(touchId: SDL_TouchID): cint
-proc SDL_SaveAllDollarTemplates*(dst: ptr SDL_RWops): cint
-proc SDL_SaveDollarTemplate*(gestureId: SDL_GestureID; dst: ptr SDL_RWops): cint
-proc SDL_LoadDollarTemplates*(touchId: SDL_TouchID; src: ptr SDL_RWops): cint
-
-
-proc SDL_PumpEvents*()
 type
   SDL_eventaction* = enum
     SDL_ADDEVENT, SDL_PEEKEVENT, SDL_GETEVENT
 
 
-proc SDL_PeepEvents*(events: ptr SDL_Event; numevents: cint; action: SDL_eventaction;
-                    minType: uint32; maxType: uint32): cint
-proc SDL_HasEvent*(`type`: uint32): SDL_bool
-proc SDL_HasEvents*(minType: uint32; maxType: uint32): SDL_bool
-proc SDL_FlushEvent*(`type`: uint32)
-proc SDL_FlushEvents*(minType: uint32; maxType: uint32)
-proc SDL_PollEvent*(event: ptr SDL_Event): cint
-proc SDL_WaitEvent*(event: ptr SDL_Event): cint
-proc SDL_WaitEventTimeout*(event: ptr SDL_Event; timeout: cint): cint
-proc SDL_PushEvent*(event: ptr SDL_Event): cint {.discardable.}
+
 type
   SDL_EventFilter* = proc (userdata: pointer; event: ptr SDL_Event): cint
 
-proc SDL_SetEventFilter*(filter: SDL_EventFilter; userdata: pointer)
-proc SDL_GetEventFilter*(filter: ptr SDL_EventFilter; userdata: ptr pointer): SDL_bool
-proc SDL_AddEventWatch*(filter: SDL_EventFilter; userdata: pointer)
-proc SDL_DelEventWatch*(filter: SDL_EventFilter; userdata: pointer)
-proc SDL_FilterEvents*(filter: SDL_EventFilter; userdata: pointer)
-proc SDL_EventState*(`type`: uint32; state: cint): uint8
-proc SDL_RegisterEvents*(numevents: cint): uint32
-proc SDL_GetBasePath*(): cstring
-proc SDL_GetPrefPath*(org: cstring; app: cstring): cstring
+
 type
   SDL_Haptic* {.bycopy.} = object
 
@@ -7023,59 +6549,13 @@ type
     custom*: SDL_HapticCustom
 
 
-proc SDL_NumHaptics*(): cint
-proc SDL_HapticName*(device_index: cint): cstring
-proc SDL_HapticOpen*(device_index: cint): ptr SDL_Haptic
-proc SDL_HapticOpened*(device_index: cint): cint
-proc SDL_HapticIndex*(haptic: ptr SDL_Haptic): cint
-proc SDL_MouseIsHaptic*(): cint
-proc SDL_HapticOpenFromMouse*(): ptr SDL_Haptic
-proc SDL_JoystickIsHaptic*(joystick: ptr SDL_Joystick): cint
-proc SDL_HapticOpenFromJoystick*(joystick: ptr SDL_Joystick): ptr SDL_Haptic
-proc SDL_HapticClose*(haptic: ptr SDL_Haptic)
-proc SDL_HapticNumEffects*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticNumEffectsPlaying*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticQuery*(haptic: ptr SDL_Haptic): cuint
-proc SDL_HapticNumAxes*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticEffectSupported*(haptic: ptr SDL_Haptic; effect: ptr SDL_HapticEffect): cint
-proc SDL_HapticNewEffect*(haptic: ptr SDL_Haptic; effect: ptr SDL_HapticEffect): cint
-proc SDL_HapticUpdateEffect*(haptic: ptr SDL_Haptic; effect: cint;
-                            data: ptr SDL_HapticEffect): cint
-proc SDL_HapticRunEffect*(haptic: ptr SDL_Haptic; effect: cint; iterations: uint32): cint
-proc SDL_HapticStopEffect*(haptic: ptr SDL_Haptic; effect: cint): cint
-proc SDL_HapticDestroyEffect*(haptic: ptr SDL_Haptic; effect: cint)
-proc SDL_HapticGetEffectStatus*(haptic: ptr SDL_Haptic; effect: cint): cint
-proc SDL_HapticSetGain*(haptic: ptr SDL_Haptic; gain: cint): cint
-proc SDL_HapticSetAutocenter*(haptic: ptr SDL_Haptic; autocenter: cint): cint
-proc SDL_HapticPause*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticUnpause*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticStopAll*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticRumbleSupported*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticRumbleInit*(haptic: ptr SDL_Haptic): cint
-proc SDL_HapticRumblePlay*(haptic: ptr SDL_Haptic; strength: cfloat; length: uint32): cint
-proc SDL_HapticRumbleStop*(haptic: ptr SDL_Haptic): cint
+
 type
   SDL_HintPriority* = enum
     SDL_HINT_DEFAULT, SDL_HINT_NORMAL, SDL_HINT_OVERRIDE
 
 
-proc SDL_SetHintWithPriority*(name: cstring; value: cstring;
-                             priority: SDL_HintPriority): SDL_bool
-proc SDL_SetHint*(name: cstring; value: cstring): SDL_bool
-proc SDL_GetHint*(name: cstring): cstring
-proc SDL_GetHintBoolean*(name: cstring; default_value: SDL_bool): SDL_bool
-type
-  SDL_HintCallback* = proc (userdata: pointer; name: cstring; oldValue: cstring;
-                         newValue: cstring)
 
-proc SDL_AddHintCallback*(name: cstring; callback: SDL_HintCallback;
-                         userdata: pointer)
-proc SDL_DelHintCallback*(name: cstring; callback: SDL_HintCallback;
-                         userdata: pointer)
-proc SDL_ClearHints*()
-proc SDL_LoadObject*(sofile: cstring): pointer
-proc SDL_LoadFunction*(handle: pointer; name: cstring): pointer
-proc SDL_UnloadObject*(handle: pointer)
 type
   SDL_LogCategory* = enum
     SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_CATEGORY_ERROR, SDL_LOG_CATEGORY_ASSERT,
@@ -7091,30 +6571,6 @@ type
     SDL_LOG_PRIORITY_VERBOSE = 1, SDL_LOG_PRIORITY_DEBUG, SDL_LOG_PRIORITY_INFO,
     SDL_LOG_PRIORITY_WARN, SDL_LOG_PRIORITY_ERROR, SDL_LOG_PRIORITY_CRITICAL,
     SDL_NUM_LOG_PRIORITIES
-
-
-
-proc SDL_LogSetAllPriority*(priority: SDL_LogPriority)
-proc SDL_LogSetPriority*(category: cint; priority: SDL_LogPriority)
-proc SDL_LogGetPriority*(category: cint): SDL_LogPriority
-proc SDL_LogResetPriorities*()
-proc SDL_Log*(fmt: cstring) {.varargs.}
-proc SDL_LogVerbose*(category: cint; fmt: cstring) {.varargs.}
-proc SDL_LogDebug*(category: cint; fmt: cstring) {.varargs.}
-proc SDL_LogInfo*(category: cint; fmt: cstring) {.varargs.}
-proc SDL_LogWarn*(category: cint; fmt: cstring) {.varargs.}
-proc SDL_LogError*(category: cint; fmt: cstring) {.varargs.}
-proc SDL_LogCritical*(category: cint; fmt: cstring) {.varargs.}
-proc SDL_LogMessage*(category: cint; priority: SDL_LogPriority; fmt: cstring) {.varargs.}
-proc SDL_LogMessageV*(category: cint; priority: SDL_LogPriority; fmt: cstring;
-                     ap: varargs[untyped])
-type
-  SDL_LogOutputFunction* = proc (userdata: pointer; category: cint;
-                              priority: SDL_LogPriority; message: cstring)
-
-proc SDL_LogGetOutputFunction*(callback: ptr SDL_LogOutputFunction;
-                              userdata: ptr pointer)
-proc SDL_LogSetOutputFunction*(callback: SDL_LogOutputFunction; userdata: pointer)
 type
   SDL_MessageBoxFlags* = enum
     SDL_MESSAGEBOX_ERROR = 0x00000010, SDL_MESSAGEBOX_WARNING = 0x00000020,
@@ -7150,25 +6606,14 @@ type
     buttons*: ptr SDL_MessageBoxButtonData
     colorScheme*: ptr SDL_MessageBoxColorScheme
 
-
-
-
-
-proc SDL_ShowMessageBox*(messageboxdata: ptr SDL_MessageBoxData; buttonid: ptr cint): cint
-proc SDL_ShowSimpleMessageBox*(flags: uint32; title: cstring; message: cstring;
-                              window: ptr SDL_Window): cint
 type
   SDL_MetalView* = pointer
-
-proc SDL_Metal_CreateView*(window: ptr SDL_Window): SDL_MetalView
-proc SDL_Metal_DestroyView*(view: SDL_MetalView)
 type
   SDL_PowerState* = enum
     SDL_POWERSTATE_UNKNOWN, SDL_POWERSTATE_ON_BATTERY, SDL_POWERSTATE_NO_BATTERY,
     SDL_POWERSTATE_CHARGING, SDL_POWERSTATE_CHARGED
 
 
-proc SDL_GetPowerInfo*(secs: ptr cint; pct: ptr cint): SDL_PowerState
 type
   SDL_RendererFlags* = enum
     SDL_RENDERER_SOFTWARE = 0x00000001, SDL_RENDERER_ACCELERATED = 0x00000002,
@@ -7194,14 +6639,637 @@ type
     SDL_FLIP_VERTICAL = 0x00000002
 
 
-
-
-
-
 type
   SDL_Renderer* {.bycopy.} = object
 
   SDL_Texture* {.bycopy.} = object
+
+type
+  SDL_SensorID* = int32
+  SDL_SensorType* = enum
+    SDL_SENSOR_INVALID = -1, SDL_SENSOR_UNKNOWN, SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO
+  ShowMode* = enum
+    SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT,
+    SHOW_MODE_NB
+  WindowShapeMode* = enum
+    ShapeModeDefault, ShapeModeBinarizeAlpha, ShapeModeReverseBinarizeAlpha,
+    ShapeModeColorKey
+  SDL_WindowShapeParams* {.bycopy.} = object {.union.}
+    binarizationCutoff*: uint8
+    colorKey*: SDL_Color
+
+  SDL_WindowShapeMode* {.bycopy.} = object
+    mode*: WindowShapeMode
+    parameters*: SDL_WindowShapeParams
+  SDL_version* {.bycopy.} = object
+    major*: uint8
+    minor*: uint8
+    patch*: uint8
+
+  INNER_C_UNION_playground_9879* {.bycopy.} = object {.union.}
+    str*: ptr uint8
+    i*: cint
+    i64*: int64
+    ui64*: uint64
+    f*: cfloat
+    dbl*: cdouble
+
+  SpecifierOpt* {.bycopy.} = object
+    specifier*: cstring
+    u*: INNER_C_UNION_playground_9879
+
+  OptionDefUnion* {.union.} = object 
+    dst_ptr*: pointer
+    func_arg*: proc (a1: pointer; a2: cstring; a3: cstring): cint
+    off*: csize_t
+
+  OptionDef* {.bycopy.} = object
+    name*: cstring
+    flags*: cint
+    u*: OptionDefUnion
+    help*: cstring
+    argname*: cstring
+    
+  Option* {.bycopy.} = object
+    opt*: ptr OptionDef
+    key*: cstring
+    val*: cstring
+
+  OptionGroupDef* {.bycopy.} = object
+    name*: cstring
+    sep*: cstring
+    flags*: cint
+
+  OptionGroup* {.bycopy.} = object
+    group_def*: ptr OptionGroupDef
+    arg*: cstring
+    opts*: ptr Option
+    nb_opts*: cint
+    codec_opts*: ptr AVDictionary
+    format_opts*: ptr AVDictionary
+    resample_opts*: ptr AVDictionary
+    sws_dict*: ptr AVDictionary
+    swr_opts*: ptr AVDictionary
+
+  OptionGroupList* {.bycopy.} = object
+    group_def*: ptr OptionGroupDef
+    groups*: ptr OptionGroup
+    nb_groups*: cint
+
+  OptionParseContext* {.bycopy.} = object
+    global_opts*: OptionGroup
+    groups*: ptr OptionGroupList
+    nb_groups*: cint
+    cur_group*: OptionGroup
+  
+  SDL_Sensor = object
+  IDirect3DDevice9 = object
+  SDL_TimerCallback* = proc (interval: uint32; param: pointer): uint32
+  SDL_TimerID* = cint
+type
+  SDL_WindowsMessageHook* = proc (userdata: pointer; hWnd: pointer; message: cuint;
+                               wParam: uint64; lParam: int64)
+proc SDL_NumSensors*(): cint
+
+type
+  SDL_LogOutputFunction* = proc (userdata: pointer; category: cint;
+                              priority: SDL_LogPriority; message: cstring)
+
+
+{.push importc, dynlib: LibName, discardable.}
+proc SDL_CreateMutex*(): ptr SDL_mutex 
+proc SDL_LockMutex*(mutex: ptr SDL_mutex): cint 
+proc SDL_TryLockMutex*(mutex: ptr SDL_mutex): cint 
+template SDL_mutexV*(m: untyped): untyped = SDL_UnlockMutex(m)
+proc SDL_UnlockMutex*(mutex: ptr SDL_mutex): cint 
+proc SDL_DestroyMutex*(mutex: ptr SDL_mutex) 
+proc SDL_CreateSemaphore*(initial_value: uint32): ptr SDL_sem
+proc SDL_DestroySemaphore*(sem: ptr SDL_sem)
+proc SDL_SemWait*(sem: ptr SDL_sem): cint
+proc SDL_SemTryWait*(sem: ptr SDL_sem): cint
+proc SDL_SemWaitTimeout*(sem: ptr SDL_sem; ms: uint32): cint
+proc SDL_SemPost*(sem: ptr SDL_sem): cint
+proc SDL_SemValue*(sem: ptr SDL_sem): uint32
+
+proc SDL_CreateCond*(): ptr SDL_cond
+proc SDL_DestroyCond*(cond: ptr SDL_cond)
+proc SDL_CondSignal*(cond: ptr SDL_cond): cint {.discardable.}
+proc SDL_CondBroadcast*(cond: ptr SDL_cond): cint {.discardable.}
+proc SDL_CondWait*(cond: ptr SDL_cond; mutex: ptr SDL_mutex): cint {.discardable.} 
+proc SDL_CondWaitTimeout*(cond: ptr SDL_cond; mutex: ptr SDL_mutex; ms: uint32): cint {.discardable.}
+proc SDL_CreateThread*(fn: SDL_ThreadFunction; name: cstring; data: pointer;): ptr SDL_Thread
+proc SDL_CreateThreadWithStackSize*(fn: proc (a1: pointer): cint; name: cstring;
+                                   stacksize: csize_t; data: pointer;
+                                   pfnBeginThread: pfnSDL_CurrentBeginThread;
+                                   pfnEndThread: pfnSDL_CurrentEndThread): ptr SDL_Thread
+proc SDL_GetThreadName*(thread: ptr SDL_Thread): cstring
+# proc SDL_ThreadID*(): SDL_threadID
+proc SDL_GetThreadID*(thread: ptr SDL_Thread): SDL_threadID
+proc SDL_SetThreadPriority*(priority: SDL_ThreadPriority): cint
+proc SDL_WaitThread*(thread: ptr SDL_Thread; status: ptr cint)
+proc SDL_DetachThread*(thread: ptr SDL_Thread)
+proc SDL_TLSCreate*(): SDL_TLSID
+proc SDL_TLSGet*(id: SDL_TLSID): pointer
+proc SDL_TLSSet*(id: SDL_TLSID; value: pointer; destructor: proc (a1: pointer)): cint
+proc SDL_RWFromFile*(file: cstring; mode: cstring): ptr SDL_RWops
+proc SDL_RWFromFP*(fp: pointer; autoclose: SDL_bool): ptr SDL_RWops
+proc SDL_RWFromMem*(mem: pointer; size: cint): ptr SDL_RWops
+proc SDL_RWFromConstMem*(mem: pointer; size: cint): ptr SDL_RWops
+proc SDL_AllocRW*(): ptr SDL_RWops
+proc SDL_FreeRW*(area: ptr SDL_RWops)
+proc SDL_RWsize*(context: ptr SDL_RWops): int64
+proc SDL_RWseek*(context: ptr SDL_RWops; offset: int64; whence: cint): int64
+proc SDL_RWtell*(context: ptr SDL_RWops): int64
+proc SDL_RWread*(context: ptr SDL_RWops; `ptr`: pointer; size: csize_t; maxnum: csize_t): csize_t
+proc SDL_RWwrite*(context: ptr SDL_RWops; `ptr`: pointer; size: csize_t; num: csize_t): csize_t
+proc SDL_RWclose*(context: ptr SDL_RWops): cint
+proc SDL_LoadFile_RW*(src: ptr SDL_RWops; datasize: ptr csize_t; freesrc: cint): pointer
+proc SDL_LoadFile*(file: cstring; datasize: ptr csize_t): pointer
+proc SDL_ReadU8*(src: ptr SDL_RWops): uint8
+proc SDL_ReadLE16*(src: ptr SDL_RWops): uint16
+proc SDL_ReadBE16*(src: ptr SDL_RWops): uint16
+proc SDL_ReadLE32*(src: ptr SDL_RWops): uint32
+proc SDL_ReadBE32*(src: ptr SDL_RWops): uint32
+proc SDL_ReadLE64*(src: ptr SDL_RWops): uint64
+proc SDL_ReadBE64*(src: ptr SDL_RWops): uint64
+proc SDL_WriteU8*(dst: ptr SDL_RWops; value: uint8): csize_t
+proc SDL_WriteLE16*(dst: ptr SDL_RWops; value: uint16): csize_t
+proc SDL_WriteBE16*(dst: ptr SDL_RWops; value: uint16): csize_t
+proc SDL_WriteLE32*(dst: ptr SDL_RWops; value: uint32): csize_t
+proc SDL_WriteBE32*(dst: ptr SDL_RWops; value: uint32): csize_t
+proc SDL_WriteLE64*(dst: ptr SDL_RWops; value: uint64): csize_t
+proc SDL_WriteBE64*(dst: ptr SDL_RWops; value: uint64): csize_t
+proc SDL_GetNumAudioDrivers*(): cint
+proc SDL_GetAudioDriver*(index: cint): cstring
+proc SDL_AudioInit*(driver_name: cstring): cint
+proc SDL_AudioQuit*()
+proc SDL_GetCurrentAudioDriver*(): cstring
+proc SDL_OpenAudio*(desired: ptr SDL_AudioSpec; obtained: ptr SDL_AudioSpec): cint
+proc SDL_GetNumAudioDevices*(iscapture: cint): cint
+proc SDL_GetAudioDeviceName*(index: cint; iscapture: cint): cstring
+proc SDL_OpenAudioDevice*(device: cstring; iscapture: cint;
+                         desired: ptr SDL_AudioSpec; obtained: ptr SDL_AudioSpec;
+                         allowed_changes: cint): SDL_AudioDeviceID
+proc SDL_GetAudioStatus*(): SDL_AudioStatus
+proc SDL_GetAudioDeviceStatus*(dev: SDL_AudioDeviceID): SDL_AudioStatus
+proc SDL_PauseAudio*(pause_on: cint)
+proc SDL_PauseAudioDevice*(dev: SDL_AudioDeviceID; pause_on: cint)
+proc SDL_LoadWAV_RW*(src: ptr SDL_RWops; freesrc: cint; spec: ptr SDL_AudioSpec;
+                    audio_buf: ptr ptr uint8; audio_len: ptr uint32): ptr SDL_AudioSpec
+proc SDL_FreeWAV*(audio_buf: ptr uint8)
+proc SDL_BuildAudioCVT*(cvt: ptr SDL_AudioCVT; src_format: SDL_AudioFormat;
+                       src_channels: uint8; src_rate: cint;
+                       dst_format: SDL_AudioFormat; dst_channels: uint8;
+                       dst_rate: cint): cint
+proc SDL_ConvertAudio*(cvt: ptr SDL_AudioCVT): cint
+proc SDL_NewAudioStream*(src_format: SDL_AudioFormat; src_channels: uint8;
+                        src_rate: cint; dst_format: SDL_AudioFormat;
+                        dst_channels: uint8; dst_rate: cint): ptr SDL_AudioStream
+proc SDL_AudioStreamPut*(stream: ptr SDL_AudioStream; buf: pointer; len: cint): cint
+proc SDL_AudioStreamGet*(stream: ptr SDL_AudioStream; buf: pointer; len: cint): cint
+proc SDL_AudioStreamAvailable*(stream: ptr SDL_AudioStream): cint
+proc SDL_AudioStreamFlush*(stream: ptr SDL_AudioStream): cint
+proc SDL_AudioStreamClear*(stream: ptr SDL_AudioStream)
+proc SDL_FreeAudioStream*(stream: ptr SDL_AudioStream)
+proc SDL_MixAudio*(dst: ptr uint8; src: ptr uint8; len: uint32; volume: cint)
+proc SDL_MixAudioFormat*(dst: ptr uint8; src: ptr uint8; format: SDL_AudioFormat;
+                        len: uint32; volume: cint)
+proc SDL_QueueAudio*(dev: SDL_AudioDeviceID; data: pointer; len: uint32): cint
+proc SDL_DequeueAudio*(dev: SDL_AudioDeviceID; data: pointer; len: uint32): uint32
+proc SDL_GetQueuedAudioSize*(dev: SDL_AudioDeviceID): uint32
+proc SDL_ClearQueuedAudio*(dev: SDL_AudioDeviceID)
+proc SDL_LockAudio*()
+proc SDL_LockAudioDevice*(dev: SDL_AudioDeviceID)
+proc SDL_UnlockAudio*()
+proc SDL_UnlockAudioDevice*(dev: SDL_AudioDeviceID)
+proc SDL_CloseAudio*()
+proc SDL_CloseAudioDevice*(dev: SDL_AudioDeviceID)
+proc SDL_SetClipboardText*(text: cstring): cint
+proc SDL_GetClipboardText*(): cstring
+proc SDL_HasClipboardText*(): SDL_bool
+proc SDL_GetCPUCount*(): cint
+proc SDL_GetCPUCacheLineSize*(): cint
+proc SDL_HasRDTSC*(): SDL_bool
+proc SDL_HasAltiVec*(): SDL_bool
+proc SDL_HasMMX*(): SDL_bool
+proc SDL_Has3DNow*(): SDL_bool
+proc SDL_HasSSE*(): SDL_bool
+proc SDL_HasSSE2*(): SDL_bool
+proc SDL_HasSSE3*(): SDL_bool
+proc SDL_HasSSE41*(): SDL_bool
+proc SDL_HasSSE42*(): SDL_bool
+proc SDL_HasAVX*(): SDL_bool
+proc SDL_HasAVX2*(): SDL_bool
+proc SDL_HasAVX512F*(): SDL_bool
+proc SDL_HasARMSIMD*(): SDL_bool
+proc SDL_HasNEON*(): SDL_bool
+proc SDL_GetSystemRAM*(): cint
+proc SDL_SIMDGetAlignment*(): csize_t
+proc SDL_SIMDAlloc*(len: csize_t): pointer
+proc SDL_SIMDFree*(`ptr`: pointer)
+proc SDL_GetPixelFormatName*(format: uint32): cstring
+proc SDL_PixelFormatEnumToMasks*(format: uint32; bpp: ptr cint; Rmask: ptr uint32;
+                                Gmask: ptr uint32; Bmask: ptr uint32;
+                                Amask: ptr uint32): SDL_bool
+proc SDL_MasksToPixelFormatEnum*(bpp: cint; Rmask: uint32; Gmask: uint32;
+                                Bmask: uint32; Amask: uint32): uint32
+proc SDL_AllocFormat*(pixel_format: uint32): ptr SDL_PixelFormat
+proc SDL_FreeFormat*(format: ptr SDL_PixelFormat)
+proc SDL_AllocPalette*(ncolors: cint): ptr SDL_Palette
+proc SDL_SetPixelFormatPalette*(format: ptr SDL_PixelFormat;
+                               palette: ptr SDL_Palette): cint
+proc SDL_SetPaletteColors*(palette: ptr SDL_Palette; colors: ptr SDL_Color;
+                          firstcolor: cint; ncolors: cint): cint
+proc SDL_FreePalette*(palette: ptr SDL_Palette)
+proc SDL_MapRGB*(format: ptr SDL_PixelFormat; r: uint8; g: uint8; b: uint8): uint32
+proc SDL_MapRGBA*(format: ptr SDL_PixelFormat; r: uint8; g: uint8; b: uint8; a: uint8): uint32
+proc SDL_GetRGB*(pixel: uint32; format: ptr SDL_PixelFormat; r: ptr uint8; g: ptr uint8;
+                b: ptr uint8)
+proc SDL_GetRGBA*(pixel: uint32; format: ptr SDL_PixelFormat; r: ptr uint8; g: ptr uint8;
+                 b: ptr uint8; a: ptr uint8)
+proc SDL_CalculateGammaRamp*(gamma: cfloat; ramp: ptr uint16)
+proc SDL_HasIntersection*(A: ptr SDL_Rect; B: ptr SDL_Rect): SDL_bool
+proc SDL_IntersectRect*(A: ptr SDL_Rect; B: ptr SDL_Rect; result: ptr SDL_Rect): SDL_bool
+proc SDL_UnionRect*(A: ptr SDL_Rect; B: ptr SDL_Rect; result: ptr SDL_Rect)
+proc SDL_EnclosePoints*(points: ptr SDL_Point; count: cint; clip: ptr SDL_Rect;result: ptr SDL_Rect): SDL_bool
+proc SDL_IntersectRectAndLine*(rect: ptr SDL_Rect; X1: ptr cint; Y1: ptr cint;X2: ptr cint; Y2: ptr cint): SDL_bool
+proc SDL_ComposeCustomBlendMode*(srcColorFactor: SDL_BlendFactor;
+                                dstColorFactor: SDL_BlendFactor;
+                                colorOperation: SDL_BlendOperation;
+                                srcAlphaFactor: SDL_BlendFactor;
+                                dstAlphaFactor: SDL_BlendFactor;
+                                alphaOperation: SDL_BlendOperation): SDL_BlendMode
+proc SDL_CreateRGBSurface*(flags: uint32; width: cint; height: cint; depth: cint;
+                          Rmask: uint32; Gmask: uint32; Bmask: uint32; Amask: uint32): ptr SDL_Surface
+proc SDL_CreateRGBSurfaceWithFormat*(flags: uint32; width: cint; height: cint;
+                                    depth: cint; format: uint32): ptr SDL_Surface
+proc SDL_CreateRGBSurfaceFrom*(pixels: pointer; width: cint; height: cint; depth: cint;
+                              pitch: cint; Rmask: uint32; Gmask: uint32;
+                              Bmask: uint32; Amask: uint32): ptr SDL_Surface
+proc SDL_CreateRGBSurfaceWithFormatFrom*(pixels: pointer; width: cint; height: cint;
+                                        depth: cint; pitch: cint; format: uint32): ptr SDL_Surface
+proc SDL_FreeSurface*(surface: ptr SDL_Surface)
+proc SDL_SetSurfacePalette*(surface: ptr SDL_Surface; palette: ptr SDL_Palette): cint
+proc SDL_LockSurface*(surface: ptr SDL_Surface): cint
+proc SDL_UnlockSurface*(surface: ptr SDL_Surface)
+proc SDL_LoadBMP_RW*(src: ptr SDL_RWops; freesrc: cint): ptr SDL_Surface
+proc SDL_SaveBMP_RW*(surface: ptr SDL_Surface; dst: ptr SDL_RWops; freedst: cint): cint
+proc SDL_SetSurfaceRLE*(surface: ptr SDL_Surface; flag: cint): cint
+proc SDL_SetColorKey*(surface: ptr SDL_Surface; flag: cint; key: uint32): cint
+proc SDL_HasColorKey*(surface: ptr SDL_Surface): SDL_bool
+proc SDL_GetColorKey*(surface: ptr SDL_Surface; key: ptr uint32): cint
+proc SDL_SetSurfaceColorMod*(surface: ptr SDL_Surface; r: uint8; g: uint8; b: uint8): cint
+proc SDL_GetSurfaceColorMod*(surface: ptr SDL_Surface; r: ptr uint8; g: ptr uint8;
+                            b: ptr uint8): cint
+proc SDL_SetSurfaceAlphaMod*(surface: ptr SDL_Surface; alpha: uint8): cint
+proc SDL_GetSurfaceAlphaMod*(surface: ptr SDL_Surface; alpha: ptr uint8): cint
+proc SDL_SetSurfaceBlendMode*(surface: ptr SDL_Surface; blendMode: SDL_BlendMode): cint
+proc SDL_GetSurfaceBlendMode*(surface: ptr SDL_Surface; blendMode: ptr SDL_BlendMode): cint
+proc SDL_SetClipRect*(surface: ptr SDL_Surface; rect: ptr SDL_Rect): SDL_bool
+proc SDL_GetClipRect*(surface: ptr SDL_Surface; rect: ptr SDL_Rect)
+proc SDL_DuplicateSurface*(surface: ptr SDL_Surface): ptr SDL_Surface
+proc SDL_ConvertSurface*(src: ptr SDL_Surface; fmt: ptr SDL_PixelFormat; flags: uint32): ptr SDL_Surface
+proc SDL_ConvertSurfaceFormat*(src: ptr SDL_Surface; pixel_format: uint32;
+                              flags: uint32): ptr SDL_Surface
+proc SDL_ConvertPixels*(width: cint; height: cint; src_format: uint32; src: pointer;
+                       src_pitch: cint; dst_format: uint32; dst: pointer;
+                       dst_pitch: cint): cint
+proc SDL_FillRect*(dst: ptr SDL_Surface; rect: ptr SDL_Rect; color: uint32): cint
+proc SDL_FillRects*(dst: ptr SDL_Surface; rects: ptr SDL_Rect; count: cint; color: uint32): cint
+proc SDL_UpperBlit*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect; dst: ptr SDL_Surface;
+                   dstrect: ptr SDL_Rect): cint
+proc SDL_LowerBlit*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect; dst: ptr SDL_Surface;
+                   dstrect: ptr SDL_Rect): cint
+proc SDL_SoftStretch*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect;
+                     dst: ptr SDL_Surface; dstrect: ptr SDL_Rect): cint
+proc SDL_UpperBlitScaled*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect;
+                         dst: ptr SDL_Surface; dstrect: ptr SDL_Rect): cint
+proc SDL_LowerBlitScaled*(src: ptr SDL_Surface; srcrect: ptr SDL_Rect;
+                         dst: ptr SDL_Surface; dstrect: ptr SDL_Rect): cint
+proc SDL_SetYUVConversionMode*(mode: SDL_YUV_CONVERSION_MODE)
+proc SDL_GetYUVConversionMode*(): SDL_YUV_CONVERSION_MODE
+proc SDL_GetYUVConversionModeForResolution*(width: cint; height: cint): SDL_YUV_CONVERSION_MODE
+proc SDL_GetNumVideoDrivers*(): cint
+proc SDL_GetVideoDriver*(index: cint): cstring
+proc SDL_VideoInit*(driver_name: cstring): cint
+proc SDL_VideoQuit*()
+proc SDL_GetCurrentVideoDriver*(): cstring
+proc SDL_GetNumVideoDisplays*(): cint
+proc SDL_GetDisplayName*(displayIndex: cint): cstring
+proc SDL_GetDisplayBounds*(displayIndex: cint; rect: ptr SDL_Rect): cint
+proc SDL_GetDisplayUsableBounds*(displayIndex: cint; rect: ptr SDL_Rect): cint
+proc SDL_GetDisplayDPI*(displayIndex: cint; ddpi: ptr cfloat; hdpi: ptr cfloat;
+                       vdpi: ptr cfloat): cint
+proc SDL_GetDisplayOrientation*(displayIndex: cint): SDL_DisplayOrientation
+proc SDL_GetNumDisplayModes*(displayIndex: cint): cint
+proc SDL_GetDisplayMode*(displayIndex: cint; modeIndex: cint;
+                        mode: ptr SDL_DisplayMode): cint
+proc SDL_GetDesktopDisplayMode*(displayIndex: cint; mode: ptr SDL_DisplayMode): cint
+proc SDL_GetCurrentDisplayMode*(displayIndex: cint; mode: ptr SDL_DisplayMode): cint
+proc SDL_GetClosestDisplayMode*(displayIndex: cint; mode: ptr SDL_DisplayMode;
+                               closest: ptr SDL_DisplayMode): ptr SDL_DisplayMode
+proc SDL_GetWindowDisplayIndex*(window: ptr SDL_Window): cint
+proc SDL_SetWindowDisplayMode*(window: ptr SDL_Window; mode: ptr SDL_DisplayMode): cint
+proc SDL_GetWindowDisplayMode*(window: ptr SDL_Window; mode: ptr SDL_DisplayMode): cint
+proc SDL_GetWindowPixelFormat*(window: ptr SDL_Window): uint32
+proc SDL_CreateWindow*(title: cstring; x: cint; y: cint; w: cint; h: cint; flags: uint32): ptr SDL_Window
+proc SDL_CreateWindowFrom*(data: pointer): ptr SDL_Window
+proc SDL_GetWindowID*(window: ptr SDL_Window): uint32
+proc SDL_GetWindowFromID*(id: uint32): ptr SDL_Window
+proc SDL_GetWindowFlags*(window: ptr SDL_Window): uint32
+proc SDL_SetWindowTitle*(window: ptr SDL_Window; title: cstring)
+proc SDL_GetWindowTitle*(window: ptr SDL_Window): cstring
+proc SDL_SetWindowIcon*(window: ptr SDL_Window; icon: ptr SDL_Surface)
+proc SDL_SetWindowData*(window: ptr SDL_Window; name: cstring; userdata: pointer): pointer
+proc SDL_GetWindowData*(window: ptr SDL_Window; name: cstring): pointer
+proc SDL_SetWindowPosition*(window: ptr SDL_Window; x: cint; y: cint)
+proc SDL_GetWindowPosition*(window: ptr SDL_Window; x: ptr cint; y: ptr cint)
+proc SDL_SetWindowSize*(window: ptr SDL_Window; w: cint; h: cint)
+proc SDL_GetWindowSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
+proc SDL_GetWindowBordersSize*(window: ptr SDL_Window; top: ptr cint; left: ptr cint; bottom: ptr cint; right: ptr cint): cint {.discardable.}
+proc SDL_SetWindowMinimumSize*(window: ptr SDL_Window; min_w: cint; min_h: cint)
+proc SDL_GetWindowMinimumSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
+proc SDL_SetWindowMaximumSize*(window: ptr SDL_Window; max_w: cint; max_h: cint)
+proc SDL_GetWindowMaximumSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
+proc SDL_SetWindowBordered*(window: ptr SDL_Window; bordered: SDL_bool)
+proc SDL_SetWindowResizable*(window: ptr SDL_Window; resizable: SDL_bool)
+proc SDL_ShowWindow*(window: ptr SDL_Window)
+proc SDL_HideWindow*(window: ptr SDL_Window)
+proc SDL_RaiseWindow*(window: ptr SDL_Window)
+proc SDL_MaximizeWindow*(window: ptr SDL_Window)
+proc SDL_MinimizeWindow*(window: ptr SDL_Window)
+proc SDL_RestoreWindow*(window: ptr SDL_Window)
+proc SDL_SetWindowFullscreen*(window: ptr SDL_Window; flags: uint32): cint {.discardable.}
+proc SDL_GetWindowSurface*(window: ptr SDL_Window): ptr SDL_Surface
+proc SDL_UpdateWindowSurface*(window: ptr SDL_Window): cint
+proc SDL_UpdateWindowSurfaceRects*(window: ptr SDL_Window; rects: ptr SDL_Rect;
+                                  numrects: cint): cint
+proc SDL_SetWindowGrab*(window: ptr SDL_Window; grabbed: SDL_bool)
+proc SDL_GetWindowGrab*(window: ptr SDL_Window): SDL_bool
+proc SDL_GetGrabbedWindow*(): ptr SDL_Window
+proc SDL_SetWindowBrightness*(window: ptr SDL_Window; brightness: cfloat): cint
+proc SDL_GetWindowBrightness*(window: ptr SDL_Window): cfloat
+proc SDL_SetWindowOpacity*(window: ptr SDL_Window; opacity: cfloat): cint
+proc SDL_GetWindowOpacity*(window: ptr SDL_Window; out_opacity: ptr cfloat): cint
+proc SDL_SetWindowModalFor*(modal_window: ptr SDL_Window;
+                           parent_window: ptr SDL_Window): cint
+proc SDL_SetWindowInputFocus*(window: ptr SDL_Window): cint
+proc SDL_SetWindowGammaRamp*(window: ptr SDL_Window; red: ptr uint16;
+                            green: ptr uint16; blue: ptr uint16): cint
+proc SDL_GetWindowGammaRamp*(window: ptr SDL_Window; red: ptr uint16;
+                            green: ptr uint16; blue: ptr uint16): cint
+proc SDL_SetWindowHitTest*(window: ptr SDL_Window; callback: SDL_HitTest; callback_data: pointer): cint {.discardable.}
+proc SDL_DestroyWindow*(window: ptr SDL_Window)
+proc SDL_IsScreenSaverEnabled*(): SDL_bool
+proc SDL_EnableScreenSaver*()
+proc SDL_DisableScreenSaver*()
+proc SDL_GL_LoadLibrary*(path: cstring): cint
+proc SDL_GL_GetProcAddress*(`proc`: cstring): pointer
+proc SDL_GL_UnloadLibrary*()
+proc SDL_GL_ExtensionSupported*(extension: cstring): SDL_bool
+proc SDL_GL_ResetAttributes*()
+proc SDL_GL_SetAttribute*(attr: SDL_GLattr; value: cint): cint
+proc SDL_GL_GetAttribute*(attr: SDL_GLattr; value: ptr cint): cint
+proc SDL_GL_CreateContext*(window: ptr SDL_Window): SDL_GLContext
+proc SDL_GL_MakeCurrent*(window: ptr SDL_Window; context: SDL_GLContext): cint
+proc SDL_GL_GetCurrentWindow*(): ptr SDL_Window
+proc SDL_GL_GetCurrentContext*(): SDL_GLContext
+proc SDL_GL_GetDrawableSize*(window: ptr SDL_Window; w: ptr cint; h: ptr cint)
+proc SDL_GL_SetSwapInterval*(interval: cint): cint
+proc SDL_GL_GetSwapInterval*(): cint
+proc SDL_GL_SwapWindow*(window: ptr SDL_Window)
+proc SDL_GL_DeleteContext*(context: SDL_GLContext)
+proc SDL_GetKeyboardFocus*(): ptr SDL_Window
+proc SDL_GetKeyboardState*(numkeys: ptr cint): ptr uint8
+proc SDL_GetModState*(): SDL_Keymod
+proc SDL_SetModState*(modstate: SDL_Keymod)
+proc SDL_GetKeyFromScancode*(scancode: SDL_ScanCode): SDL_KeyCode
+proc SDL_GetScancodeFromKey*(key: SDL_KeyCode): SDL_ScanCode
+proc SDL_GetScancodeName*(scancode: SDL_ScanCode): cstring
+proc SDL_GetScancodeFromName*(name: cstring): SDL_ScanCode
+proc SDL_GetKeyName*(key: SDL_KeyCode): cstring
+proc SDL_GetKeyFromName*(name: cstring): SDL_KeyCode
+proc SDL_StartTextInput*()
+proc SDL_IsTextInputActive*(): SDL_bool
+proc SDL_StopTextInput*()
+proc SDL_SetTextInputRect*(rect: ptr SDL_Rect)
+proc SDL_HasScreenKeyboardSupport*(): SDL_bool
+proc SDL_IsScreenKeyboardShown*(window: ptr SDL_Window): SDL_bool
+proc SDL_GetMouseFocus*(): ptr SDL_Window
+proc SDL_GetMouseState*(x: ptr cint; y: ptr cint): uint32
+proc SDL_GetGlobalMouseState*(x: ptr cint; y: ptr cint): uint32
+proc SDL_GetRelativeMouseState*(x: ptr cint; y: ptr cint): uint32
+proc SDL_WarpMouseInWindow*(window: ptr SDL_Window; x: cint; y: cint)
+proc SDL_WarpMouseGlobal*(x: cint; y: cint): cint
+proc SDL_SetRelativeMouseMode*(enabled: SDL_bool): cint
+proc SDL_CaptureMouse*(enabled: SDL_bool): cint
+proc SDL_GetRelativeMouseMode*(): SDL_bool
+proc SDL_CreateCursor*(data: ptr uint8; mask: ptr uint8; w: cint; h: cint; hot_x: cint; hot_y: cint): ptr SDL_Cursor
+proc SDL_CreateColorCursor*(surface: ptr SDL_Surface; hot_x: cint; hot_y: cint): ptr SDL_Cursor
+proc SDL_CreateSystemCursor*(id: SDL_SystemCursor): ptr SDL_Cursor
+proc SDL_SetCursor*(cursor: ptr SDL_Cursor)
+proc SDL_GetCursor*(): ptr SDL_Cursor
+proc SDL_GetDefaultCursor*(): ptr SDL_Cursor
+proc SDL_FreeCursor*(cursor: ptr SDL_Cursor)
+proc SDL_ShowCursor*(toggle: cint): cint {.discardable.}
+proc SDL_LockJoysticks*()
+proc SDL_UnlockJoysticks*()
+proc SDL_NumJoysticks*(): cint
+proc SDL_JoystickNameForIndex*(device_index: cint): cstring
+proc SDL_JoystickGetDevicePlayerIndex*(device_index: cint): cint
+proc SDL_JoystickGetDeviceGUID*(device_index: cint): SDL_JoystickGUID
+proc SDL_JoystickGetDeviceVendor*(device_index: cint): uint16
+proc SDL_JoystickGetDeviceProduct*(device_index: cint): uint16
+proc SDL_JoystickGetDeviceProductVersion*(device_index: cint): uint16
+proc SDL_JoystickGetDeviceType*(device_index: cint): SDL_JoystickType
+proc SDL_JoystickGetDeviceInstanceID*(device_index: cint): int32
+proc SDL_JoystickOpen*(device_index: cint): ptr SDL_Joystick
+proc SDL_JoystickFromInstanceID*(instance_id: int32): ptr SDL_Joystick
+proc SDL_JoystickFromPlayerIndex*(player_index: cint): ptr SDL_Joystick
+proc SDL_JoystickName*(joystick: ptr SDL_Joystick): cstring
+proc SDL_JoystickGetPlayerIndex*(joystick: ptr SDL_Joystick): cint
+proc SDL_JoystickSetPlayerIndex*(joystick: ptr SDL_Joystick; player_index: cint)
+proc SDL_JoystickGetGUID*(joystick: ptr SDL_Joystick): SDL_JoystickGUID
+proc SDL_JoystickGetVendor*(joystick: ptr SDL_Joystick): uint16
+proc SDL_JoystickGetProduct*(joystick: ptr SDL_Joystick): uint16
+proc SDL_JoystickGetProductVersion*(joystick: ptr SDL_Joystick): uint16
+proc SDL_JoystickGetType*(joystick: ptr SDL_Joystick): SDL_JoystickType
+proc SDL_JoystickGetGUIDString*(guid: SDL_JoystickGUID; pszGUID: cstring; cbGUID: cint)
+proc SDL_JoystickGetGUIDFromString*(pchGUID: cstring): SDL_JoystickGUID
+proc SDL_JoystickGetAttached*(joystick: ptr SDL_Joystick): SDL_bool
+proc SDL_JoystickInstanceID*(joystick: ptr SDL_Joystick): int32
+proc SDL_JoystickNumAxes*(joystick: ptr SDL_Joystick): cint
+proc SDL_JoystickNumBalls*(joystick: ptr SDL_Joystick): cint
+proc SDL_JoystickNumHats*(joystick: ptr SDL_Joystick): cint
+proc SDL_JoystickNumButtons*(joystick: ptr SDL_Joystick): cint
+proc SDL_JoystickUpdate*()
+proc SDL_JoystickEventState*(state: cint): cint
+proc SDL_JoystickGetAxis*(joystick: ptr SDL_Joystick; axis: cint): int16
+proc SDL_JoystickGetAxisInitialState*(joystick: ptr SDL_Joystick; axis: cint;
+                                     state: ptr int16): SDL_bool
+proc SDL_JoystickGetHat*(joystick: ptr SDL_Joystick; hat: cint): uint8
+proc SDL_JoystickGetBall*(joystick: ptr SDL_Joystick; ball: cint; dx: ptr cint;
+                         dy: ptr cint): cint
+proc SDL_JoystickGetButton*(joystick: ptr SDL_Joystick; button: cint): uint8
+proc SDL_JoystickRumble*(joystick: ptr SDL_Joystick; low_frequency_rumble: uint16;
+                        high_frequency_rumble: uint16; duration_ms: uint32): cint
+proc SDL_JoystickClose*(joystick: ptr SDL_Joystick)
+proc SDL_JoystickCurrentPowerLevel*(joystick: ptr SDL_Joystick): SDL_JoystickPowerLevel
+proc SDL_GameControllerAddMappingsFromRW*(rw: ptr SDL_RWops; freerw: cint): cint
+proc SDL_GameControllerAddMapping*(mappingString: cstring): cint
+proc SDL_GameControllerNumMappings*(): cint
+proc SDL_GameControllerMappingForIndex*(mapping_index: cint): cstring
+proc SDL_GameControllerMappingForGUID*(guid: SDL_JoystickGUID): cstring
+proc SDL_GameControllerMapping*(gamecontroller: ptr SDL_GameController): cstring
+proc SDL_IsGameController*(joystick_index: cint): SDL_bool
+proc SDL_GameControllerNameForIndex*(joystick_index: cint): cstring
+proc SDL_GameControllerTypeForIndex*(joystick_index: cint): SDL_GameControllerType
+proc SDL_GameControllerMappingForDeviceIndex*(joystick_index: cint): cstring
+proc SDL_GameControllerOpen*(joystick_index: cint): ptr SDL_GameController
+proc SDL_GameControllerFromInstanceID*(joyid: int32): ptr SDL_GameController
+proc SDL_GameControllerFromPlayerIndex*(player_index: cint): ptr SDL_GameController
+proc SDL_GameControllerName*(gamecontroller: ptr SDL_GameController): cstring
+proc SDL_GameControllerGetType*(gamecontroller: ptr SDL_GameController): SDL_GameControllerType
+proc SDL_GameControllerGetPlayerIndex*(gamecontroller: ptr SDL_GameController): cint
+proc SDL_GameControllerSetPlayerIndex*(gamecontroller: ptr SDL_GameController;
+                                      player_index: cint)
+proc SDL_GameControllerGetVendor*(gamecontroller: ptr SDL_GameController): uint16
+proc SDL_GameControllerGetProduct*(gamecontroller: ptr SDL_GameController): uint16
+proc SDL_GameControllerGetProductVersion*(gamecontroller: ptr SDL_GameController): uint16
+proc SDL_GameControllerGetAttached*(gamecontroller: ptr SDL_GameController): SDL_bool
+proc SDL_GameControllerGetJoystick*(gamecontroller: ptr SDL_GameController): ptr SDL_Joystick
+proc SDL_GameControllerEventState*(state: cint): cint
+proc SDL_GameControllerUpdate*()
+
+
+proc SDL_GameControllerGetAxisFromString*(pchString: cstring): SDL_GameControllerAxis
+proc SDL_GameControllerGetStringForAxis*(axis: SDL_GameControllerAxis): cstring
+proc SDL_GameControllerGetBindForAxis*(gamecontroller: ptr SDL_GameController;
+                                      axis: SDL_GameControllerAxis): SDL_GameControllerButtonBind
+proc SDL_GameControllerGetAxis*(gamecontroller: ptr SDL_GameController;
+                               axis: SDL_GameControllerAxis): int16
+
+
+
+proc SDL_GameControllerGetButtonFromString*(pchString: cstring): SDL_GameControllerButton
+proc SDL_GameControllerGetStringForButton*(button: SDL_GameControllerButton): cstring
+proc SDL_GameControllerGetBindForButton*(gamecontroller: ptr SDL_GameController;
+                                        button: SDL_GameControllerButton): SDL_GameControllerButtonBind
+proc SDL_GameControllerGetButton*(gamecontroller: ptr SDL_GameController;
+                                 button: SDL_GameControllerButton): uint8
+proc SDL_GameControllerRumble*(gamecontroller: ptr SDL_GameController;
+                              low_frequency_rumble: uint16;
+                              high_frequency_rumble: uint16; duration_ms: uint32): cint
+proc SDL_GameControllerClose*(gamecontroller: ptr SDL_GameController)
+
+
+proc SDL_GetNumTouchDevices*(): cint
+proc SDL_GetTouchDevice*(index: cint): SDL_TouchID
+proc SDL_GetTouchDeviceType*(touchID: SDL_TouchID): SDL_TouchDeviceType
+proc SDL_GetNumTouchFingers*(touchID: SDL_TouchID): cint
+proc SDL_GetTouchFinger*(touchID: SDL_TouchID; index: cint): ptr SDL_Finger
+
+
+proc SDL_RecordGesture*(touchId: SDL_TouchID): cint
+proc SDL_SaveAllDollarTemplates*(dst: ptr SDL_RWops): cint
+proc SDL_SaveDollarTemplate*(gestureId: SDL_GestureID; dst: ptr SDL_RWops): cint
+proc SDL_LoadDollarTemplates*(touchId: SDL_TouchID; src: ptr SDL_RWops): cint
+
+
+proc SDL_PumpEvents*()
+
+proc SDL_PeepEvents*(events: ptr SDL_Event; numevents: cint; action: SDL_eventaction;
+                    minType: uint32; maxType: uint32): cint
+proc SDL_HasEvent*(`type`: uint32): SDL_bool
+proc SDL_HasEvents*(minType: uint32; maxType: uint32): SDL_bool
+proc SDL_FlushEvent*(`type`: uint32)
+proc SDL_FlushEvents*(minType: uint32; maxType: uint32)
+proc SDL_PollEvent*(event: ptr SDL_Event): cint
+proc SDL_WaitEvent*(event: ptr SDL_Event): cint
+proc SDL_WaitEventTimeout*(event: ptr SDL_Event; timeout: cint): cint
+proc SDL_PushEvent*(event: ptr SDL_Event): cint {.discardable.}
+proc SDL_SetEventFilter*(filter: SDL_EventFilter; userdata: pointer)
+proc SDL_GetEventFilter*(filter: ptr SDL_EventFilter; userdata: ptr pointer): SDL_bool
+proc SDL_AddEventWatch*(filter: SDL_EventFilter; userdata: pointer)
+proc SDL_DelEventWatch*(filter: SDL_EventFilter; userdata: pointer)
+proc SDL_FilterEvents*(filter: SDL_EventFilter; userdata: pointer)
+proc SDL_EventState*(`type`: uint32; state: cint): uint8
+proc SDL_RegisterEvents*(numevents: cint): uint32
+proc SDL_GetBasePath*(): cstring
+proc SDL_GetPrefPath*(org: cstring; app: cstring): cstring
+proc SDL_NumHaptics*(): cint
+proc SDL_HapticName*(device_index: cint): cstring
+proc SDL_HapticOpen*(device_index: cint): ptr SDL_Haptic
+proc SDL_HapticOpened*(device_index: cint): cint
+proc SDL_HapticIndex*(haptic: ptr SDL_Haptic): cint
+proc SDL_MouseIsHaptic*(): cint
+proc SDL_HapticOpenFromMouse*(): ptr SDL_Haptic
+proc SDL_JoystickIsHaptic*(joystick: ptr SDL_Joystick): cint
+proc SDL_HapticOpenFromJoystick*(joystick: ptr SDL_Joystick): ptr SDL_Haptic
+proc SDL_HapticClose*(haptic: ptr SDL_Haptic)
+proc SDL_HapticNumEffects*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticNumEffectsPlaying*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticQuery*(haptic: ptr SDL_Haptic): cuint
+proc SDL_HapticNumAxes*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticEffectSupported*(haptic: ptr SDL_Haptic; effect: ptr SDL_HapticEffect): cint
+proc SDL_HapticNewEffect*(haptic: ptr SDL_Haptic; effect: ptr SDL_HapticEffect): cint
+proc SDL_HapticUpdateEffect*(haptic: ptr SDL_Haptic; effect: cint;
+                            data: ptr SDL_HapticEffect): cint
+proc SDL_HapticRunEffect*(haptic: ptr SDL_Haptic; effect: cint; iterations: uint32): cint
+proc SDL_HapticStopEffect*(haptic: ptr SDL_Haptic; effect: cint): cint
+proc SDL_HapticDestroyEffect*(haptic: ptr SDL_Haptic; effect: cint)
+proc SDL_HapticGetEffectStatus*(haptic: ptr SDL_Haptic; effect: cint): cint
+proc SDL_HapticSetGain*(haptic: ptr SDL_Haptic; gain: cint): cint
+proc SDL_HapticSetAutocenter*(haptic: ptr SDL_Haptic; autocenter: cint): cint
+proc SDL_HapticPause*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticUnpause*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticStopAll*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticRumbleSupported*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticRumbleInit*(haptic: ptr SDL_Haptic): cint
+proc SDL_HapticRumblePlay*(haptic: ptr SDL_Haptic; strength: cfloat; length: uint32): cint
+proc SDL_HapticRumbleStop*(haptic: ptr SDL_Haptic): cint
+proc SDL_SetHintWithPriority*(name: cstring; value: cstring;
+                             priority: SDL_HintPriority): SDL_bool
+proc SDL_SetHint*(name: cstring; value: cstring): SDL_bool
+proc SDL_GetHint*(name: cstring): cstring
+proc SDL_GetHintBoolean*(name: cstring; default_value: SDL_bool): SDL_bool
+type
+  SDL_HintCallback* = proc (userdata: pointer; name: cstring; oldValue: cstring;
+                         newValue: cstring)
+
+proc SDL_AddHintCallback*(name: cstring; callback: SDL_HintCallback;
+                         userdata: pointer)
+proc SDL_DelHintCallback*(name: cstring; callback: SDL_HintCallback;
+                         userdata: pointer)
+proc SDL_ClearHints*()
+proc SDL_LoadObject*(sofile: cstring): pointer
+proc SDL_LoadFunction*(handle: pointer; name: cstring): pointer
+proc SDL_UnloadObject*(handle: pointer)
+proc SDL_LogSetAllPriority*(priority: SDL_LogPriority)
+proc SDL_LogSetPriority*(category: cint; priority: SDL_LogPriority)
+proc SDL_LogGetPriority*(category: cint): SDL_LogPriority
+proc SDL_LogResetPriorities*()
+proc SDL_Log*(fmt: cstring) {.varargs.}
+proc SDL_LogVerbose*(category: cint; fmt: cstring) {.varargs.}
+proc SDL_LogDebug*(category: cint; fmt: cstring) {.varargs.}
+proc SDL_LogInfo*(category: cint; fmt: cstring) {.varargs.}
+proc SDL_LogWarn*(category: cint; fmt: cstring) {.varargs.}
+proc SDL_LogError*(category: cint; fmt: cstring) {.varargs.}
+proc SDL_LogCritical*(category: cint; fmt: cstring) {.varargs.}
+proc SDL_LogMessage*(category: cint; priority: SDL_LogPriority; fmt: cstring) {.varargs.}
+proc SDL_LogMessageV*(category: cint; priority: SDL_LogPriority; fmt: cstring; ap: varargs[untyped])
+proc SDL_LogGetOutputFunction*(callback: ptr SDL_LogOutputFunction;
+                              userdata: ptr pointer)
+proc SDL_LogSetOutputFunction*(callback: SDL_LogOutputFunction; userdata: pointer)
+
+proc SDL_ShowMessageBox*(messageboxdata: ptr SDL_MessageBoxData; buttonid: ptr cint): cint
+proc SDL_ShowSimpleMessageBox*(flags: uint32; title: cstring; message: cstring;
+                              window: ptr SDL_Window): cint
+proc SDL_Metal_CreateView*(window: ptr SDL_Window): SDL_MetalView
+proc SDL_Metal_DestroyView*(view: SDL_MetalView)
+proc SDL_GetPowerInfo*(secs: ptr cint; pct: ptr cint): SDL_PowerState
+
+
 
 
 proc SDL_GetNumRenderDrivers*(): cint
@@ -7287,90 +7355,6 @@ proc SDL_GL_UnbindTexture*(texture: ptr SDL_Texture): cint
 proc SDL_RenderGetMetalLayer*(renderer: ptr SDL_Renderer): pointer
 proc SDL_RenderGetMetalCommandEncoder*(renderer: ptr SDL_Renderer): pointer
 
-type
-  SDL_SensorID* = int32
-  SDL_SensorType* = enum
-    SDL_SENSOR_INVALID = -1, SDL_SENSOR_UNKNOWN, SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO
-  ShowMode* = enum
-    SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT,
-    SHOW_MODE_NB
-  WindowShapeMode* = enum
-    ShapeModeDefault, ShapeModeBinarizeAlpha, ShapeModeReverseBinarizeAlpha,
-    ShapeModeColorKey
-  SDL_WindowShapeParams* {.bycopy.} = object {.union.}
-    binarizationCutoff*: uint8
-    colorKey*: SDL_Color
-
-  SDL_WindowShapeMode* {.bycopy.} = object
-    mode*: WindowShapeMode
-    parameters*: SDL_WindowShapeParams
-  SDL_version* {.bycopy.} = object
-    major*: uint8
-    minor*: uint8
-    patch*: uint8
-
-  INNER_C_UNION_playground_9879* {.bycopy.} = object {.union.}
-    str*: ptr uint8
-    i*: cint
-    i64*: int64
-    ui64*: uint64
-    f*: cfloat
-    dbl*: cdouble
-
-  SpecifierOpt* {.bycopy.} = object
-    specifier*: cstring
-    u*: INNER_C_UNION_playground_9879
-
-  OptionDefUnion* {.union.} = object 
-    dst_ptr*: pointer
-    func_arg*: proc (a1: pointer; a2: cstring; a3: cstring): cint
-    off*: csize_t
-
-  OptionDef* {.bycopy.} = object
-    name*: cstring
-    flags*: cint
-    u*: OptionDefUnion
-    help*: cstring
-    argname*: cstring
-    
-  Option* {.bycopy.} = object
-    opt*: ptr OptionDef
-    key*: cstring
-    val*: cstring
-
-  OptionGroupDef* {.bycopy.} = object
-    name*: cstring
-    sep*: cstring
-    flags*: cint
-
-  OptionGroup* {.bycopy.} = object
-    group_def*: ptr OptionGroupDef
-    arg*: cstring
-    opts*: ptr Option
-    nb_opts*: cint
-    codec_opts*: ptr AVDictionary
-    format_opts*: ptr AVDictionary
-    resample_opts*: ptr AVDictionary
-    sws_dict*: ptr AVDictionary
-    swr_opts*: ptr AVDictionary
-
-  OptionGroupList* {.bycopy.} = object
-    group_def*: ptr OptionGroupDef
-    groups*: ptr OptionGroup
-    nb_groups*: cint
-
-  OptionParseContext* {.bycopy.} = object
-    global_opts*: OptionGroup
-    groups*: ptr OptionGroupList
-    nb_groups*: cint
-    cur_group*: OptionGroup
-  
-  SDL_Sensor = object
-  IDirect3DDevice9 = object
-type
-  SDL_WindowsMessageHook* = proc (userdata: pointer; hWnd: pointer; message: cuint;
-                               wParam: uint64; lParam: int64)
-proc SDL_NumSensors*(): cint
 proc SDL_SensorGetDeviceName*(device_index: cint): cstring
 proc SDL_SensorGetDeviceType*(device_index: cint): SDL_SensorType
 proc SDL_SensorGetDeviceNonPortableType*(device_index: cint): cint
@@ -7410,12 +7394,19 @@ proc SDL_GetTicks*(): uint32
 proc SDL_GetPerformanceCounter*(): uint64
 proc SDL_GetPerformanceFrequency*(): uint64
 proc SDL_Delay*(ms: uint32)
-type
-  SDL_TimerCallback* = proc (interval: uint32; param: pointer): uint32
-  SDL_TimerID* = cint
+
 
 proc SDL_AddTimer*(interval: uint32; callback: SDL_TimerCallback; param: pointer): SDL_TimerID
 proc SDL_RemoveTimer*(id: SDL_TimerID): SDL_bool
+proc SDL_GetVersion*(ver: ptr SDL_version)
+proc SDL_GetRevision*(): cstring
+proc SDL_GetRevisionNumber*(): cint
+proc SDL_Init*(flags: uint32): cint
+proc SDL_InitSubSystem*(flags: uint32): cint
+proc SDL_QuitSubSystem*(flags: uint32)
+proc SDL_WasInit*(flags: uint32): uint32
+proc SDL_Quit*()
+{.pop.}
 
 
 ##  #define SDL_VERSION(x)                  \
@@ -7425,14 +7416,7 @@ proc SDL_RemoveTimer*(id: SDL_TimerID): SDL_bool
 ##          (x).patch = SDL_PATCHLEVEL;    \
 ##      }
 
-proc SDL_GetVersion*(ver: ptr SDL_version)
-proc SDL_GetRevision*(): cstring
-proc SDL_GetRevisionNumber*(): cint
-proc SDL_Init*(flags: uint32): cint
-proc SDL_InitSubSystem*(flags: uint32): cint
-proc SDL_QuitSubSystem*(flags: uint32)
-proc SDL_WasInit*(flags: uint32): uint32
-proc SDL_Quit*()
+
 
 
 
@@ -8086,7 +8070,7 @@ proc decoder_decode_frame*(d: ptr Decoder; frame: ptr AVFrame; sub: ptr AVSubtit
                   else: (-(int)(('E').int or (('O').int shl 8) or (('F').int shl 16) or ((' ').int shl 24)))
       else:
         if avcodec_send_packet(d.avctx, addr(pkt)) == (-(11)):
-          av_log(d.avctx, 16, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.\n")
+          av_log(d.avctx, 16, "Receive_frame and send_packet both returned EAGAIN, which is an API violation.")
           d.packet_pending = 1
           av_packet_move_ref(addr(d.pkt), addr(pkt))
       av_packet_unref(addr(pkt))
@@ -8228,7 +8212,7 @@ proc realloc_texture*(texture: ptr ptr SDL_Texture; new_format: uint32;
       if SDL_LockTexture(texture[], nil, addr(pixels), addr(pitch)) < 0:
         return -1
       SDL_UnlockTexture(texture[])
-    av_log(nil, 40, "Created %dx%d texture with %s.\n", new_width, new_height, SDL_GetPixelFormatName(new_format))
+    av_log(nil, 40, "Created %dx%d texture with %s.", new_width, new_height, SDL_GetPixelFormatName(new_format))
   return 0
 
 proc calculate_display_rect*(rect: ptr SDL_Rect; scr_xleft: cint; scr_ytop: cint;
@@ -8284,7 +8268,7 @@ proc upload_texture*(tex: ptr ptr SDL_Texture; frame: ptr AVFrame;img_convert_ct
         sws_scale(img_convert_ctx[], cast[ptr ptr uint8](frame.data.addr), frame.linesize[0].addr, 0, frame.height, pixels[0].addr, pitch[0].addr)
         SDL_UnlockTexture(tex[])
     else:
-      av_log(nil, 8, "Cannot initialize the conversion context\n")
+      av_log(nil, 8, "Cannot initialize the conversion context")
       result = -1
   of SDL_PIXELFORMAT_IYUV:
     if frame.linesize[0] > 0 and frame.linesize[1] > 0 and frame.linesize[2] > 0:
@@ -8298,7 +8282,7 @@ proc upload_texture*(tex: ptr ptr SDL_Texture; frame: ptr AVFrame;img_convert_ct
           (frame.height) + (1 shl (1)) - 1) shr (1)) - 1), -frame.linesize[2])
     else:
       av_log(nil, 16,
-             "Mixed negative and positive linesizes are not supported.\n")
+             "Mixed negative and positive linesizes are not supported.")
       return -1
   else:
     if frame.linesize[0] < 0:
@@ -8350,7 +8334,7 @@ proc video_image_display*(`is`: ptr VideoState) =
                 AV_PIX_FMT_BGRA, 0, nil, nil,
                 nil)
             if `is`.sub_convert_ctx == nil:
-              av_log(nil, 8, "Cannot initialize the conversion context\n")
+              av_log(nil, 8, "Cannot initialize the conversion context")
               return
             if SDL_LockTexture(`is`.sub_texture, cast[ptr SDL_Rect](sub_rect),cast[ptr pointer](pixels.addr), pitch[0].addr) == 0:
               sws_scale(`is`.sub_convert_ctx, cast[ptr ptr uint8](sub_rect.data.addr), sub_rect.linesize[0].addr, 0, sub_rect.h, pixels[0].addr, pitch[0].addr)
@@ -8472,7 +8456,7 @@ proc video_audio_display*(s: ptr VideoState) =
       s.rdft_bits = rdft_bits
       s.rdft_data = cast[ptr FFTSample](av_malloc_array(nb_freq.csize_t, 4 * sizeof((s.rdft_data[]))))
     if s.rdft == nil or  s.rdft_data == nil:
-      echo("Failed to allocate buffers for RDFT, switching to waves display\n")
+      echo("Failed to allocate buffers for RDFT, switching to waves display")
       s.show_mode = SHOW_MODE_WAVES
     else:
       var data: array[2, ptr FFTSample]
@@ -8831,7 +8815,7 @@ proc compute_target_delay*(delay: cdouble; vs: ptr VideoState): cdouble =
         result = delay + diff
       elif diff >= sync_threshold:
         result = 2 * delay
-  echo("video: delay=%0.3f A-V=%f\n", delay, -diff)
+  echo("video: delay=%0.3f A-V=%f", delay, -diff)
   return delay
 
 proc vp_duration*(vs: ptr VideoState; vp: ptr Frame; nextvp: ptr Frame): cdouble =
@@ -8983,8 +8967,7 @@ proc video_refresh*(opaque: pointer; remaining_time: ptr cdouble) =
       discard av_bprint_finalize(addr(buf), nil)
       last_time = cur_time
 
-proc queue_picture*(vs: ptr VideoState; src_frame: ptr AVFrame; pts: cdouble;
-                   duration: cdouble; pos: int64; serial: cint): cint =
+proc queue_picture*(vs: ptr VideoState; src_frame: ptr AVFrame; pts: cdouble;duration: cdouble; pos: int64; serial: cint): cint =
   var vp: ptr Frame = frame_queue_peek_writable(addr(vs.pictq))
   if vp == nil:
     return -1
@@ -9221,7 +9204,7 @@ proc audio_thread*(arg: pointer): cint =
           buf2: array[1024, char]
         av_get_channel_layout_string(buf1[0].addr, sizeof(buf1).cint, -1,vs.audio_filter_src.channel_layout.uint64)
         av_get_channel_layout_string(buf2[0].addr, sizeof(buf2).cint, -1, dec_channel_layout.uint64)
-        echo("Audio frame changed from rate:%d ch:%d fmt:%s layout:%s serial:%d to rate:%d ch:%d fmt:%s layout:%s serial:%d\n",
+        echo("Audio frame changed from rate:%d ch:%d fmt:%s layout:%s serial:%d to rate:%d ch:%d fmt:%s layout:%s serial:%d",
                vs.audio_filter_src.freq, vs.audio_filter_src.channels,
                av_get_sample_fmt_name(vs.audio_filter_src.fmt), buf1,
                last_serial, frame.sample_rate, frame.channels,
@@ -9262,7 +9245,6 @@ proc audio_thread*(arg: pointer): cint =
 proc decoder_start*(d: ptr Decoder; fn: proc (a1: pointer):cint; thread_name: cstring; arg: pointer): cint =
   packet_queue_start(d.queue)
   d.decoder_tid = SDL_CreateThread(fn, thread_name, arg)
-  # createThread[pointer](d.decoder_tid,fn, arg)
 
 proc video_thread*(arg: pointer): cint =
   var vs: ptr VideoState = cast[ptr VideoState](arg)
@@ -9292,7 +9274,7 @@ proc video_thread*(arg: pointer): cint =
     if last_w != frame.width or last_h != frame.height or last_format.cint != frame.format or
         last_serial != vs.viddec.pkt_serial or
         last_vfilter_idx != vs.vfilter_idx:
-      echo("Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d\n",
+      echo("Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d",
              last_w, last_h, cast[cstring](av_x_if_null(av_get_pix_fmt_name(last_format.AVPixelFormat), "none".cstring)), last_serial, frame.width,
              frame.height, cast[cstring](av_x_if_null(av_get_pix_fmt_name(frame.format.AVPixelFormat), "none".cstring)), vs.viddec.pkt_serial)
       avfilter_graph_free(addr(graph))
@@ -9400,7 +9382,7 @@ proc synchronize_audio*(vs: ptr VideoState; nb_samples: cint): cint =
           max_nb_samples = ((nb_samples * (100 + SAMPLE_CORRECTION_PERCENT_MAX) div 100))
           wanted_nb_samples = av_clip_c(wanted_nb_samples, min_nb_samples,
                                     max_nb_samples)
-        echo("diff=%f adiff=%f sample_diff=%d apts=%0.3f %f\n", diff, avg_diff,
+        echo("diff=%f adiff=%f sample_diff=%d apts=%0.3f %f", diff, avg_diff,
                wanted_nb_samples - nb_samples, vs.audio_clock,
                vs.audio_diff_threshold)
     else:
@@ -9451,7 +9433,7 @@ proc audio_decode_frame*(vs: ptr VideoState): cint =
                                     dec_channel_layout, af.frame.format.AVSampleFormat,
                                     af.frame.sample_rate, 0, nil)
     if vs.swr_ctx == nil or swr_init(vs.swr_ctx) < 0:
-      echo("Cannot create sample rate converter for conversion of %d Hz %s %d channels to %d Hz %s %d channels!\n",
+      echo("Cannot create sample rate converter for conversion of %d Hz %s %d channels to %d Hz %s %d channels!",
              af.frame.sample_rate, av_get_sample_fmt_name(af.frame.format.AVSampleFormat),
              af.frame.channels, vs.audio_tgt.freq,
              av_get_sample_fmt_name(vs.audio_tgt.fmt), vs.audio_tgt.channels)
@@ -9469,24 +9451,24 @@ proc audio_decode_frame*(vs: ptr VideoState): cint =
         out_count, vs.audio_tgt.fmt, 0)
     var len2: cint
     if out_size < 0:
-      echo("av_samples_get_buffer_size() failed\n")
+      echo("av_samples_get_buffer_size() failed")
       return -1
     if wanted_nb_samples != af.frame.nb_samples:
       if swr_set_compensation(vs.swr_ctx, (
           wanted_nb_samples - af.frame.nb_samples) * vs.audio_tgt.freq div
           af.frame.sample_rate, wanted_nb_samples * vs.audio_tgt.freq div
           af.frame.sample_rate) < 0:
-        echo("swr_set_compensation() failed\n")
+        echo("swr_set_compensation() failed")
         return -1
     av_fast_malloc(addr(vs.audio_buf1), addr(vs.audio_buf1_size), out_size.csize_t)
     if vs.audio_buf1 == nil:
       return AVERROR(ENOMEM)
     len2 = swr_convert(vs.swr_ctx, `out`, out_count, `in`, af.frame.nb_samples)
     if len2 < 0:
-      echo("swr_convert() failed\n")
+      echo("swr_convert() failed")
       return -1
     if len2 == out_count:
-      echo("audio buffer is probably too small\n")
+      echo("audio buffer is probably too small")
       if swr_init(vs.swr_ctx) < 0:
         swr_free(addr(vs.swr_ctx))
     vs.audio_buf = vs.audio_buf1
@@ -9575,7 +9557,7 @@ proc audio_open*(opaque: pointer; wanted_channel_layout: var int64;
   wanted_spec.channels = uint8 wanted_nb_channels
   wanted_spec.freq = wanted_sample_rate
   if wanted_spec.freq <= 0 or wanted_spec.channels <= 0:
-    echo("Invalid sample rate or channel count!\n")
+    echo("Invalid sample rate or channel count!")
     return -1
   while next_sample_rate_idx != 0 and next_sample_rates[next_sample_rate_idx] >= wanted_spec.freq:
     next_sample_rate_idx.dec
@@ -9586,23 +9568,23 @@ proc audio_open*(opaque: pointer; wanted_channel_layout: var int64;
   wanted_spec.userdata = opaque
   audio_dev = SDL_OpenAudioDevice(nil, 0, addr(wanted_spec), addr(spec), SDL_AUDIO_ALLOW_FREQUENCY_CHANGE or SDL_AUDIO_ALLOW_CHANNELS_CHANGE)
   while audio_dev == 0:
-    # echo("SDL_OpenAudio (%d channels, %d Hz): %s\n", wanted_spec.channels, wanted_spec.freq, SDL_GetError())
+    # echo("SDL_OpenAudio (%d channels, %d Hz): %s", wanted_spec.channels, wanted_spec.freq, SDL_GetError())
     wanted_spec.channels = uint8 next_nb_channels[min(7.uint8, wanted_spec.channels)]
     if wanted_spec.channels == 0:
       wanted_spec.freq = next_sample_rates[next_sample_rate_idx]
       next_sample_rate_idx.dec
       wanted_spec.channels = uint8 wanted_nb_channels
       if wanted_spec.freq == 0:
-        echo("No more combinations to try, audio open failed\n")
+        echo("No more combinations to try, audio open failed")
         return -1
     wanted_channel_layout = av_get_default_channel_layout(wanted_spec.channels.cint)
   if spec.format != AUDIO_S16SYS:
-    echo("SDL advised audio format %d is not supported!\n", spec.format)
+    echo("SDL advised audio format %d is not supported!", spec.format)
     return -1
   if spec.channels != wanted_spec.channels:
     wanted_channel_layout = av_get_default_channel_layout(spec.channels.cint)
     if wanted_channel_layout != 0:
-      echo("SDL advised channel count %d is not supported!\n", spec.channels)
+      echo("SDL advised channel count %d is not supported!", spec.channels)
       return -1
   audio_hw_params.fmt = AV_SAMPLE_FMT_S16
   audio_hw_params.freq = spec.freq
@@ -9611,7 +9593,7 @@ proc audio_open*(opaque: pointer; wanted_channel_layout: var int64;
   audio_hw_params.frame_size = av_samples_get_buffer_size(nil, audio_hw_params.channels, 1, audio_hw_params.fmt, 1)
   audio_hw_params.bytes_per_sec = av_samples_get_buffer_size(nil, audio_hw_params.channels, audio_hw_params.freq, audio_hw_params.fmt, 1)
   if audio_hw_params.bytes_per_sec <= 0 or audio_hw_params.frame_size <= 0:
-    echo("av_samples_get_buffer_size failed\n")
+    echo("av_samples_get_buffer_size failed")
     return -1
   return spec.size.cint
 
@@ -9652,14 +9634,14 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint {.disc
     codec = avcodec_find_decoder_by_name(forced_codec_name)
   if codec == nil:
     if forced_codec_name != nil:
-      echo("No codec could be found with name \'%s\'\n",forced_codec_name)
+      echo("No codec could be found with name \'%s\'",forced_codec_name)
     else:
-      echo("No decoder could be found for codec %s\n", avcodec_get_name(avctx.codec_id))
+      echo("No decoder could be found for codec %s", avcodec_get_name(avctx.codec_id))
     result = AVERROR(EINVAL)
     echo "fail"
   avctx.codec_id = codec.id
   if stream_lowres > codec.max_lowres.cint:
-    echo("The maximum value for lowres supported by the decoder is %d\n",codec.max_lowres)
+    echo("The maximum value for lowres supported by the decoder is %d",codec.max_lowres)
     stream_lowres = cint codec.max_lowres
   avctx.lowres = stream_lowres
   if fast != 0:
@@ -9710,8 +9692,7 @@ proc stream_component_open*(vs: ptr VideoState; stream_index: cint): cint {.disc
   of AVMEDIA_TYPE_VIDEO:
     vs.video_stream = stream_index
     vs.video_st = ic.streams[stream_index]
-    decoder_init(addr(vs.viddec), avctx, addr(vs.videoq),
-                 vs.continue_read_thread)
+    decoder_init(addr(vs.viddec), avctx, addr(vs.videoq),vs.continue_read_thread)
     result = decoder_start(addr(vs.viddec), video_thread, "video_decoder", vs)
     vs.queue_attachments_req = 1
   of AVMEDIA_TYPE_SUBTITLE:
@@ -9744,7 +9725,6 @@ proc is_realtime*(s: ptr AVFormatContext): cint =
   return 0
 
 ##  this thread gets the stream from the disk or the network
-
 proc read_thread*(arg: pointer): cint =
   var vs: ptr VideoState = cast[ptr VideoState](arg)
   var ic: ptr AVFormatContext 
@@ -9776,7 +9756,7 @@ proc read_thread*(arg: pointer): cint =
     av_dict_set(addr(format_opts), "scan_all_pmts", nil, AV_DICT_MATCH_CASE)
   t = av_dict_get(format_opts, "", nil, AV_DICT_IGNORE_SUFFIX)
   if t != nil:
-    echo("Option %s not found.\n", t.key)
+    echo("Option %s not found.", t.key)
     result = AVERROR_OPTION_NOT_FOUND
   vs.ic = ic
   if genpts != 0:
@@ -9790,7 +9770,7 @@ proc read_thread*(arg: pointer): cint =
       av_dict_free(addr(opts[i]))
     av_freep(addr(opts))
     if err < 0:
-      echo("%s: could not find codec parameters\n",vs.filename)
+      echo("%s: could not find codec parameters",vs.filename)
       result = -1
   if ic.pb != nil:
     ic.pb.eof_reached = 0
@@ -9810,7 +9790,7 @@ proc read_thread*(arg: pointer): cint =
       inc(timestamp, ic.start_time)
     result = avformat_seek_file(ic, -1, int64.low, timestamp, int64.high, 0)
     if result < 0:
-      echo("%s: could not seek to position %0.3f\n",vs.filename, cast[cdouble](timestamp div AV_TIME_BASE))
+      echo("%s: could not seek to position %0.3f",vs.filename, cast[cdouble](timestamp div AV_TIME_BASE))
   vs.realtime = is_realtime(ic)
   if show_status != 0:
     av_dump_format(ic, 0, vs.filename, 0)
@@ -9824,7 +9804,7 @@ proc read_thread*(arg: pointer): cint =
 
   for i in 0..AVMEDIA_TYPE_NB.int-1:
     if wanted_stream_spec[i] != nil and st_index[i] == -1:
-      echo("Stream specifier %s does not match any %s stream\n",wanted_stream_spec[i], av_get_media_type_string(i))
+      echo("Stream specifier %s does not match any %s stream",wanted_stream_spec[i], av_get_media_type_string(i))
       st_index[i] = cint int.high
   if video_disable == 0:
     st_index[AVMEDIA_TYPE_VIDEO.int] = av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO,st_index[AVMEDIA_TYPE_VIDEO.int], -1, nil, 0)
@@ -9849,7 +9829,7 @@ proc read_thread*(arg: pointer): cint =
   if st_index[AVMEDIA_TYPE_SUBTITLE.int] >= 0:
     stream_component_open(vs, st_index[AVMEDIA_TYPE_SUBTITLE.int])
   if vs.video_stream < 0 and vs.audio_stream < 0:
-    echo("Failed to open file \'%s\' or configure filtergraph\n", vs.filename)
+    echo("Failed to open file \'%s\' or configure filtergraph", vs.filename)
     result = -1
   if infinite_buffer < 0 and vs.realtime != 0:
     infinite_buffer = 1
@@ -9875,7 +9855,7 @@ proc read_thread*(arg: pointer): cint =
       ##       of the seek_pos/seek_rel variables
       result = avformat_seek_file(vs.ic, -1, seek_min, seek_target, seek_max, vs.seek_flags)
       if result < 0:
-        echo("%s: error while seeking\n", vs.ic.url)
+        echo("%s: error while seeking", vs.ic.url)
       else:
         if vs.audio_stream >= 0:
           packet_queue_flush(addr(vs.audioq))
@@ -9999,15 +9979,15 @@ proc stream_open*(filename: cstring; iformat: ptr AVInputFormat): ptr VideoState
     echo "fail"
   vs.continue_read_thread = SDL_CreateCond()
   if vs.continue_read_thread == nil:
-    echo("SDL_CreateCond(): %s\n", SDL_GetError())
+    echo("SDL_CreateCond(): %s", SDL_GetError())
   init_clock(addr(vs.vidclk), addr(vs.videoq.serial))
   init_clock(addr(vs.audclk), addr(vs.audioq.serial))
   init_clock(addr(vs.extclk), addr(vs.extclk.serial))
   vs.audio_clock_serial = -1
   if startup_volume < 0:
-    echo("-volume=%d < 0, setting to 0\n", startup_volume)
+    echo("-volume=%d < 0, setting to 0", startup_volume)
   if startup_volume > 100:
-    echo("-volume=%d > 100, setting to 100\n",startup_volume)
+    echo("-volume=%d > 100, setting to 100",startup_volume)
   startup_volume = av_clip_c(startup_volume, 0, 100)
   startup_volume = av_clip_c(SDL_MIX_MAXVOLUME * startup_volume div 100, 0, SDL_MIX_MAXVOLUME)
   vs.audio_volume = startup_volume
@@ -10015,7 +9995,7 @@ proc stream_open*(filename: cstring; iformat: ptr AVInputFormat): ptr VideoState
   vs.av_sync_type = av_sync_type
   vs.read_tid = SDL_CreateThread(read_thread,"read thread", vs)
   if vs.read_tid == nil:
-    echo("SDL_CreateThread(): %s\n", SDL_GetError())
+    echo("SDL_CreateThread(): %s", SDL_GetError())
     stream_close(vs)
     return nil
   return vs
@@ -10076,7 +10056,7 @@ proc stream_cycle_channel*(vs: ptr VideoState; codec_type: cint) =
         discard
   if p != nil and stream_index != -1:
     stream_index = cint p.stream_index[stream_index]
-  echo("Switch %s stream from #%d to #%d\n",av_get_media_type_string(codec_type), old_index, stream_index)
+  echo("Switch %s stream from #%d to #%d",av_get_media_type_string(codec_type), old_index, stream_index)
   stream_component_close(vs, old_index)
   stream_component_open(vs, stream_index)
 
@@ -10126,7 +10106,7 @@ proc seek_chapter*(vs: ptr VideoState; incr: cint) =
   i = max(i, 0)
   if i >= vs.ic.nb_chapters.cint:
     return
-  echo("Seeking to chapter %d.\n", i)
+  echo("Seeking to chapter %d.", i)
   stream_seek(vs, av_rescale_q(vs.ic.chapters[i].start, vs.ic.chapters[i].time_base, AV_TIME_BASE_Q), 0,0)
 
 ##  handle an event sent by the GUI
@@ -10278,7 +10258,7 @@ proc event_loop*(cur_stream: ptr VideoState) =
         hh = ns div 3600
         mm = (ns mod 3600) div 60
         ss = (ns mod 60)
-        echo("Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n",frac * 100, hh, mm, ss, thh, tmm, tss)
+        echo("Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       ",frac * 100, hh, mm, ss, thh, tmm, tss)
         ts = frac.int64 * cur_stream.ic.duration
         if cur_stream.ic.start_time != AV_NOPTS_VALUE:
           inc(ts, cur_stream.ic.start_time)
@@ -10300,7 +10280,7 @@ proc event_loop*(cur_stream: ptr VideoState) =
       discard
 
 proc opt_frame_size*(optctx: pointer; opt: cstring; arg: cstring): cint =
-  echo("Option -s is deprecated, use -video_size.\n")
+  echo("Option -s is deprecated, use -video_size.")
   return opt_default(nil, "video_size", arg)
 
 proc opt_width*(optctx: pointer; opt: cstring; arg: cstring): cint =
@@ -10314,12 +10294,12 @@ proc opt_height*(optctx: pointer; opt: cstring; arg: cstring): cint =
 proc opt_format*(optctx: pointer; opt: cstring; arg: cstring): cint =
   file_iformat = av_find_input_format(arg)
   if file_iformat == nil:
-    echo("Unknown input format: %s\n", arg)
+    echo("Unknown input format: %s", arg)
     return AVERROR(EINVAL)
   return 0
 
 proc opt_frame_pix_fmt*(optctx: pointer; opt: cstring; arg: cstring): cint =
-  echo("Option -pix_fmt is deprecated, use -pixel_format.\n")
+  echo("Option -pix_fmt is deprecated, use -pixel_format.")
   return opt_default(nil, "pixel_format", arg)
 
 proc opt_sync*(optctx: pointer; opt: cstring; arg: cstring): cint =
@@ -10330,7 +10310,7 @@ proc opt_sync*(optctx: pointer; opt: cstring; arg: cstring): cint =
   elif strcmp(arg, "ext") == 0:
     av_sync_type = AV_SYNC_EXTERNAL_CLOCK
   else:
-    echo("Unknown value for %s: %s\n", opt, arg)
+    echo("Unknown value for %s: %s", opt, arg)
     quit(1)
   return 0
 
@@ -10353,7 +10333,7 @@ proc opt_show_mode*(optctx: pointer; opt: cstring; arg: cstring): cint =
 
 proc opt_input_file*(optctx: pointer; filename: var cstring) =
   if input_filename != nil:
-    echo("Argument \'%s\' provided as input filename, but \'%s\' was already specified.\n",filename, input_filename)
+    echo("Argument \'%s\' provided as input filename, but \'%s\' was already specified.",filename, input_filename)
     quit(1)
   if strcmp(filename, "-") == 0:
     filename = "pipe:"
@@ -10365,7 +10345,7 @@ proc opt_codec*(optctx: pointer; opt: cstring; arg: cstring): cint
 # proc opt_codec*(optctx: pointer; opt: cstring; arg: cstring): cint = 
 #   var spec: cstring = strchr(opt, ':'.int)
 #   if spec == nil:
-#     echo("No media specifier was specified in \'%s\' in option \'%s\'\n", arg,opt)
+#     echo("No media specifier was specified in \'%s\' in option \'%s\'", arg,opt)
 #     return AVERROR(EINVAL)
 #   # spec += 1
 #   case spec[0]
@@ -10376,7 +10356,7 @@ proc opt_codec*(optctx: pointer; opt: cstring; arg: cstring): cint
 #   of 'v':
 #     video_codec_name = arg
 #   else:
-#     echo("Invalid media specifier \'%s\' in option \'%s\'\n",spec, opt)
+#     echo("Invalid media specifier \'%s\' in option \'%s\'",spec, opt)
 #     return AVERROR(EINVAL)
 #   return 0
 
@@ -10442,7 +10422,7 @@ proc show_help_default*(opt: cstring; arg: cstring) =
   show_help_children(avcodec_get_class(), AV_OPT_FLAG_DECODING_PARAM)
   show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM)
   show_help_children(avfilter_get_class(), AV_OPT_FLAG_FILTERING_PARAM)
-  printf("\nWhile playing:\nq, ESC              quit\nf                   toggle full screen\np, SPC              pause\nm                   toggle mute\n9, 0                decrease and increase volume respectively\n/, *                decrease and increase volume respectively\na                   cycle audio channel in the current program\nv                   cycle video channel\nt                   cycle subtitle channel in the current program\nc                   cycle program\nw                   cycle video filters or show modes\ns                   activate frame-step mode\nleft/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\ndown/up             seek backward/forward 1 minute\npage down/page up   seek backward/forward 10 minutes\nright mouse click   seek to percentage in file corresponding to fraction of width\nleft cdouble-click   toggle full screen\n")
+  printf("\nWhile playing:\nq, ESC              quit\nf                   toggle full screen\np, SPC              pause\nm                   toggle mute\n9, 0                decrease and increase volume respectively/, *                decrease and increase volume respectively\na                   cycle audio channel in the current program\nv                   cycle video channel\nt                   cycle subtitle channel in the current program\nc                   cycle program\nw                   cycle video filters or show modes\ns                   activate frame-step mode\nleft/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\ndown/up             seek backward/forward 1 minute\npage down/page up   seek backward/forward 10 minutes\nright mouse click   seek to percentage in file corresponding to fraction of width\nleft cdouble-click   toggle full screen")
 
 ##  Called from the main
 
@@ -10463,7 +10443,7 @@ proc main*(argc: cint; argv: cstringArray): cint =
   # show_banner(argc, argv, options)
   # parse_options(nil, argc, argv, options, opt_input_file)
   if input_filename == nil:
-    echo("Use -h to get full help or, even better, run \'man %s\'\n",program_name)
+    echo("Use -h to get full help or, even better, run \'man %s\'",program_name)
     quit(1)
   if display_disable != 0:
     video_disable = 1
@@ -10476,8 +10456,8 @@ proc main*(argc: cint; argv: cstringArray): cint =
   if display_disable != 0:
     flags = flags and not SDL_INIT_VIDEO
   if SDL_Init(flags) != 0:
-    echo("Could not initialize SDL - %s\n")
-    echo("(Did you set the DISPLAY variable?)\n")
+    echo("Could not initialize SDL - %s")
+    echo("(Did you set the DISPLAY variable?)")
     quit(1)
   SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE)
   SDL_EventState(SDL_USEREVENT, SDL_IGNORE)
@@ -10496,17 +10476,17 @@ proc main*(argc: cint; argv: cstringArray): cint =
     if window != nil:
       renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED or SDL_RENDERER_PRESENTVSYNC)
       if renderer == nil:
-        echo("Failed to initialize a hardware accelerated renderer: %s\n")
+        echo("Failed to initialize a hardware accelerated renderer: %s")
         renderer = SDL_CreateRenderer(window, -1, 0)
       if renderer:
         if SDL_GetRendererInfo(renderer, addr(renderer_info)) == 0:
-          echo("Initialized %s renderer.\n",renderer_info.name)
+          echo("Initialized %s renderer.",renderer_info.name)
     if window == nil or renderer == nil or  renderer_info.num_texture_formats == 0:
       echo("Failed to create window or renderer: %s")
       do_exit(nil)
   vs = stream_open(input_filename, file_iformat)
   if vs == nil:
-    echo("Failed to initialize VideoState!\n")
+    echo("Failed to initialize VideoState!")
     do_exit(nil)
   event_loop(vs)
   return 0
