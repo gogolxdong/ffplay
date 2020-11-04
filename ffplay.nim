@@ -1,3 +1,5 @@
+{.passL: "-lmingw32   -lshell32   -lavutil -lavcodec -lavfilter -lswscale -lavformat -lswresample -lavdevice  -lSDL2 -lSDL2main  -lpostproc".}
+
 import strutils
 import macros
 import math
@@ -19,6 +21,7 @@ else:
     const LibName* = "libSDL2.so.0.6"
   else:
     const LibName* = "libSDL2.so"
+
 
 template `+`*[T](p: ptr T, off: int): ptr T =
   cast[ptr type(p[])](cast[ByteAddress](p) +% off * sizeof(p[]))
@@ -42,10 +45,8 @@ template AV_STRINGIFY*(s: untyped): untyped =
   AV_TOSTRING(s)
 
 
-
 template AV_JOIN*(a, b: untyped): untyped =
   AV_GLUE(a, b)
-
 
 template FFALIGN*(x, a: untyped): untyped =
   (((x) + (a) - 1) and not ((a) - 1))
@@ -116,29 +117,25 @@ proc av_isxdigit*(c: cint): cint {.inline.} =
   result = av_isdigit(result) or cint(result >= 'a'.cint and result <= 'f'.cint)
 
 
-
-
 type
-  AVEscapeMode* = enum
+  AVEscapeMode* {.size: sizeof(cint).} = enum
     AV_ESCAPE_MODE_AUTO,      ## /< Use auto-selected escaping mode.
     AV_ESCAPE_MODE_BACKSLASH, ## /< Use backslash escaping.
     AV_ESCAPE_MODE_QUOTE      ## /< Use single-quote escaping.
-  AVExprEnum* = enum
+  AVExprEnum* {.size: sizeof(cint).} = enum
     e_value, e_const, e_func0, e_func1, e_func2, e_squish, e_gauss, e_ld, e_isnan,
     e_isinf, e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt, e_pow, e_mul, e_div,
     e_add, e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
     e_sqrt, e_not, e_random, e_hypot, e_gcd, e_if, e_ifnot, e_print, e_bitand, e_bitor,
     e_between, e_clip, e_atan2, e_lerp, e_sgn
-  AVMediaType* = enum
+  AVMediaType* {.size: sizeof(cint).} = enum
     AVMEDIA_TYPE_UNKNOWN = -1,  ## /< Usually treated as AVMEDIA_TYPE_DATA
     AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA, ## /< Opaque data information usually continuous
     AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_ATTACHMENT, ## /< Opaque data information usually sparse
     AVMEDIA_TYPE_NB
 
-
-
 type
-  AVPictureType* = enum
+  AVPictureType* {.size: sizeof(cint).} = enum
     AV_PICTURE_TYPE_NONE = 0,   ## /< Undefined
     AV_PICTURE_TYPE_I,        ## /< Intra
     AV_PICTURE_TYPE_P,        ## /< Predicted
@@ -147,24 +144,24 @@ type
     AV_PICTURE_TYPE_SI,       ## /< Switching Intra
     AV_PICTURE_TYPE_SP,       ## /< Switching Predicted
     AV_PICTURE_TYPE_BI        ## /< BI type
-  AVRounding* = enum
+  AVRounding* {.size: sizeof(cint).} = enum
     AV_ROUND_ZERO = 0,          ## /< Round toward zero.
     AV_ROUND_INF = 1,           ## /< Round away from zero.
     AV_ROUND_DOWN = 2,          ## /< Round toward -infinity.
     AV_ROUND_UP = 3,            ## /< Round toward +infinity.
     AV_ROUND_NEAR_INF = 5,      ## /< Round to nearest and halfway cases away from zero.
     AV_ROUND_PASS_MINMAX = 8192
-  AVTimebaseSource* = enum
+  AVTimebaseSource* {.size: sizeof(cint).} = enum
     AVFMT_TBCF_AUTO = -1, AVFMT_TBCF_DECODER, AVFMT_TBCF_DEMUXER,
     AVFMT_TBCF_R_FRAMERATE
-  AVOptionType* = enum
+  AVOptionType* {.size: sizeof(cint).} = enum
     AV_OPT_TYPE_FLAGS, AV_OPT_TYPE_INT, AV_OPT_TYPE_INT64, AV_OPT_TYPE_DOUBLE,
     AV_OPT_TYPE_FLOAT, AV_OPT_TYPE_STRING, AV_OPT_TYPE_RATIONAL, AV_OPT_TYPE_BINARY, ## /< offset must point to a pointer immediately followed by an int for the length
     AV_OPT_TYPE_DICT, AV_OPT_TYPE_UINT64, AV_OPT_TYPE_CONST, AV_OPT_TYPE_IMAGE_SIZE, ## /< offset must point to two consecutive integers
     AV_OPT_TYPE_PIXEL_FMT, AV_OPT_TYPE_SAMPLE_FMT, AV_OPT_TYPE_VIDEO_RATE, ## /< offset must point to AVRational
     AV_OPT_TYPE_DURATION, AV_OPT_TYPE_COLOR, AV_OPT_TYPE_CHANNEL_LAYOUT,
     AV_OPT_TYPE_BOOL
-  AVCodecID* = enum
+  AVCodecID* {.size: sizeof(cint).} = enum
     AV_CODEC_ID_NONE, AV_CODEC_ID_MPEG1VIDEO, AV_CODEC_ID_MPEG2VIDEO, ## /< preferred ID for MPEG-1/2 video decoding
     AV_CODEC_ID_H261, AV_CODEC_ID_H263, AV_CODEC_ID_RV10, AV_CODEC_ID_RV20,
     AV_CODEC_ID_MJPEG, AV_CODEC_ID_MJPEGB, AV_CODEC_ID_LJPEG, AV_CODEC_ID_SP5X,
@@ -314,7 +311,7 @@ type
     AV_CODEC_ID_TIMED_ID3, AV_CODEC_ID_BIN_DATA, AV_CODEC_ID_PROBE = 0x00019000, ## /< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
     AV_CODEC_ID_MPEG2TS = 0x00020000, AV_CODEC_ID_MPEG4SYSTEMS = 0x00020001, AV_CODEC_ID_FFMETADATA = 0x00021000, ## /< Dummy codec for streams containing only metadata information.
     AV_CODEC_ID_WRAPPED_AVFRAME = 0x00021001 ## /< Passthrough codec, AVFrames wrapped in AVPacket
-  AVPacketSideDataType* = enum
+  AVPacketSideDataType* {.size: sizeof(cint).} = enum
     AV_PKT_DATA_PALETTE, AV_PKT_DATA_NEW_EXTRADATA, AV_PKT_DATA_PARAM_CHANGE,
     AV_PKT_DATA_H263_MB_INFO, AV_PKT_DATA_REPLAYGAIN, AV_PKT_DATA_DISPLAYMATRIX,
     AV_PKT_DATA_STEREO3D, AV_PKT_DATA_AUDIO_SERVICE_TYPE,
@@ -328,25 +325,25 @@ type
     AV_PKT_DATA_ENCRYPTION_INIT_INFO, AV_PKT_DATA_ENCRYPTION_INFO,
     AV_PKT_DATA_AFD, AV_PKT_DATA_PRFT, AV_PKT_DATA_ICC_PROFILE,
     AV_PKT_DATA_DOVI_CONF, AV_PKT_DATA_S12M_TIMECODE, AV_PKT_DATA_NB
-  SDL_AssertState* = enum
+  SDL_AssertState* {.size: sizeof(cint).} = enum
     SDL_ASSERTION_RETRY, SDL_ASSERTION_BREAK, SDL_ASSERTION_ABORT,
     SDL_ASSERTION_IGNORE, SDL_ASSERTION_ALWAYS_IGNORE
-  sDL_PixelType* = enum
+  sDL_PixelType* {.size: sizeof(cint).} = enum
     SDL_PIXELTYPE_UNKNOWN, SDL_PIXELTYPE_INDEX1, SDL_PIXELTYPE_INDEX4,
     SDL_PIXELTYPE_INDEX8, SDL_PIXELTYPE_PACKED8, SDL_PIXELTYPE_PACKED16,
     SDL_PIXELTYPE_PACKED32, SDL_PIXELTYPE_ARRAYU8, SDL_PIXELTYPE_ARRAYU16,
     SDL_PIXELTYPE_ARRAYU32, SDL_PIXELTYPE_ARRAYF16, SDL_PIXELTYPE_ARRAYF32
-  SDL_BitmapOrder* = enum
+  SDL_BitmapOrder* {.size: sizeof(cint).} = enum
     SDL_BITMAPORDER_NONE, SDL_BITMAPORDER_4321, SDL_BITMAPORDER_1234
-  SDL_PackedOrder* = enum
+  SDL_PackedOrder* {.size: sizeof(cint).} = enum
     SDL_PACKEDORDER_NONE, SDL_PACKEDORDER_XRGB, SDL_PACKEDORDER_RGBX,
     SDL_PACKEDORDER_ARGB, SDL_PACKEDORDER_RGBA, SDL_PACKEDORDER_XBGR,
     SDL_PACKEDORDER_BGRX, SDL_PACKEDORDER_ABGR, SDL_PACKEDORDER_BGRA
-  SDL_ArrayOrder* = enum
+  SDL_ArrayOrder* {.size: sizeof(cint).} = enum
     SDL_ARRAYORDER_NONE, SDL_ARRAYORDER_RGB, SDL_ARRAYORDER_RGBA,
     SDL_ARRAYORDER_ARGB, SDL_ARRAYORDER_BGR, SDL_ARRAYORDER_BGRA,
     SDL_ARRAYORDER_ABGR
-  SDL_PackedLayout* = enum
+  SDL_PackedLayout* {.size: sizeof(cint).} = enum
     SDL_PACKEDLAYOUT_NONE, SDL_PACKEDLAYOUT_332, SDL_PACKEDLAYOUT_4444,
     SDL_PACKEDLAYOUT_1555, SDL_PACKEDLAYOUT_5551, SDL_PACKEDLAYOUT_565,
     SDL_PACKEDLAYOUT_8888, SDL_PACKEDLAYOUT_2101010, SDL_PACKEDLAYOUT_1010102
@@ -463,7 +460,7 @@ type
     SDL_SCANCODE_KBDILLUMUP = 280, SDL_SCANCODE_EJECT = 281, SDL_SCANCODE_SLEEP = 282,
     SDL_NUM_SCANCODES = 512 
 
-  AVAppToDevMessageType* = enum
+  AVAppToDevMessageType* {.size: sizeof(cint).} = enum
     AV_APP_TO_DEV_NONE = MKBETAG('N', 'O', 'N', 'E'),
     AV_APP_TO_DEV_WINDOW_SIZE #= MKBETAG('G', 'E', 'O', 'M'),
     AV_APP_TO_DEV_WINDOW_REPAINT #= MKBETAG('R', 'E', 'P', 'A'),
@@ -477,7 +474,7 @@ type
     AV_APP_TO_DEV_GET_VOLUME #= MKBETAG('G', 'V', 'O', 'L'),
     AV_APP_TO_DEV_GET_MUTE #= MKBETAG('G', 'M', 'U', 'T')
 
-  AVDevToAppMessageType* = enum
+  AVDevToAppMessageType* {.size: sizeof(cint).} = enum
     AV_DEV_TO_APP_NONE #= MKBETAG('N', 'O', 'N', 'E'),
     AV_DEV_TO_APP_CREATE_WINDOW_BUFFER #= MKBETAG('B', 'C', 'R', 'E'),
     AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER# = MKBETAG('B', 'P', 'R', 'E'),
@@ -497,7 +494,7 @@ type
     KMOD_NUM  = 0x1000, KMOD_CAPS   = 0x2000, KMOD_MODE   = 0x4000,
     KMOD_RESERVED=0x8000
 
-  AVPixelFormat* = enum
+  AVPixelFormat* {.size: sizeof(cint).} = enum
     AV_PIX_FMT_NONE = -1, AV_PIX_FMT_YUV420P, ## /< planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
     AV_PIX_FMT_YUYV422,       ## /< packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
     AV_PIX_FMT_RGB24,         ## /< packed RGB 8:8:8, 24bpp, RGBRGB...
@@ -691,7 +688,7 @@ type
     AV_PIX_FMT_X2RGB10BE,     ## /< packed RGB 10:10:10, 30bpp, (msb)2X 10R 10G 10B(lsb), big-endian, X=unused/undefined
     AV_PIX_FMT_NB             ## /< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 
-  AVColorPrimaries* = enum
+  AVColorPrimaries* {.size: sizeof(cint).} = enum
     AVCOL_PRI_RESERVED0 = 0, AVCOL_PRI_BT709 = 1, ## /< also ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B
     AVCOL_PRI_UNSPECIFIED = 2, AVCOL_PRI_RESERVED = 3, AVCOL_PRI_BT470M = 4, ## /< also FCC Title 47 Code of Federal Regulations 73.682 (a)(20)
     AVCOL_PRI_BT470BG = 5,      ## /< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM
@@ -704,7 +701,7 @@ type
     AVCOL_PRI_SMPTE432 = 12,    ## /< SMPTE ST 432-1 (2010) / P3 D65 / Display P3
     AVCOL_PRI_EBU3213 = 22,     ## /< EBU Tech. 3213-E / JEDEC P22 phosphors
     AVCOL_PRI_NB              ## /< Not part of ABI
-  AVColorTransferCharacteristic* = enum
+  AVColorTransferCharacteristic* {.size: sizeof(cint).} = enum
     AVCOL_TRC_RESERVED0 = 0, AVCOL_TRC_BT709 = 1, ## /< also ITU-R BT1361
     AVCOL_TRC_UNSPECIFIED = 2, AVCOL_TRC_RESERVED = 3, AVCOL_TRC_GAMMA22 = 4, ## /< also ITU-R BT470M / ITU-R BT1700 625 PAL & SECAM
     AVCOL_TRC_GAMMA28 = 5,      ## /< also ITU-R BT470BG
@@ -721,7 +718,7 @@ type
     AVCOL_TRC_SMPTE428 = 17,    ## /< SMPTE ST 428-1
     AVCOL_TRC_ARIB_STD_B67 = 18, ## /< ARIB STD-B67, known as "Hybrid log-gamma"
     AVCOL_TRC_NB              ## /< Not part of ABI
-  AVColorSpace* = enum
+  AVColorSpace* {.size: sizeof(cint).} = enum
     AVCOL_SPC_RGB = 0,          ## /< order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)
     AVCOL_SPC_BT709 = 1,        ## /< also ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B
     AVCOL_SPC_UNSPECIFIED = 2, AVCOL_SPC_RESERVED = 3, AVCOL_SPC_FCC = 4, ## /< FCC Title 47 Code of Federal Regulations 73.682 (a)(20)
@@ -736,17 +733,17 @@ type
     AVCOL_SPC_CHROMA_DERIVED_CL = 13, ## /< Chromaticity-derived constant luminance system
     AVCOL_SPC_ICTCP = 14,       ## /< ITU-R BT.2100-0, ICtCp
     AVCOL_SPC_NB              ## /< Not part of ABI
-  AVColorRange* = enum
+  AVColorRange* {.size: sizeof(cint).} = enum
     AVCOL_RANGE_UNSPECIFIED = 0, AVCOL_RANGE_MPEG = 1, AVCOL_RANGE_JPEG = 2, AVCOL_RANGE_NB ## /< Not part of ABI
 
 
-  AVChromaLocation* = enum
+  AVChromaLocation* {.size: sizeof(cint).} = enum
     AVCHROMA_LOC_UNSPECIFIED = 0, AVCHROMA_LOC_LEFT = 1, ## /< MPEG-2/4 4:2:0, H.264 default for 4:2:0
     AVCHROMA_LOC_CENTER = 2,    ## /< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
     AVCHROMA_LOC_TOPLEFT = 3,   ## /< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
     AVCHROMA_LOC_TOP = 4, AVCHROMA_LOC_BOTTOMLEFT = 5, AVCHROMA_LOC_BOTTOM = 6, AVCHROMA_LOC_NB ## /< Not part of ABI
 
-  AVClassCategory* = enum
+  AVClassCategory* {.size: sizeof(cint).} = enum
     AV_CLASS_CATEGORY_NA = 0, AV_CLASS_CATEGORY_INPUT, AV_CLASS_CATEGORY_OUTPUT,
     AV_CLASS_CATEGORY_MUXER, AV_CLASS_CATEGORY_DEMUXER, AV_CLASS_CATEGORY_ENCODER,
     AV_CLASS_CATEGORY_DECODER, AV_CLASS_CATEGORY_FILTER,
@@ -2299,7 +2296,7 @@ const
 
 
 type
-  AVSampleFormat* = enum
+  AVSampleFormat* {.size: sizeof(cint).} = enum
     AV_SAMPLE_FMT_NONE = -1, AV_SAMPLE_FMT_U8, ## /< unsigned 8 bits
     AV_SAMPLE_FMT_S16,        ## /< signed 16 bits
     AV_SAMPLE_FMT_S32,        ## /< signed 32 bits
@@ -2435,29 +2432,30 @@ proc av_fopen_utf8*(path: cstring; mode: cstring): ptr FILE
 proc av_get_time_base_q*(): AVRational
 proc av_log2*(v: auto): cint
 proc av_log2_16bit*(v: auto): cint
-proc av_malloc*(size: csize_t): pointer
-proc av_mallocz*(size: csize_t): pointer
-proc av_malloc_array*(nmemb: csize_t; size: csize_t): pointer
-proc av_mallocz_array*(nmemb: csize_t; size: csize_t): pointer
-proc av_calloc*(nmemb: csize_t; size: csize_t): pointer
-proc av_realloc*(`ptr`: pointer; size: csize_t): pointer
-proc av_reallocp*(`ptr`: pointer; size: csize_t): cint
-proc av_realloc_f*(`ptr`: pointer; nelem: csize_t; elsize: csize_t): pointer
-proc av_realloc_array*(`ptr`: pointer; nmemb: csize_t; size: csize_t): pointer
-proc av_reallocp_array*(`ptr`: pointer; nmemb: csize_t; size: csize_t): cint
-proc av_fast_realloc*(`ptr`: pointer; size: ptr cuint; min_size: csize_t): pointer
-proc av_fast_malloc*(`ptr`: pointer; size: ptr cuint; min_size: csize_t)
-proc av_fast_mallocz*(`ptr`: pointer; size: ptr cuint; min_size: csize_t)
+
+proc av_malloc*(size: auto): pointer {.importc, dynlib:"avutil(-56).dll".}
+proc av_mallocz*(size: auto): pointer {.importc.}
+proc av_malloc_array*(nmemb: auto; size: auto): pointer
+proc av_mallocz_array*(nmemb: auto; size: auto): pointer
+proc av_calloc*(nmemb: auto; size: auto): pointer
+proc av_realloc*(`ptr`: pointer; size: auto): pointer
+proc av_reallocp*(`ptr`: pointer; size: auto): cint
+proc av_realloc_f*(`ptr`: pointer; nelem: auto; elsize: auto): pointer
+proc av_realloc_array*(`ptr`: pointer; nmemb: auto; size: auto): pointer
+proc av_reallocp_array*(`ptr`: pointer; nmemb: auto; size: auto): cint
+proc av_fast_realloc*(`ptr`: pointer; size: ptr cuint; min_size: auto): pointer
+proc av_fast_malloc*(`ptr`: pointer; size: ptr cuint; min_size: auto)
+proc av_fast_mallocz*(`ptr`: pointer; size: ptr cuint; min_size: auto)
 proc av_free*(`ptr`: pointer)
 proc av_freep*(`ptr`: pointer)
 proc av_strdup*(s: cstring): cstring
-proc av_strndup*(s: cstring; len: csize_t): cstring
-proc av_memdup*(p: pointer; size: csize_t): pointer
-proc av_memcpy_backptr*(dst: ptr uint8; back: cint; cnt: cint)
+proc av_strndup*(s: cstring; len: auto): cstring
+proc av_memdup*(p: pointer; size: auto): pointer
+proc av_memcpy_backptr*(dst: ptr uint8; back: auto; cnt: auto)
 proc av_dynarray_add*(tab_ptr: pointer; nb_ptr: ptr cint; elem: pointer)
 proc av_dynarray_add_nofree*(tab_ptr: pointer; nb_ptr: ptr cint; elem: pointer): cint
 proc av_dynarray2_add*(tab_ptr: ptr pointer; nb_ptr: ptr cint; elem_size: csize_t; elem_data: ptr uint8): pointer
-proc av_max_alloc*(max: csize_t)
+proc av_max_alloc*(max: auto)
 proc av_q2d*(a: AVRational): auto {.inline.} = a.num div a.den
 proc av_reduce*(dst_num: ptr cint; dst_den: ptr cint; num: int64; den: int64;max: int64): cint
 proc av_mul_q*(b: AVRational; c: AVRational): AVRational
@@ -2577,16 +2575,14 @@ proc av_image_copy_to_buffer*(dst: ptr uint8; dst_size: cint;
                              src_linesize: array[4, cint]; pix_fmt: AVPixelFormat;
                              width: cint; height: cint; align: cint): cint
 proc av_image_check_size*(w: cuint; h: cuint; log_offset: cint; log_ctx: pointer): cint
-proc av_image_check_size2*(w: cuint; h: cuint; max_pixels: int64;
-                          pix_fmt: AVPixelFormat; log_offset: cint; log_ctx: pointer): cint
+proc av_image_check_size2*(w: cuint; h: cuint; max_pixels: int64;pix_fmt: AVPixelFormat; log_offset: cint; log_ctx: pointer): cint
 proc av_image_check_sar*(w: cuint; h: cuint; sar: AVRational): cint
-proc av_image_fill_black*(dst_data: array[4, ptr uint8];
-                         dst_linesize: array[4, int64]; pix_fmt: AVPixelFormat;
-                         range: AVColorRange; width: cint; height: cint): cint
-proc av_dict_get*(m: ptr AVDictionary; key: cstring; prev: ptr AVDictionaryEntry;
-                 flags: cint): ptr AVDictionaryEntry
-proc av_dict_count*(m: ptr AVDictionary): cint
-proc av_dict_set*(pm: ptr ptr AVDictionary; key: cstring; value: cstring; flags: cint): cint {.discardable.}
+proc av_image_fill_black*(dst_data: array[4, ptr uint8];dst_linesize: array[4, int64]; pix_fmt: AVPixelFormat; range: AVColorRange; width: cint; height: cint): cint
+proc av_dict_get*(m: ptr AVDictionary; key: cstring; prev: ptr AVDictionaryEntry;flags: cint): ptr AVDictionaryEntry
+proc av_dict_count*(m: ptr AVDictionary): cint {.discardable, importc, dynlib:"avutil(-56).dll".}
+
+proc av_dict_set*(pm: ptr ptr AVDictionary; key: cstring; value: cstring; flags: cint): cint {.discardable, importc, dynlib:"avutil(-56).dll".}
+
 proc av_dict_set_int*(pm: ptr ptr AVDictionary; key: cstring; value: int64; flags: cint): cint {.discardable.}
 proc av_dict_parse_string*(pm: ptr ptr AVDictionary; str: cstring; key_val_sep: cstring; pairs_sep: cstring; flags: cint): cint {.discardable.}
 proc av_dict_copy*(dst: ptr ptr AVDictionary; src: ptr AVDictionary; flags: cint): cint {.discardable.}
@@ -2598,8 +2594,7 @@ template av_parse_ratio_quiet*(rate, str, max: untyped): untyped =
 
 proc av_parse_video_size*(width_ptr: ptr cint; height_ptr: ptr cint; str: cstring): cint
 proc av_parse_video_rate*(rate: ptr AVRational; str: cstring): cint
-proc av_parse_color*(rgba_color: ptr uint8; color_string: cstring; slen: cint;
-                    log_ctx: pointer): cint
+proc av_parse_color*(rgba_color: ptr uint8; color_string: cstring; slen: cint;log_ctx: pointer): cint
 proc av_get_known_color_name*(color_idx: cint; rgb: ptr ptr uint8): cstring
 proc av_parse_time*(timeval: ptr int64; timestr: cstring; duration: cint): cint
 proc av_find_info_tag*(arg: cstring; arg_size: cint; tag1: cstring; info: cstring): cint
@@ -2610,8 +2605,7 @@ proc av_get_sample_fmt*(name: cstring): AVSampleFormat
 proc av_get_alt_sample_fmt*(sample_fmt: AVSampleFormat; planar: cint): AVSampleFormat
 proc av_get_packed_sample_fmt*(sample_fmt: AVSampleFormat): AVSampleFormat
 proc av_get_planar_sample_fmt*(sample_fmt: AVSampleFormat): AVSampleFormat
-proc av_get_sample_fmt_string*(buf: cstring; buf_size: cint;
-                              sample_fmt: AVSampleFormat): cstring
+proc av_get_sample_fmt_string*(buf: cstring; buf_size: cint; sample_fmt: AVSampleFormat): cstring
 proc av_get_bytes_per_sample*(sample_fmt: AVSampleFormat): cint
 proc av_sample_fmt_is_planar*(sample_fmt: AVSampleFormat): cint
 proc av_samples_get_buffer_size*(linesize: ptr cint; nb_channels: cint;
@@ -3020,7 +3014,7 @@ type
 
   SDL_threadID* = culong
   SDL_TLSID* = cuint
-  SDL_ThreadPriority* = enum
+  SDL_ThreadPriority* {.size: sizeof(cint).} = enum
     SDL_THREAD_PRIORITY_LOW, SDL_THREAD_PRIORITY_NORMAL, SDL_THREAD_PRIORITY_HIGH,
     SDL_THREAD_PRIORITY_TIME_CRITICAL
   SDL_ThreadFunction* = proc (data: pointer): cint
@@ -3463,31 +3457,16 @@ const
       SUBPICTURE_QUEUE_SIZE))
 
 type
-  AVMatrixEncoding* = enum
+  AVMatrixEncoding* {.size: sizeof(cint).} = enum
     AV_MATRIX_ENCODING_NONE, AV_MATRIX_ENCODING_DOLBY, AV_MATRIX_ENCODING_DPLII,
     AV_MATRIX_ENCODING_DPLIIX, AV_MATRIX_ENCODING_DPLIIZ,
     AV_MATRIX_ENCODING_DOLBYEX, AV_MATRIX_ENCODING_DOLBYHEADPHONE,
     AV_MATRIX_ENCODING_NB
 
 
-proc av_get_channel_layout*(name: cstring): uint64
-proc av_get_extended_channel_layout*(name: cstring; channel_layout: ptr uint64;
-                                    nb_channels: ptr cint): cint
-proc av_get_channel_layout_string*(buf: cstring; buf_size: cint; nb_channels: cint;
-                                  channel_layout: uint64)
 
-proc av_bprint_channel_layout*(bp: ptr AVBPrint; nb_channels: cint;
-                              channel_layout: uint64)
-proc av_get_default_channel_layout*(nb_channels: cint): int64
-proc av_get_channel_layout_channel_index*(channel_layout: uint64;
-    channel: uint64): cint
-proc av_channel_layout_extract_channel*(channel_layout: uint64; index: cint): uint64
-proc av_get_channel_name*(channel: uint64): cstring
-proc av_get_channel_description*(channel: uint64): cstring
-proc av_get_standard_channel_layout*(index: cuint; layout: ptr uint64;
-                                    name: cstringArray): cint
 type
-  AVFrameSideDataType* = enum
+  AVFrameSideDataType* {.size: sizeof(cint).} = enum
     AV_FRAME_DATA_PANSCAN, AV_FRAME_DATA_A53_CC, AV_FRAME_DATA_STEREO3D,
     AV_FRAME_DATA_MATRIXENCODING, AV_FRAME_DATA_DOWNMIX_INFO,
     AV_FRAME_DATA_REPLAYGAIN, AV_FRAME_DATA_DISPLAYMATRIX, AV_FRAME_DATA_AFD,
@@ -3502,7 +3481,7 @@ type
 
 
 type
-  AVActiveFormatDescription* = enum
+  AVActiveFormatDescription* {.size: sizeof(cint).} = enum
     AV_AFD_SAME = 8, AV_AFD_4_3 = 9, AV_AFD_16_9 = 10, AV_AFD_14_9 = 11,
     AV_AFD_4_3_SP_14_9 = 13, AV_AFD_16_9_SP_14_9 = 14, AV_AFD_SP_4_3 = 15
 
@@ -3580,58 +3559,13 @@ type
     private_ref*: ptr AVBufferRef
 
 
-proc av_frame_get_best_effort_timestamp*(frame: ptr AVFrame): int64
-proc av_frame_set_best_effort_timestamp*(frame: ptr AVFrame; val: int64)
-proc av_frame_get_pkt_duration*(frame: ptr AVFrame): int64
-proc av_frame_set_pkt_duration*(frame: ptr AVFrame; val: int64)
-proc av_frame_get_pkt_pos*(frame: ptr AVFrame): int64
-proc av_frame_set_pkt_pos*(frame: ptr AVFrame; val: int64)
-proc av_frame_get_channel_layout*(frame: ptr AVFrame): int64
-proc av_frame_set_channel_layout*(frame: ptr AVFrame; val: int64)
-proc av_frame_get_channels*(frame: ptr AVFrame): cint
-proc av_frame_set_channels*(frame: ptr AVFrame; val: cint)
-proc av_frame_get_sample_rate*(frame: ptr AVFrame): cint
-proc av_frame_set_sample_rate*(frame: ptr AVFrame; val: cint)
-proc av_frame_get_metadata*(frame: ptr AVFrame): ptr AVDictionary
-proc av_frame_set_metadata*(frame: ptr AVFrame; val: ptr AVDictionary)
-proc av_frame_get_decode_error_flags*(frame: ptr AVFrame): cint
-proc av_frame_set_decode_error_flags*(frame: ptr AVFrame; val: cint)
-proc av_frame_get_pkt_size*(frame: ptr AVFrame): cint
-proc av_frame_set_pkt_size*(frame: ptr AVFrame; val: cint)
-proc av_frame_get_qp_table*(f: ptr AVFrame; stride: ptr cint; `type`: ptr cint): ptr int8
-proc av_frame_set_qp_table*(f: ptr AVFrame; buf: ptr AVBufferRef; stride: cint;
-                           `type`: cint): cint
-proc av_frame_get_colorspace*(frame: ptr AVFrame): AVColorSpace
-proc av_frame_set_colorspace*(frame: ptr AVFrame; val: AVColorSpace)
-proc av_frame_get_color_range*(frame: ptr AVFrame): AVColorRange
-proc av_frame_set_color_range*(frame: ptr AVFrame; val: AVColorRange)
-proc av_get_colorspace_name*(val: AVColorSpace): cstring
-proc av_frame_alloc*(): ptr AVFrame
-proc av_frame_free*(frame: ptr ptr AVFrame)
-proc av_frame_ref*(dst: ptr AVFrame; src: ptr AVFrame): cint
-proc av_frame_clone*(src: ptr AVFrame): ptr AVFrame
-proc av_frame_unref*(frame: ptr AVFrame)
-proc av_frame_move_ref*(dst: ptr AVFrame; src: ptr AVFrame)
-proc av_frame_get_buffer*(frame: ptr AVFrame; align: cint): cint
-proc av_frame_is_writable*(frame: ptr AVFrame): cint
-proc av_frame_make_writable*(frame: ptr AVFrame): cint
-proc av_frame_copy*(dst: ptr AVFrame; src: ptr AVFrame): cint
-proc av_frame_copy_props*(dst: ptr AVFrame; src: ptr AVFrame): cint
-proc av_frame_get_plane_buffer*(frame: ptr AVFrame; plane: cint): ptr AVBufferRef
-proc av_frame_new_side_data*(frame: ptr AVFrame; `type`: AVFrameSideDataType;
-                            size: cint): ptr AVFrameSideData
-proc av_frame_new_side_data_from_buf*(frame: ptr AVFrame;
-                                     `type`: AVFrameSideDataType;
-                                     buf: ptr AVBufferRef): ptr AVFrameSideData
-proc av_frame_get_side_data*(frame: ptr AVFrame; `type`: AVFrameSideDataType): ptr AVFrameSideData
-proc av_frame_remove_side_data*(frame: ptr AVFrame; `type`: AVFrameSideDataType)
+
+
 const
   AV_FRAME_CROP_UNALIGNED* = 1 shl 0
 
-proc av_frame_apply_cropping*(frame: ptr AVFrame; flags: cint): cint
-proc av_frame_side_data_name*(`type`: AVFrameSideDataType): cstring
 type
-  AVHWDeviceType* = enum
+  AVHWDeviceType* {.size: sizeof(cint).} = enum
     AV_HWDEVICE_TYPE_NONE, AV_HWDEVICE_TYPE_VDPAU, AV_HWDEVICE_TYPE_CUDA,
     AV_HWDEVICE_TYPE_VAAPI, AV_HWDEVICE_TYPE_DXVA2, AV_HWDEVICE_TYPE_QSV,
     AV_HWDEVICE_TYPE_VIDEOTOOLBOX, AV_HWDEVICE_TYPE_D3D11VA, AV_HWDEVICE_TYPE_DRM,
@@ -3678,11 +3612,7 @@ const
   AV_HWFRAME_MAP_OVERWRITE* = 1 shl 2
   AV_HWFRAME_MAP_DIRECT* = 1 shl 3
 
-proc av_hwframe_map*(dst: ptr AVFrame; src: ptr AVFrame; flags: cint): cint
-proc av_hwframe_ctx_create_derived*(derived_frame_ctx: ptr ptr AVBufferRef;
-                                   format: AVPixelFormat;
-                                   derived_device_ctx: ptr AVBufferRef;
-                                   source_frame_ctx: ptr AVBufferRef; flags: cint): cint
+
 
 
 const
@@ -3692,17 +3622,19 @@ const
 
 
 type
-  AVFieldOrder* = enum
+  AVFieldOrder* {.size: sizeof(cint).} = enum
     AV_FIELD_UNKNOWN, AV_FIELD_PROGRESSIVE, AV_FIELD_TT, ## < Top coded_first, top displayed first
     AV_FIELD_BB,              ## < Bottom coded first, bottom displayed first
     AV_FIELD_TB,              ## < Top coded first, bottom displayed first
     AV_FIELD_BT               ## < Bottom coded first, top displayed first
-  AVSideDataParamChangeFlags* = enum
+
+  AVSideDataParamChangeFlags* {.size: sizeof(cint).} = enum
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT = 0x00000001,
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT = 0x00000002,
     AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE = 0x00000004,
     AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS = 0x00000008
-  AVDiscard* = enum
+
+  AVDiscard* {.size: sizeof(cint).} = enum
     AVDISCARD_NONE = -16,       ## /< discard nothing
     AVDISCARD_DEFAULT = 0,      ## /< discard useless packets like 0 size packets in avi
     AVDISCARD_NONREF = 8,       ## /< discard all non reference
@@ -3710,53 +3642,60 @@ type
     AVDISCARD_NONINTRA = 24,    ## /< discard all non intra frames
     AVDISCARD_NONKEY = 32,      ## /< discard all frames except keyframes
     AVDISCARD_ALL = 48          ## /< discard all
-  AVAudioServiceType* = enum
+
+  AVAudioServiceType* {.size: sizeof(cint).} = enum
     AV_AUDIO_SERVICE_TYPE_MAIN = 0, AV_AUDIO_SERVICE_TYPE_EFFECTS = 1,
     AV_AUDIO_SERVICE_TYPE_VISUALLY_IMPAIRED = 2,
     AV_AUDIO_SERVICE_TYPE_HEARING_IMPAIRED = 3, AV_AUDIO_SERVICE_TYPE_DIALOGUE = 4,
     AV_AUDIO_SERVICE_TYPE_COMMENTARY = 5, AV_AUDIO_SERVICE_TYPE_EMERGENCY = 6,
     AV_AUDIO_SERVICE_TYPE_VOICE_OVER = 7, AV_AUDIO_SERVICE_TYPE_KARAOKE = 8, AV_AUDIO_SERVICE_TYPE_NB ## /< Not part of ABI
-  AVSubtitleType* = enum
+
+  AVSubtitleType* {.size: sizeof(cint).} = enum
     SUBTITLE_NONE, SUBTITLE_BITMAP, ## /< A bitmap, pict will be set
     SUBTITLE_TEXT, SUBTITLE_ASS
-  AVStreamParseType* = enum
+
+  AVStreamParseType* {.size: sizeof(cint).} = enum
     AVSTREAM_PARSE_NONE, AVSTREAM_PARSE_FULL, AVSTREAM_PARSE_HEADERS,
     AVSTREAM_PARSE_TIMESTAMPS, AVSTREAM_PARSE_FULL_ONCE, AVSTREAM_PARSE_FULL_RAW
-  AVIODataMarkerType* = enum
+
+  AVIODataMarkerType* {.size: sizeof(cint).} = enum
     AVIO_DATA_MARKER_HEADER, AVIO_DATA_MARKER_SYNC_POINT,
     AVIO_DATA_MARKER_BOUNDARY_POINT, AVIO_DATA_MARKER_UNKNOWN,
     AVIO_DATA_MARKER_TRAILER, AVIO_DATA_MARKER_FLUSH_POINT
-  AVPictureStructure* = enum
+
+  AVPictureStructure* {.size: sizeof(cint).} = enum
     AV_PICTURE_STRUCTURE_UNKNOWN, ## < unknown
     AV_PICTURE_STRUCTURE_TOP_FIELD, ## < coded as top field
     AV_PICTURE_STRUCTURE_BOTTOM_FIELD, ## < coded as bottom field
     AV_PICTURE_STRUCTURE_FRAME ## < coded as frame
-  AVLockOp* = enum
+
+  AVLockOp* {.size: sizeof(cint).} = enum
     AV_LOCK_CREATE,           ## /< Create a mutex
     AV_LOCK_OBTAIN,           ## /< Lock the mutex
     AV_LOCK_RELEASE,          ## /< Unlock the mutex
     AV_LOCK_DESTROY           ## /< Free mutex resources
-  AVIODirEntryType* = enum
+
+  AVIODirEntryType* {.size: sizeof(cint).} = enum
     AVIO_ENTRY_UNKNOWN, AVIO_ENTRY_BLOCK_DEVICE, AVIO_ENTRY_CHARACTER_DEVICE,
     AVIO_ENTRY_DIRECTORY, AVIO_ENTRY_NAMED_PIPE, AVIO_ENTRY_SYMBOLIC_LINK,
     AVIO_ENTRY_SOCKET, AVIO_ENTRY_FILE, AVIO_ENTRY_SERVER, AVIO_ENTRY_SHARE,
     AVIO_ENTRY_WORKGROUP
 
-  AVDurationEstimationMethod* = enum
+  AVDurationEstimationMethod* {.size: sizeof(cint).} = enum
     AVFMT_DURATION_FROM_PTS,  ## /< Duration accurately estimated from PTSes
     AVFMT_DURATION_FROM_STREAM, ## /< Duration estimated from a stream with a known duration
     AVFMT_DURATION_FROM_BITRATE ## /< Duration estimated from bitrate (less accurate)
 
-  SDL_BlendMode* = enum
+  SDL_BlendMode* {.size: sizeof(cint).} = enum
     SDL_BLENDMODE_NONE = 0x00000000, SDL_BLENDMODE_BLEND = 0x00000001,
     SDL_BLENDMODE_ADD = 0x00000002, SDL_BLENDMODE_MOD = 0x00000004,
     SDL_BLENDMODE_MUL = 0x00000008, SDL_BLENDMODE_INVALID = 0x7FFFFFFF
-  SDL_BlendOperation* = enum
+  SDL_BlendOperation* {.size: sizeof(cint).} = enum
     SDL_BLENDOPERATION_ADD = 0x00000001, SDL_BLENDOPERATION_SUBTRACT = 0x00000002,
     SDL_BLENDOPERATION_REV_SUBTRACT = 0x00000003,
     SDL_BLENDOPERATION_MINIMUM = 0x00000004,
     SDL_BLENDOPERATION_MAXIMUM = 0x00000005
-  SDL_BlendFactor* = enum
+  SDL_BlendFactor* {.size: sizeof(cint).} = enum
     SDL_BLENDFACTOR_ZERO = 0x00000001, SDL_BLENDFACTOR_ONE = 0x00000002,
     SDL_BLENDFACTOR_SRC_COLOR = 0x00000003,
     SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR = 0x00000004,
@@ -3766,6 +3705,7 @@ type
     SDL_BLENDFACTOR_ONE_MINUS_DST_COLOR = 0x00000008,
     SDL_BLENDFACTOR_DST_ALPHA = 0x00000009,
     SDL_BLENDFACTOR_ONE_MINUS_DST_ALPHA = 0x0000000A
+
 type
   AVCodecParameters* {.bycopy.} = object
     codec_type*: AVMediaType
@@ -3797,6 +3737,7 @@ type
     initial_padding*: cint
     trailing_padding*: cint
     seek_preroll*: cint
+
   AVPacketSideData* {.bycopy.} = object
     data*: ptr uint8
     size*: cint
@@ -3813,7 +3754,7 @@ type
     side_data*: ptr AVPacketSideData
     side_data_elems*: cint
     duration*: int64
-    pos*: int64              ## /< byte position in stream, -1 if unknown
+    pos*: int64              
     convergence_duration*: int64
 
   AVPacketList* {.bycopy.} = object
@@ -3878,8 +3819,6 @@ type
     pts*: int64              ## /< Same as packet pts, in AV_TIME_BASE
 
   MpegEncContext* {.bycopy.} = object
-
-
 
 
   AVHWAccel* {.bycopy.} = object
@@ -4657,7 +4596,7 @@ type
     samplerates*: ptr AVFilterFormats
     channel_layouts*: ptr AVFilterChannelLayouts
 
-  AVLINKEnum* = enum
+  AVLINKEnum* {.size: sizeof(cint).} = enum
     AVLINK_UNINIT = 0,          ## /< not started
     AVLINK_STARTINIT,         ## /< started, but incomplete
     AVLINK_INIT               ## /< complete
@@ -4700,7 +4639,7 @@ type
 type
   SDL_TouchID* = int64
   SDL_FingerID* = int64
-  SDL_TouchDeviceType* = enum
+  SDL_TouchDeviceType* {.size: sizeof(cint).} = enum
     SDL_TOUCH_DEVICE_INVALID = -1, SDL_TOUCH_DEVICE_DIRECT,
     SDL_TOUCH_DEVICE_INDIRECT_ABSOLUTE, SDL_TOUCH_DEVICE_INDIRECT_RELATIVE
   SDL_Finger* {.bycopy.} = object
@@ -4711,7 +4650,7 @@ type
 type
   SDL_GestureID* = int64
 type
-  SDL_EventType* = enum
+  SDL_EventType* {.size: sizeof(cint).} = enum
     SDL_FIRSTEVENT = 0, SDL_QUIT_ENUM = 0x00000100, SDL_APP_TERMINATING, SDL_APP_LOWMEMORY,
     SDL_APP_WILLENTERBACKGROUND, SDL_APP_DIDENTERBACKGROUND,
     SDL_APP_WILLENTERFOREGROUND, SDL_APP_DIDENTERFOREGROUND,
@@ -4970,7 +4909,7 @@ type
     timestamp*: uint32
     msg*: ptr SDL_SysWMmsg
 
-  SDL_Event* {.bycopy.} = object {.union.}
+  SDL_Event* {.union.} = object
     `type`*: uint32
     common*: SDL_CommonEvent
     display*: SDL_DisplayEvent
@@ -5001,44 +4940,105 @@ type
     padding*: array[56, uint8]
 
   SDL_compile_time_assert_SDL_Event* = array[(sizeof((SDL_Event)) == 56).int * 2 - 1, cint]
-
-
-proc av_hwdevice_find_type_by_name*(name: cstring): AVHWDeviceType
-proc av_hwdevice_get_type_name*(`type`: AVHWDeviceType): cstring
-proc av_hwdevice_iterate_types*(prev: AVHWDeviceType): AVHWDeviceType
-proc av_hwdevice_ctx_alloc*(`type`: AVHWDeviceType): ptr AVBufferRef
-proc av_hwdevice_ctx_init*(`ref`: ptr AVBufferRef): cint
-proc av_hwdevice_ctx_create*(device_ctx: ptr ptr AVBufferRef; `type`: AVHWDeviceType;
-                            device: cstring; opts: ptr AVDictionary; flags: cint): cint
-proc av_hwdevice_ctx_create_derived*(dst_ctx: ptr ptr AVBufferRef;
-                                    `type`: AVHWDeviceType;
-                                    src_ctx: ptr AVBufferRef; flags: cint): cint
-proc av_hwdevice_ctx_create_derived_opts*(dst_ctx: ptr ptr AVBufferRef;
-    `type`: AVHWDeviceType; src_ctx: ptr AVBufferRef; options: ptr AVDictionary;
-    flags: cint): cint
-proc av_hwframe_ctx_alloc*(device_ctx: ptr AVBufferRef): ptr AVBufferRef
-proc av_hwframe_ctx_init*(`ref`: ptr AVBufferRef): cint
-proc av_hwframe_get_buffer*(hwframe_ctx: ptr AVBufferRef; frame: ptr AVFrame;
-                           flags: cint): cint
-proc av_hwframe_transfer_data*(dst: ptr AVFrame; src: ptr AVFrame; flags: cint): cint
 type
-  AVHWFrameTransferDirection* = enum
+  AVHWFrameTransferDirection* {.size: sizeof(byte).} = enum
     AV_HWFRAME_TRANSFER_DIRECTION_FROM, AV_HWFRAME_TRANSFER_DIRECTION_TO
-
 
 const
   AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX* = 0x00000001
   AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX* = 0x00000002
   AV_CODEC_HW_CONFIG_METHOD_INTERNAL* = 0x00000004
   AV_CODEC_HW_CONFIG_METHOD_AD_HOC* = 0x00000008
+  AV_OPT_FLAG_IMPLICIT_KEY* = 1
+
+proc av_get_channel_layout*(name: cstring): uint64
+proc av_get_extended_channel_layout*(name: cstring; channel_layout: ptr uint64;
+                                    nb_channels: ptr cint): cint
+proc av_get_channel_layout_string*(buf: cstring; buf_size: cint; nb_channels: cint;
+                                  channel_layout: uint64)
+
+proc av_bprint_channel_layout*(bp: ptr AVBPrint; nb_channels: cint;
+                              channel_layout: uint64)
+proc av_get_default_channel_layout*(nb_channels: cint): int64
+proc av_get_channel_layout_channel_index*(channel_layout: uint64;
+    channel: uint64): cint
+proc av_channel_layout_extract_channel*(channel_layout: uint64; index: cint): uint64
+proc av_get_channel_name*(channel: uint64): cstring
+proc av_get_channel_description*(channel: uint64): cstring
+proc av_get_standard_channel_layout*(index: cuint; layout: ptr uint64;name: cstringArray): cint
+proc av_frame_get_best_effort_timestamp*(frame: ptr AVFrame): int64
+proc av_frame_set_best_effort_timestamp*(frame: ptr AVFrame; val: int64)
+proc av_frame_get_pkt_duration*(frame: ptr AVFrame): int64
+proc av_frame_set_pkt_duration*(frame: ptr AVFrame; val: int64)
+proc av_frame_get_pkt_pos*(frame: ptr AVFrame): int64
+proc av_frame_set_pkt_pos*(frame: ptr AVFrame; val: int64)
+proc av_frame_get_channel_layout*(frame: ptr AVFrame): int64
+proc av_frame_set_channel_layout*(frame: ptr AVFrame; val: int64)
+proc av_frame_get_channels*(frame: ptr AVFrame): cint
+proc av_frame_set_channels*(frame: ptr AVFrame; val: cint)
+proc av_frame_get_sample_rate*(frame: ptr AVFrame): cint
+proc av_frame_set_sample_rate*(frame: ptr AVFrame; val: cint)
+proc av_frame_get_metadata*(frame: ptr AVFrame): ptr AVDictionary
+proc av_frame_set_metadata*(frame: ptr AVFrame; val: ptr AVDictionary)
+proc av_frame_get_decode_error_flags*(frame: ptr AVFrame): cint
+proc av_frame_set_decode_error_flags*(frame: ptr AVFrame; val: cint)
+proc av_frame_get_pkt_size*(frame: ptr AVFrame): cint
+proc av_frame_set_pkt_size*(frame: ptr AVFrame; val: cint)
+proc av_frame_get_qp_table*(f: ptr AVFrame; stride: ptr cint; `type`: ptr cint): ptr int8
+proc av_frame_set_qp_table*(f: ptr AVFrame; buf: ptr AVBufferRef; stride: cint;
+                           `type`: cint): cint
+proc av_frame_get_colorspace*(frame: ptr AVFrame): AVColorSpace
+proc av_frame_set_colorspace*(frame: ptr AVFrame; val: AVColorSpace)
+proc av_frame_get_color_range*(frame: ptr AVFrame): AVColorRange
+proc av_frame_set_color_range*(frame: ptr AVFrame; val: AVColorRange)
+proc av_get_colorspace_name*(val: AVColorSpace): cstring
+proc av_frame_alloc*(): ptr AVFrame
+proc av_frame_free*(frame: ptr ptr AVFrame)
+proc av_frame_ref*(dst: ptr AVFrame; src: ptr AVFrame): cint
+proc av_frame_clone*(src: ptr AVFrame): ptr AVFrame
+proc av_frame_unref*(frame: ptr AVFrame)
+proc av_frame_move_ref*(dst: ptr AVFrame; src: ptr AVFrame)
+proc av_frame_get_buffer*(frame: ptr AVFrame; align: cint): cint
+proc av_frame_is_writable*(frame: ptr AVFrame): cint
+proc av_frame_make_writable*(frame: ptr AVFrame): cint
+proc av_frame_copy*(dst: ptr AVFrame; src: ptr AVFrame): cint
+proc av_frame_copy_props*(dst: ptr AVFrame; src: ptr AVFrame): cint
+proc av_frame_get_plane_buffer*(frame: ptr AVFrame; plane: cint): ptr AVBufferRef
+proc av_frame_new_side_data*(frame: ptr AVFrame; `type`: AVFrameSideDataType;
+                            size: cint): ptr AVFrameSideData
+proc av_frame_new_side_data_from_buf*(frame: ptr AVFrame;
+                                     `type`: AVFrameSideDataType;
+                                     buf: ptr AVBufferRef): ptr AVFrameSideData
+proc av_frame_get_side_data*(frame: ptr AVFrame; `type`: AVFrameSideDataType): ptr AVFrameSideData
+proc av_frame_remove_side_data*(frame: ptr AVFrame; `type`: AVFrameSideDataType)
+
+
+proc av_frame_apply_cropping*(frame: ptr AVFrame; flags: cint): cint
+proc av_frame_side_data_name*(`type`: AVFrameSideDataType): cstring
+proc av_hwframe_map*(dst: ptr AVFrame; src: ptr AVFrame; flags: cint): cint
+proc av_hwframe_ctx_create_derived*(derived_frame_ctx: ptr ptr AVBufferRef;
+                                   format: AVPixelFormat;
+                                   derived_device_ctx: ptr AVBufferRef;
+                                   source_frame_ctx: ptr AVBufferRef; flags: cint): cint
+
+proc av_hwdevice_find_type_by_name*(name: cstring): AVHWDeviceType
+proc av_hwdevice_get_type_name*(`type`: AVHWDeviceType): cstring
+proc av_hwdevice_iterate_types*(prev: AVHWDeviceType): AVHWDeviceType
+proc av_hwdevice_ctx_alloc*(`type`: AVHWDeviceType): ptr AVBufferRef
+proc av_hwdevice_ctx_init*(`ref`: ptr AVBufferRef): cint
+proc av_hwdevice_ctx_create*(device_ctx: ptr ptr AVBufferRef; `type`: AVHWDeviceType;device: cstring; opts: ptr AVDictionary; flags: cint): cint
+proc av_hwdevice_ctx_create_derived*(dst_ctx: ptr ptr AVBufferRef;`type`: AVHWDeviceType;src_ctx: ptr AVBufferRef; flags: cint): cint
+proc av_hwdevice_ctx_create_derived_opts*(dst_ctx: ptr ptr AVBufferRef;`type`: AVHWDeviceType; src_ctx: ptr AVBufferRef; options: ptr AVDictionary; flags: cint): cint
+proc av_hwframe_ctx_alloc*(device_ctx: ptr AVBufferRef): ptr AVBufferRef
+proc av_hwframe_ctx_init*(`ref`: ptr AVBufferRef): cint
+proc av_hwframe_get_buffer*(hwframe_ctx: ptr AVBufferRef; frame: ptr AVFrame; flags: cint): cint
+proc av_hwframe_transfer_data*(dst: ptr AVFrame; src: ptr AVFrame; flags: cint): cint
 
 
 proc avcodec_get_hw_config*(codec: ptr AVCodec; index: cint): ptr AVCodecHWConfig
 
 
-proc av_hwframe_transfer_get_formats*(hwframe_ctx: ptr AVBufferRef;
-                                     dir: AVHWFrameTransferDirection;
-                                     formats: ptr ptr AVPixelFormat; flags: cint): cint
+proc av_hwframe_transfer_get_formats*(hwframe_ctx: ptr AVBufferRef; dir: AVHWFrameTransferDirection; formats: ptr ptr AVPixelFormat; flags: cint): cint
 proc av_hwdevice_hwconfig_alloc*(device_ctx: ptr AVBufferRef): pointer
 proc av_hwdevice_get_hwframe_constraints*(`ref`: ptr AVBufferRef; hwconfig: pointer): ptr AVHWFramesConstraints
 proc av_hwframe_constraints_free*(constraints: ptr ptr AVHWFramesConstraints)
@@ -5486,15 +5486,8 @@ proc avformat_queue_attached_pictures*(s: ptr AVFormatContext): cint
 proc av_apply_bitstream_filters*(codec: ptr AVCodecContext; pkt: ptr AVPacket;
                                 bsfc: ptr AVBitStreamFilterContext): cint
 
-proc avformat_transfer_internal_stream_timing_info*(ofmt: ptr AVOutputFormat;
-    ost: ptr AVStream; ist: ptr AVStream; copy_tb: AVTimebaseSource): cint
+proc avformat_transfer_internal_stream_timing_info*(ofmt: ptr AVOutputFormat;ost: ptr AVStream; ist: ptr AVStream; copy_tb: AVTimebaseSource): cint
 proc av_stream_get_codec_timebase*(st: ptr AVStream): AVRational
-
-
-
-
-
-
 
 proc av_opt_show2*(obj: pointer; av_log_obj: pointer; req_flags: cint; rej_flags: cint): cint
 proc av_opt_set_defaults*(s: pointer)
@@ -5507,25 +5500,17 @@ proc av_opt_free*(obj: pointer)
 proc av_opt_flag_is_set*(obj: pointer; field_name: cstring; flag_name: cstring): cint
 proc av_opt_set_dict*(obj: pointer; options: ptr ptr AVDictionary): cint
 proc av_opt_set_dict2*(obj: pointer; options: ptr ptr AVDictionary; search_flags: cint): cint
-proc av_opt_get_key_value*(ropts: cstringArray; key_val_sep: cstring;
-                          pairs_sep: cstring; flags: cuint; rkey: cstringArray;
-                          rval: cstringArray): cint
-const
-  AV_OPT_FLAG_IMPLICIT_KEY* = 1
+proc av_opt_get_key_value*(ropts: cstringArray; key_val_sep: cstring; pairs_sep: cstring; flags: cuint; rkey: cstringArray; rval: cstringArray): cint
+
 
 proc av_opt_eval_flags*(obj: pointer; o: ptr AVOption; val: cstring; flags_out: ptr cint): cint
 proc av_opt_eval_int*(obj: pointer; o: ptr AVOption; val: cstring; int_out: ptr cint): cint
-proc av_opt_eval_int64*(obj: pointer; o: ptr AVOption; val: cstring;
-                       int64_out: ptr int64): cint
-proc av_opt_eval_float*(obj: pointer; o: ptr AVOption; val: cstring;
-                       float_out: ptr cfloat): cint
-proc av_opt_eval_double*(obj: pointer; o: ptr AVOption; val: cstring;
-                        double_out: ptr cdouble): cint
+proc av_opt_eval_int64*(obj: pointer; o: ptr AVOption; val: cstring; int64_out: ptr int64): cint
+proc av_opt_eval_float*(obj: pointer; o: ptr AVOption; val: cstring;float_out: ptr cfloat): cint
+proc av_opt_eval_double*(obj: pointer; o: ptr AVOption; val: cstring;double_out: ptr cdouble): cint
 proc av_opt_eval_q*(obj: pointer; o: ptr AVOption; val: cstring; q_out: ptr AVRational): cint
-proc av_opt_find*(obj: pointer; name: cstring; unit: cstring; opt_flags: cint;
-                 search_flags: cint): ptr AVOption
-proc av_opt_find2*(obj: pointer; name: cstring; unit: cstring; opt_flags: cint;
-                  search_flags: cint; target_obj: ptr pointer): ptr AVOption
+proc av_opt_find*(obj: pointer; name: cstring; unit: cstring; opt_flags: cint; search_flags: cint): ptr AVOption
+proc av_opt_find2*(obj: pointer; name: cstring; unit: cstring; opt_flags: cint; search_flags: cint; target_obj: ptr pointer): ptr AVOption
 proc av_opt_next*(obj: pointer; prev: ptr AVOption): ptr AVOption
 proc av_opt_child_next*(obj: pointer; prev: pointer): pointer
 proc av_opt_child_class_next*(parent: ptr AVClass; prev: ptr AVClass): ptr AVClass
@@ -5534,52 +5519,31 @@ proc av_opt_set*(obj: pointer; name: cstring; val: cstring; search_flags: cint):
 proc av_opt_set_int*(obj: pointer; name: cstring; val: int64; search_flags: cint): cint
 proc av_opt_set_double*(obj: pointer; name: cstring; val: cdouble; search_flags: cint): cint
 proc av_opt_set_q*(obj: pointer; name: cstring; val: AVRational; search_flags: cint): cint
-proc av_opt_set_bin*(obj: pointer; name: cstring; val: ptr uint8; size: cint;
-                    search_flags: cint): cint
-proc av_opt_set_image_size*(obj: pointer; name: cstring; w: cint; h: cint;
-                           search_flags: cint): cint
-proc av_opt_set_pixel_fmt*(obj: pointer; name: cstring; fmt: AVPixelFormat;
-                          search_flags: cint): cint
-proc av_opt_set_sample_fmt*(obj: pointer; name: cstring; fmt: AVSampleFormat;
-                           search_flags: cint): cint
-proc av_opt_set_video_rate*(obj: pointer; name: cstring; val: AVRational;
-                           search_flags: cint): cint
-proc av_opt_set_channel_layout*(obj: pointer; name: cstring; ch_layout: int64;
-                               search_flags: cint): cint
-proc av_opt_set_dict_val*(obj: pointer; name: cstring; val: ptr AVDictionary;
-                         search_flags: cint): cint
-proc av_opt_get*(obj: pointer; name: cstring; search_flags: cint;
-                out_val: ptr ptr uint8): cint
-proc av_opt_get_int*(obj: pointer; name: cstring; search_flags: cint;
-                    out_val: ptr int64): cint
-proc av_opt_get_double*(obj: pointer; name: cstring; search_flags: cint;
-                       out_val: ptr cdouble): cint
-proc av_opt_get_q*(obj: pointer; name: cstring; search_flags: cint;
-                  out_val: ptr AVRational): cint
-proc av_opt_get_image_size*(obj: pointer; name: cstring; search_flags: cint;
-                           w_out: ptr cint; h_out: ptr cint): cint
-proc av_opt_get_pixel_fmt*(obj: pointer; name: cstring; search_flags: cint;
-                          out_fmt: ptr AVPixelFormat): cint
-proc av_opt_get_sample_fmt*(obj: pointer; name: cstring; search_flags: cint;
-                           out_fmt: ptr AVSampleFormat): cint
-proc av_opt_get_video_rate*(obj: pointer; name: cstring; search_flags: cint;
-                           out_val: ptr AVRational): cint
-proc av_opt_get_channel_layout*(obj: pointer; name: cstring; search_flags: cint;
-                               ch_layout: ptr int64): cint
-proc av_opt_get_dict_val*(obj: pointer; name: cstring; search_flags: cint;
-                         out_val: ptr ptr AVDictionary): cint
+proc av_opt_set_bin*(obj: pointer; name: cstring; val: ptr uint8; size: cint; search_flags: cint): cint
+proc av_opt_set_image_size*(obj: pointer; name: cstring; w: cint; h: cint; search_flags: cint): cint
+proc av_opt_set_pixel_fmt*(obj: pointer; name: cstring; fmt: AVPixelFormat; search_flags: cint): cint
+proc av_opt_set_sample_fmt*(obj: pointer; name: cstring; fmt: AVSampleFormat; search_flags: cint): cint
+proc av_opt_set_video_rate*(obj: pointer; name: cstring; val: AVRational; search_flags: cint): cint
+proc av_opt_set_channel_layout*(obj: pointer; name: cstring; ch_layout: int64; search_flags: cint): cint
+proc av_opt_set_dict_val*(obj: pointer; name: cstring; val: ptr AVDictionary; search_flags: cint): cint
+proc av_opt_get*(obj: pointer; name: cstring; search_flags: cint; out_val: ptr ptr uint8): cint
+proc av_opt_get_int*(obj: pointer; name: cstring; search_flags: cint; out_val: ptr int64): cint
+proc av_opt_get_double*(obj: pointer; name: cstring; search_flags: cint; out_val: ptr cdouble): cint
+proc av_opt_get_q*(obj: pointer; name: cstring; search_flags: cint; out_val: ptr AVRational): cint
+proc av_opt_get_image_size*(obj: pointer; name: cstring; search_flags: cint; w_out: ptr cint; h_out: ptr cint): cint
+proc av_opt_get_pixel_fmt*(obj: pointer; name: cstring; search_flags: cint; out_fmt: ptr AVPixelFormat): cint
+proc av_opt_get_sample_fmt*(obj: pointer; name: cstring; search_flags: cint; out_fmt: ptr AVSampleFormat): cint
+proc av_opt_get_video_rate*(obj: pointer; name: cstring; search_flags: cint; out_val: ptr AVRational): cint
+proc av_opt_get_channel_layout*(obj: pointer; name: cstring; search_flags: cint; ch_layout: ptr int64): cint
+proc av_opt_get_dict_val*(obj: pointer; name: cstring; search_flags: cint; out_val: ptr ptr AVDictionary): cint
 proc av_opt_ptr*(avclass: ptr AVClass; obj: pointer; name: cstring): pointer
 proc av_opt_freep_ranges*(ranges: ptr ptr AVOptionRanges)
-proc av_opt_query_ranges*(a1: ptr ptr AVOptionRanges; obj: pointer; key: cstring;
-                         flags: cint): cint
+proc av_opt_query_ranges*(a1: ptr ptr AVOptionRanges; obj: pointer; key: cstring; flags: cint): cint
 proc av_opt_copy*(dest: pointer; src: pointer): cint
-proc av_opt_query_ranges_default*(a1: ptr ptr AVOptionRanges; obj: pointer;
-                                 key: cstring; flags: cint): cint
+proc av_opt_query_ranges_default*(a1: ptr ptr AVOptionRanges; obj: pointer;key: cstring; flags: cint): cint
 proc av_opt_is_set_to_default*(obj: pointer; o: ptr AVOption): cint
-proc av_opt_is_set_to_default_by_name*(obj: pointer; name: cstring;
-                                      search_flags: cint): cint
-proc av_opt_serialize*(obj: pointer; opt_flags: cint; flags: cint;
-                      buffer: cstringArray; key_val_sep: char; pairs_sep: char): cint
+proc av_opt_is_set_to_default_by_name*(obj: pointer; name: cstring; search_flags: cint): cint
+proc av_opt_serialize*(obj: pointer; opt_flags: cint; flags: cint;buffer: cstringArray; key_val_sep: char; pairs_sep: char): cint
 proc avdevice_version*(): cuint
 proc avdevice_configuration*(): cstring
 proc avdevice_license*(): cstring
@@ -5589,26 +5553,12 @@ proc av_input_video_device_next*(d: ptr AVInputFormat): ptr AVInputFormat
 proc av_output_audio_device_next*(d: ptr AVOutputFormat): ptr AVOutputFormat
 proc av_output_video_device_next*(d: ptr AVOutputFormat): ptr AVOutputFormat
 
+proc avdevice_app_to_dev_control_message*(s: ptr AVFormatContext;`type`: AVAppToDevMessageType; data: pointer; data_size: csize_t): cint
+proc avdevice_dev_to_app_control_message*(s: ptr AVFormatContext; `type`: AVDevToAppMessageType; data: pointer; data_size: csize_t): cint
 
 
-
-
-proc avdevice_app_to_dev_control_message*(s: ptr AVFormatContext;
-    `type`: AVAppToDevMessageType; data: pointer; data_size: csize_t): cint
-proc avdevice_dev_to_app_control_message*(s: ptr AVFormatContext;
-    `type`: AVDevToAppMessageType; data: pointer; data_size: csize_t): cint
-
-
-
-var av_device_capabilities*: seq[AVOption]
-
-proc avdevice_capabilities_create*(caps: ptr ptr AVDeviceCapabilitiesQuery;
-                                  s: ptr AVFormatContext;
-                                  device_options: ptr ptr AVDictionary): cint
-proc avdevice_capabilities_free*(caps: ptr ptr AVDeviceCapabilitiesQuery;
-                                s: ptr AVFormatContext)
-
-
+proc avdevice_capabilities_create*(caps: ptr ptr AVDeviceCapabilitiesQuery;s: ptr AVFormatContext; device_options: ptr ptr AVDictionary): cint
+proc avdevice_capabilities_free*(caps: ptr ptr AVDeviceCapabilitiesQuery;s: ptr AVFormatContext)
 
 proc avdevice_list_devices*(s: ptr AVFormatContext;
                            device_list: ptr ptr AVDeviceInfoList): cint
@@ -5623,10 +5573,6 @@ proc swscale_version*(): cuint
 proc swscale_configuration*(): cstring
 proc swscale_license*(): cstring
 proc sws_getCoefficients*(colorspace: cint): ptr cint
-##  when used for filters they must have an odd number of elements
-##  coeffs cannot be shared between vectors
-
-
 
 proc sws_isSupportedInput*(pix_fmt: AVPixelFormat): cint
 proc sws_isSupportedOutput*(pix_fmt: AVPixelFormat): cint
@@ -5671,10 +5617,8 @@ proc sws_getCachedContext*(context: ptr SwsContext; srcW: auto; srcH: auto;
                           dstFormat: auto; flags: auto;
                           srcFilter: ptr SwsFilter; dstFilter: ptr SwsFilter;
                           param: ptr cdouble): ptr SwsContext
-proc sws_convertPalette8ToPacked32*(src: ptr uint8; dst: ptr uint8;
-                                   num_pixels: cint; palette: ptr uint8)
-proc sws_convertPalette8ToPacked24*(src: ptr uint8; dst: ptr uint8;
-                                   num_pixels: cint; palette: ptr uint8)
+proc sws_convertPalette8ToPacked32*(src: ptr uint8; dst: ptr uint8;num_pixels: cint; palette: ptr uint8)
+proc sws_convertPalette8ToPacked24*(src: ptr uint8; dst: ptr uint8; num_pixels: cint; palette: ptr uint8)
 proc sws_get_class*(): ptr AVClass
 type
   FFTSample* = cfloat
@@ -5688,6 +5632,25 @@ type DCTContext = object
 type SwrContext = object
 
 
+
+
+type
+  RDFTransformType* {.size: sizeof(cint).} = enum
+    DFT_R2C, IDFT_C2R, IDFT_R2C, DFT_C2R
+  DCTTransformType* {.size: sizeof(cint).} = enum
+    DCT_II = 0, DCT_III, DCT_I, DST_I
+  SwrDitherType* {.size: sizeof(cint).} = enum
+    SWR_DITHER_NONE = 0, SWR_DITHER_RECTANGULAR, SWR_DITHER_TRIANGULAR,
+    SWR_DITHER_TRIANGULAR_HIGHPASS, SWR_DITHER_NS = 64, ## /< not part of API/ABI
+    SWR_DITHER_NS_LIPSHITZ, SWR_DITHER_NS_F_WEIGHTED,
+    SWR_DITHER_NS_MODIFIED_E_WEIGHTED, SWR_DITHER_NS_IMPROVED_E_WEIGHTED,
+    SWR_DITHER_NS_SHIBATA, SWR_DITHER_NS_LOW_SHIBATA, SWR_DITHER_NS_HIGH_SHIBATA, SWR_DITHER_NB ## /< not part of API/ABI
+  SwrEngine* {.size: sizeof(cint).} = enum
+    SWR_ENGINE_SWR, SWR_ENGINE_SOXR, SWR_ENGINE_NB ## /< not part of API/ABI
+  SwrFilterType* {.size: sizeof(cint).} = enum
+    SWR_FILTER_TYPE_CUBIC, SWR_FILTER_TYPE_BLACKMAN_NUTTALL,
+    SWR_FILTER_TYPE_KAISER
+
 proc av_fft_init*(nbits: cint; inverse: cint): ptr FFTContext
 proc av_fft_permute*(s: ptr FFTContext; z: ptr FFTComplex)
 proc av_fft_calc*(s: ptr FFTContext; z: ptr FFTComplex)
@@ -5697,31 +5660,9 @@ proc av_imdct_calc*(s: ptr FFTContext; output: ptr FFTSample; input: ptr FFTSamp
 proc av_imdct_half*(s: ptr FFTContext; output: ptr FFTSample; input: ptr FFTSample)
 proc av_mdct_calc*(s: ptr FFTContext; output: ptr FFTSample; input: ptr FFTSample)
 proc av_mdct_end*(s: ptr FFTContext)
-
-type
-  RDFTransformType* = enum
-    DFT_R2C, IDFT_C2R, IDFT_R2C, DFT_C2R
-  DCTTransformType* = enum
-    DCT_II = 0, DCT_III, DCT_I, DST_I
-  SwrDitherType* = enum
-    SWR_DITHER_NONE = 0, SWR_DITHER_RECTANGULAR, SWR_DITHER_TRIANGULAR,
-    SWR_DITHER_TRIANGULAR_HIGHPASS, SWR_DITHER_NS = 64, ## /< not part of API/ABI
-    SWR_DITHER_NS_LIPSHITZ, SWR_DITHER_NS_F_WEIGHTED,
-    SWR_DITHER_NS_MODIFIED_E_WEIGHTED, SWR_DITHER_NS_IMPROVED_E_WEIGHTED,
-    SWR_DITHER_NS_SHIBATA, SWR_DITHER_NS_LOW_SHIBATA, SWR_DITHER_NS_HIGH_SHIBATA, SWR_DITHER_NB ## /< not part of API/ABI
-  SwrEngine* = enum
-    SWR_ENGINE_SWR, SWR_ENGINE_SOXR, SWR_ENGINE_NB ## /< not part of API/ABI
-  SwrFilterType* = enum
-    SWR_FILTER_TYPE_CUBIC, SWR_FILTER_TYPE_BLACKMAN_NUTTALL,
-    SWR_FILTER_TYPE_KAISER
-
-
 proc av_rdft_init*(nbits: cint; trans: RDFTransformType): ptr RDFTContext
 proc av_rdft_calc*(s: ptr RDFTContext; data: ptr FFTSample)
 proc av_rdft_end*(s: ptr RDFTContext)
-
-
-
 
 proc av_dct_init*(nbits: cint; `type`: DCTTransformType): ptr DCTContext
 proc av_dct_calc*(s: ptr DCTContext; data: ptr FFTSample)
@@ -5886,9 +5827,9 @@ proc av_buffersrc_add_frame*(ctx: ptr AVFilterContext; frame: ptr AVFrame): cint
 proc av_buffersrc_add_frame_flags*(buffer_src: ptr AVFilterContext;
                                   frame: ptr AVFrame; flags: cint): cint
 proc av_buffersrc_close*(ctx: ptr AVFilterContext; pts: int64; flags: cuint): cint
-proc SDL_GetPlatform*(): cstring
+
 type
-  SDL_bool* = enum
+  SDL_bool* {.size: sizeof(cint).} = enum
     SDL_FALSE = 0, SDL_TRUE = 1
   SDL_compile_time_assert_uint8* = array[(sizeof(uint8) == 1).int * 2 - 1, cint]
   SDL_compile_time_assert_sint8* = array[(sizeof((int8)) == 1).int * 2 - 1, cint]
@@ -5898,43 +5839,11 @@ type
   SDL_compile_time_assert_sint32* = array[(sizeof((int32)) == 4).int * 2 - 1, cint]
   SDL_compile_time_assert_uint64* = array[(sizeof((uint64)) == 8).int * 2 - 1, cint]
   SDL_compile_time_assert_sint64* = array[(sizeof((int64)) == 8).int * 2 - 1, cint]
-  SDL_DUMMY_ENUM* = enum
+  SDL_DUMMY_ENUM* {.size: sizeof(cint).} = enum
     DUMMY_ENUM_VALUE
   # SDL_compile_time_assert_enum* = array[(sizeof(SDL_DUMMY_ENUM) == sizeof(int)).int * 2 - 1, cint]
 
 
-
-proc SDL_malloc*(size: csize_t): pointer
-proc SDL_calloc*(nmemb: csize_t; size: csize_t): pointer
-proc SDL_realloc*(mem: pointer; size: csize_t): pointer
-proc SDL_free*(mem: pointer)
-type
-  SDL_malloc_func* = proc (size: csize_t): pointer
-  SDL_calloc_func* = proc (nmemb: csize_t; size: csize_t): pointer
-  SDL_realloc_func* = proc (mem: pointer; size: csize_t): pointer
-  SDL_free_func* = proc (mem: pointer)
-
-proc SDL_GetMemoryFunctions*(malloc_func: ptr SDL_malloc_func;
-                            calloc_func: ptr SDL_calloc_func;
-                            realloc_func: ptr SDL_realloc_func;
-                            free_func: ptr SDL_free_func)
-proc SDL_SetMemoryFunctions*(malloc_func: SDL_malloc_func;
-                            calloc_func: SDL_calloc_func;
-                            realloc_func: SDL_realloc_func;
-                            free_func: SDL_free_func): cint
-proc SDL_GetNumAllocations*(): cint
-proc SDL_getenv*(name: cstring): cstring
-proc SDL_setenv*(name: cstring; value: cstring; overwrite: cint): cint
-proc SDL_qsort*(base: pointer; nmemb: csize_t; size: csize_t;
-               compare: proc (a1: pointer; a2: pointer): cint)
-proc SDL_abs*(x: cint): cint
-proc SDL_isdigit*(x: cint): cint
-proc SDL_isspace*(x: cint): cint
-proc SDL_isupper*(x: cint): cint
-proc SDL_islower*(x: cint): cint
-proc SDL_toupper*(x: cint): cint
-proc SDL_tolower*(x: cint): cint
-proc SDL_memset*(dst: pointer; c: cint; len: csize_t): pointer
 ##  static inline void SDL_memset4(void *dst, uint32 val, csize_t dwords)
 ##  {
 ##      csize_t _n = (dwords + 3) / 4;
@@ -5958,86 +5867,13 @@ proc SDL_memset*(dst: pointer; c: cint; len: csize_t): pointer
 ##      }
 ##  }
 
-proc SDL_memcpy*(dst: pointer; src: pointer; len: csize_t): pointer
-proc SDL_memmove*(dst: pointer; src: pointer; len: csize_t): pointer
-proc SDL_memcmp*(s1: pointer; s2: pointer; len: csize_t): cint
-proc SDL_wcslen*(wstr: ptr int32): csize_t
-proc SDL_wcslcpy*(dst: ptr int32; src: ptr int32; maxlen: csize_t): csize_t
-proc SDL_wcslcat*(dst: ptr int32; src: ptr int32; maxlen: csize_t): csize_t
-proc SDL_wcsdup*(wstr: ptr int32): ptr int32
-proc SDL_wcsstr*(haystack: ptr int32; needle: ptr int32): ptr int32
-proc SDL_wcscmp*(str1: ptr int32; str2: ptr int32): cint
-proc SDL_wcsncmp*(str1: ptr int32; str2: ptr int32; maxlen: csize_t): cint
-proc SDL_strlen*(str: cstring): csize_t
-proc SDL_strlcpy*(dst: cstring; src: cstring; maxlen: csize_t): csize_t
-proc SDL_utf8strlcpy*(dst: cstring; src: cstring; dst_bytes: csize_t): csize_t
-proc SDL_strlcat*(dst: cstring; src: cstring; maxlen: csize_t): csize_t
-proc SDL_strdup*(str: cstring): cstring
-proc SDL_strrev*(str: cstring): cstring
-proc SDL_strupr*(str: cstring): cstring
-proc SDL_strlwr*(str: cstring): cstring
-proc SDL_strchr*(str: cstring; c: cint): cstring
-proc SDL_strrchr*(str: cstring; c: cint): cstring
-proc SDL_strstr*(haystack: cstring; needle: cstring): cstring
-proc SDL_strtokr*(s1: cstring; s2: cstring; saveptr: cstringArray): cstring
-proc SDL_utf8strlen*(str: cstring): csize_t
-proc SDL_itoa*(value: cint; str: cstring; radix: cint): cstring
-proc SDL_uitoa*(value: cuint; str: cstring; radix: cint): cstring
-proc SDL_ltoa*(value: clong; str: cstring; radix: cint): cstring
-proc SDL_ultoa*(value: culong; str: cstring; radix: cint): cstring
-proc SDL_lltoa*(value: int64; str: cstring; radix: cint): cstring
-proc SDL_ulltoa*(value: uint64; str: cstring; radix: cint): cstring
-proc SDL_atoi*(str: cstring): cint
-proc SDL_atof*(str: cstring): cdouble
-proc SDL_strtol*(str: cstring; endp: cstringArray; base: cint): clong
-proc SDL_strtoul*(str: cstring; endp: cstringArray; base: cint): culong
-proc SDL_strtoll*(str: cstring; endp: cstringArray; base: cint): int64
-proc SDL_strtoull*(str: cstring; endp: cstringArray; base: cint): uint64
-proc SDL_strtod*(str: cstring; endp: cstringArray): cdouble
-proc SDL_strcmp*(str1: cstring; str2: cstring): cint
-proc SDL_strncmp*(str1: cstring; str2: cstring; maxlen: csize_t): cint
-proc SDL_strcasecmp*(str1: cstring; str2: cstring): cint
-proc SDL_strncasecmp*(str1: cstring; str2: cstring; len: csize_t): cint
-proc SDL_sscanf*(text: cstring; fmt: cstring): cint {.varargs.}
-proc SDL_vsscanf*(text: cstring; fmt: cstring; ap: varargs[untyped]): cint
-proc SDL_snprintf*(text: cstring; maxlen: csize_t; fmt: cstring): cint {.varargs.}
-proc SDL_vsnprintf*(text: cstring; maxlen: csize_t; fmt: cstring; ap: varargs[untyped]): cint
-proc SDL_acos*(x: cdouble): cdouble
-proc SDL_acosf*(x: cfloat): cfloat
-proc SDL_asin*(x: cdouble): cdouble
-proc SDL_asinf*(x: cfloat): cfloat
-proc SDL_atan*(x: cdouble): cdouble
-proc SDL_atanf*(x: cfloat): cfloat
-proc SDL_atan2*(x: cdouble; y: cdouble): cdouble
-proc SDL_atan2f*(x: cfloat; y: cfloat): cfloat
-proc SDL_ceil*(x: cdouble): cdouble
-proc SDL_ceilf*(x: cfloat): cfloat
-proc SDL_copysign*(x: cdouble; y: cdouble): cdouble
-proc SDL_copysignf*(x: cfloat; y: cfloat): cfloat
-proc SDL_cos*(x: cdouble): cdouble
-proc SDL_cosf*(x: cfloat): cfloat
-proc SDL_exp*(x: cdouble): cdouble
-proc SDL_expf*(x: cfloat): cfloat
-proc SDL_fabs*(x: cdouble): cdouble
-proc SDL_fabsf*(x: cfloat): cfloat
-proc SDL_floor*(x: cdouble): cdouble
-proc SDL_floorf*(x: cfloat): cfloat
-proc SDL_fmod*(x: cdouble; y: cdouble): cdouble
-proc SDL_fmodf*(x: cfloat; y: cfloat): cfloat
-proc SDL_log*(x: cdouble): cdouble
-proc SDL_logf*(x: cfloat): cfloat
-proc SDL_log10*(x: cdouble): cdouble
-proc SDL_log10f*(x: cfloat): cfloat
-proc SDL_pow*(x: cdouble; y: cdouble): cdouble
-proc SDL_powf*(x: cfloat; y: cfloat): cfloat
-proc SDL_scalbn*(x: cdouble; n: cint): cdouble
-proc SDL_scalbnf*(x: cfloat; n: cint): cfloat
-proc SDL_sin*(x: cdouble): cdouble
-proc SDL_sinf*(x: cfloat): cfloat
-proc SDL_sqrt*(x: cdouble): cdouble
-proc SDL_sqrtf*(x: cfloat): cfloat
-proc SDL_tan*(x: cdouble): cdouble
-proc SDL_tanf*(x: cfloat): cfloat
+type
+  SDL_malloc_func* = proc (size: csize_t): pointer
+  SDL_calloc_func* = proc (nmemb: csize_t; size: csize_t): pointer
+  SDL_realloc_func* = proc (mem: pointer; size: csize_t): pointer
+  SDL_free_func* = proc (mem: pointer)
+
+
 
 # type
 #   SDL_iconv_t* = ptr _SDL_iconv_t
@@ -6046,23 +5882,12 @@ proc SDL_tanf*(x: cfloat): cfloat
 # proc SDL_iconv_close*(cd: SDL_iconv_t): cint
 # proc SDL_iconv*(cd: SDL_iconv_t; inbuf: cstringArray; inbytesleft: ptr csize_t;
 #                outbuf: cstringArray; outbytesleft: ptr csize_t): csize_t
-proc SDL_iconv_string*(tocode: cstring; fromcode: cstring; inbuf: cstring;
-                      inbytesleft: csize_t): cstring
-proc SDL_memcpy4*(dst: pointer; src: pointer; dwords: csize_t): pointer {.inline.} =
-  return SDL_memcpy(dst, src, dwords * 4)
 
 type
   SDL_main_func* = proc (argc: cint; argv: ptr cstring): cint
 
-proc SDL_main*(argc: cint; argv: ptr cstring): cint
-proc SDL_SetMainReady*()
-proc SDL_RegisterApp*(name: cstring; style: uint32; hInst: pointer): cint
-proc SDL_UnregisterApp*()
 
 
-
-
-proc SDL_ReportAssertion*(a1: ptr SDL_AssertData; a2: cstring; a3: cstring; a4: cint): SDL_AssertState
 ##  #define SDL_enabled_assert(condition)                                                                                         \
 ##      do                                                                                                                        \
 ##      {                                                                                                                         \
@@ -6084,46 +5909,23 @@ proc SDL_ReportAssertion*(a1: ptr SDL_AssertData; a2: cstring; a3: cstring; a4: 
 
 type
   SDL_AssertionHandler* = proc (data: ptr SDL_AssertData; userdata: pointer): SDL_AssertState
-
-proc SDL_SetAssertionHandler*(handler: SDL_AssertionHandler; userdata: pointer)
-proc SDL_GetDefaultAssertionHandler*(): SDL_AssertionHandler
-proc SDL_GetAssertionHandler*(puserdata: ptr pointer): SDL_AssertionHandler
-proc SDL_GetAssertionReport*(): ptr SDL_AssertData
-proc SDL_ResetAssertionReport*()
 type
   SDL_SpinLock* = cint
+type
+  SDL_atomic_t* {.bycopy.} = object
+    value*: cint
+type
+  SDL_errorcode* {.size: sizeof(cint).} = enum
+    SDL_ENOMEM, SDL_EFREAD, SDL_EFWRITE, SDL_EFSEEK, SDL_UNSUPPORTED_ERROR, SDL_LASTERROR
 
-proc SDL_AtomicTryLock*(lock: ptr SDL_SpinLock): SDL_bool
-proc SDL_AtomicLock*(lock: ptr SDL_SpinLock)
-proc SDL_AtomicUnlock*(lock: ptr SDL_SpinLock)
+
+
 ##  #define SDL_CompilerBarrier() __asm__ __volatile__("" \
 ##                                                     :  \
 ##                                                     :  \
 ##                                                     : "memory")
 
-proc SDL_MemoryBarrierReleaseFunction*()
-proc SDL_MemoryBarrierAcquireFunction*()
-type
-  SDL_atomic_t* {.bycopy.} = object
-    value*: cint
 
-
-proc SDL_AtomicCAS*(a: ptr SDL_atomic_t; oldval: cint; newval: cint): SDL_bool
-proc SDL_AtomicSet*(a: ptr SDL_atomic_t; v: cint): cint
-proc SDL_AtomicGet*(a: ptr SDL_atomic_t): cint
-proc SDL_AtomicAdd*(a: ptr SDL_atomic_t; v: cint): cint
-proc SDL_AtomicCASPtr*(a: ptr pointer; oldval: pointer; newval: pointer): SDL_bool
-proc SDL_AtomicSetPtr*(a: ptr pointer; v: pointer): pointer
-proc SDL_AtomicGetPtr*(a: ptr pointer): pointer
-proc SDL_SetError*(fmt: cstring): cint {.varargs.}
-proc SDL_GetError*(): cstring
-proc SDL_ClearError*()
-type
-  SDL_errorcode* = enum
-    SDL_ENOMEM, SDL_EFREAD, SDL_EFWRITE, SDL_EFSEEK, SDL_UNSUPPORTED_ERROR, SDL_LASTERROR
-
-
-proc SDL_Error*(code: SDL_errorcode): cint
 ##  static inline uint16
 ##  SDL_Swap16(uint16 x)
 ##  {
@@ -6173,33 +5975,30 @@ type
   SDL_mutex* {.bycopy.} = object
 
 
-
-
-
 type
-  INNER_C_STRUCT_playground_6684* {.bycopy.} = object
+  SDL_RWopsHiddenUnionWindowioBuffer* {.bycopy.} = object
     data*: pointer
     size*: csize_t
     left*: csize_t
 
-  INNER_C_STRUCT_playground_6680* {.bycopy.} = object
+  SDL_RWopsHiddenUnionWindowio* {.bycopy.} = object
     append*: SDL_bool
     h*: pointer
-    buffer*: INNER_C_STRUCT_playground_6684
+    buffer*: SDL_RWopsHiddenUnionWindowioBuffer
 
-  INNER_C_STRUCT_playground_6691* {.bycopy.} = object
+  SDL_RWopsHiddenUnionMem* {.bycopy.} = object
     base*: ptr uint8
     here*: ptr uint8
     stop*: ptr uint8
 
-  INNER_C_STRUCT_playground_6697* {.bycopy.} = object
+  SDL_RWopsHiddenUnionUnknown* {.bycopy.} = object
     data1*: pointer
     data2*: pointer
 
-  INNER_C_UNION_playground_6678* {.bycopy.} = object {.union.}
-    windowsio*: INNER_C_STRUCT_playground_6680
-    mem*: INNER_C_STRUCT_playground_6691
-    unknown*: INNER_C_STRUCT_playground_6697
+  SDL_RWopsHiddenUnion* {.bycopy.} = object {.union.}
+    windowsio*: SDL_RWopsHiddenUnionWindowio
+    mem*: SDL_RWopsHiddenUnionMem
+    unknown*: SDL_RWopsHiddenUnionUnknown
 
   SDL_RWops* {.bycopy.} = object
     size*: proc (context: ptr SDL_RWops): int64
@@ -6208,13 +6007,13 @@ type
     write*: proc (context: ptr SDL_RWops; `ptr`: pointer; size: csize_t; num: csize_t): csize_t
     close*: proc (context: ptr SDL_RWops): cint
     `type`*: uint32
-    hidden*: INNER_C_UNION_playground_6678
+    hidden*: SDL_RWopsHiddenUnion
 
+type SDL_AudioCallback* = proc (userdata: pointer; stream: ptr uint8; len: cint) {.cdecl.}
 
 
 type
   SDL_AudioFormat* = uint16
-  SDL_AudioCallback* = proc (userdata: pointer; stream: ptr uint8; len: cint)
   SDL_AudioSpec* {.bycopy.} = object
     freq*: cint
     format*: SDL_AudioFormat
@@ -6242,7 +6041,7 @@ type
   SDL_AudioFilter* = proc (cvt: ptr SDL_AudioCVT; format: SDL_AudioFormat)
   SDL_AudioDeviceID* = uint32
 
-  SDL_AudioStatus* = enum
+  SDL_AudioStatus* {.size: sizeof(cint).} = enum
     SDL_AUDIO_STOPPED = 0, SDL_AUDIO_PLAYING, SDL_AUDIO_PAUSED
   SDL_AudioStream* {.bycopy.} = object
 
@@ -6266,7 +6065,8 @@ type
     w: cfloat
     h: cfloat
 
-  SDL_BlitMap = object
+  SDL_BlitMap* {.bycopy.} = object
+
   SDL_Surface* {.bycopy.} = object
     flags*: uint32
     format*: ptr SDL_PixelFormat
@@ -6282,7 +6082,8 @@ type
     refcount*: cint
 
   SDL_blit* = proc (src: ptr SDL_Surface; srcrect: ptr SDL_Rect; dst: ptr SDL_Surface; dstrect: ptr SDL_Rect): cint
-  SDL_YUV_CONVERSION_MODE* = enum
+
+  SDL_YUV_CONVERSION_MODE* {.size: sizeof(cint).} = enum
     SDL_YUV_CONVERSION_JPEG, SDL_YUV_CONVERSION_BT601, SDL_YUV_CONVERSION_BT709,
     SDL_YUV_CONVERSION_AUTOMATIC
 
@@ -6294,13 +6095,13 @@ type
     refresh_rate*: cint
     driverdata*: pointer
 type
-  SDL_SystemCursor* = enum
+  SDL_SystemCursor* {.size: sizeof(cint).} = enum
     SDL_SYSTEM_CURSOR_ARROW, SDL_SYSTEM_CURSOR_IBEAM, SDL_SYSTEM_CURSOR_WAIT,
     SDL_SYSTEM_CURSOR_CROSSHAIR, SDL_SYSTEM_CURSOR_WAITARROW,
     SDL_SYSTEM_CURSOR_SIZENWSE, SDL_SYSTEM_CURSOR_SIZENESW,
     SDL_SYSTEM_CURSOR_SIZEWE, SDL_SYSTEM_CURSOR_SIZENS, SDL_SYSTEM_CURSOR_SIZEALL,
     SDL_SYSTEM_CURSOR_NO, SDL_SYSTEM_CURSOR_HAND, SDL_NUM_SYSTEM_CURSORS
-  SDL_MouseWheelDirection* = enum
+  SDL_MouseWheelDirection* {.size: sizeof(cint).} = enum
     SDL_MOUSEWHEEL_NORMAL, SDL_MOUSEWHEEL_FLIPPED
 
   SDL_Joystick* {.bycopy.} = object
@@ -6308,13 +6109,13 @@ type
   SDL_JoystickGUID* {.bycopy.} = object
     data*: array[16, uint8]
 
-  SDL_JoystickType* = enum
+  SDL_JoystickType* {.size: sizeof(cint).} = enum
     SDL_JOYSTICK_TYPE_UNKNOWN, SDL_JOYSTICK_TYPE_GAMECONTROLLER,
     SDL_JOYSTICK_TYPE_WHEEL, SDL_JOYSTICK_TYPE_ARCADE_STICK,
     SDL_JOYSTICK_TYPE_FLIGHT_STICK, SDL_JOYSTICK_TYPE_DANCE_PAD,
     SDL_JOYSTICK_TYPE_GUITAR, SDL_JOYSTICK_TYPE_DRUM_KIT,
     SDL_JOYSTICK_TYPE_ARCADE_PAD, SDL_JOYSTICK_TYPE_THROTTLE
-  SDL_JoystickPowerLevel* = enum
+  SDL_JoystickPowerLevel* {.size: sizeof(cint).} = enum
     SDL_JOYSTICK_POWER_UNKNOWN = -1, SDL_JOYSTICK_POWER_EMPTY,
     SDL_JOYSTICK_POWER_LOW, SDL_JOYSTICK_POWER_MEDIUM, SDL_JOYSTICK_POWER_FULL,
     SDL_JOYSTICK_POWER_WIRED, SDL_JOYSTICK_POWER_MAX
@@ -6329,11 +6130,11 @@ type
     axis*: cint
     hat*: INNER_C_STRUCT_playground_8495
 
-  SDL_GameControllerType* = enum
+  SDL_GameControllerType* {.size: sizeof(cint).} = enum
     SDL_CONTROLLER_TYPE_UNKNOWN = 0, SDL_CONTROLLER_TYPE_XBOX360,
     SDL_CONTROLLER_TYPE_XBOXONE, SDL_CONTROLLER_TYPE_PS3, SDL_CONTROLLER_TYPE_PS4,
     SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO
-  SDL_GameControllerBindType* = enum
+  SDL_GameControllerBindType* {.size: sizeof(cint).} = enum
     SDL_CONTROLLER_BINDTYPE_NONE = 0, SDL_CONTROLLER_BINDTYPE_BUTTON,
     SDL_CONTROLLER_BINDTYPE_AXIS, SDL_CONTROLLER_BINDTYPE_HAT
   SDL_GameControllerButtonBind* {.bycopy.} = object
@@ -6341,7 +6142,7 @@ type
     value*: INNER_C_UNION_playground_8491
   SDL_Cursor = object
   SDL_Window = object
-  SDL_WindowFlags* = enum
+  SDL_WindowFlags* {.size: sizeof(cint).} = enum
     SDL_WINDOW_FULLSCREEN = 0x00000001, SDL_WINDOW_OPENGL = 0x00000002,
     SDL_WINDOW_SHOWN = 0x00000004, SDL_WINDOW_HIDDEN = 0x00000008,
     SDL_WINDOW_BORDERLESS = 0x00000010, SDL_WINDOW_RESIZABLE = 0x00000020,
@@ -6355,7 +6156,7 @@ type
     SDL_WINDOW_SKIP_TASKBAR = 0x00010000, SDL_WINDOW_UTILITY = 0x00020000,
     SDL_WINDOW_TOOLTIP = 0x00040000, SDL_WINDOW_POPUP_MENU = 0x00080000,
     SDL_WINDOW_VULKAN = 0x10000000
-  SDL_WindowEventID* = enum
+  SDL_WindowEventID* {.size: sizeof(cint).} = enum
     SDL_WINDOWEVENT_NONE, SDL_WINDOWEVENT_SHOWN, SDL_WINDOWEVENT_HIDDEN,
     SDL_WINDOWEVENT_EXPOSED, SDL_WINDOWEVENT_MOVED, SDL_WINDOWEVENT_RESIZED,
     SDL_WINDOWEVENT_SIZE_CHANGED, SDL_WINDOWEVENT_MINIMIZED,
@@ -6363,14 +6164,14 @@ type
     SDL_WINDOWEVENT_LEAVE, SDL_WINDOWEVENT_FOCUS_GAINED,
     SDL_WINDOWEVENT_FOCUS_LOST, SDL_WINDOWEVENT_CLOSE, SDL_WINDOWEVENT_TAKE_FOCUS,
     SDL_WINDOWEVENT_HIT_TEST
-  SDL_DisplayEventID* = enum
+  SDL_DisplayEventID* {.size: sizeof(cint).} = enum
     SDL_DISPLAYEVENT_NONE, SDL_DISPLAYEVENT_ORIENTATION
-  SDL_DisplayOrientation* = enum
+  SDL_DisplayOrientation* {.size: sizeof(cint).} = enum
     SDL_ORIENTATION_UNKNOWN, SDL_ORIENTATION_LANDSCAPE,
     SDL_ORIENTATION_LANDSCAPE_FLIPPED, SDL_ORIENTATION_PORTRAIT,
     SDL_ORIENTATION_PORTRAIT_FLIPPED
   SDL_GLContext* = pointer
-  SDL_GLattr* = enum
+  SDL_GLattr* {.size: sizeof(cint).} = enum
     SDL_GL_RED_SIZE, SDL_GL_GREEN_SIZE, SDL_GL_BLUE_SIZE, SDL_GL_ALPHA_SIZE,
     SDL_GL_BUFFER_SIZE, SDL_GL_DOUBLEBUFFER, SDL_GL_DEPTH_SIZE,
     SDL_GL_STENCIL_SIZE, SDL_GL_ACCUM_RED_SIZE, SDL_GL_ACCUM_GREEN_SIZE,
@@ -6382,29 +6183,29 @@ type
     SDL_GL_SHARE_WITH_CURRENT_CONTEXT, SDL_GL_FRAMEBUFFER_SRGB_CAPABLE,
     SDL_GL_CONTEXT_RELEASE_BEHAVIOR, SDL_GL_CONTEXT_RESET_NOTIFICATION,
     SDL_GL_CONTEXT_NO_ERROR
-  SDL_GLprofile* = enum
+  SDL_GLprofile* {.size: sizeof(cint).} = enum
     SDL_GL_CONTEXT_PROFILE_CORE = 0x00000001,
     SDL_GL_CONTEXT_PROFILE_COMPATIBILITY = 0x00000002,
     SDL_GL_CONTEXT_PROFILE_ES = 0x00000004
-  SDL_GLcontextFlag* = enum
+  SDL_GLcontextFlag* {.size: sizeof(cint).} = enum
     SDL_GL_CONTEXT_DEBUG_FLAG = 0x00000001,
     SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG = 0x00000002,
     SDL_GL_CONTEXT_ROBUST_ACCESS_FLAG = 0x00000004,
     SDL_GL_CONTEXT_RESET_ISOLATION_FLAG = 0x00000008
-  SDL_GLcontextReleaseFlag* = enum
+  SDL_GLcontextReleaseFlag* {.size: sizeof(cint).} = enum
     SDL_GL_CONTEXT_RELEASE_BEHAVIOR_NONE = 0x00000000,
     SDL_GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH = 0x00000001
-  # SDL_GLContextResetNotification* = enum
+  # SDL_GLContextResetNotification* {.size: sizeof(cint).} = enum
   #   SDL_GL_CONTEXT_RESET_NO_NOTIFICATION = 0x00000000,
   #   SDL_GL_CONTEXT_RESET_LOSE_CONTEXT = 0x00000001
 type
-  SDL_GameControllerAxis* = enum
+  SDL_GameControllerAxis* {.size: sizeof(cint).} = enum
     SDL_CONTROLLER_AXIS_INVALID = -1, SDL_CONTROLLER_AXIS_LEFTX,
     SDL_CONTROLLER_AXIS_LEFTY, SDL_CONTROLLER_AXIS_RIGHTX,
     SDL_CONTROLLER_AXIS_RIGHTY, SDL_CONTROLLER_AXIS_TRIGGERLEFT,
     SDL_CONTROLLER_AXIS_TRIGGERRIGHT, SDL_CONTROLLER_AXIS_MAX
 type
-  SDL_GameControllerButton* = enum
+  SDL_GameControllerButton* {.size: sizeof(cint).} = enum
     SDL_CONTROLLER_BUTTON_INVALID = -1, SDL_CONTROLLER_BUTTON_A,
     SDL_CONTROLLER_BUTTON_B, SDL_CONTROLLER_BUTTON_X, SDL_CONTROLLER_BUTTON_Y,
     SDL_CONTROLLER_BUTTON_BACK, SDL_CONTROLLER_BUTTON_GUIDE,
@@ -6416,7 +6217,7 @@ type
 
 
 type
-  SDL_HitTestResult* = enum
+  SDL_HitTestResult* {.size: sizeof(cint).} = enum
     SDL_HITTEST_NORMAL, SDL_HITTEST_DRAGGABLE, SDL_HITTEST_RESIZE_TOPLEFT,
     SDL_HITTEST_RESIZE_TOP, SDL_HITTEST_RESIZE_TOPRIGHT, SDL_HITTEST_RESIZE_RIGHT,
     SDL_HITTEST_RESIZE_BOTTOMRIGHT, SDL_HITTEST_RESIZE_BOTTOM,
@@ -6444,7 +6245,7 @@ proc SDL_RectEquals*(a: ptr SDL_Rect; b: ptr SDL_Rect): SDL_bool {.inline.} =
 
 
 type
-  SDL_eventaction* = enum
+  SDL_eventaction* {.size: sizeof(cint).} = enum
     SDL_ADDEVENT, SDL_PEEKEVENT, SDL_GETEVENT
 
 
@@ -6551,13 +6352,13 @@ type
 
 
 type
-  SDL_HintPriority* = enum
+  SDL_HintPriority* {.size: sizeof(cint).} = enum
     SDL_HINT_DEFAULT, SDL_HINT_NORMAL, SDL_HINT_OVERRIDE
 
 
 
 type
-  SDL_LogCategory* = enum
+  SDL_LogCategory* {.size: sizeof(cint).} = enum
     SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_CATEGORY_ERROR, SDL_LOG_CATEGORY_ASSERT,
     SDL_LOG_CATEGORY_SYSTEM, SDL_LOG_CATEGORY_AUDIO, SDL_LOG_CATEGORY_VIDEO,
     SDL_LOG_CATEGORY_RENDER, SDL_LOG_CATEGORY_INPUT, SDL_LOG_CATEGORY_TEST,
@@ -6567,17 +6368,17 @@ type
     SDL_LOG_CATEGORY_RESERVED7, SDL_LOG_CATEGORY_RESERVED8,
     SDL_LOG_CATEGORY_RESERVED9, SDL_LOG_CATEGORY_RESERVED10,
     SDL_LOG_CATEGORY_CUSTOM
-  SDL_LogPriority* = enum
+  SDL_LogPriority* {.size: sizeof(cint).} = enum
     SDL_LOG_PRIORITY_VERBOSE = 1, SDL_LOG_PRIORITY_DEBUG, SDL_LOG_PRIORITY_INFO,
     SDL_LOG_PRIORITY_WARN, SDL_LOG_PRIORITY_ERROR, SDL_LOG_PRIORITY_CRITICAL,
     SDL_NUM_LOG_PRIORITIES
 type
-  SDL_MessageBoxFlags* = enum
+  SDL_MessageBoxFlags* {.size: sizeof(cint).} = enum
     SDL_MESSAGEBOX_ERROR = 0x00000010, SDL_MESSAGEBOX_WARNING = 0x00000020,
     SDL_MESSAGEBOX_INFORMATION = 0x00000040,
     SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT = 0x00000080,
     SDL_MESSAGEBOX_BUTTONS_RIGHT_TO_LEFT = 0x00000100
-  SDL_MessageBoxButtonFlags* = enum
+  SDL_MessageBoxButtonFlags* {.size: sizeof(cint).} = enum
     SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT = 0x00000001,
     SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT = 0x00000002
   SDL_MessageBoxButtonData* {.bycopy.} = object
@@ -6590,7 +6391,7 @@ type
     g*: uint8
     b*: uint8
 
-  SDL_MessageBoxColorType* = enum
+  SDL_MessageBoxColorType* {.size: sizeof(cint).} = enum
     SDL_MESSAGEBOX_COLOR_BACKGROUND, SDL_MESSAGEBOX_COLOR_TEXT,
     SDL_MESSAGEBOX_COLOR_BUTTON_BORDER, SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND,
     SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED, SDL_MESSAGEBOX_COLOR_MAX
@@ -6609,15 +6410,16 @@ type
 type
   SDL_MetalView* = pointer
 type
-  SDL_PowerState* = enum
+  SDL_PowerState* {.size: sizeof(cint).} = enum
     SDL_POWERSTATE_UNKNOWN, SDL_POWERSTATE_ON_BATTERY, SDL_POWERSTATE_NO_BATTERY,
     SDL_POWERSTATE_CHARGING, SDL_POWERSTATE_CHARGED
 
 
 type
-  SDL_RendererFlags* = enum
+  SDL_RendererFlags* {.size: sizeof(cint).} = enum
     SDL_RENDERER_SOFTWARE = 0x00000001, SDL_RENDERER_ACCELERATED = 0x00000002,
     SDL_RENDERER_PRESENTVSYNC = 0x00000004, SDL_RENDERER_TARGETTEXTURE = 0x00000008
+    
   SDL_RendererInfo* {.bycopy.} = object
     name*: cstring
     flags*: uint32
@@ -6626,47 +6428,49 @@ type
     max_texture_width*: cint
     max_texture_height*: cint
 
-  SDL_ScaleMode* = enum
+  SDL_ScaleMode* {.size: sizeof(cint).} = enum
     SDL_ScaleModeNearest, SDL_ScaleModeLinear, SDL_ScaleModeBest
-  SDL_TextureAccess* = enum
+  SDL_TextureAccess* {.size: sizeof(cint).} = enum
     SDL_TEXTUREACCESS_STATIC, SDL_TEXTUREACCESS_STREAMING,
     SDL_TEXTUREACCESS_TARGET
-  SDL_TextureModulate* = enum
+  SDL_TextureModulate* {.size: sizeof(cint).} = enum
     SDL_TEXTUREMODULATE_NONE = 0x00000000, SDL_TEXTUREMODULATE_COLOR = 0x00000001,
     SDL_TEXTUREMODULATE_ALPHA = 0x00000002
-  SDL_RendererFlip* = enum
+  SDL_RendererFlip* {.size: sizeof(cint).} = enum
     SDL_FLIP_NONE = 0x00000000, SDL_FLIP_HORIZONTAL = 0x00000001,
     SDL_FLIP_VERTICAL = 0x00000002
 
 
 type
-  SDL_Renderer* {.bycopy.} = object
+  SDL_Renderer* {.bycopy,importc.} = object
 
-  SDL_Texture* {.bycopy.} = object
+  SDL_Texture* {.bycopy,importc.} = object
 
 type
   SDL_SensorID* = int32
-  SDL_SensorType* = enum
+  SDL_SensorType* {.size: sizeof(cint).} = enum
     SDL_SENSOR_INVALID = -1, SDL_SENSOR_UNKNOWN, SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO
-  ShowMode* = enum
+  ShowMode* {.size: sizeof(cint).} = enum
     SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT,
     SHOW_MODE_NB
-  WindowShapeMode* = enum
+  WindowShapeMode* {.size: sizeof(cint).} = enum
     ShapeModeDefault, ShapeModeBinarizeAlpha, ShapeModeReverseBinarizeAlpha,
     ShapeModeColorKey
-  SDL_WindowShapeParams* {.bycopy.} = object {.union.}
+
+  SDL_WindowShapeParams* {.union.} = object
     binarizationCutoff*: uint8
     colorKey*: SDL_Color
 
   SDL_WindowShapeMode* {.bycopy.} = object
     mode*: WindowShapeMode
     parameters*: SDL_WindowShapeParams
+
   SDL_version* {.bycopy.} = object
     major*: uint8
     minor*: uint8
     patch*: uint8
 
-  INNER_C_UNION_playground_9879* {.bycopy.} = object {.union.}
+  SpecifierOptUnion* {.union.} = object 
     str*: ptr uint8
     i*: cint
     i64*: int64
@@ -6676,7 +6480,7 @@ type
 
   SpecifierOpt* {.bycopy.} = object
     specifier*: cstring
-    u*: INNER_C_UNION_playground_9879
+    u*: SpecifierOptUnion
 
   OptionDefUnion* {.union.} = object 
     dst_ptr*: pointer
@@ -6735,8 +6539,143 @@ type
   SDL_LogOutputFunction* = proc (userdata: pointer; category: cint;
                               priority: SDL_LogPriority; message: cstring)
 
+type
+  SDL_HintCallback* = proc (userdata: pointer; name: cstring; oldValue: cstring; newValue: cstring)
 
 {.push importc, dynlib: LibName, discardable.}
+proc SDL_GetPlatform*(): cstring
+proc SDL_malloc*(size: csize_t): pointer
+proc SDL_calloc*(nmemb: csize_t; size: csize_t): pointer
+proc SDL_realloc*(mem: pointer; size: csize_t): pointer
+proc SDL_free*(mem: pointer)
+proc SDL_GetMemoryFunctions*(malloc_func: ptr SDL_malloc_func;
+                            calloc_func: ptr SDL_calloc_func;
+                            realloc_func: ptr SDL_realloc_func;
+                            free_func: ptr SDL_free_func)
+proc SDL_SetMemoryFunctions*(malloc_func: SDL_malloc_func;
+                            calloc_func: SDL_calloc_func;
+                            realloc_func: SDL_realloc_func;
+                            free_func: SDL_free_func): cint
+proc SDL_GetNumAllocations*(): cint
+proc SDL_getenv*(name: cstring): cstring
+proc SDL_setenv*(name: cstring; value: cstring; overwrite: cint): cint
+proc SDL_qsort*(base: pointer; nmemb: csize_t; size: csize_t;
+               compare: proc (a1: pointer; a2: pointer): cint)
+proc SDL_abs*(x: cint): cint
+proc SDL_isdigit*(x: cint): cint
+proc SDL_isspace*(x: cint): cint
+proc SDL_isupper*(x: cint): cint
+proc SDL_islower*(x: cint): cint
+proc SDL_toupper*(x: cint): cint
+proc SDL_tolower*(x: cint): cint
+proc SDL_memset*(dst: pointer; c: cint; len: csize_t): pointer
+proc SDL_memcpy*(dst: pointer; src: pointer; len: csize_t): pointer
+proc SDL_memmove*(dst: pointer; src: pointer; len: csize_t): pointer
+proc SDL_memcmp*(s1: pointer; s2: pointer; len: csize_t): cint
+proc SDL_wcslen*(wstr: ptr int32): csize_t
+proc SDL_wcslcpy*(dst: ptr int32; src: ptr int32; maxlen: csize_t): csize_t
+proc SDL_wcslcat*(dst: ptr int32; src: ptr int32; maxlen: csize_t): csize_t
+proc SDL_wcsdup*(wstr: ptr int32): ptr int32
+proc SDL_wcsstr*(haystack: ptr int32; needle: ptr int32): ptr int32
+proc SDL_wcscmp*(str1: ptr int32; str2: ptr int32): cint
+proc SDL_wcsncmp*(str1: ptr int32; str2: ptr int32; maxlen: csize_t): cint
+proc SDL_strlen*(str: cstring): csize_t
+proc SDL_strlcpy*(dst: cstring; src: cstring; maxlen: csize_t): csize_t
+proc SDL_utf8strlcpy*(dst: cstring; src: cstring; dst_bytes: csize_t): csize_t
+proc SDL_strlcat*(dst: cstring; src: cstring; maxlen: csize_t): csize_t
+proc SDL_strdup*(str: cstring): cstring
+proc SDL_strrev*(str: cstring): cstring
+proc SDL_strupr*(str: cstring): cstring
+proc SDL_strlwr*(str: cstring): cstring
+proc SDL_strchr*(str: cstring; c: cint): cstring
+proc SDL_strrchr*(str: cstring; c: cint): cstring
+proc SDL_strstr*(haystack: cstring; needle: cstring): cstring
+proc SDL_strtokr*(s1: cstring; s2: cstring; saveptr: cstringArray): cstring
+proc SDL_utf8strlen*(str: cstring): csize_t
+proc SDL_itoa*(value: cint; str: cstring; radix: cint): cstring
+proc SDL_uitoa*(value: cuint; str: cstring; radix: cint): cstring
+proc SDL_ltoa*(value: clong; str: cstring; radix: cint): cstring
+proc SDL_ultoa*(value: culong; str: cstring; radix: cint): cstring
+proc SDL_lltoa*(value: int64; str: cstring; radix: cint): cstring
+proc SDL_ulltoa*(value: uint64; str: cstring; radix: cint): cstring
+proc SDL_atoi*(str: cstring): cint
+proc SDL_atof*(str: cstring): cdouble
+proc SDL_strtol*(str: cstring; endp: cstringArray; base: cint): clong
+proc SDL_strtoul*(str: cstring; endp: cstringArray; base: cint): culong
+proc SDL_strtoll*(str: cstring; endp: cstringArray; base: cint): int64
+proc SDL_strtoull*(str: cstring; endp: cstringArray; base: cint): uint64
+proc SDL_strtod*(str: cstring; endp: cstringArray): cdouble
+proc SDL_strcmp*(str1: cstring; str2: cstring): cint
+proc SDL_strncmp*(str1: cstring; str2: cstring; maxlen: csize_t): cint
+proc SDL_strcasecmp*(str1: cstring; str2: cstring): cint
+proc SDL_strncasecmp*(str1: cstring; str2: cstring; len: csize_t): cint
+proc SDL_sscanf*(text: cstring; fmt: cstring): cint {.varargs.}
+proc SDL_vsscanf*(text: cstring; fmt: cstring; ap: varargs[untyped]): cint
+proc SDL_snprintf*(text: cstring; maxlen: csize_t; fmt: cstring): cint {.varargs.}
+proc SDL_vsnprintf*(text: cstring; maxlen: csize_t; fmt: cstring; ap: varargs[untyped]): cint
+proc SDL_acos*(x: cdouble): cdouble
+proc SDL_acosf*(x: cfloat): cfloat
+proc SDL_asin*(x: cdouble): cdouble
+proc SDL_asinf*(x: cfloat): cfloat
+proc SDL_atan*(x: cdouble): cdouble
+proc SDL_atanf*(x: cfloat): cfloat
+proc SDL_atan2*(x: cdouble; y: cdouble): cdouble
+proc SDL_atan2f*(x: cfloat; y: cfloat): cfloat
+proc SDL_ceil*(x: cdouble): cdouble
+proc SDL_ceilf*(x: cfloat): cfloat
+proc SDL_copysign*(x: cdouble; y: cdouble): cdouble
+proc SDL_copysignf*(x: cfloat; y: cfloat): cfloat
+proc SDL_cos*(x: cdouble): cdouble
+proc SDL_cosf*(x: cfloat): cfloat
+proc SDL_exp*(x: cdouble): cdouble
+proc SDL_expf*(x: cfloat): cfloat
+proc SDL_fabs*(x: cdouble): cdouble
+proc SDL_fabsf*(x: cfloat): cfloat
+proc SDL_floor*(x: cdouble): cdouble
+proc SDL_floorf*(x: cfloat): cfloat
+proc SDL_fmod*(x: cdouble; y: cdouble): cdouble
+proc SDL_fmodf*(x: cfloat; y: cfloat): cfloat
+proc SDL_log*(x: cdouble): cdouble
+proc SDL_logf*(x: cfloat): cfloat
+proc SDL_log10*(x: cdouble): cdouble
+proc SDL_log10f*(x: cfloat): cfloat
+proc SDL_pow*(x: cdouble; y: cdouble): cdouble
+proc SDL_powf*(x: cfloat; y: cfloat): cfloat
+proc SDL_scalbn*(x: cdouble; n: cint): cdouble
+proc SDL_scalbnf*(x: cfloat; n: cint): cfloat
+proc SDL_sin*(x: cdouble): cdouble
+proc SDL_sinf*(x: cfloat): cfloat
+proc SDL_sqrt*(x: cdouble): cdouble
+proc SDL_sqrtf*(x: cfloat): cfloat
+proc SDL_tan*(x: cdouble): cdouble
+proc SDL_tanf*(x: cfloat): cfloat
+proc SDL_iconv_string*(tocode: cstring; fromcode: cstring; inbuf: cstring;inbytesleft: csize_t): cstring
+proc SDL_main*(argc: cint; argv: ptr cstring): cint
+proc SDL_SetMainReady*()
+proc SDL_RegisterApp*(name: cstring; style: uint32; hInst: pointer): cint
+proc SDL_UnregisterApp*()
+proc SDL_ReportAssertion*(a1: ptr SDL_AssertData; a2: cstring; a3: cstring; a4: cint): SDL_AssertState
+proc SDL_AtomicTryLock*(lock: ptr SDL_SpinLock): SDL_bool
+proc SDL_SetAssertionHandler*(handler: SDL_AssertionHandler; userdata: pointer)
+proc SDL_GetDefaultAssertionHandler*(): SDL_AssertionHandler
+proc SDL_GetAssertionHandler*(puserdata: ptr pointer): SDL_AssertionHandler
+proc SDL_GetAssertionReport*(): ptr SDL_AssertData
+proc SDL_ResetAssertionReport*()
+proc SDL_AtomicLock*(lock: ptr SDL_SpinLock)
+proc SDL_AtomicUnlock*(lock: ptr SDL_SpinLock)
+proc SDL_MemoryBarrierReleaseFunction*()
+proc SDL_MemoryBarrierAcquireFunction*()
+proc SDL_AtomicCAS*(a: ptr SDL_atomic_t; oldval: cint; newval: cint): SDL_bool
+proc SDL_AtomicSet*(a: ptr SDL_atomic_t; v: cint): cint
+proc SDL_AtomicGet*(a: ptr SDL_atomic_t): cint
+proc SDL_AtomicAdd*(a: ptr SDL_atomic_t; v: cint): cint
+proc SDL_AtomicCASPtr*(a: ptr pointer; oldval: pointer; newval: pointer): SDL_bool
+proc SDL_AtomicSetPtr*(a: ptr pointer; v: pointer): pointer
+proc SDL_AtomicGetPtr*(a: ptr pointer): pointer
+proc SDL_SetError*(fmt: cstring): cint {.varargs.}
+proc SDL_GetError*(): cstring
+proc SDL_ClearError*()
+proc SDL_Error*(code: SDL_errorcode): cint
 proc SDL_CreateMutex*(): ptr SDL_mutex 
 proc SDL_LockMutex*(mutex: ptr SDL_mutex): cint 
 proc SDL_TryLockMutex*(mutex: ptr SDL_mutex): cint 
@@ -6753,10 +6692,10 @@ proc SDL_SemValue*(sem: ptr SDL_sem): uint32
 
 proc SDL_CreateCond*(): ptr SDL_cond
 proc SDL_DestroyCond*(cond: ptr SDL_cond)
-proc SDL_CondSignal*(cond: ptr SDL_cond): cint {.discardable.}
-proc SDL_CondBroadcast*(cond: ptr SDL_cond): cint {.discardable.}
-proc SDL_CondWait*(cond: ptr SDL_cond; mutex: ptr SDL_mutex): cint {.discardable.} 
-proc SDL_CondWaitTimeout*(cond: ptr SDL_cond; mutex: ptr SDL_mutex; ms: uint32): cint {.discardable.}
+proc SDL_CondSignal*(cond: ptr SDL_cond): cint 
+proc SDL_CondBroadcast*(cond: ptr SDL_cond): cint 
+proc SDL_CondWait*(cond: ptr SDL_cond; mutex: ptr SDL_mutex): cint 
+proc SDL_CondWaitTimeout*(cond: ptr SDL_cond; mutex: ptr SDL_mutex; ms: uint32): cint 
 proc SDL_CreateThread*(fn: SDL_ThreadFunction; name: cstring; data: pointer;): ptr SDL_Thread
 proc SDL_CreateThreadWithStackSize*(fn: proc (a1: pointer): cint; name: cstring;
                                    stacksize: csize_t; data: pointer;
@@ -7233,9 +7172,7 @@ proc SDL_SetHintWithPriority*(name: cstring; value: cstring;
 proc SDL_SetHint*(name: cstring; value: cstring): SDL_bool
 proc SDL_GetHint*(name: cstring): cstring
 proc SDL_GetHintBoolean*(name: cstring; default_value: SDL_bool): SDL_bool
-type
-  SDL_HintCallback* = proc (userdata: pointer; name: cstring; oldValue: cstring;
-                         newValue: cstring)
+
 
 proc SDL_AddHintCallback*(name: cstring; callback: SDL_HintCallback;
                          userdata: pointer)
@@ -7258,46 +7195,35 @@ proc SDL_LogError*(category: cint; fmt: cstring) {.varargs.}
 proc SDL_LogCritical*(category: cint; fmt: cstring) {.varargs.}
 proc SDL_LogMessage*(category: cint; priority: SDL_LogPriority; fmt: cstring) {.varargs.}
 proc SDL_LogMessageV*(category: cint; priority: SDL_LogPriority; fmt: cstring; ap: varargs[untyped])
-proc SDL_LogGetOutputFunction*(callback: ptr SDL_LogOutputFunction;
-                              userdata: ptr pointer)
+proc SDL_LogGetOutputFunction*(callback: ptr SDL_LogOutputFunction; userdata: ptr pointer)
 proc SDL_LogSetOutputFunction*(callback: SDL_LogOutputFunction; userdata: pointer)
 
 proc SDL_ShowMessageBox*(messageboxdata: ptr SDL_MessageBoxData; buttonid: ptr cint): cint
-proc SDL_ShowSimpleMessageBox*(flags: uint32; title: cstring; message: cstring;
-                              window: ptr SDL_Window): cint
+proc SDL_ShowSimpleMessageBox*(flags: uint32; title: cstring; message: cstring; window: ptr SDL_Window): cint
 proc SDL_Metal_CreateView*(window: ptr SDL_Window): SDL_MetalView
 proc SDL_Metal_DestroyView*(view: SDL_MetalView)
 proc SDL_GetPowerInfo*(secs: ptr cint; pct: ptr cint): SDL_PowerState
 
-
-
-
 proc SDL_GetNumRenderDrivers*(): cint
 proc SDL_GetRenderDriverInfo*(index: cint; info: ptr SDL_RendererInfo): cint
-proc SDL_CreateWindowAndRenderer*(width: cint; height: cint; window_flags: uint32;
-                                 window: ptr ptr SDL_Window;
-                                 renderer: ptr ptr SDL_Renderer): cint
+proc SDL_CreateWindowAndRenderer*(width: cint; height: cint; window_flags: uint32;window: ptr ptr SDL_Window;renderer: ptr ptr SDL_Renderer): cint
 proc SDL_CreateRenderer*(window: ptr SDL_Window; index: cint; flags: uint32): ptr SDL_Renderer
 proc SDL_CreateSoftwareRenderer*(surface: ptr SDL_Surface): ptr SDL_Renderer
 proc SDL_GetRenderer*(window: ptr SDL_Window): ptr SDL_Renderer
 proc SDL_GetRendererInfo*(renderer: ptr SDL_Renderer; info: ptr SDL_RendererInfo): cint
 proc SDL_GetRendererOutputSize*(renderer: ptr SDL_Renderer; w: ptr cint; h: ptr cint): cint
 proc SDL_CreateTexture*(renderer: ptr SDL_Renderer; format: auto; access: auto; w: auto; h: auto): ptr SDL_Texture
-proc SDL_CreateTextureFromSurface*(renderer: ptr SDL_Renderer;
-                                  surface: ptr SDL_Surface): ptr SDL_Texture
-proc SDL_QueryTexture*(texture: ptr SDL_Texture; format: ptr uint32; access: ptr cint;
-                      w: ptr cint; h: ptr cint): cint
+proc SDL_CreateTextureFromSurface*(renderer: ptr SDL_Renderer;surface: ptr SDL_Surface): ptr SDL_Texture
+proc SDL_QueryTexture*(texture: ptr SDL_Texture; format: ptr uint32; access: ptr cint; w: ptr cint; h: ptr cint): cint
 proc SDL_SetTextureColorMod*(texture: ptr SDL_Texture; r: uint8; g: uint8; b: uint8): cint
-proc SDL_GetTextureColorMod*(texture: ptr SDL_Texture; r: ptr uint8; g: ptr uint8;
-                            b: ptr uint8): cint
+proc SDL_GetTextureColorMod*(texture: ptr SDL_Texture; r: ptr uint8; g: ptr uint8;b: ptr uint8): cint
 proc SDL_SetTextureAlphaMod*(texture: ptr SDL_Texture; alpha: uint8): cint
 proc SDL_GetTextureAlphaMod*(texture: ptr SDL_Texture; alpha: ptr uint8): cint
 proc SDL_SetTextureBlendMode*(texture: ptr SDL_Texture; blendMode: SDL_BlendMode): cint
 proc SDL_GetTextureBlendMode*(texture: ptr SDL_Texture; blendMode: ptr SDL_BlendMode): cint
 proc SDL_SetTextureScaleMode*(texture: ptr SDL_Texture; scaleMode: SDL_ScaleMode): cint
 proc SDL_GetTextureScaleMode*(texture: ptr SDL_Texture; scaleMode: ptr SDL_ScaleMode): cint
-proc SDL_UpdateTexture*(texture: ptr SDL_Texture; rect: ptr SDL_Rect; pixels: pointer;
-                       pitch: cint): cint
+proc SDL_UpdateTexture*(texture: ptr SDL_Texture; rect: ptr SDL_Rect; pixels: pointer; pitch: cint): cint
 proc SDL_UpdateYUVTexture*(texture: ptr SDL_Texture; rect: ptr SDL_Rect;
                           Yplane: ptr uint8; Ypitch: cint; Uplane: ptr uint8;
                           Upitch: cint; Vplane: ptr uint8; Vpitch: cint): cint
@@ -7376,13 +7302,11 @@ proc SDL_SetWindowShape*(window: ptr SDL_Window; shape: ptr SDL_Surface;
 proc SDL_GetShapedWindowMode*(window: ptr SDL_Window;
                              shape_mode: ptr SDL_WindowShapeMode): cint
 
-
 proc SDL_SetWindowsMessageHook*(callback: SDL_WindowsMessageHook; userdata: pointer)
 proc SDL_Direct3D9GetAdapterIndex*(displayIndex: cint): cint
 
 proc SDL_RenderGetD3D9Device*(renderer: ptr SDL_Renderer): ptr IDirect3DDevice9
-proc SDL_DXGIGetOutputInfo*(displayIndex: cint; adapterIndex: ptr cint;
-                           outputIndex: ptr cint): SDL_bool
+proc SDL_DXGIGetOutputInfo*(displayIndex: cint; adapterIndex: ptr cint; outputIndex: ptr cint): SDL_bool
 proc SDL_IsTablet*(): SDL_bool
 proc SDL_OnApplicationWillTerminate*()
 proc SDL_OnApplicationDidReceiveMemoryWarning*()
@@ -7394,7 +7318,6 @@ proc SDL_GetTicks*(): uint32
 proc SDL_GetPerformanceCounter*(): uint64
 proc SDL_GetPerformanceFrequency*(): uint64
 proc SDL_Delay*(ms: uint32)
-
 
 proc SDL_AddTimer*(interval: uint32; callback: SDL_TimerCallback; param: pointer): SDL_TimerID
 proc SDL_RemoveTimer*(id: SDL_TimerID): SDL_bool
@@ -7408,6 +7331,8 @@ proc SDL_WasInit*(flags: uint32): uint32
 proc SDL_Quit*()
 {.pop.}
 
+proc SDL_memcpy4*(dst: pointer; src: pointer; dwords: csize_t): pointer {.inline.} =
+  return SDL_memcpy(dst, src, dwords * 4)
 
 ##  #define SDL_VERSION(x)                  \
 ##      {                                   \
@@ -7438,7 +7363,11 @@ var hide_banner*: cint
 proc register_exit*(cb: proc (result: cint))
 proc exit_program*(result: cint)
 proc init_dynload*()
-proc init_opts*()
+
+proc init_opts*() =
+  av_dict_set(addr(sws_dict), "flags", "bicubic", 0)
+
+
 proc uninit_opts*()
 proc log_callback_help*(`ptr`: pointer; level: cint; fmt: cstring; vl: varargs[untyped])
 proc opt_cpuflags*(optctx: pointer; opt: cstring; arg: cstring): cint
@@ -7448,11 +7377,9 @@ proc opt_report*(optctx: pointer; opt: cstring; arg: cstring): cint
 proc opt_max_alloc*(optctx: pointer; opt: cstring; arg: cstring): cint
 proc opt_codec_debug*(optctx: pointer; opt: cstring; arg: cstring): cint
 proc opt_timelimit*(optctx: pointer; opt: cstring; arg: cstring): cint
-proc parse_number_or_die*(context: cstring; numstr: cstring; `type`: cint;
-                         min: cdouble; max: cdouble): cdouble
+proc parse_number_or_die*(context: cstring; numstr: cstring; `type`: cint;min: cdouble; max: cdouble): cdouble
 proc parse_time_or_die*(context: cstring; timestr: cstring; is_duration: cint): int64
 proc show_help_options*(options: ptr OptionDef; msg: cstring; req_flags: cint;rej_flags: cint; alt_flags: cint)
-
 proc show_banner*(argc: cint; argv: cstringArray; options: ptr OptionDef)
 proc show_version*(optctx: pointer; opt: cstring; arg: cstring): cint
 proc show_buildconf*(optctx: pointer; opt: cstring; arg: cstring): cint
@@ -7473,9 +7400,8 @@ proc show_pix_fmts*(optctx: pointer; opt: cstring; arg: cstring): cint
 proc show_layouts*(optctx: pointer; opt: cstring; arg: cstring): cint
 proc show_sample_fmts*(optctx: pointer; opt: cstring; arg: cstring): cint
 proc show_colors*(optctx: pointer; opt: cstring; arg: cstring): cint
-proc show_help*(optctx: pointer; opt: cstring; arg: cstring): cint
-
-proc read_yesno*(): cint
+# proc show_help*(optctx: pointer; opt: cstring; arg: cstring): cint
+# proc read_yesno*(): cint
 
 # var CMDUTILS_COMMON_OPTIONS_AVDEVICE:seq[OptionDef] = @[
 #     OptionDef(name:"sources"    , flags:OPT_EXIT or HAS_ARG, u:OptionDefUnion(func_arg: show_sources),  help:"list sources of the input device", argname:"device"),                                                                   
@@ -7519,17 +7445,13 @@ proc parse_option*(optctx: pointer; opt: cstring; arg: cstring; options: ptr Opt
 
 proc parse_optgroup*(optctx: pointer; g: ptr OptionGroup): cint
 proc split_commandline*(octx: ptr OptionParseContext; argc: cint; argv: ptr cstring;
-                       options: ptr OptionDef; groups: ptr OptionGroupDef;
-                       nb_groups: cint): cint
+                       options: ptr OptionDef; groups: ptr OptionGroupDef;nb_groups: cint): cint
 proc uninit_parse_context*(octx: ptr OptionParseContext)
 proc parse_loglevel*(argc: cint; argv: cstringArray; options: ptr OptionDef)
-proc locate_option*(argc: cint; argv: cstringArray; options: ptr OptionDef;
-                   optname: cstring): cint
+proc locate_option*(argc: cint; argv: cstringArray; options: ptr OptionDef;optname: cstring): cint
 proc check_stream_specifier*(s: ptr AVFormatContext; st: ptr AVStream; spec: cstring): cint
-proc filter_codec_opts*(opts: ptr AVDictionary; codec_id: AVCodecID;
-                       s: ptr AVFormatContext; st: ptr AVStream; codec: ptr AVCodec): ptr AVDictionary
-proc setup_find_stream_info_opts*(s: ptr AVFormatContext;
-                                 codec_opts: ptr AVDictionary): ptr ptr AVDictionary
+proc filter_codec_opts*(opts: ptr AVDictionary; codec_id: AVCodecID;s: ptr AVFormatContext; st: ptr AVStream; codec: ptr AVCodec): ptr AVDictionary
+proc setup_find_stream_info_opts*(s: ptr AVFormatContext;codec_opts: ptr AVDictionary): ptr ptr AVDictionary
 proc print_error*(filename: cstring; err: cint)
 
 
@@ -10422,9 +10344,8 @@ proc show_help_default*(opt: cstring; arg: cstring) =
   show_help_children(avcodec_get_class(), AV_OPT_FLAG_DECODING_PARAM)
   show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM)
   show_help_children(avfilter_get_class(), AV_OPT_FLAG_FILTERING_PARAM)
-  printf("\nWhile playing:\nq, ESC              quit\nf                   toggle full screen\np, SPC              pause\nm                   toggle mute\n9, 0                decrease and increase volume respectively/, *                decrease and increase volume respectively\na                   cycle audio channel in the current program\nv                   cycle video channel\nt                   cycle subtitle channel in the current program\nc                   cycle program\nw                   cycle video filters or show modes\ns                   activate frame-step mode\nleft/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\ndown/up             seek backward/forward 1 minute\npage down/page up   seek backward/forward 10 minutes\nright mouse click   seek to percentage in file corresponding to fraction of width\nleft cdouble-click   toggle full screen")
+  echo("\nWhile playing:\nq, ESC quit\nf toggle full screen\np, SPC pause\nm toggle mute\n9, 0 decrease and increase volume respectively/, * decrease and increase volume respectively\na cycle audio channel in the current program\nv cycle video channel\nt                   cycle subtitle channel in the current program\nc                   cycle program\nw                   cycle video filters or show modes\ns                   activate frame-step mode\nleft/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\ndown/up             seek backward/forward 1 minute\npage down/page up   seek backward/forward 10 minutes\nright mouse click   seek to percentage in file corresponding to fraction of width\nleft cdouble-click   toggle full screen")
 
-##  Called from the main
 
 proc main*(argc: cint; argv: cstringArray): cint =
   var flags: cint

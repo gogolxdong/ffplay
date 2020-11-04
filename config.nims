@@ -2,4 +2,5 @@
 --define:release
 --profiler:on
 --stacktrace:on
---passL: -lmingw32   -lshell32   -lavutil -lavcodec -lavfilter -lswscale -lavformat -lswresample -lavdevice  -lSDL2 -lSDL2main  -lpostproc
+--define: danger
+--define: useMalloc
