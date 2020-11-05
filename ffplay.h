@@ -16196,7 +16196,6 @@ static inline int av_bprint_is_complete(const AVBPrint *buf)
     return buf->len < buf->size;
 }
 
-// #define ff_thread_once(control, routine) pthread_once(control, routine)
 
 static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC / 8] = 12,

@@ -2006,6 +2006,292 @@ typedef uint32_t BitBuf;
 #define AV_WLBUF AV_WL32
 #endif
 
+
+#if AV_HAVE_BIGENDIAN
+#define av_be2ne16(x) (x)
+#define av_be2ne32(x) (x)
+#define av_be2ne64(x) (x)
+#define av_le2ne16(x) av_bswap16(x)
+#define av_le2ne32(x) av_bswap32(x)
+#define av_le2ne64(x) av_bswap64(x)
+#define AV_BE2NEC(s, x) (x)
+#define AV_LE2NEC(s, x) AV_BSWAPC(s, x)
+#else
+#define av_be2ne16(x) av_bswap16(x)
+#define av_be2ne32(x) av_bswap32(x)
+#define av_be2ne64(x) av_bswap64(x)
+#define av_le2ne16(x) (x)
+#define av_le2ne32(x) (x)
+#define av_le2ne64(x) (x)
+#define AV_BE2NEC(s, x) AV_BSWAPC(s, x)
+#define AV_LE2NEC(s, x) (x)
+#endif
+
+#define AV_BE2NE16C(x) AV_BE2NEC(16, x)
+#define AV_BE2NE32C(x) AV_BE2NEC(32, x)
+#define AV_BE2NE64C(x) AV_BE2NEC(64, x)
+#define AV_LE2NE16C(x) AV_LE2NEC(16, x)
+#define AV_LE2NE32C(x) AV_LE2NEC(32, x)
+#define AV_LE2NE64C(x) AV_LE2NEC(64, x)
+
+#define LIBAVRESAMPLE_VERSION_MAJOR  4
+#define LIBAVRESAMPLE_VERSION_MINOR  0
+#define LIBAVRESAMPLE_VERSION_MICRO  0
+
+#define LIBAVRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBAVRESAMPLE_VERSION_MAJOR, \
+                                                  LIBAVRESAMPLE_VERSION_MINOR, \
+                                                  LIBAVRESAMPLE_VERSION_MICRO)
+#define LIBAVRESAMPLE_VERSION          AV_VERSION(LIBAVRESAMPLE_VERSION_MAJOR, \
+                                                  LIBAVRESAMPLE_VERSION_MINOR, \
+                                                  LIBAVRESAMPLE_VERSION_MICRO)
+#define LIBAVRESAMPLE_BUILD        LIBAVRESAMPLE_VERSION_INT
+
+#define LIBAVRESAMPLE_IDENT        "Lavr" AV_STRINGIFY(LIBAVRESAMPLE_VERSION)
+
+#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
+#    define av_export_avcodec __declspec(dllimport)
+#else
+#    define av_export_avcodec
+#endif
+#define AV_SUBTITLE_FLAG_FORCED 0x00000001
+#define LIBAVFORMAT_VERSION_MAJOR 58
+#define LIBAVFORMAT_VERSION_MINOR 63
+#define LIBAVFORMAT_VERSION_MICRO 100
+#define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO)
+#define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO)
+#define LIBAVFORMAT_BUILD LIBAVFORMAT_VERSION_INT
+// #define LIBAVFORMAT_IDENT "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
+#define FF_API_COMPUTE_PKT_FIELDS2 (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_OLD_OPEN_CALLBACKS (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_LAVF_AVCTX (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_HTTP_USER_AGENT (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_HLS_WRAP (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_HLS_USE_LOCALTIME (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_LAVF_KEEPSIDE_FLAG (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_OLD_ROTATE_API (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_FORMAT_GET_SET (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_OLD_AVIO_EOF_0 (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_LAVF_FFSERVER (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_FORMAT_FILENAME (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_OLD_RTSP_OPTIONS (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_DASH_MIN_SEG_DURATION (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_LAVF_MP4A_LATM (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_AVIOFORMAT (LIBAVFORMAT_VERSION_MAJOR < 59)
+#define FF_API_R_FRAME_RATE 1
+#define AVIO_SEEKABLE_NORMAL (1 << 0)
+#define AVIO_SEEKABLE_TIME (1 << 1)
+#define AVSEEK_SIZE 0x10000
+#define AVSEEK_FORCE 0x20000
+#define AVIO_FLAG_READ 1
+#define AVIO_FLAG_WRITE 2
+#define AVIO_FLAG_READ_WRITE (AVIO_FLAG_READ | AVIO_FLAG_WRITE)
+#define AVIO_FLAG_NONBLOCK 8
+#define AVIO_FLAG_DIRECT 0x8000
+#define AVPROBE_SCORE_RETRY (AVPROBE_SCORE_MAX / 4)
+#define AVPROBE_SCORE_STREAM_RETRY (AVPROBE_SCORE_MAX / 4 - 1)
+#define AVPROBE_SCORE_EXTENSION 50
+#define AVPROBE_SCORE_MIME 75
+#define AVPROBE_SCORE_MAX 100
+#define AVPROBE_PADDING_SIZE 32
+/// Demuxer will use avio_open, no opened file should be provided by the caller.
+#define AVFMT_NOFILE 0x0001
+#define AVFMT_NEEDNUMBER 0x0002
+#define AVFMT_SHOW_IDS 0x0008
+#define AVFMT_GLOBALHEADER 0x0040
+#define AVFMT_NOTIMESTAMPS 0x0080
+#define AVFMT_GENERIC_INDEX 0x0100
+#define AVFMT_TS_DISCONT 0x0200
+#define AVFMT_VARIABLE_FPS 0x0400
+#define AVFMT_NODIMENSIONS 0x0800
+#define AVFMT_NOSTREAMS 0x1000
+#define AVFMT_NOBINSEARCH 0x2000
+#define AVFMT_NOGENSEARCH 0x4000
+#define AVFMT_NO_BYTE_SEEK 0x8000
+#define AVFMT_ALLOW_FLUSH 0x10000
+#define AVFMT_TS_NONSTRICT 0x20000
+#define AVFMT_TS_NEGATIVE 0x40000
+#define AVFMT_SEEK_TO_PTS 0x4000000
+#define ff_const59
+#define AVINDEX_KEYFRAME 0x0001
+#define AVINDEX_DISCARD_FRAME 0x0002
+#define AV_DISPOSITION_DEFAULT 0x0001
+#define AV_DISPOSITION_DUB 0x0002
+#define AV_DISPOSITION_ORIGINAL 0x0004
+#define AV_DISPOSITION_COMMENT 0x0008
+#define AV_DISPOSITION_LYRICS 0x0010
+#define AV_DISPOSITION_KARAOKE 0x0020
+#define AV_DISPOSITION_FORCED 0x0040
+#define AV_DISPOSITION_HEARING_IMPAIRED 0x0080
+#define AV_DISPOSITION_VISUAL_IMPAIRED 0x0100
+#define AV_DISPOSITION_CLEAN_EFFECTS 0x0200
+#define AV_DISPOSITION_ATTACHED_PIC 0x0400
+#define AV_DISPOSITION_TIMED_THUMBNAILS 0x0800
+#define AV_DISPOSITION_CAPTIONS 0x10000
+#define AV_DISPOSITION_DESCRIPTIONS 0x20000
+#define AV_DISPOSITION_METADATA 0x40000
+#define AV_DISPOSITION_DEPENDENT 0x80000
+#define AV_DISPOSITION_STILL_IMAGE 0x100000
+#define AV_PTS_WRAP_IGNORE 0
+#define AV_PTS_WRAP_ADD_OFFSET 1
+#define AV_PTS_WRAP_SUB_OFFSET -1
+#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001
+#define MAX_STD_TIMEBASES (30 * 12 + 30 + 3 + 6)
+#define MAX_REORDER_DELAY 16
+#define AVOnce char
+#define AV_ONCE_INIT 0
+#define AV_PROGRAM_RUNNING 1
+#define AVFMTCTX_NOHEADER 0x0001
+#define AVFMTCTX_UNSEEKABLE 0x0002
+#define AVFMT_FLAG_GENPTS 0x0001
+#define AVFMT_FLAG_IGNIDX 0x0002
+#define AVFMT_FLAG_NONBLOCK 0x0004
+#define AVFMT_FLAG_IGNDTS 0x0008
+#define AVFMT_FLAG_NOFILLIN 0x0010
+#define AVFMT_FLAG_NOPARSE 0x0020
+#define AVFMT_FLAG_NOBUFFER 0x0040
+#define AVFMT_FLAG_CUSTOM_IO 0x0080
+#define AVFMT_FLAG_DISCARD_CORRUPT 0x0100
+#define AVFMT_FLAG_FLUSH_PACKETS 0x0200
+#define AVFMT_FLAG_BITEXACT 0x0400
+#define AVFMT_FLAG_MP4A_LATM 0x8000
+#define AVFMT_FLAG_SORT_DTS 0x10000
+#define AVFMT_FLAG_PRIV_OPT 0x20000
+#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000
+#define AVFMT_FLAG_FAST_SEEK 0x80000
+#define AVFMT_FLAG_SHORTEST 0x100000
+#define AVFMT_FLAG_AUTO_BSF 0x200000
+#define FF_FDEBUG_TS 0x0001
+#define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001
+#define AVFMT_AVOID_NEG_TS_AUTO -1
+#define AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE 1
+#define AVFMT_AVOID_NEG_TS_MAKE_ZERO 2
+
+#define media_type_string av_get_media_type_string
+
+void *grow_array(void *array, int elem_size, int *size, int new_size);
+#define GROW_ARRAY(array, nb_elems) array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
+
+#define GET_PIX_FMT_NAME(pix_fmt)\
+    const char *name = av_get_pix_fmt_name(pix_fmt);
+
+#define GET_CODEC_NAME(id)\
+    const char *name = avcodec_descriptor_get(id)->name;
+
+#define GET_SAMPLE_FMT_NAME(sample_fmt)\
+    const char *name = av_get_sample_fmt_name(sample_fmt)
+
+#define GET_SAMPLE_RATE_NAME(rate)\
+    char name[16];\
+    snprintf(name, sizeof(name), "%d", rate);
+
+#define GET_CH_LAYOUT_NAME(ch_layout)\
+    char name[16];\
+    snprintf(name, sizeof(name), "0x%"PRIx64, ch_layout);
+
+#define GET_CH_LAYOUT_DESC(ch_layout)\
+    char name[128];\
+    av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
+
+#define X86_AMD3DNOW(flags)         CPUEXT(flags, AMD3DNOW)
+#define X86_AMD3DNOWEXT(flags)      CPUEXT(flags, AMD3DNOWEXT)
+#define X86_MMX(flags)              CPUEXT(flags, MMX)
+#define X86_MMXEXT(flags)           CPUEXT(flags, MMXEXT)
+#define X86_SSE(flags)              CPUEXT(flags, SSE)
+#define X86_SSE2(flags)             CPUEXT(flags, SSE2)
+#define X86_SSE2_FAST(flags)        CPUEXT_FAST(flags, SSE2)
+#define X86_SSE2_SLOW(flags)        CPUEXT_SLOW(flags, SSE2)
+#define X86_SSE3(flags)             CPUEXT(flags, SSE3)
+#define X86_SSE3_FAST(flags)        CPUEXT_FAST(flags, SSE3)
+#define X86_SSE3_SLOW(flags)        CPUEXT_SLOW(flags, SSE3)
+#define X86_SSSE3(flags)            CPUEXT(flags, SSSE3)
+#define X86_SSSE3_FAST(flags)       CPUEXT_FAST(flags, SSSE3)
+#define X86_SSSE3_SLOW(flags)       CPUEXT_SLOW(flags, SSSE3)
+#define X86_SSE4(flags)             CPUEXT(flags, SSE4)
+#define X86_SSE42(flags)            CPUEXT(flags, SSE42)
+#define X86_AVX(flags)              CPUEXT(flags, AVX)
+#define X86_AVX_FAST(flags)         CPUEXT_FAST(flags, AVX)
+#define X86_AVX_SLOW(flags)         CPUEXT_SLOW(flags, AVX)
+#define X86_XOP(flags)              CPUEXT(flags, XOP)
+#define X86_FMA3(flags)             CPUEXT(flags, FMA3)
+#define X86_FMA4(flags)             CPUEXT(flags, FMA4)
+#define X86_AVX2(flags)             CPUEXT(flags, AVX2)
+#define X86_AESNI(flags)            CPUEXT(flags, AESNI)
+#define X86_AVX512(flags)           CPUEXT(flags, AVX512)
+
+#define CPUEXT_SUFFIX(flags, suffix, cpuext)                            \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext))
+
+#define CPUEXT_SUFFIX_FAST2(flags, suffix, cpuext, slow_cpuext)         \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
+     !((flags) & AV_CPU_FLAG_ ## slow_cpuext ## SLOW))
+
+#define CPUEXT_SUFFIX_SLOW2(flags, suffix, cpuext, slow_cpuext)         \
+    (HAVE_ ## cpuext ## suffix && ((flags) & AV_CPU_FLAG_ ## cpuext) && \
+     ((flags) & AV_CPU_FLAG_ ## slow_cpuext ## SLOW))
+
+#define CPUEXT_SUFFIX_FAST(flags, suffix, cpuext) CPUEXT_SUFFIX_FAST2(flags, suffix, cpuext, cpuext)
+#define CPUEXT_SUFFIX_SLOW(flags, suffix, cpuext) CPUEXT_SUFFIX_SLOW2(flags, suffix, cpuext, cpuext)
+
+#define CPUEXT(flags, cpuext) CPUEXT_SUFFIX(flags, , cpuext)
+#define CPUEXT_FAST(flags, cpuext) CPUEXT_SUFFIX_FAST(flags, , cpuext)
+#define CPUEXT_SLOW(flags, cpuext) CPUEXT_SUFFIX_SLOW(flags, , cpuext)
+
+#define EXTERNAL_AMD3DNOW(flags)    CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOW)
+#define EXTERNAL_AMD3DNOWEXT(flags) CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOWEXT)
+#define EXTERNAL_MMX(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, MMX)
+#define EXTERNAL_MMXEXT(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, MMXEXT)
+#define EXTERNAL_SSE(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, SSE)
+#define EXTERNAL_SSE2(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, SSE2)
+#define EXTERNAL_SSE2_FAST(flags)   CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, SSE2)
+#define EXTERNAL_SSE2_SLOW(flags)   CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, SSE2)
+#define EXTERNAL_SSE3(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, SSE3)
+#define EXTERNAL_SSE3_FAST(flags)   CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, SSE3)
+#define EXTERNAL_SSE3_SLOW(flags)   CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, SSE3)
+#define EXTERNAL_SSSE3(flags)       CPUEXT_SUFFIX(flags, _EXTERNAL, SSSE3)
+#define EXTERNAL_SSSE3_FAST(flags)  CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, SSSE3)
+#define EXTERNAL_SSSE3_SLOW(flags)  CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, SSSE3)
+#define EXTERNAL_SSE4(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, SSE4)
+#define EXTERNAL_SSE42(flags)       CPUEXT_SUFFIX(flags, _EXTERNAL, SSE42)
+#define EXTERNAL_AVX(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, AVX)
+#define EXTERNAL_AVX_FAST(flags)    CPUEXT_SUFFIX_FAST(flags, _EXTERNAL, AVX)
+#define EXTERNAL_AVX_SLOW(flags)    CPUEXT_SUFFIX_SLOW(flags, _EXTERNAL, AVX)
+#define EXTERNAL_XOP(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, XOP)
+#define EXTERNAL_FMA3(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, FMA3)
+#define EXTERNAL_FMA3_FAST(flags)   CPUEXT_SUFFIX_FAST2(flags, _EXTERNAL, FMA3, AVX)
+#define EXTERNAL_FMA3_SLOW(flags)   CPUEXT_SUFFIX_SLOW2(flags, _EXTERNAL, FMA3, AVX)
+#define EXTERNAL_FMA4(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, FMA4)
+#define EXTERNAL_AVX2(flags)        CPUEXT_SUFFIX(flags, _EXTERNAL, AVX2)
+#define EXTERNAL_AVX2_FAST(flags)   CPUEXT_SUFFIX_FAST2(flags, _EXTERNAL, AVX2, AVX)
+#define EXTERNAL_AVX2_SLOW(flags)   CPUEXT_SUFFIX_SLOW2(flags, _EXTERNAL, AVX2, AVX)
+#define EXTERNAL_AESNI(flags)       CPUEXT_SUFFIX(flags, _EXTERNAL, AESNI)
+#define EXTERNAL_AVX512(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, AVX512)
+
+#define INLINE_AMD3DNOW(flags)      CPUEXT_SUFFIX(flags, _INLINE, AMD3DNOW)
+#define INLINE_AMD3DNOWEXT(flags)   CPUEXT_SUFFIX(flags, _INLINE, AMD3DNOWEXT)
+#define INLINE_MMX(flags)           CPUEXT_SUFFIX(flags, _INLINE, MMX)
+#define INLINE_MMXEXT(flags)        CPUEXT_SUFFIX(flags, _INLINE, MMXEXT)
+#define INLINE_SSE(flags)           CPUEXT_SUFFIX(flags, _INLINE, SSE)
+#define INLINE_SSE2(flags)          CPUEXT_SUFFIX(flags, _INLINE, SSE2)
+#define INLINE_SSE2_FAST(flags)     CPUEXT_SUFFIX_FAST(flags, _INLINE, SSE2)
+#define INLINE_SSE2_SLOW(flags)     CPUEXT_SUFFIX_SLOW(flags, _INLINE, SSE2)
+#define INLINE_SSE3(flags)          CPUEXT_SUFFIX(flags, _INLINE, SSE3)
+#define INLINE_SSE3_FAST(flags)     CPUEXT_SUFFIX_FAST(flags, _INLINE, SSE3)
+#define INLINE_SSE3_SLOW(flags)     CPUEXT_SUFFIX_SLOW(flags, _INLINE, SSE3)
+#define INLINE_SSSE3(flags)         CPUEXT_SUFFIX(flags, _INLINE, SSSE3)
+#define INLINE_SSSE3_FAST(flags)    CPUEXT_SUFFIX_FAST(flags, _INLINE, SSSE3)
+#define INLINE_SSSE3_SLOW(flags)    CPUEXT_SUFFIX_SLOW(flags, _INLINE, SSSE3)
+#define INLINE_SSE4(flags)          CPUEXT_SUFFIX(flags, _INLINE, SSE4)
+#define INLINE_SSE42(flags)         CPUEXT_SUFFIX(flags, _INLINE, SSE42)
+#define INLINE_AVX(flags)           CPUEXT_SUFFIX(flags, _INLINE, AVX)
+#define INLINE_AVX_FAST(flags)      CPUEXT_SUFFIX_FAST(flags, _INLINE, AVX)
+#define INLINE_AVX_SLOW(flags)      CPUEXT_SUFFIX_SLOW(flags, _INLINE, AVX)
+#define INLINE_XOP(flags)           CPUEXT_SUFFIX(flags, _INLINE, XOP)
+#define INLINE_FMA3(flags)          CPUEXT_SUFFIX(flags, _INLINE, FMA3)
+#define INLINE_FMA4(flags)          CPUEXT_SUFFIX(flags, _INLINE, FMA4)
+#define INLINE_AVX2(flags)          CPUEXT_SUFFIX(flags, _INLINE, AVX2)
+#define INLINE_AESNI(flags)         CPUEXT_SUFFIX(flags, _INLINE, AESNI)
+
+
 static AVMutex avformat_mutex = AV_MUTEX_INITIALIZER;
 
 typedef struct AVRational
@@ -2059,6 +2345,14 @@ static inline int av_isxdigit(int c)
     return av_isdigit(c) || (c >= 'a' && c <= 'f');
 }
 
+static inline int ff_thread_once(char *control, void (*routine)(void))
+{
+    if (!*control) {
+        routine();
+        *control = 1;
+    }
+    return 0;
+}
 
 typedef enum
 {
@@ -4081,6 +4375,49 @@ typedef enum
         ((((uint32_t)(((Uint8)(('O'))))) << 0) | (((uint32_t)(((Uint8)(('1'))))) << 8) | (((uint32_t)(((Uint8)(('S'))))) << 16) | (((uint32_t)(((Uint8)((' '))))) << 24))
 } SDL_PixelFormatEnum;
 
+enum  AVResampleDitherMethod {
+    AV_RESAMPLE_DITHER_NONE,            /**< Do not use dithering */
+    AV_RESAMPLE_DITHER_RECTANGULAR,     /**< Rectangular Dither */
+    AV_RESAMPLE_DITHER_TRIANGULAR,      /**< Triangular Dither*/
+    AV_RESAMPLE_DITHER_TRIANGULAR_HP,   /**< Triangular Dither with High Pass */
+    AV_RESAMPLE_DITHER_TRIANGULAR_NS,   /**< Triangular Dither with Noise Shaping */
+    AV_RESAMPLE_DITHER_NB,              /**< Number of dither types. Not part of ABI. */
+};
+
+enum RemapPoint {
+    REMAP_NONE,
+    REMAP_IN_COPY,
+    REMAP_IN_CONVERT,
+    REMAP_OUT_COPY,
+    REMAP_OUT_CONVERT,
+};
+enum  AVMixCoeffType {
+    AV_MIX_COEFF_TYPE_Q8,   /** 16-bit 8.8 fixed-point                      */
+    AV_MIX_COEFF_TYPE_Q15,  /** 32-bit 17.15 fixed-point                    */
+    AV_MIX_COEFF_TYPE_FLT,  /** floating-point                              */
+    AV_MIX_COEFF_TYPE_NB,   /** Number of coeff types. Not part of ABI      */
+};
+
+
+enum  AVResampleFilterType {
+    AV_RESAMPLE_FILTER_TYPE_CUBIC,              /**< Cubic */
+    AV_RESAMPLE_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
+    AV_RESAMPLE_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
+};
+
+enum AVMatrixEncoding
+{
+    AV_MATRIX_ENCODING_NONE,
+    AV_MATRIX_ENCODING_DOLBY,
+    AV_MATRIX_ENCODING_DPLII,
+    AV_MATRIX_ENCODING_DPLIIX,
+    AV_MATRIX_ENCODING_DPLIIZ,
+    AV_MATRIX_ENCODING_DOLBYEX,
+    AV_MATRIX_ENCODING_DOLBYHEADPHONE,
+    AV_MATRIX_ENCODING_NB
+};
+
+
 typedef struct SDL_Color
 {
     Uint8 r;
@@ -4141,6 +4478,529 @@ typedef struct SDL_version
     Uint8 minor;
     Uint8 patch;
 } SDL_version;
+
+typedef struct AVLFG {
+    unsigned int state[64];
+    int index;
+} AVLFG;
+
+
+typedef struct DitherDSPContext {
+
+    void (*quantize)(int16_t *dst, const float *src, float *dither, int len);
+
+    int ptr_align;      ///< src and dst constraints for quantize()
+    int samples_align;  ///< len constraints for quantize()
+
+    void (*dither_int_to_float)(float *dst, int *src0, int len);
+} DitherDSPContext;
+
+typedef struct DitherState {
+    int mute;
+    unsigned int seed;
+    AVLFG lfg;
+    float *noise_buf;
+    int noise_buf_size;
+    int noise_buf_ptr;
+    float dither_a[4];
+    float dither_b[4];
+} DitherState;
+
+#define AVRESAMPLE_MAX_CHANNELS 32
+#define SWR_CH_MAX 64
+
+#define SQRT3_2      1.22474487139158904909  /* sqrt(3/2) */
+
+#define NS_TAPS 20
+
+#if ARCH_X86_64
+typedef int64_t integer;
+#else
+typedef int integer;
+#endif
+
+typedef struct ChannelMapInfo {
+    int channel_map[AVRESAMPLE_MAX_CHANNELS];   /**< source index of each output channel, -1 if not remapped */
+    int do_remap;                               /**< remap needed */
+    int channel_copy[AVRESAMPLE_MAX_CHANNELS];  /**< dest index to copy from */
+    int do_copy;                                /**< copy needed */
+    int channel_zero[AVRESAMPLE_MAX_CHANNELS];  /**< dest index to zero */
+    int do_zero;                                /**< zeroing needed */
+    int input_map[AVRESAMPLE_MAX_CHANNELS];     /**< dest index of each input channel */
+} ChannelMapInfo;
+
+typedef struct SWresampleAudioData{
+    uint8_t *ch[SWR_CH_MAX];    ///< samples buffer per channel
+    uint8_t *data;              ///< samples buffer
+    int ch_count;               ///< number of channels
+    int bps;                    ///< bytes per sample
+    int count;                  ///< number of samples
+    int planar;                 ///< 1 if planar audio, 0 otherwise
+    enum AVSampleFormat fmt;    ///< sample format
+} SWresampleAudioData;
+
+typedef struct AVAudioResampleContext AVAudioResampleContext;
+
+typedef void (mix_func)(uint8_t **src, void **matrix, int len, int out_ch,
+                        int in_ch);
+struct AudioMix {
+    AVAudioResampleContext *avr;
+    enum AVSampleFormat fmt;
+    enum AVMixCoeffType coeff_type;
+    uint64_t in_layout;
+    uint64_t out_layout;
+    int in_channels;
+    int out_channels;
+
+    int ptr_align;
+    int samples_align;
+    int has_optimized_func;
+    const char *func_descr;
+    const char *func_descr_generic;
+    mix_func *mix;
+    mix_func *mix_generic;
+
+    int in_matrix_channels;
+    int out_matrix_channels;
+    int output_zero[AVRESAMPLE_MAX_CHANNELS];
+    int input_skip[AVRESAMPLE_MAX_CHANNELS];
+    int output_skip[AVRESAMPLE_MAX_CHANNELS];
+    int16_t *matrix_q8[AVRESAMPLE_MAX_CHANNELS];
+    int32_t *matrix_q15[AVRESAMPLE_MAX_CHANNELS];
+    float   *matrix_flt[AVRESAMPLE_MAX_CHANNELS];
+    void   **matrix;
+};
+typedef struct AudioMix AudioMix;
+typedef struct ResampleContext ResampleContext;
+
+
+
+
+#define AVRESAMPLE_MAX_CHANNELS 32
+
+
+typedef struct AVAudioFifo {
+    AVFifoBuffer **buf;             /**< single buffer for interleaved, per-channel buffers for planar */
+    int nb_buffers;                 /**< number of buffers */
+    int nb_samples;                 /**< number of samples currently in the FIFO */
+    int allocated_samples;          /**< current allocated size, in samples */
+
+    int channels;                   /**< number of channels */
+    enum AVSampleFormat sample_fmt; /**< sample format */
+    int sample_size;                /**< size, in bytes, of one sample in a buffer */
+}AVAudioFifo;
+
+
+typedef void (conv_func_type)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end);
+typedef void (simd_func_type)(uint8_t **dst, const uint8_t **src, int len);
+
+typedef struct SWresampleAudioConvert {
+    int channels;
+    int  in_simd_align_mask;
+    int out_simd_align_mask;
+    conv_func_type *conv_f;
+    simd_func_type *simd_f;
+    const int *ch_map;
+    uint8_t silence[8]; ///< silence input sample
+}SWresampleAudioConvert;
+
+typedef struct AudioData {
+    const AVClass *class;               /**< AVClass for logging            */
+    uint8_t *data[AVRESAMPLE_MAX_CHANNELS]; /**< data plane pointers        */
+    uint8_t *buffer;                    /**< data buffer                    */
+    unsigned int buffer_size;           /**< allocated buffer size          */
+    int allocated_samples;              /**< number of samples the buffer can hold */
+    int nb_samples;                     /**< current number of samples      */
+    enum AVSampleFormat sample_fmt;     /**< sample format                  */
+    int channels;                       /**< channel count                  */
+    int allocated_channels;             /**< allocated channel count        */
+    int is_planar;                      /**< sample format is planar        */
+    int planes;                         /**< number of data planes          */
+    int sample_size;                    /**< bytes per sample               */
+    int stride;                         /**< sample byte offset within a plane */
+    int read_only;                      /**< data is read-only              */
+    int allow_realloc;                  /**< realloc is allowed             */
+    int ptr_align;                      /**< minimum data pointer alignment */
+    int samples_align;                  /**< allocated samples alignment    */
+    const char *name;                   /**< name for debug logging         */
+} AudioData;
+
+enum ConvFuncType {
+    CONV_FUNC_TYPE_FLAT,
+    CONV_FUNC_TYPE_INTERLEAVE,
+    CONV_FUNC_TYPE_DEINTERLEAVE,
+};
+
+typedef void (conv_func_flat)(uint8_t *out, const uint8_t *in, int len);
+
+typedef void (conv_func_interleave)(uint8_t *out, uint8_t *const *in,
+                                    int len, int channels);
+
+typedef void (conv_func_deinterleave)(uint8_t **out, const uint8_t *in, int len,
+                                      int channels);
+
+typedef struct DitherContext DitherContext;
+struct AudioConvert {
+    AVAudioResampleContext *avr;
+    DitherContext *dc;
+    enum AVSampleFormat in_fmt;
+    enum AVSampleFormat out_fmt;
+    int apply_map;
+    int channels;
+    int planes;
+    int ptr_align;
+    int samples_align;
+    int has_optimized_func;
+    const char *func_descr;
+    const char *func_descr_generic;
+    enum ConvFuncType func_type;
+    conv_func_flat         *conv_flat;
+    conv_func_flat         *conv_flat_generic;
+    conv_func_interleave   *conv_interleave;
+    conv_func_interleave   *conv_interleave_generic;
+    conv_func_deinterleave *conv_deinterleave;
+    conv_func_deinterleave *conv_deinterleave_generic;
+};
+typedef struct AudioConvert AudioConvert;
+typedef struct DitherContext {
+    DitherDSPContext  ddsp;
+    enum AVResampleDitherMethod method;
+    int apply_map;
+    ChannelMapInfo *ch_map_info;
+
+    int mute_dither_threshold;  // threshold for disabling dither
+    int mute_reset_threshold;   // threshold for resetting noise shaping
+    const float *ns_coef_b;     // noise shaping coeffs
+    const float *ns_coef_a;     // noise shaping coeffs
+
+    int channels;
+    DitherState *state;         // dither states for each channel
+
+    AudioData *flt_data;        // input data in fltp
+    AudioData *s16_data;        // dithered output in s16p
+    AudioConvert *ac_in;        // converter for input to fltp
+    AudioConvert *ac_out;       // converter for s16p to s16 (if needed)
+
+    void (*quantize)(int16_t *dst, const float *src, float *dither, int len);
+    int samples_align;
+}DitherContext;
+
+
+
+
+
+typedef struct AVAudioResampleContext {
+    const AVClass *av_class;        /**< AVClass for logging and AVOptions  */
+
+    uint64_t in_channel_layout;                 /**< input channel layout   */
+    enum AVSampleFormat in_sample_fmt;          /**< input sample format    */
+    int in_sample_rate;                         /**< input sample rate      */
+    uint64_t out_channel_layout;                /**< output channel layout  */
+    enum AVSampleFormat out_sample_fmt;         /**< output sample format   */
+    int out_sample_rate;                        /**< output sample rate     */
+    enum AVSampleFormat internal_sample_fmt;    /**< internal sample format */
+    enum AVMixCoeffType mix_coeff_type;         /**< mixing coefficient type */
+    double center_mix_level;                    /**< center mix level       */
+    double surround_mix_level;                  /**< surround mix level     */
+    double lfe_mix_level;                       /**< lfe mix level          */
+    int normalize_mix_level;                    /**< enable mix level normalization */
+    int force_resampling;                       /**< force resampling       */
+    int filter_size;                            /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
+    int phase_shift;                            /**< log2 of the number of entries in the resampling polyphase filterbank */
+    int linear_interp;                          /**< if 1 then the resampling FIR filter will be linearly interpolated */
+    double cutoff;                              /**< resampling cutoff frequency. 1.0 corresponds to half the output sample rate */
+    enum AVResampleFilterType filter_type;      /**< resampling filter type */
+    int kaiser_beta;                            /**< beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER) */
+    enum AVResampleDitherMethod dither_method;  /**< dither method          */
+
+    int in_channels;        /**< number of input channels                   */
+    int out_channels;       /**< number of output channels                  */
+    int resample_channels;  /**< number of channels used for resampling     */
+    int downmix_needed;     /**< downmixing is needed                       */
+    int upmix_needed;       /**< upmixing is needed                         */
+    int mixing_needed;      /**< either upmixing or downmixing is needed    */
+    int resample_needed;    /**< resampling is needed                       */
+    int in_convert_needed;  /**< input sample format conversion is needed   */
+    int out_convert_needed; /**< output sample format conversion is needed  */
+    int in_copy_needed;     /**< input data copy is needed                  */
+
+    AudioData *in_buffer;           /**< buffer for converted input         */
+    AudioData *resample_out_buffer; /**< buffer for output from resampler   */
+    AudioData *out_buffer;          /**< buffer for converted output        */
+    AVAudioFifo *out_fifo;          /**< FIFO for output samples            */
+
+    AudioConvert *ac_in;        /**< input sample format conversion context  */
+    AudioConvert *ac_out;       /**< output sample format conversion context */
+    ResampleContext *resample;  /**< resampling context                      */
+    AudioMix *am;               /**< channel mixing context                  */
+    enum AVMatrixEncoding matrix_encoding;      /**< matrixed stereo encoding */
+
+    /**
+     * mix matrix
+     * only used if avresample_set_matrix() is called before avresample_open()
+     */
+    double *mix_matrix;
+
+    int use_channel_map;
+    enum RemapPoint remap_point;
+    ChannelMapInfo ch_map_info;
+}AVAudioResampleContext;
+
+
+
+
+struct ResampleContext {
+    AVAudioResampleContext *avr;
+    AudioData *buffer;
+    uint8_t *filter_bank;
+    int filter_length;
+    int ideal_dst_incr;
+    int dst_incr;
+    unsigned int index;
+    int frac;
+    int src_incr;
+    int compensation_distance;
+    int phase_shift;
+    int phase_mask;
+    int linear;
+    enum AVResampleFilterType filter_type;
+    int kaiser_beta;
+    void (*set_filter)(void *filter, double *tab, int phase, int tap_count);
+    void (*resample_one)(struct ResampleContext *c, void *dst0,
+                         int dst_index, const void *src0,
+                         unsigned int index, int frac);
+    void (*resample_nearest)(void *dst0, int dst_index,
+                             const void *src0, unsigned int index);
+    int padding_size;
+    int initial_padding_filled;
+    int initial_padding_samples;
+    int final_padding_filled;
+    int final_padding_samples;
+};
+
+
+
+typedef struct AVDeviceCapabilitiesQuery
+{
+    const AVClass *av_class;
+    AVFormatContext *device_context;
+    enum AVCodecID codec;
+    enum AVSampleFormat sample_format;
+    enum AVPixelFormat pixel_format;
+    int sample_rate;
+    int channels;
+    int64_t channel_layout;
+    int window_width;
+    int window_height;
+    int frame_width;
+    int frame_height;
+    AVRational fps;
+} AVDeviceCapabilitiesQuery;
+
+typedef struct AVDeviceInfo
+{
+    char *device_name;
+    char *device_description;
+} AVDeviceInfo;
+
+typedef struct AVDeviceInfoList
+{
+    AVDeviceInfo **devices;
+    int nb_devices;
+    int default_device;
+} AVDeviceInfoList;
+
+// when used for filters they must have an odd number of elements
+// coeffs cannot be shared between vectors
+typedef struct SwsVector
+{
+    double *coeff; ///< pointer to the list of coefficients
+    int length;    ///< number of coefficients in the vector
+} SwsVector;
+// vectors can be shared
+typedef struct SwsFilter
+{
+    SwsVector *lumH;
+    SwsVector *lumV;
+    SwsVector *chrH;
+    SwsVector *chrV;
+} SwsFilter;
+
+enum SwrDitherType
+{
+    SWR_DITHER_NONE = 0,
+    SWR_DITHER_RECTANGULAR,
+    SWR_DITHER_TRIANGULAR,
+    SWR_DITHER_TRIANGULAR_HIGHPASS,
+    SWR_DITHER_NS = 64, ///< not part of API/ABI
+    SWR_DITHER_NS_LIPSHITZ,
+    SWR_DITHER_NS_F_WEIGHTED,
+    SWR_DITHER_NS_MODIFIED_E_WEIGHTED,
+    SWR_DITHER_NS_IMPROVED_E_WEIGHTED,
+    SWR_DITHER_NS_SHIBATA,
+    SWR_DITHER_NS_LOW_SHIBATA,
+    SWR_DITHER_NS_HIGH_SHIBATA,
+    SWR_DITHER_NB, ///< not part of API/ABI
+};
+
+enum SwrEngine
+{
+    SWR_ENGINE_SWR,
+    SWR_ENGINE_SOXR,
+    SWR_ENGINE_NB, ///< not part of API/ABI
+};
+
+enum SwrFilterType
+{
+    SWR_FILTER_TYPE_CUBIC,
+    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,
+    SWR_FILTER_TYPE_KAISER,
+};
+
+
+
+typedef void (mix_1_1_func_type)(void *out, const void *in, void *coeffp, integer index, integer len);
+typedef void (mix_2_1_func_type)(void *out, const void *in1, const void *in2, void *coeffp, integer index1, integer index2, integer len);
+typedef void (mix_any_func_type)(uint8_t **out, const uint8_t **in1, void *coeffp, integer len);
+
+struct SWresampleDitherContext {
+    int method;
+    int noise_pos;
+    float scale;
+    float noise_scale;                              ///< Noise scale
+    int ns_taps;                                    ///< Noise shaping dither taps
+    float ns_scale;                                 ///< Noise shaping dither scale
+    float ns_scale_1;                               ///< Noise shaping dither scale^-1
+    int ns_pos;                                     ///< Noise shaping dither position
+    float ns_coeffs[NS_TAPS];                       ///< Noise shaping filter coefficients
+    float ns_errors[SWR_CH_MAX][2*NS_TAPS];
+    SWresampleAudioData noise;                                ///< noise used for dithering
+    SWresampleAudioData temp;                                 ///< temporary storage when writing into the input buffer isn't possible
+    int output_sample_bits;                         ///< the number of used output bits, needed to scale dither correctly
+};
+
+struct SwrContext {
+    const AVClass *av_class;                        ///< AVClass used for AVOption and av_log()
+    int log_level_offset;                           ///< logging level offset
+    void *log_ctx;                                  ///< parent logging context
+    enum AVSampleFormat  in_sample_fmt;             ///< input sample format
+    enum AVSampleFormat int_sample_fmt;             ///< internal sample format (AV_SAMPLE_FMT_FLTP or AV_SAMPLE_FMT_S16P)
+    enum AVSampleFormat out_sample_fmt;             ///< output sample format
+    int64_t  in_ch_layout;                          ///< input channel layout
+    int64_t out_ch_layout;                          ///< output channel layout
+    int      in_sample_rate;                        ///< input sample rate
+    int     out_sample_rate;                        ///< output sample rate
+    int flags;                                      ///< miscellaneous flags such as SWR_FLAG_RESAMPLE
+    float slev;                                     ///< surround mixing level
+    float clev;                                     ///< center mixing level
+    float lfe_mix_level;                            ///< LFE mixing level
+    float rematrix_volume;                          ///< rematrixing volume coefficient
+    float rematrix_maxval;                          ///< maximum value for rematrixing output
+    int matrix_encoding;                            /**< matrixed stereo encoding */
+    const int *channel_map;                         ///< channel index (or -1 if muted channel) map
+    int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
+    int engine;
+
+    int user_in_ch_count;                           ///< User set input channel count
+    int user_out_ch_count;                          ///< User set output channel count
+    int user_used_ch_count;                         ///< User set used channel count
+    int64_t user_in_ch_layout;                      ///< User set input channel layout
+    int64_t user_out_ch_layout;                     ///< User set output channel layout
+    enum AVSampleFormat user_int_sample_fmt;        ///< User set internal sample format
+    int user_dither_method;                         ///< User set dither method
+
+    struct SWresampleDitherContext dither;
+
+    int filter_size;                                /**< length of each FIR filter in the resampling filterbank relative to the cutoff frequency */
+    int phase_shift;                                /**< log2 of the number of entries in the resampling polyphase filterbank */
+    int linear_interp;                              /**< if 1 then the resampling FIR filter will be linearly interpolated */
+    int exact_rational;                             /**< if 1 then enable non power of 2 phase_count */
+    double cutoff;                                  /**< resampling cutoff frequency (swr: 6dB point; soxr: 0dB point). 1.0 corresponds to half the output sample rate */
+    int filter_type;                                /**< swr resampling filter type */
+    double kaiser_beta;                                /**< swr beta value for Kaiser window (only applicable if filter_type == AV_FILTER_TYPE_KAISER) */
+    double precision;                               /**< soxr resampling precision (in bits) */
+    int cheby;                                      /**< soxr: if 1 then passband rolloff will be none (Chebyshev) & irrational ratio approximation precision will be higher */
+
+    float min_compensation;                         ///< swr minimum below which no compensation will happen
+    float min_hard_compensation;                    ///< swr minimum below which no silence inject / sample drop will happen
+    float soft_compensation_duration;               ///< swr duration over which soft compensation is applied
+    float max_soft_compensation;                    ///< swr maximum soft compensation in seconds over soft_compensation_duration
+    float async;                                    ///< swr simple 1 parameter async, similar to ffmpegs -async
+    int64_t firstpts_in_samples;                    ///< swr first pts in samples
+
+    int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
+    int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
+    int rematrix_custom;                            ///< flag to indicate that a custom matrix has been defined
+
+    SWresampleAudioData in;                                   ///< input audio data
+    SWresampleAudioData postin;                               ///< post-input audio data: used for rematrix/resample
+    SWresampleAudioData midbuf;                               ///< intermediate audio data (postin/preout)
+    SWresampleAudioData preout;                               ///< pre-output audio data: used for rematrix/resample
+    SWresampleAudioData out;                                  ///< converted output audio data
+    SWresampleAudioData in_buffer;                            ///< cached audio data (convert and resample purpose)
+    SWresampleAudioData silence;                              ///< temporary with silence
+    SWresampleAudioData drop_temp;                            ///< temporary used to discard output
+    int in_buffer_index;                            ///< cached buffer position
+    int in_buffer_count;                            ///< cached buffer length
+    int resample_in_constraint;                     ///< 1 if the input end was reach before the output end, 0 otherwise
+    int flushed;                                    ///< 1 if data is to be flushed and no further input is expected
+    int64_t outpts;                                 ///< output PTS
+    int64_t firstpts;                               ///< first PTS
+    int drop_output;                                ///< number of output samples to drop
+    double delayed_samples_fixup;                   ///< soxr 0.1.1: needed to fixup delayed_samples after flush has been called.
+
+    struct SWresampleAudioConvert *in_convert;                ///< input conversion context
+    struct SWresampleAudioConvert *out_convert;               ///< output conversion context
+    struct SWresampleAudioConvert *full_convert;              ///< full conversion context (single conversion for input and output)
+    struct ResampleContext *resample;               ///< resampling context
+    struct Resampler const *resampler;              ///< resampler virtual function table
+
+    double matrix[SWR_CH_MAX][SWR_CH_MAX];          ///< floating point rematrixing coefficients
+    float matrix_flt[SWR_CH_MAX][SWR_CH_MAX];       ///< single precision floating point rematrixing coefficients
+    uint8_t *native_matrix;
+    uint8_t *native_one;
+    uint8_t *native_simd_one;
+    uint8_t *native_simd_matrix;
+    int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];       ///< 17.15 fixed point rematrixing coefficients
+    uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
+    mix_1_1_func_type *mix_1_1_f;
+    mix_1_1_func_type *mix_1_1_simd;
+
+    mix_2_1_func_type *mix_2_1_f;
+    mix_2_1_func_type *mix_2_1_simd;
+
+    mix_any_func_type *mix_any_f;
+
+    /* TODO: callbacks for ASM optimizations */
+};
+typedef struct SwrContext SwrContext;
+
+
+typedef struct ResampleContext * (* resample_init_func)(struct ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear,
+                                    double cutoff, enum AVSampleFormat format, enum SwrFilterType filter_type, double kaiser_beta, double precision, int cheby, int exact_rational);
+typedef void    (* resample_free_func)(struct ResampleContext **c);
+typedef int     (* multiple_resample_func)(struct ResampleContext *c, SWresampleAudioData *dst, int dst_size, SWresampleAudioData *src, int src_size, int *consumed);
+typedef int     (* resample_flush_func)(struct SwrContext *c);
+typedef int     (* set_compensation_func)(struct ResampleContext *c, int sample_delta, int compensation_distance);
+typedef int64_t (* get_delay_func)(struct SwrContext *s, int64_t base);
+typedef int     (* invert_initial_buffer_func)(struct ResampleContext *c, SWresampleAudioData *dst, const SWresampleAudioData *src, int src_size, int *dst_idx, int *dst_count);
+typedef int64_t (* get_out_samples_func)(struct SwrContext *s, int in_samples);
+
+struct Resampler {
+  resample_init_func            init;
+  resample_free_func            free;
+  multiple_resample_func        multiple_resample;
+  resample_flush_func           flush;
+  set_compensation_func         set_compensation;
+  get_delay_func                get_delay;
+  invert_initial_buffer_func    invert_initial_buffer;
+  get_out_samples_func          get_out_samples;
+};
+
+extern struct Resampler const swri_resampler;
+extern struct Resampler const swri_soxr_resampler;
+
+
 
 static inline int av_clip_c(int a, int amin, int amax)
 {
@@ -4483,7 +5343,10 @@ void av_log_set_callback(void (*callback)(void *, int, const char *, va_list));
 
 void av_log_default_callback(void *avcl, int level, const char *fmt,va_list vl);
 
-const char *av_default_item_name(void *ctx);
+const char *av_default_item_name(void *ptr)
+{
+    return (*(AVClass **) ptr)->class_name;
+}
 AVClassCategory av_default_get_category(void *ptr);
 
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,char *line, int line_size, int *print_prefix);
@@ -4908,17 +5771,7 @@ AVBufferRef *av_buffer_allocz(int size);
 #define AV_CH_LAYOUT_STEREO_DOWNMIX (AV_CH_STEREO_LEFT | AV_CH_STEREO_RIGHT)
 #define AV_CH_LAYOUT_22POINT2 (AV_CH_LAYOUT_5POINT1_BACK | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER | AV_CH_BACK_CENTER | AV_CH_LOW_FREQUENCY_2 | AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT | AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT | AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_CENTER | AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT | AV_CH_TOP_SIDE_LEFT | AV_CH_TOP_SIDE_RIGHT | AV_CH_TOP_BACK_CENTER | AV_CH_BOTTOM_FRONT_CENTER | AV_CH_BOTTOM_FRONT_LEFT | AV_CH_BOTTOM_FRONT_RIGHT)
 
-enum AVMatrixEncoding
-{
-    AV_MATRIX_ENCODING_NONE,
-    AV_MATRIX_ENCODING_DOLBY,
-    AV_MATRIX_ENCODING_DPLII,
-    AV_MATRIX_ENCODING_DPLIIX,
-    AV_MATRIX_ENCODING_DPLIIZ,
-    AV_MATRIX_ENCODING_DOLBYEX,
-    AV_MATRIX_ENCODING_DOLBYHEADPHONE,
-    AV_MATRIX_ENCODING_NB
-};
+
 uint64_t av_get_channel_layout(const char *name);
 int av_get_extended_channel_layout(const char *name, uint64_t *channel_layout, int *nb_channels);
 
@@ -6333,11 +7186,6 @@ int ff_int_from_list_or_default(void *ctx, const char * val_name, int val,
 
 void ff_dvdsub_parse_palette(uint32_t *palette, const char *p);
 
-#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
-#    define av_export_avcodec __declspec(dllimport)
-#else
-#    define av_export_avcodec
-#endif
 
 
 
@@ -6368,7 +7216,6 @@ struct AVSubtitle;
 int av_codec_get_max_lowres(const AVCodec *codec);
 
 
-#define AV_SUBTITLE_FLAG_FORCED 0x00000001
 
 
 
@@ -6559,32 +7406,6 @@ int avcodec_is_open(AVCodecContext *s);
 #define FF_MAX_EXTRADATA_SIZE ((1 << 28) - AV_INPUT_BUFFER_PADDING_SIZE)
 
 AVCPBProperties *av_cpb_properties_alloc(size_t *size);
-#define LIBAVFORMAT_VERSION_MAJOR 58
-#define LIBAVFORMAT_VERSION_MINOR 63
-#define LIBAVFORMAT_VERSION_MICRO 100
-#define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO)
-#define LIBAVFORMAT_VERSION AV_VERSION(LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO)
-#define LIBAVFORMAT_BUILD LIBAVFORMAT_VERSION_INT
-// #define LIBAVFORMAT_IDENT "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
-#define FF_API_COMPUTE_PKT_FIELDS2 (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_OLD_OPEN_CALLBACKS (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_LAVF_AVCTX (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_HTTP_USER_AGENT (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_HLS_WRAP (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_HLS_USE_LOCALTIME (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_LAVF_KEEPSIDE_FLAG (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_OLD_ROTATE_API (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_FORMAT_GET_SET (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_OLD_AVIO_EOF_0 (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_LAVF_FFSERVER (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_FORMAT_FILENAME (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_OLD_RTSP_OPTIONS (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_DASH_MIN_SEG_DURATION (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_LAVF_MP4A_LATM (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_AVIOFORMAT (LIBAVFORMAT_VERSION_MAJOR < 59)
-#define FF_API_R_FRAME_RATE 1
-#define AVIO_SEEKABLE_NORMAL (1 << 0)
-#define AVIO_SEEKABLE_TIME (1 << 1)
 
 
 
@@ -6635,8 +7456,7 @@ int avio_put_str16le(AVIOContext *s, const char *str);
 int avio_put_str16be(AVIOContext *s, const char *str);
 
 void avio_write_marker(AVIOContext *s, int64_t time, enum AVIODataMarkerType type);
-#define AVSEEK_SIZE 0x10000
-#define AVSEEK_FORCE 0x20000
+
 
 int64_t avio_seek(AVIOContext *s, int64_t offset, int whence);
 
@@ -6676,11 +7496,7 @@ int avio_get_str(AVIOContext *pb, int maxlen, char *buf, int buflen);
 
 int avio_get_str16le(AVIOContext *pb, int maxlen, char *buf, int buflen);
 int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
-#define AVIO_FLAG_READ 1
-#define AVIO_FLAG_WRITE 2
-#define AVIO_FLAG_READ_WRITE (AVIO_FLAG_READ | AVIO_FLAG_WRITE)
-#define AVIO_FLAG_NONBLOCK 8
-#define AVIO_FLAG_DIRECT 0x8000
+
 
 int avio_open(AVIOContext **s, const char *url, int flags);
 int avio_open2(AVIOContext **s, const char *url, int flags,
@@ -6715,62 +7531,7 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size);
 int av_append_packet(AVIOContext *s, AVPacket *pkt, int size);
 
 
-#define AVPROBE_SCORE_RETRY (AVPROBE_SCORE_MAX / 4)
-#define AVPROBE_SCORE_STREAM_RETRY (AVPROBE_SCORE_MAX / 4 - 1)
-#define AVPROBE_SCORE_EXTENSION 50
-#define AVPROBE_SCORE_MIME 75
-#define AVPROBE_SCORE_MAX 100
-#define AVPROBE_PADDING_SIZE 32
-/// Demuxer will use avio_open, no opened file should be provided by the caller.
-#define AVFMT_NOFILE 0x0001
-#define AVFMT_NEEDNUMBER 0x0002
-#define AVFMT_SHOW_IDS 0x0008
-#define AVFMT_GLOBALHEADER 0x0040
-#define AVFMT_NOTIMESTAMPS 0x0080
-#define AVFMT_GENERIC_INDEX 0x0100
-#define AVFMT_TS_DISCONT 0x0200
-#define AVFMT_VARIABLE_FPS 0x0400
-#define AVFMT_NODIMENSIONS 0x0800
-#define AVFMT_NOSTREAMS 0x1000
-#define AVFMT_NOBINSEARCH 0x2000
-#define AVFMT_NOGENSEARCH 0x4000
-#define AVFMT_NO_BYTE_SEEK 0x8000
-#define AVFMT_ALLOW_FLUSH 0x10000
-#define AVFMT_TS_NONSTRICT 0x20000
-#define AVFMT_TS_NEGATIVE 0x40000
-#define AVFMT_SEEK_TO_PTS 0x4000000
-#define ff_const59
 
-
-
-
-#define AVINDEX_KEYFRAME 0x0001
-#define AVINDEX_DISCARD_FRAME 0x0002
-
-
-#define AV_DISPOSITION_DEFAULT 0x0001
-#define AV_DISPOSITION_DUB 0x0002
-#define AV_DISPOSITION_ORIGINAL 0x0004
-#define AV_DISPOSITION_COMMENT 0x0008
-#define AV_DISPOSITION_LYRICS 0x0010
-#define AV_DISPOSITION_KARAOKE 0x0020
-#define AV_DISPOSITION_FORCED 0x0040
-#define AV_DISPOSITION_HEARING_IMPAIRED 0x0080
-#define AV_DISPOSITION_VISUAL_IMPAIRED 0x0100
-#define AV_DISPOSITION_CLEAN_EFFECTS 0x0200
-#define AV_DISPOSITION_ATTACHED_PIC 0x0400
-#define AV_DISPOSITION_TIMED_THUMBNAILS 0x0800
-#define AV_DISPOSITION_CAPTIONS 0x10000
-#define AV_DISPOSITION_DESCRIPTIONS 0x20000
-#define AV_DISPOSITION_METADATA 0x40000
-#define AV_DISPOSITION_DEPENDENT 0x80000
-#define AV_DISPOSITION_STILL_IMAGE 0x100000
-#define AV_PTS_WRAP_IGNORE 0
-#define AV_PTS_WRAP_ADD_OFFSET 1
-#define AV_PTS_WRAP_SUB_OFFSET -1
-#define AVSTREAM_EVENT_FLAG_METADATA_UPDATED 0x0001
-#define MAX_STD_TIMEBASES (30 * 12 + 30 + 3 + 6)
-#define MAX_REORDER_DELAY 16
 
 
 AVRational av_stream_get_r_frame_rate(const AVStream *s);
@@ -6784,34 +7545,6 @@ void av_stream_set_recommended_encoder_configuration(AVStream *s, char *configur
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);
 
 int64_t av_stream_get_end_pts(const AVStream *st);
-#define AV_PROGRAM_RUNNING 1
-
-
-#define AVFMTCTX_NOHEADER 0x0001
-#define AVFMTCTX_UNSEEKABLE 0x0002
-#define AVFMT_FLAG_GENPTS 0x0001
-#define AVFMT_FLAG_IGNIDX 0x0002
-#define AVFMT_FLAG_NONBLOCK 0x0004
-#define AVFMT_FLAG_IGNDTS 0x0008
-#define AVFMT_FLAG_NOFILLIN 0x0010
-#define AVFMT_FLAG_NOPARSE 0x0020
-#define AVFMT_FLAG_NOBUFFER 0x0040
-#define AVFMT_FLAG_CUSTOM_IO 0x0080
-#define AVFMT_FLAG_DISCARD_CORRUPT 0x0100
-#define AVFMT_FLAG_FLUSH_PACKETS 0x0200
-#define AVFMT_FLAG_BITEXACT 0x0400
-#define AVFMT_FLAG_MP4A_LATM 0x8000
-#define AVFMT_FLAG_SORT_DTS 0x10000
-#define AVFMT_FLAG_PRIV_OPT 0x20000
-#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000
-#define AVFMT_FLAG_FAST_SEEK 0x80000
-#define AVFMT_FLAG_SHORTEST 0x100000
-#define AVFMT_FLAG_AUTO_BSF 0x200000
-#define FF_FDEBUG_TS 0x0001
-#define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001
-#define AVFMT_AVOID_NEG_TS_AUTO -1
-#define AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE 1
-#define AVFMT_AVOID_NEG_TS_MAKE_ZERO 2
 
 
 int av_format_get_probe_score(const AVFormatContext *s);
@@ -6870,9 +7603,10 @@ AVInputFormat *av_iformat_next(const AVInputFormat *f);
 
 AVOutputFormat *av_oformat_next(const AVOutputFormat *f);
 
-const AVOutputFormat *av_muxer_iterate(void **opaque);
 
-const AVInputFormat *av_demuxer_iterate(void **opaque);
+#include "allformats.c"
+
+
 
 #define IO_BUFFER_SIZE 32768
 
@@ -8271,7 +9005,6 @@ static inline void flush_put_bits(PutBitContext *s)
     s->bit_buf  = 0;
 }
 
-
 #include "utils.c"
 
 
@@ -8329,10 +9062,6 @@ end:
     av_freep(&avctx);
     return NULL;
 }
-
-
-
-
 
 
 int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *frame, int *got_packet_ptr){
@@ -8393,14 +9122,10 @@ unsigned int avpriv_toupper4(unsigned int x);
 void ff_color_frame(AVFrame *frame, const int color[4]);
 
 
-
-
-
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size, int64_t min_size);
 
 
-static inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
-                                                        int64_t samples)
+static inline int64_t ff_samples_to_time_base(AVCodecContext *avctx, int64_t samples)
 {
     if(samples == AV_NOPTS_VALUE)
         return AV_NOPTS_VALUE;
@@ -8425,95 +9150,37 @@ static inline float ff_exp2fi(int x) {
 }
 
 
+av_warn_unused_result
+int swri_realloc_audio(SWresampleAudioData *a, int count);
 
+void swri_noise_shaping_int16 (SwrContext *s, SWresampleAudioData *dsts, const SWresampleAudioData *srcs, const SWresampleAudioData *noises, int count);
+void swri_noise_shaping_int32 (SwrContext *s, SWresampleAudioData *dsts, const SWresampleAudioData *srcs, const SWresampleAudioData *noises, int count);
+void swri_noise_shaping_float (SwrContext *s, SWresampleAudioData *dsts, const SWresampleAudioData *srcs, const SWresampleAudioData *noises, int count);
+void swri_noise_shaping_double(SwrContext *s, SWresampleAudioData *dsts, const SWresampleAudioData *srcs, const SWresampleAudioData *noises, int count);
 
+av_warn_unused_result
+int swri_rematrix_init(SwrContext *s);
+void swri_rematrix_free(SwrContext *s);
+int swri_rematrix(SwrContext *s, SWresampleAudioData *out, SWresampleAudioData *in, int len, int mustcopy);
+int swri_rematrix_init_x86(struct SwrContext *s);
 
+av_warn_unused_result
+int swri_get_dither(SwrContext *s, void *dst, int len, unsigned seed, enum AVSampleFormat noise_fmt);
+av_warn_unused_result
+int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFormat in_fmt);
 
-
-
-
-
-
-
-typedef struct AVDeviceCapabilitiesQuery
-{
-    const AVClass *av_class;
-    AVFormatContext *device_context;
-    enum AVCodecID codec;
-    enum AVSampleFormat sample_format;
-    enum AVPixelFormat pixel_format;
-    int sample_rate;
-    int channels;
-    int64_t channel_layout;
-    int window_width;
-    int window_height;
-    int frame_width;
-    int frame_height;
-    AVRational fps;
-} AVDeviceCapabilitiesQuery;
-
-typedef struct AVDeviceInfo
-{
-    char *device_name;
-    char *device_description;
-} AVDeviceInfo;
-
-typedef struct AVDeviceInfoList
-{
-    AVDeviceInfo **devices;
-    int nb_devices;
-    int default_device;
-} AVDeviceInfoList;
-
-// when used for filters they must have an odd number of elements
-// coeffs cannot be shared between vectors
-typedef struct SwsVector
-{
-    double *coeff; ///< pointer to the list of coefficients
-    int length;    ///< number of coefficients in the vector
-} SwsVector;
-// vectors can be shared
-typedef struct SwsFilter
-{
-    SwsVector *lumH;
-    SwsVector *lumV;
-    SwsVector *chrH;
-    SwsVector *chrV;
-} SwsFilter;
-
-enum SwrDitherType
-{
-    SWR_DITHER_NONE = 0,
-    SWR_DITHER_RECTANGULAR,
-    SWR_DITHER_TRIANGULAR,
-    SWR_DITHER_TRIANGULAR_HIGHPASS,
-    SWR_DITHER_NS = 64, ///< not part of API/ABI
-    SWR_DITHER_NS_LIPSHITZ,
-    SWR_DITHER_NS_F_WEIGHTED,
-    SWR_DITHER_NS_MODIFIED_E_WEIGHTED,
-    SWR_DITHER_NS_IMPROVED_E_WEIGHTED,
-    SWR_DITHER_NS_SHIBATA,
-    SWR_DITHER_NS_LOW_SHIBATA,
-    SWR_DITHER_NS_HIGH_SHIBATA,
-    SWR_DITHER_NB, ///< not part of API/ABI
-};
-
-enum SwrEngine
-{
-    SWR_ENGINE_SWR,
-    SWR_ENGINE_SOXR,
-    SWR_ENGINE_NB, ///< not part of API/ABI
-};
-
-enum SwrFilterType
-{
-    SWR_FILTER_TYPE_CUBIC,
-    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,
-    SWR_FILTER_TYPE_KAISER,
-};
-
-typedef struct SwrContext SwrContext;
-struct SwsContext;
+void swri_audio_convert_init_aarch64(struct AudioConvert *ac,
+                                 enum AVSampleFormat out_fmt,
+                                 enum AVSampleFormat in_fmt,
+                                 int channels);
+void swri_audio_convert_init_arm(struct AudioConvert *ac,
+                                 enum AVSampleFormat out_fmt,
+                                 enum AVSampleFormat in_fmt,
+                                 int channels);
+void swri_audio_convert_init_x86(struct AudioConvert *ac,
+                                 enum AVSampleFormat out_fmt,
+                                 enum AVSampleFormat in_fmt,
+                                 int channels);
 
 extern const AVOption av_device_capabilities[];
 
@@ -8537,7 +9204,7 @@ int avdevice_list_output_sinks(struct AVOutputFormat *device, const char *device
 #define LIBSWSCALE_VERSION_INT AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)
 #define LIBSWSCALE_VERSION AV_VERSION(LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)
 #define LIBSWSCALE_BUILD LIBSWSCALE_VERSION_INT
-// #define LIBSWSCALE_IDENT "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
+#define LIBSWSCALE_IDENT "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
 #define FF_API_SWS_VECTOR (LIBSWSCALE_VERSION_MAJOR < 6)
 
 unsigned swscale_version(void);
@@ -8560,10 +9227,7 @@ const char *swscale_license(void);
 #define SWS_SRC_V_CHR_DROP_SHIFT 16
 #define SWS_PARAM_DEFAULT 123456
 #define SWS_PRINT_INFO 0x1000
-//the following 3 flags are not completely implemented
-//internal chrominance subsampling info
 #define SWS_FULL_CHR_H_INT 0x2000
-//input subsampling info
 #define SWS_FULL_CHR_H_INP 0x4000
 #define SWS_DIRECT_BGR 0x8000
 #define SWS_ACCURATE_RND 0x40000
@@ -8697,8 +9361,7 @@ void swr_free(struct SwrContext **s);
 
 void swr_close(struct SwrContext *s);
 
-int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
-                const uint8_t **in, int in_count);
+int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,const uint8_t **in, int in_count);
 
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
 
@@ -8804,9 +9467,6 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
                            unsigned filt_srcpad_idx, unsigned filt_dstpad_idx);
 
 const AVClass *avfilter_get_class(void);
-
-
-
 
 
 AVFilterGraph *avfilter_graph_alloc(void);
@@ -12393,12 +13053,8 @@ extern SDL_bool SDL_RemoveTimer(SDL_TimerID id);
 extern void SDL_GetVersion(SDL_version *ver);
 extern const char *SDL_GetRevision(void);
 extern int SDL_GetRevisionNumber(void);
-
-
 extern SDL_Window *SDL_CreateShapedWindow(const char *title, unsigned int x, unsigned int y, unsigned int w, unsigned int h, uint32_t flags);
 extern SDL_bool SDL_IsShapedWindow(const SDL_Window *window);
-
-
 extern int SDL_Init(uint32_t flags);
 
 extern int SDL_InitSubSystem(uint32_t flags);
@@ -12408,6 +13064,10 @@ extern void SDL_QuitSubSystem(uint32_t flags);
 extern uint32_t SDL_WasInit(uint32_t flags);
 
 extern void SDL_Quit(void);
+
+#define CMDUTILS_COMMON_OPTIONS_AVDEVICE {"sources", OPT_EXIT | HAS_ARG, {.func_arg = show_sources}, "list sources of the input device", "device"}, {"sinks", OPT_EXIT | HAS_ARG, {.func_arg = show_sinks}, "list sinks of the output device", "device"},
+#define CMDUTILS_COMMON_OPTIONS {"L", OPT_EXIT, {.func_arg = show_license}, "show license"}, {"h", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"?", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"-help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"version", OPT_EXIT, {.func_arg = show_version}, "show version"}, {"buildconf", OPT_EXIT, {.func_arg = show_buildconf}, "show build configuration"}, {"formats", OPT_EXIT, {.func_arg = show_formats}, "show available formats"}, {"muxers", OPT_EXIT, {.func_arg = show_muxers}, "show available muxers"}, {"demuxers", OPT_EXIT, {.func_arg = show_demuxers}, "show available demuxers"}, {"devices", OPT_EXIT, {.func_arg = show_devices}, "show available devices"}, {"codecs", OPT_EXIT, {.func_arg = show_codecs}, "show available codecs"}, {"decoders", OPT_EXIT, {.func_arg = show_decoders}, "show available decoders"}, {"encoders", OPT_EXIT, {.func_arg = show_encoders}, "show available encoders"}, {"bsfs", OPT_EXIT, {.func_arg = show_bsfs}, "show available bit stream filters"}, {"protocols", OPT_EXIT, {.func_arg = show_protocols}, "show available protocols"}, {"filters", OPT_EXIT, {.func_arg = show_filters}, "show available filters"}, {"pix_fmts", OPT_EXIT, {.func_arg = show_pix_fmts}, "show available pixel formats"}, {"layouts", OPT_EXIT, {.func_arg = show_layouts}, "show standard channel layouts"}, {"sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts}, "show available audio sample formats"}, {"colors", OPT_EXIT, {.func_arg = show_colors}, "show available color names"}, {"loglevel", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"v", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"report", 0, {.func_arg = opt_report}, "generate a report"}, {"max_alloc", HAS_ARG, {.func_arg = opt_max_alloc}, "set maximum size of a single allocated block", "bytes"}, {"cpuflags", HAS_ARG | OPT_EXPERT, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags"}, {"hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner}, "do not show program banner", "hide_banner"}, CMDUTILS_COMMON_OPTIONS_AVDEVICE
+
 
 extern const char program_name[];
 
@@ -12420,128 +13080,44 @@ extern AVDictionary *swr_opts;
 extern AVDictionary *format_opts, *codec_opts, *resample_opts;
 extern int hide_banner;
 
-void register_exit(void (*cb)(int ret));
-
-void exit_program(int ret);
-
-void init_dynload(void);
-
-void init_opts(void);
-
-void uninit_opts(void);
-
-void log_callback_help(void *ptr, int level, const char *fmt, va_list vl);
-
-int opt_cpuflags(void *optctx, const char *opt, const char *arg);
-
-int opt_default(void *optctx, const char *opt, const char *arg);
-
-int opt_loglevel(void *optctx, const char *opt, const char *arg);
-int opt_report(void *optctx, const char *opt, const char *arg);
-int opt_max_alloc(void *optctx, const char *opt, const char *arg);
-int opt_codec_debug(void *optctx, const char *opt, const char *arg);
-int opt_timelimit(void *optctx, const char *opt, const char *arg);
-double parse_number_or_die(const char *context, const char *numstr, int type,double min, double max);
-int64_t parse_time_or_die(const char *context, const char *timestr,int is_duration);
 
 
-void show_help_options(const OptionDef *options, const char *msg, int req_flags,
-                       int rej_flags, int alt_flags);
-// #define CMDUTILS_COMMON_OPTIONS_AVDEVICE {"sources", OPT_EXIT | HAS_ARG, {.func_arg = show_sources}, "list sources of the input device", "device"}, {"sinks", OPT_EXIT | HAS_ARG, {.func_arg = show_sinks}, "list sinks of the output device", "device"},
-// #define CMDUTILS_COMMON_OPTIONS {"L", OPT_EXIT, {.func_arg = show_license}, "show license"}, {"h", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"?", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"-help", OPT_EXIT, {.func_arg = show_help}, "show help", "topic"}, {"version", OPT_EXIT, {.func_arg = show_version}, "show version"}, {"buildconf", OPT_EXIT, {.func_arg = show_buildconf}, "show build configuration"}, {"formats", OPT_EXIT, {.func_arg = show_formats}, "show available formats"}, {"muxers", OPT_EXIT, {.func_arg = show_muxers}, "show available muxers"}, {"demuxers", OPT_EXIT, {.func_arg = show_demuxers}, "show available demuxers"}, {"devices", OPT_EXIT, {.func_arg = show_devices}, "show available devices"}, {"codecs", OPT_EXIT, {.func_arg = show_codecs}, "show available codecs"}, {"decoders", OPT_EXIT, {.func_arg = show_decoders}, "show available decoders"}, {"encoders", OPT_EXIT, {.func_arg = show_encoders}, "show available encoders"}, {"bsfs", OPT_EXIT, {.func_arg = show_bsfs}, "show available bit stream filters"}, {"protocols", OPT_EXIT, {.func_arg = show_protocols}, "show available protocols"}, {"filters", OPT_EXIT, {.func_arg = show_filters}, "show available filters"}, {"pix_fmts", OPT_EXIT, {.func_arg = show_pix_fmts}, "show available pixel formats"}, {"layouts", OPT_EXIT, {.func_arg = show_layouts}, "show standard channel layouts"}, {"sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts}, "show available audio sample formats"}, {"colors", OPT_EXIT, {.func_arg = show_colors}, "show available color names"}, {"loglevel", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"v", HAS_ARG, {.func_arg = opt_loglevel}, "set logging level", "loglevel"}, {"report", 0, {.func_arg = opt_report}, "generate a report"}, {"max_alloc", HAS_ARG, {.func_arg = opt_max_alloc}, "set maximum size of a single allocated block", "bytes"}, {"cpuflags", HAS_ARG | OPT_EXPERT, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags"}, {"hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner}, "do not show program banner", "hide_banner"}, CMDUTILS_COMMON_OPTIONS_AVDEVICE
+#define CONV_FP(x) ((double) (x)) / (1 << 16)
 
-void show_help_children(const AVClass *class, int flags);
+// double to fixed point
+#define CONV_DB(x) (int32_t) ((x) * (1 << 16))
 
 void show_help_default(const char *opt, const char *arg);
 
-int show_help(void *optctx, const char *opt, const char *arg);
-void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
-                   void (*parse_arg_function)(void *optctx, const char *));
+double av_display_rotation_get(const int32_t matrix[9])
+{
+    double rotation, scale[2];
 
-int parse_option(void *optctx, const char *opt, const char *arg,
-                 const OptionDef *options);
+    scale[0] = hypot(CONV_FP(matrix[0]), CONV_FP(matrix[3]));
+    scale[1] = hypot(CONV_FP(matrix[1]), CONV_FP(matrix[4]));
 
+    if (scale[0] == 0.0 || scale[1] == 0.0)
+        return NAN;
 
-int parse_optgroup(void *optctx, OptionGroup *g);
-int split_commandline(OptionParseContext *octx, int argc, char *argv[],
-                      const OptionDef *options,
-                      const OptionGroupDef *groups, int nb_groups);
+    rotation = atan2(CONV_FP(matrix[1]) / scale[1],
+                     CONV_FP(matrix[0]) / scale[0]) * 180 / M_PI;
 
-void uninit_parse_context(OptionParseContext *octx);
+    return -rotation;
+}
 
-void parse_loglevel(int argc, char **argv, const OptionDef *options);
+#include "cmdutils.c"
 
-int locate_option(int argc, char **argv, const OptionDef *options,
-                  const char *optname);
-
-int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec);
-AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
-                                AVFormatContext *s, AVStream *st, AVCodec *codec);
-
-AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
-                                           AVDictionary *codec_opts);
-
-void print_error(const char *filename, int err);
-
-void show_banner(int argc, char **argv, const OptionDef *options);
-
-int show_version(void *optctx, const char *opt, const char *arg);
-
-int show_buildconf(void *optctx, const char *opt, const char *arg);
-
-int show_license(void *optctx, const char *opt, const char *arg);
-
-int show_formats(void *optctx, const char *opt, const char *arg);
-
-int show_muxers(void *optctx, const char *opt, const char *arg);
-
-int show_demuxers(void *optctx, const char *opt, const char *arg);
-
-int show_devices(void *optctx, const char *opt, const char *arg);
-
-int show_sinks(void *optctx, const char *opt, const char *arg);
-
-int show_sources(void *optctx, const char *opt, const char *arg);
-
-int show_codecs(void *optctx, const char *opt, const char *arg);
-
-int show_decoders(void *optctx, const char *opt, const char *arg);
-
-int show_encoders(void *optctx, const char *opt, const char *arg);
-
-int show_filters(void *optctx, const char *opt, const char *arg);
-
-int show_bsfs(void *optctx, const char *opt, const char *arg);
-
-int show_protocols(void *optctx, const char *opt, const char *arg);
-
-int show_pix_fmts(void *optctx, const char *opt, const char *arg);
-
-int show_layouts(void *optctx, const char *opt, const char *arg);
-
-int show_sample_fmts(void *optctx, const char *opt, const char *arg);
-
-int show_colors(void *optctx, const char *opt, const char *arg);
-
-int read_yesno(void);
-FILE *get_preset_file(char *filename, size_t filename_size,
-                      const char *preset_name, int is_path, const char *codec_name);
-
-void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define media_type_string av_get_media_type_string
-#define GROW_ARRAY(array, nb_elems) array = grow_array(array, sizeof(*array), &nb_elems, nb_elems + 1)
 #define GET_PIX_FMT_NAME(pix_fmt) const char *name = av_get_pix_fmt_name(pix_fmt);
 #define GET_CODEC_NAME(id) const char *name = avcodec_descriptor_get(id)->name;
-// #define GET_SAMPLE_FMT_NAME(sample_fmt) const char *name = av_get_sample_fmt_name(sample_fmt)
-// #define GET_SAMPLE_RATE_NAME(rate) \
-//     char name[16];                 \
-//     snprintf(name, sizeof(name), "%d", rate);
-// #define GET_CH_LAYOUT_NAME(ch_layout) \
-//     char name[16];                    \
-//     snprintf(name, sizeof(name), "0x%" PRIx64, ch_layout);
-// #define GET_CH_LAYOUT_DESC(ch_layout) \
-//     char name[128];                   \
-//     av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
+#define GET_SAMPLE_FMT_NAME(sample_fmt) const char *name = av_get_sample_fmt_name(sample_fmt)
+#define GET_SAMPLE_RATE_NAME(rate) \
+    char name[16];                 \
+    snprintf(name, sizeof(name), "%d", rate);
+
+#define GET_CH_LAYOUT_DESC(ch_layout) \
+    char name[128];                   \
+    av_get_channel_layout_string(name, sizeof(name), 0, ch_layout);
 
 double get_rotation(AVStream *st);
 
@@ -12687,15 +13263,14 @@ static int packet_queue_put_private(PacketQueue *q, AVPacket *pkt)
     if (q->abort_request)
         return -1;
     pkt1 = av_malloc(sizeof(MyAVPacketList));
-    if (!pkt1)
+    if (pkt1 == NULL)
         return -1;
     pkt1->pkt = *pkt;
-    pkt1->next =
-        NULL;
+    pkt1->next = NULL;
     if (pkt == &flush_pkt)
         q->serial++;
     pkt1->serial = q->serial;
-    if (!q->last_pkt)
+    if (q->last_pkt == NULL)
         q->first_pkt = pkt1;
     else
         q->last_pkt->next = pkt1;
@@ -12850,8 +13425,7 @@ static void decoder_init(Decoder *d, AVCodecContext *avctx, PacketQueue *queue, 
 
 static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
 {
-    int ret = (-(
-        11));
+    int ret = (-(11));
     for (;;)
     {
         AVPacket pkt;
@@ -12859,7 +13433,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
         {
             do
             {
-                if (d->queue->abort_request)
+                if (d->queue->abort_request != 0)
                     return -1;
                 switch (d->avctx->codec_type)
                 {
@@ -12902,8 +13476,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
                 }
                 if (ret >= 0)
                     return 1;
-            } while (ret != (-(
-                                11)));
+            } while (ret != (-(11)));
         }
         do
         {
@@ -12938,8 +13511,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub)
                 ret = avcodec_decode_subtitle2(d->avctx, sub, &got_frame, &pkt);
                 if (ret < 0)
                 {
-                    ret = (-(
-                        11));
+                    ret = (-(11));
                 }
                 else
                 {
@@ -12984,25 +13556,20 @@ static int frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int 
     memset(f, 0, sizeof(FrameQueue));
     if (!(f->mutex = SDL_CreateMutex()))
     {
-        av_log(
-            NULL, 8, "SDL_CreateMutex(): %s\n", SDL_GetError());
-        return (-(
-            12));
+        av_log(NULL, 8, "SDL_CreateMutex(): %s\n", SDL_GetError());
+        return (-(12));
     }
     if (!(f->cond = SDL_CreateCond()))
     {
-        av_log(
-            NULL, 8, "SDL_CreateCond(): %s\n", SDL_GetError());
-        return (-(
-            12));
+        av_log(NULL, 8, "SDL_CreateCond(): %s\n", SDL_GetError());
+        return (-(12));
     }
     f->pktq = pktq;
-    f->max_size = ((max_size) > (((9) > (((3) > (16) ? (3) : (16))) ? (9) : (((3) > (16) ? (3) : (16))))) ? (((9) > (((3) > (16) ? (3) : (16))) ? (9) : (((3) > (16) ? (3) : (16))))) : (max_size));
+    f->max_size = (max_size > 16 ? 16 : max_size);
     f->keep_last = !!keep_last;
     for (i = 0; i < f->max_size; i++)
         if (!(f->queue[i].frame = av_frame_alloc()))
-            return (-(
-                12));
+            return (-(12));
     return 0;
 }
 
@@ -13113,10 +13680,8 @@ static void decoder_abort(Decoder *d, FrameQueue *fq)
 {
     packet_queue_abort(d->queue);
     frame_queue_signal(fq);
-    SDL_WaitThread(d->decoder_tid,
-                   NULL);
-    d->decoder_tid =
-        NULL;
+    SDL_WaitThread(d->decoder_tid,NULL);
+    d->decoder_tid = NULL;
     packet_queue_flush(d->queue);
 }
 
@@ -13147,14 +13712,12 @@ static int realloc_texture(SDL_Texture **texture, uint32_t new_format, int new_w
             return -1;
         if (init_texture)
         {
-            if (SDL_LockTexture(*texture,
-                                NULL, &pixels, &pitch) < 0)
+            if (SDL_LockTexture(*texture, NULL, &pixels, &pitch) < 0)
                 return -1;
             memset(pixels, 0, pitch * new_height);
             SDL_UnlockTexture(*texture);
         }
-        av_log(
-            NULL, 40, "Created %dx%d texture with %s.\n", new_width, new_height, SDL_GetPixelFormatName(new_format));
+        av_log(NULL, 40, "Created %dx%d texture with %s.\n", new_width, new_height, SDL_GetPixelFormatName(new_format));
     }
     return 0;
 }
@@ -13220,13 +13783,11 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
                                                 NULL,
                                                 NULL,
                                                 NULL);
-        if (*img_convert_ctx !=
-            NULL)
+        if (*img_convert_ctx != NULL)
         {
             uint8_t *pixels[4];
             int pitch[4];
-            if (!SDL_LockTexture(*tex,
-                                 NULL, (void **)pixels, pitch))
+            if (!SDL_LockTexture(*tex,NULL, (void **)pixels, pitch))
             {
                 sws_scale(*img_convert_ctx, (const uint8_t *const *)frame->data, frame->linesize,
                           0, frame->height, pixels, pitch);
@@ -13235,8 +13796,7 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
         }
         else
         {
-            av_log(
-                NULL, 8, "Cannot initialize the conversion context\n");
+            av_log(NULL, 8, "Cannot initialize the conversion context\n");
             ret = -1;
         }
         break;
@@ -13265,13 +13825,11 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame, struct SwsContext *
     default:
         if (frame->linesize[0] < 0)
         {
-            ret = SDL_UpdateTexture(*tex,
-                                    NULL, frame->data[0] + frame->linesize[0] * (frame->height - 1), -frame->linesize[0]);
+            ret = SDL_UpdateTexture(*tex,NULL, frame->data[0] + frame->linesize[0] * (frame->height - 1), -frame->linesize[0]);
         }
         else
         {
-            ret = SDL_UpdateTexture(*tex,
-                                    NULL, frame->data[0], frame->linesize[0]);
+            ret = SDL_UpdateTexture(*tex,NULL, frame->data[0], frame->linesize[0]);
         }
         break;
     }
@@ -13296,8 +13854,7 @@ static void set_sdl_yuv_conversion_mode(AVFrame *frame)
 static void video_image_display(VideoState *is)
 {
     Frame *vp;
-    Frame *sp =
-        NULL;
+    Frame *sp = NULL;
     SDL_Rect rect;
     vp = frame_queue_peek_last(&is->pictq);
     if (is->subtitle_st)
@@ -13335,14 +13892,12 @@ static void video_image_display(VideoState *is)
                                                                    NULL);
                         if (!is->sub_convert_ctx)
                         {
-                            av_log(
-                                NULL, 8, "Cannot initialize the conversion context\n");
+                            av_log(NULL, 8, "Cannot initialize the conversion context\n");
                             return;
                         }
                         if (!SDL_LockTexture(is->sub_texture, (SDL_Rect *)sub_rect, (void **)pixels, pitch))
                         {
-                            sws_scale(is->sub_convert_ctx, (const uint8_t *const *)sub_rect->data, sub_rect->linesize,
-                                      0, sub_rect->h, pixels, pitch);
+                            sws_scale(is->sub_convert_ctx, (const uint8_t *const *)sub_rect->data, sub_rect->linesize, 0, sub_rect->h, pixels, pitch);
                             SDL_UnlockTexture(is->sub_texture);
                         }
                     }
@@ -13366,12 +13921,10 @@ static void video_image_display(VideoState *is)
     SDL_RenderCopyEx(renderer, is->vid_texture,
                      NULL, &rect, 0,
                      NULL, vp->flip_v ? SDL_FLIP_VERTICAL : 0);
-    set_sdl_yuv_conversion_mode(
-        NULL);
+    set_sdl_yuv_conversion_mode(NULL);
     if (sp)
     {
-        SDL_RenderCopy(renderer, is->sub_texture,
-                       NULL, &rect);
+        SDL_RenderCopy(renderer, is->sub_texture, NULL, &rect);
     }
 }
 
@@ -13548,14 +14101,12 @@ static void stream_component_close(VideoState *is, int stream_index)
         swr_free(&is->swr_ctx);
         av_freep(&is->audio_buf1);
         is->audio_buf1_size = 0;
-        is->audio_buf =
-            NULL;
+        is->audio_buf = NULL;
         if (is->rdft)
         {
             av_rdft_end(is->rdft);
             av_freep(&is->rdft_data);
-            is->rdft =
-                NULL;
+            is->rdft = NULL;
             is->rdft_bits = 0;
         }
         break;
@@ -13574,18 +14125,15 @@ static void stream_component_close(VideoState *is, int stream_index)
     switch (codecpar->codec_type)
     {
     case AVMEDIA_TYPE_AUDIO:
-        is->audio_st =
-            NULL;
+        is->audio_st = NULL;
         is->audio_stream = -1;
         break;
     case AVMEDIA_TYPE_VIDEO:
-        is->video_st =
-            NULL;
+        is->video_st = NULL;
         is->video_stream = -1;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
-        is->subtitle_st =
-            NULL;
+        is->subtitle_st = NULL;
         is->subtitle_stream = -1;
         break;
     default:
@@ -13626,7 +14174,7 @@ static void stream_close(VideoState *is)
 
 static void do_exit(VideoState *is)
 {
-    if (is)
+    if (is != NULL)
     {
         stream_close(is);
     }
@@ -13667,12 +14215,12 @@ static int video_open(VideoState *is)
     int w, h;
     w = screen_width ? screen_width : default_width;
     h = screen_height ? screen_height : default_height;
-    if (!window_title)
+    if (window_title == NULL)
         window_title = input_filename;
     SDL_SetWindowTitle(window, window_title);
     SDL_SetWindowSize(window, w, h);
     SDL_SetWindowPosition(window, screen_left, screen_top);
-    if (is_full_screen)
+    if (is_full_screen != 0)
         SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
     SDL_ShowWindow(window);
     is->width = w;
@@ -14418,8 +14966,7 @@ static int audio_thread(void *arg)
             tb = (AVRational){1, frame->sample_rate};
             dec_channel_layout = get_valid_channel_layout(frame->channel_layout, frame->channels);
             reconfigure =
-                cmp_audio_fmts(is->audio_filter_src.fmt, is->audio_filter_src.channels,
-                               frame->format, frame->channels) ||
+                cmp_audio_fmts(is->audio_filter_src.fmt, is->audio_filter_src.channels,frame->format, frame->channels) ||
                 is->audio_filter_src.channel_layout != dec_channel_layout ||
                 is->audio_filter_src.freq != frame->sample_rate ||
                 is->auddec.pkt_serial != last_serial;
@@ -16889,10 +17436,7 @@ int ffurl_get_short_seek(URLContext *h)
         return AVERROR(ENOSYS);
     return h->prot->url_get_short_seek(h);
 }
-static const AVOption ff_avio_options[] = {
-    {"protocol_whitelist", "List of protocols that are allowed to be used", offsetof(AVIOContext,protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, 2 },
-    { NULL },
-};
+
 static void *ff_avio_child_next(void *obj, void *prev)
 {
     AVIOContext *s = obj;
@@ -17377,6 +17921,10 @@ static const AVClass *child_class_iterate(void **iter)
     *iter = (void*)(uintptr_t)c;
     return c;
 }
+static const AVOption ff_avio_options[] = {
+    {"protocol_whitelist", "List of protocols that are allowed to be used", offsetof(AVIOContext,protocol_whitelist), AV_OPT_TYPE_STRING, { .str = NULL },  0, 0, 2 },
+    { NULL },
+};
 const AVClass ff_avio_class = {
     .class_name = "AVIOContext",
     .item_name  = av_default_item_name,
@@ -17511,8 +18059,7 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
             av_freep(&protocols);
             return up;
         }
-        if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME &&
-            !strcmp(proto_nested, up->name)) {
+        if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME && !strcmp(proto_nested, up->name)) {
             av_freep(&protocols);
             return up;
         }
@@ -17540,9 +18087,7 @@ void ff_network_close(void)
     WSACleanup();
 #endif
 }
-static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
-                                  const char *filename, int flags,
-                                  const AVIOInterruptCB *int_cb)
+static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,const char *filename, int flags,const AVIOInterruptCB *int_cb)
 {
     URLContext *uc;
     int err;
@@ -17897,548 +18442,6 @@ static const AVOption avformat_options[] = {
 {NULL},
 };
 
-static const AVInputFormat * const demuxer_list[] = {
-    // &ff_aa_demuxer,
-    // &ff_aac_demuxer,
-    // &ff_aax_demuxer,
-    // &ff_ac3_demuxer,
-    // &ff_acm_demuxer,
-    // &ff_act_demuxer,
-    // &ff_adf_demuxer,
-    // &ff_adp_demuxer,
-    // &ff_ads_demuxer,
-    // &ff_adx_demuxer,
-    // &ff_aea_demuxer,
-    // &ff_afc_demuxer,
-    // &ff_aiff_demuxer,
-    // &ff_aix_demuxer,
-    // &ff_alp_demuxer,
-    // &ff_amr_demuxer,
-    // &ff_amrnb_demuxer,
-    // &ff_amrwb_demuxer,
-    // &ff_anm_demuxer,
-    // &ff_apc_demuxer,
-    // &ff_ape_demuxer,
-    // &ff_apm_demuxer,
-    // &ff_apng_demuxer,
-    // &ff_aptx_demuxer,
-    // &ff_aptx_hd_demuxer,
-    // &ff_aqtitle_demuxer,
-    // &ff_argo_asf_demuxer,
-    // &ff_argo_brp_demuxer,
-    // &ff_asf_demuxer,
-    // &ff_asf_o_demuxer,
-    // &ff_ass_demuxer,
-    // &ff_ast_demuxer,
-    // &ff_au_demuxer,
-    // &ff_av1_demuxer,
-    // &ff_avi_demuxer,
-    // &ff_avr_demuxer,
-    // &ff_avs_demuxer,
-    // &ff_avs2_demuxer,
-    // &ff_bethsoftvid_demuxer,
-    // &ff_bfi_demuxer,
-    // &ff_bintext_demuxer,
-    // &ff_bink_demuxer,
-    // &ff_bit_demuxer,
-    // &ff_bmv_demuxer,
-    // &ff_bfstm_demuxer,
-    // &ff_brstm_demuxer,
-    // &ff_boa_demuxer,
-    // &ff_c93_demuxer,
-    // &ff_caf_demuxer,
-    // &ff_cavsvideo_demuxer,
-    // &ff_cdg_demuxer,
-    // &ff_cdxl_demuxer,
-    // &ff_cine_demuxer,
-    // &ff_codec2_demuxer,
-    // &ff_codec2raw_demuxer,
-    // &ff_concat_demuxer,
-    // &ff_dash_demuxer,
-    // &ff_data_demuxer,
-    // &ff_daud_demuxer,
-    // &ff_dcstr_demuxer,
-    // &ff_derf_demuxer,
-    // &ff_dfa_demuxer,
-    // &ff_dhav_demuxer,
-    // &ff_dirac_demuxer,
-    // &ff_dnxhd_demuxer,
-    // &ff_dsf_demuxer,
-    // &ff_dsicin_demuxer,
-    // &ff_dss_demuxer,
-    // &ff_dts_demuxer,
-    // &ff_dtshd_demuxer,
-    // &ff_dv_demuxer,
-    // &ff_dvbsub_demuxer,
-    // &ff_dvbtxt_demuxer,
-    // &ff_dxa_demuxer,
-    // &ff_ea_demuxer,
-    // &ff_ea_cdata_demuxer,
-    // &ff_eac3_demuxer,
-    // &ff_epaf_demuxer,
-    // &ff_ffmetadata_demuxer,
-    // &ff_filmstrip_demuxer,
-    // &ff_fits_demuxer,
-    // &ff_flac_demuxer,
-    // &ff_flic_demuxer,
-    // &ff_flv_demuxer,
-    // &ff_live_flv_demuxer,
-    // &ff_fourxm_demuxer,
-    // &ff_frm_demuxer,
-    // &ff_fsb_demuxer,
-    // &ff_fwse_demuxer,
-    // &ff_g722_demuxer,
-    // &ff_g723_1_demuxer,
-    // &ff_g726_demuxer,
-    // &ff_g726le_demuxer,
-    // &ff_g729_demuxer,
-    // &ff_gdv_demuxer,
-    // &ff_genh_demuxer,
-    // &ff_gif_demuxer,
-    // &ff_gsm_demuxer,
-    // &ff_gxf_demuxer,
-    // &ff_h261_demuxer,
-    // &ff_h263_demuxer,
-    // &ff_h264_demuxer,
-    // &ff_hca_demuxer,
-    // &ff_hcom_demuxer,
-    // &ff_hevc_demuxer,
-    // &ff_hls_demuxer,
-    // &ff_hnm_demuxer,
-    // &ff_ico_demuxer,
-    // &ff_idcin_demuxer,
-    // &ff_idf_demuxer,
-    // &ff_iff_demuxer,
-    // &ff_ifv_demuxer,
-    // &ff_ilbc_demuxer,
-    // &ff_image2_demuxer,
-    // &ff_image2pipe_demuxer,
-    // &ff_image2_alias_pix_demuxer,
-    // &ff_image2_brender_pix_demuxer,
-    // &ff_ingenient_demuxer,
-    // &ff_ipmovie_demuxer,
-    // &ff_ipu_demuxer,
-    // &ff_ircam_demuxer,
-    // &ff_iss_demuxer,
-    // &ff_iv8_demuxer,
-    // &ff_ivf_demuxer,
-    // &ff_ivr_demuxer,
-    // &ff_jacosub_demuxer,
-    // &ff_jv_demuxer,
-    // &ff_kux_demuxer,
-    // &ff_kvag_demuxer,
-    // &ff_lmlm4_demuxer,
-    // &ff_loas_demuxer,
-    // &ff_luodat_demuxer,
-    // &ff_lrc_demuxer,
-    // &ff_lvf_demuxer,
-    // &ff_lxf_demuxer,
-    // &ff_m4v_demuxer,
-    // &ff_mca_demuxer,
-    // &ff_mcc_demuxer,
-    // &ff_matroska_demuxer,
-    // &ff_mgsts_demuxer,
-    // &ff_microdvd_demuxer,
-    // &ff_mjpeg_demuxer,
-    // &ff_mjpeg_2000_demuxer,
-    // &ff_mlp_demuxer,
-    // &ff_mlv_demuxer,
-    // &ff_mm_demuxer,
-    // &ff_mmf_demuxer,
-    // &ff_mods_demuxer,
-    // &ff_moflex_demuxer,
-    // &ff_mov_demuxer,
-    // &ff_mp3_demuxer,
-    // &ff_mpc_demuxer,
-    // &ff_mpc8_demuxer,
-    // &ff_mpegps_demuxer,
-    // &ff_mpegts_demuxer,
-    // &ff_mpegtsraw_demuxer,
-    // &ff_mpegvideo_demuxer,
-    // &ff_mpjpeg_demuxer,
-    // &ff_mpl2_demuxer,
-    // &ff_mpsub_demuxer,
-    // &ff_msf_demuxer,
-    // &ff_msnwc_tcp_demuxer,
-    // &ff_mtaf_demuxer,
-    // &ff_mtv_demuxer,
-    // &ff_musx_demuxer,
-    // &ff_mv_demuxer,
-    // &ff_mvi_demuxer,
-    // &ff_mxf_demuxer,
-    // &ff_mxg_demuxer,
-    // &ff_nc_demuxer,
-    // &ff_nistsphere_demuxer,
-    // &ff_nsp_demuxer,
-    // &ff_nsv_demuxer,
-    // &ff_nut_demuxer,
-    // &ff_nuv_demuxer,
-    // &ff_obu_demuxer,
-    // &ff_ogg_demuxer,
-    // &ff_oma_demuxer,
-    // &ff_paf_demuxer,
-    // &ff_pcm_alaw_demuxer,
-    // &ff_pcm_mulaw_demuxer,
-    // &ff_pcm_vidc_demuxer,
-    // &ff_pcm_f64be_demuxer,
-    // &ff_pcm_f64le_demuxer,
-    // &ff_pcm_f32be_demuxer,
-    // &ff_pcm_f32le_demuxer,
-    // &ff_pcm_s32be_demuxer,
-    // &ff_pcm_s32le_demuxer,
-    // &ff_pcm_s24be_demuxer,
-    // &ff_pcm_s24le_demuxer,
-    // &ff_pcm_s16be_demuxer,
-    // &ff_pcm_s16le_demuxer,
-    // &ff_pcm_s8_demuxer,
-    // &ff_pcm_u32be_demuxer,
-    // &ff_pcm_u32le_demuxer,
-    // &ff_pcm_u24be_demuxer,
-    // &ff_pcm_u24le_demuxer,
-    // &ff_pcm_u16be_demuxer,
-    // &ff_pcm_u16le_demuxer,
-    // &ff_pcm_u8_demuxer,
-    // &ff_pjs_demuxer,
-    // &ff_pmp_demuxer,
-    // &ff_pp_bnk_demuxer,
-    // &ff_pva_demuxer,
-    // &ff_pvf_demuxer,
-    // &ff_qcp_demuxer,
-    // &ff_r3d_demuxer,
-    // &ff_rawvideo_demuxer,
-    // &ff_realtext_demuxer,
-    // &ff_redspark_demuxer,
-    // &ff_rl2_demuxer,
-    // &ff_rm_demuxer,
-    // &ff_roq_demuxer,
-    // &ff_rpl_demuxer,
-    // &ff_rsd_demuxer,
-    // &ff_rso_demuxer,
-    // &ff_rtp_demuxer,
-    // &ff_rtsp_demuxer,
-    // &ff_s337m_demuxer,
-    // &ff_sami_demuxer,
-    // &ff_sap_demuxer,
-    // &ff_sbc_demuxer,
-    // &ff_sbg_demuxer,
-    // &ff_scc_demuxer,
-    // &ff_sdp_demuxer,
-    // &ff_sdr2_demuxer,
-    // &ff_sds_demuxer,
-    // &ff_sdx_demuxer,
-    // &ff_segafilm_demuxer,
-    // &ff_ser_demuxer,
-    // &ff_shorten_demuxer,
-    // &ff_siff_demuxer,
-    // &ff_sln_demuxer,
-    // &ff_smacker_demuxer,
-    // &ff_smjpeg_demuxer,
-    // &ff_smush_demuxer,
-    // &ff_sol_demuxer,
-    // &ff_sox_demuxer,
-    // &ff_spdif_demuxer,
-    // &ff_srt_demuxer,
-    // &ff_str_demuxer,
-    // &ff_stl_demuxer,
-    // &ff_subviewer1_demuxer,
-    // &ff_subviewer_demuxer,
-    // &ff_sup_demuxer,
-    // &ff_svag_demuxer,
-    // &ff_svs_demuxer,
-    // &ff_swf_demuxer,
-    // &ff_tak_demuxer,
-    // &ff_tedcaptions_demuxer,
-    // &ff_thp_demuxer,
-    // &ff_threedostr_demuxer,
-    // &ff_tiertexseq_demuxer,
-    // &ff_tmv_demuxer,
-    // &ff_truehd_demuxer,
-    // &ff_tta_demuxer,
-    // &ff_txd_demuxer,
-    // &ff_tty_demuxer,
-    // &ff_ty_demuxer,
-    // &ff_v210_demuxer,
-    // &ff_v210x_demuxer,
-    // &ff_vag_demuxer,
-    // &ff_vc1_demuxer,
-    // &ff_vc1t_demuxer,
-    // &ff_vividas_demuxer,
-    // &ff_vivo_demuxer,
-    // &ff_vmd_demuxer,
-    // &ff_vobsub_demuxer,
-    // &ff_voc_demuxer,
-    // &ff_vpk_demuxer,
-    // &ff_vplayer_demuxer,
-    // &ff_vqf_demuxer,
-    // &ff_w64_demuxer,
-    // &ff_wav_demuxer,
-    // &ff_wc3_demuxer,
-    // &ff_webm_dash_manifest_demuxer,
-    // &ff_webvtt_demuxer,
-    // &ff_wsaud_demuxer,
-    // &ff_wsd_demuxer,
-    // &ff_wsvqa_demuxer,
-    // &ff_wtv_demuxer,
-    // &ff_wve_demuxer,
-    // &ff_wv_demuxer,
-    // &ff_xa_demuxer,
-    // &ff_xbin_demuxer,
-    // &ff_xmv_demuxer,
-    // &ff_xvag_demuxer,
-    // &ff_xwma_demuxer,
-    // &ff_yop_demuxer,
-    // &ff_yuv4mpegpipe_demuxer,
-    // &ff_image_bmp_pipe_demuxer,
-    // &ff_image_dds_pipe_demuxer,
-    // &ff_image_dpx_pipe_demuxer,
-    // &ff_image_exr_pipe_demuxer,
-    // &ff_image_gif_pipe_demuxer,
-    // &ff_image_j2k_pipe_demuxer,
-    // &ff_image_jpeg_pipe_demuxer,
-    // &ff_image_jpegls_pipe_demuxer,
-    // &ff_image_pam_pipe_demuxer,
-    // &ff_image_pbm_pipe_demuxer,
-    // &ff_image_pcx_pipe_demuxer,
-    // &ff_image_pgmyuv_pipe_demuxer,
-    // &ff_image_pgm_pipe_demuxer,
-    // &ff_image_pgx_pipe_demuxer,
-    // &ff_image_photocd_pipe_demuxer,
-    // &ff_image_pictor_pipe_demuxer,
-    // &ff_image_png_pipe_demuxer,
-    // &ff_image_ppm_pipe_demuxer,
-    // &ff_image_psd_pipe_demuxer,
-    // &ff_image_qdraw_pipe_demuxer,
-    // &ff_image_sgi_pipe_demuxer,
-    // &ff_image_svg_pipe_demuxer,
-    // &ff_image_sunrast_pipe_demuxer,
-    // &ff_image_tiff_pipe_demuxer,
-    // &ff_image_webp_pipe_demuxer,
-    // &ff_image_xpm_pipe_demuxer,
-    // &ff_image_xwd_pipe_demuxer,
-    // &ff_libgme_demuxer,
-    // &ff_libmodplug_demuxer,
-    NULL };
-
-static const AVOutputFormat * const outdev_list[] = {
-    // &ff_caca_muxer,
-    // &ff_sdl2_muxer,
-    NULL };
-// #include "dshow.c"
-static const AVInputFormat * const indev_list[] = {
-    // &ff_dshow_demuxer,
-    // &ff_gdigrab_demuxer,
-    // &ff_lavfi_demuxer,
-    // &ff_vfwcap_demuxer,
-    // &ff_libcdio_demuxer,
-    NULL };
-
-static const AVOutputFormat * const muxer_list[] = {
-    // &ff_a64_muxer,
-    // &ff_ac3_muxer,
-    // &ff_adts_muxer,
-    // &ff_adx_muxer,
-    // &ff_aiff_muxer,
-    // &ff_amr_muxer,
-    // &ff_apm_muxer,
-    // &ff_apng_muxer,
-    // &ff_aptx_muxer,
-    // &ff_aptx_hd_muxer,
-    // &ff_argo_asf_muxer,
-    // &ff_asf_muxer,
-    // &ff_ass_muxer,
-    // &ff_ast_muxer,
-    // &ff_asf_stream_muxer,
-    // &ff_au_muxer,
-    // &ff_avi_muxer,
-    // &ff_avm2_muxer,
-    // &ff_avs2_muxer,
-    // &ff_bit_muxer,
-    // &ff_caf_muxer,
-    // &ff_cavsvideo_muxer,
-    // &ff_codec2_muxer,
-    // &ff_codec2raw_muxer,
-    // &ff_crc_muxer,
-    // &ff_dash_muxer,
-    // &ff_data_muxer,
-    // &ff_daud_muxer,
-    // &ff_dirac_muxer,
-    // &ff_dnxhd_muxer,
-    // &ff_dts_muxer,
-    // &ff_dv_muxer,
-    // &ff_eac3_muxer,
-    // &ff_f4v_muxer,
-    // &ff_ffmetadata_muxer,
-    // &ff_fifo_muxer,
-    // &ff_fifo_test_muxer,
-    // &ff_filmstrip_muxer,
-    // &ff_fits_muxer,
-    // &ff_flac_muxer,
-    // &ff_flv_muxer,
-    // &ff_framecrc_muxer,
-    // &ff_framehash_muxer,
-    // &ff_framemd5_muxer,
-    // &ff_g722_muxer,
-    // &ff_g723_1_muxer,
-    // &ff_g726_muxer,
-    // &ff_g726le_muxer,
-    // &ff_gif_muxer,
-    // &ff_gsm_muxer,
-    // &ff_gxf_muxer,
-    // &ff_h261_muxer,
-    // &ff_h263_muxer,
-    // &ff_h264_muxer,
-    // &ff_hash_muxer,
-    // &ff_hds_muxer,
-    // &ff_hevc_muxer,
-    // &ff_hls_muxer,
-    // &ff_ico_muxer,
-    // &ff_ilbc_muxer,
-    // &ff_image2_muxer,
-    // &ff_image2pipe_muxer,
-    // &ff_ipod_muxer,
-    // &ff_ircam_muxer,
-    // &ff_ismv_muxer,
-    // &ff_ivf_muxer,
-    // &ff_jacosub_muxer,
-    // &ff_kvag_muxer,
-    // &ff_latm_muxer,
-    // &ff_lrc_muxer,
-    // &ff_m4v_muxer,
-    // &ff_md5_muxer,
-    // &ff_matroska_muxer,
-    // &ff_matroska_audio_muxer,
-    // &ff_microdvd_muxer,
-    // &ff_mjpeg_muxer,
-    // &ff_mlp_muxer,
-    // &ff_mmf_muxer,
-    // &ff_mov_muxer,
-    // &ff_mp2_muxer,
-    // &ff_mp3_muxer,
-    // &ff_mp4_muxer,
-    // &ff_mpeg1system_muxer,
-    // &ff_mpeg1vcd_muxer,
-    // &ff_mpeg1video_muxer,
-    // &ff_mpeg2dvd_muxer,
-    // &ff_mpeg2svcd_muxer,
-    // &ff_mpeg2video_muxer,
-    // &ff_mpeg2vob_muxer,
-    // &ff_mpegts_muxer,
-    // &ff_mpjpeg_muxer,
-    // &ff_mxf_muxer,
-    // &ff_mxf_d10_muxer,
-    // &ff_mxf_opatom_muxer,
-    // &ff_null_muxer,
-    // &ff_nut_muxer,
-    // &ff_oga_muxer,
-    // &ff_ogg_muxer,
-    // &ff_ogv_muxer,
-    // &ff_oma_muxer,
-    // &ff_opus_muxer,
-    // &ff_pcm_alaw_muxer,
-    // &ff_pcm_mulaw_muxer,
-    // &ff_pcm_vidc_muxer,
-    // &ff_pcm_f64be_muxer,
-    // &ff_pcm_f64le_muxer,
-    // &ff_pcm_f32be_muxer,
-    // &ff_pcm_f32le_muxer,
-    // &ff_pcm_s32be_muxer,
-    // &ff_pcm_s32le_muxer,
-    // &ff_pcm_s24be_muxer,
-    // &ff_pcm_s24le_muxer,
-    // &ff_pcm_s16be_muxer,
-    // &ff_pcm_s16le_muxer,
-    // &ff_pcm_s8_muxer,
-    // &ff_pcm_u32be_muxer,
-    // &ff_pcm_u32le_muxer,
-    // &ff_pcm_u24be_muxer,
-    // &ff_pcm_u24le_muxer,
-    // &ff_pcm_u16be_muxer,
-    // &ff_pcm_u16le_muxer,
-    // &ff_pcm_u8_muxer,
-    // &ff_psp_muxer,
-    // &ff_rawvideo_muxer,
-    // &ff_rm_muxer,
-    // &ff_roq_muxer,
-    // &ff_rso_muxer,
-    // &ff_rtp_muxer,
-    // &ff_rtp_mpegts_muxer,
-    // &ff_rtsp_muxer,
-    // &ff_sap_muxer,
-    // &ff_sbc_muxer,
-    // &ff_scc_muxer,
-    // &ff_segafilm_muxer,
-    // &ff_segment_muxer,
-    // &ff_stream_segment_muxer,
-    // &ff_singlejpeg_muxer,
-    // &ff_smjpeg_muxer,
-    // &ff_smoothstreaming_muxer,
-    // &ff_sox_muxer,
-    // &ff_spx_muxer,
-    // &ff_spdif_muxer,
-    // &ff_srt_muxer,
-    // &ff_streamhash_muxer,
-    // &ff_sup_muxer,
-    // &ff_swf_muxer,
-    // &ff_tee_muxer,
-    // &ff_tg2_muxer,
-    // &ff_tgp_muxer,
-    // &ff_mkvtimestamp_v2_muxer,
-    // &ff_truehd_muxer,
-    // &ff_tta_muxer,
-    // &ff_uncodedframecrc_muxer,
-    // &ff_vc1_muxer,
-    // &ff_vc1t_muxer,
-    // &ff_voc_muxer,
-    // &ff_w64_muxer,
-    // &ff_wav_muxer,
-    // &ff_webm_muxer,
-    // &ff_webm_dash_manifest_muxer,
-    // &ff_webm_chunk_muxer,
-    // &ff_webp_muxer,
-    // &ff_webvtt_muxer,
-    // &ff_wtv_muxer,
-    // &ff_wv_muxer,
-    // &ff_yuv4mpegpipe_muxer,
-    // &ff_chromaprint_muxer,
-    NULL };
-
-
-const AVInputFormat *av_demuxer_iterate(void **opaque)
-{
-    static const uintptr_t size = sizeof(demuxer_list)/sizeof(demuxer_list[0]) - 1;
-    uintptr_t i = (uintptr_t)*opaque;
-    const AVInputFormat *f = NULL;
-
-    if (i < size) {
-        f = demuxer_list[i];
-    } else if (outdev_list) {
-        f = indev_list[i - size];
-    }
-
-    if (f)
-        *opaque = (void*)(i + 1);
-    return f;
-}
-
-const AVOutputFormat *av_muxer_iterate(void **opaque)
-{
-    static const uintptr_t size = sizeof(muxer_list) / sizeof(muxer_list[0]) - 1;
-    uintptr_t i = (uintptr_t)*opaque;
-    const AVOutputFormat *f = NULL;
-
-    if (i < size)
-    {
-        f = muxer_list[i];
-    }
-    else if (indev_list)
-    {
-        f = outdev_list[i - size];
-    }
-
-    if (f)
-        *opaque = (void *)(i + 1);
-    return f;
-}
 #define ITER_STATE_SHIFT 16
 
 static const AVClass *format_child_class_iterate(void **iter)
@@ -18593,11 +18596,11 @@ static int read_thread(void *arg)
     if (t != NULL)
     {
         av_log(NULL, 16, "Option %s not found.\n", t->key);
-        ret = (-(int)((0xF8) | (('O') << 8) | (('P') << 16) | ((unsigned)('T') << 24)));
+        ret = (-(int)(0xF8 | ('O' << 8) | ('P' << 16) | (unsigned)('T') << 24));
         goto fail;
     }
     is->ic = ic;
-    if (genpts)
+    if (genpts != 0)
         ic->flags |= 0x0001;
     av_format_inject_global_side_data(ic);
     if (find_stream_info != 0)
@@ -18984,8 +18987,7 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
 the_end:
     if (p && stream_index != -1)
         stream_index = p->stream_index[stream_index];
-    av_log(
-        NULL, 32, "Switch %s stream from #%d to #%d\n",
+    av_log(NULL, 32, "Switch %s stream from #%d to #%d\n",
         av_get_media_type_string(codec_type),
         old_index,
         stream_index);
@@ -19049,11 +19051,10 @@ static void seek_chapter(VideoState *is, int incr)
         }
     }
     i += incr;
-    i = ((i) > (0) ? (i) : (0));
+    i = (i > 0 ? i : 0);
     if (i >= is->ic->nb_chapters)
         return;
-    av_log(
-        NULL, 40, "Seeking to chapter %d.\n", i);
+    av_log(NULL, 40, "Seeking to chapter %d.\n", i);
     stream_seek(is, av_rescale_q(is->ic->chapters[i]->start, is->ic->chapters[i]->time_base, (AVRational){1, 1000000}), 0, 0);
 }
 
@@ -19278,10 +19279,8 @@ static void event_loop(VideoState *cur_stream)
 
 static int opt_frame_size(void *optctx, const char *opt, const char *arg)
 {
-    av_log(
-        NULL, 24, "Option -s is deprecated, use -video_size.\n");
-    return opt_default(
-        NULL, "video_size", arg);
+    av_log(NULL, 24, "Option -s is deprecated, use -video_size.\n");
+    return opt_default(NULL, "video_size", arg);
 }
 
 static int opt_width(void *optctx, const char *opt, const char *arg)
@@ -19301,8 +19300,7 @@ static int opt_format(void *optctx, const char *opt, const char *arg)
     file_iformat = av_find_input_format(arg);
     if (!file_iformat)
     {
-        av_log(
-            NULL, 8, "Unknown input format: %s\n", arg);
+        av_log(NULL, 8, "Unknown input format: %s\n", arg);
         return (-(
             22));
     }
@@ -19311,8 +19309,7 @@ static int opt_format(void *optctx, const char *opt, const char *arg)
 
 static int opt_frame_pix_fmt(void *optctx, const char *opt, const char *arg)
 {
-    av_log(
-        NULL, 24, "Option -pix_fmt is deprecated, use -pixel_format.\n");
+    av_log(NULL, 24, "Option -pix_fmt is deprecated, use -pixel_format.\n");
     return opt_default(
         NULL, "pixel_format", arg);
 }
@@ -19327,8 +19324,7 @@ static int opt_sync(void *optctx, const char *opt, const char *arg)
         av_sync_type = AV_SYNC_EXTERNAL_CLOCK;
     else
     {
-        av_log(
-            NULL, 16, "Unknown value for %s: %s\n", opt, arg);
+        av_log(NULL, 16, "Unknown value for %s: %s\n", opt, arg);
         exit(1);
     }
     return 0;
@@ -19356,10 +19352,7 @@ static void opt_input_file(void *optctx, const char *filename)
 {
     if (input_filename)
     {
-        av_log(
-            NULL, 8,
-            "Argument '%s' provided as input filename, but '%s' was already specified.\n",
-            filename, input_filename);
+        av_log(NULL, 8,"Argument '%s' provided as input filename, but '%s' was already specified.\n",filename, input_filename);
         exit(1);
     }
     if (!strcmp(filename, "-"))
@@ -19372,12 +19365,10 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
     const char *spec = strchr(opt, ':');
     if (!spec)
     {
-        av_log(
-            NULL, 16,
+        av_log(NULL, 16,
             "No media specifier was specified in '%s' in option '%s'\n",
             arg, opt);
-        return (-(
-            22));
+        return (-(22));
     }
     spec++;
     switch (spec[0])
@@ -19392,11 +19383,8 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
         video_codec_name = arg;
         break;
     default:
-        av_log(
-            NULL, 16,
-            "Invalid media specifier '%s' in option '%s'\n", spec, opt);
-        return (-(
-            22));
+        av_log(NULL, 16,"Invalid media specifier '%s' in option '%s'\n", spec, opt);
+        return (-(22));
     }
     return 0;
 }
@@ -19560,10 +19548,8 @@ int main(int argc, char **argv)
         flags &= ~0x00000020u;
     if (SDL_Init(flags))
     {
-        av_log(
-            NULL, 8, "Could not initialize SDL - %s\n", SDL_GetError());
-        av_log(
-            NULL, 8, "(Did you set the DISPLAY variable?)\n");
+        av_log(NULL, 8, "Could not initialize SDL - %s\n", SDL_GetError());
+        av_log(NULL, 8, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
     SDL_EventState(SDL_SYSWMEVENT, 0);
@@ -19586,8 +19572,7 @@ int main(int argc, char **argv)
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
             if (!renderer)
             {
-                av_log(
-                    NULL, 24, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
+                av_log(NULL, 24, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
                 renderer = SDL_CreateRenderer(window, -1, 0);
             }
             if (renderer)
@@ -19599,19 +19584,15 @@ int main(int argc, char **argv)
         }
         if (!window || !renderer || !renderer_info.num_texture_formats)
         {
-            av_log(
-                NULL, 8, "Failed to create window or renderer: %s", SDL_GetError());
-            do_exit(
-                NULL);
+            av_log(NULL, 8, "Failed to create window or renderer: %s", SDL_GetError());
+            do_exit(NULL);
         }
     }
     is = stream_open(input_filename, file_iformat);
     if (!is)
     {
-        av_log(
-            NULL, 8, "Failed to initialize VideoState!\n");
-        do_exit(
-            NULL);
+        av_log(NULL, 8, "Failed to initialize VideoState!\n");
+        do_exit(NULL);
     }
     event_loop(is);
     return 0;

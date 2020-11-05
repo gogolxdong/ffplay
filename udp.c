@@ -41,16 +41,7 @@ typedef union sockaddr_union {
 #define MSG_NOSIGNAL 0
 #endif
 
-struct addrinfo {
-    int ai_flags;
-    int ai_family;
-    int ai_socktype;
-    int ai_protocol;
-    int ai_addrlen;
-    struct sockaddr *ai_addr;
-    char *ai_canonname;
-    struct addrinfo *ai_next;
-};
+
 
 
 #ifndef EAI_AGAIN
@@ -114,95 +105,8 @@ struct addrinfo {
 #endif
 
 #include <stdlib.h>
-static int inet_aton(const char *str, struct in_addr *add)
-{
-    unsigned int add1 = 0, add2 = 0, add3 = 0, add4 = 0;
 
-    if (sscanf(str, "%d.%d.%d.%d", &add1, &add2, &add3, &add4) != 4)
-        return 0;
 
-    if (!add1 || (add1 | add2 | add3 | add4) > 255)
-        return 0;
-
-    add->s_addr = htonl((add1 << 24) + (add2 << 16) + (add3 << 8) + add4);
-
-    return 1;
-}
-
-int ff_getaddrinfo(const char *node, const char *service,
-                   const struct addrinfo *hints, struct addrinfo **res)
-{
-    struct hostent *h = NULL;
-    struct addrinfo *ai;
-    struct sockaddr_in *sin;
-
-    *res = NULL;
-    sin  = av_mallocz(sizeof(struct sockaddr_in));
-    if (!sin)
-        return EAI_FAIL;
-    sin->sin_family = AF_INET;
-
-    if (node) {
-        if (!inet_aton(node, &sin->sin_addr)) {
-            if (hints && (hints->ai_flags & AI_NUMERICHOST)) {
-                av_free(sin);
-                return EAI_FAIL;
-            }
-            h = gethostbyname(node);
-            if (!h) {
-                av_free(sin);
-                return EAI_FAIL;
-            }
-            memcpy(&sin->sin_addr, h->h_addr_list[0], sizeof(struct in_addr));
-        }
-    } else {
-        if (hints && (hints->ai_flags & AI_PASSIVE))
-            sin->sin_addr.s_addr = INADDR_ANY;
-        else
-            sin->sin_addr.s_addr = INADDR_LOOPBACK;
-    }
-
-    /* Note: getaddrinfo allows service to be a string, which
-     * should be looked up using getservbyname. */
-    if (service)
-        sin->sin_port = htons(atoi(service));
-
-    ai = av_mallocz(sizeof(struct addrinfo));
-    if (!ai) {
-        av_free(sin);
-        return EAI_FAIL;
-    }
-
-    *res            = ai;
-    ai->ai_family   = AF_INET;
-    ai->ai_socktype = hints ? hints->ai_socktype : 0;
-    switch (ai->ai_socktype) {
-    case SOCK_STREAM:
-        ai->ai_protocol = IPPROTO_TCP;
-        break;
-    case SOCK_DGRAM:
-        ai->ai_protocol = IPPROTO_UDP;
-        break;
-    default:
-        ai->ai_protocol = 0;
-        break;
-    }
-
-    ai->ai_addr    = (struct sockaddr *)sin;
-    ai->ai_addrlen = sizeof(struct sockaddr_in);
-    if (hints && (hints->ai_flags & AI_CANONNAME))
-        ai->ai_canonname = h ? av_strdup(h->h_name) : NULL;
-
-    ai->ai_next = NULL;
-    return 0;
-}
-
-void ff_freeaddrinfo(struct addrinfo *res)
-{
-    av_freep(&res->ai_canonname);
-    av_freep(&res->ai_addr);
-    av_freep(&res);
-}
 
 int ff_getnameinfo(const struct sockaddr *sa, int salen,
                    char *host, int hostlen,
@@ -362,38 +266,6 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout)
     return rc;
 }
 #endif /* !HAVE_POLL_H */
-int ff_getaddrinfo(const char *node, const char *service,const struct addrinfo *hints, struct addrinfo **res);
-void ff_freeaddrinfo(struct addrinfo *res);
-int ff_getnameinfo(const struct sockaddr *sa, int salen,char *host, int hostlen,char *serv, int servlen, int flags);
-#define getaddrinfo ff_getaddrinfo
-#define freeaddrinfo ff_freeaddrinfo
-#define getnameinfo ff_getnameinfo
-
-#if !HAVE_GETADDRINFO || HAVE_WINSOCK2_H
-const char *ff_gai_strerror(int ecode);
-#undef gai_strerror
-#define gai_strerror ff_gai_strerror
-#endif 
-
-#ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 16
-#endif
-
-#ifndef INET6_ADDRSTRLEN
-#define INET6_ADDRSTRLEN INET_ADDRSTRLEN
-#endif
-
-#ifndef IN_MULTICAST
-#define IN_MULTICAST(a) ((((uint32_t)(a)) & 0xf0000000) == 0xe0000000)
-#endif
-
-#ifndef IN6_IS_ADDR_MULTICAST
-#define IN6_IS_ADDR_MULTICAST(a) (((uint8_t *) (a))[0] == 0xff)
-#endif
 
 int ff_is_multicast_address(struct sockaddr *addr);
 
@@ -877,59 +749,7 @@ int ff_connect_parallel(struct addrinfo *addrs, int timeout_ms_per_address,
     return last_err;
 }
 
-static int match_host_pattern(const char *pattern, const char *hostname)
-{
-    int len_p, len_h;
-    if (!strcmp(pattern, "*"))
-        return 1;
-    // Skip a possible *. at the start of the pattern
-    if (pattern[0] == '*')
-        pattern++;
-    if (pattern[0] == '.')
-        pattern++;
-    len_p = strlen(pattern);
-    len_h = strlen(hostname);
-    if (len_p > len_h)
-        return 0;
-    // Simply check if the end of hostname is equal to 'pattern'
-    if (!strcmp(pattern, &hostname[len_h - len_p])) {
-        if (len_h == len_p)
-            return 1; // Exact match
-        if (hostname[len_h - len_p - 1] == '.')
-            return 1; // The matched substring is a domain and not just a substring of a domain
-    }
-    return 0;
-}
 
-int ff_http_match_no_proxy(const char *no_proxy, const char *hostname)
-{
-    char *buf, *start;
-    int ret = 0;
-    if (!no_proxy)
-        return 0;
-    if (!hostname)
-        return 0;
-    buf = av_strdup(no_proxy);
-    if (!buf)
-        return 0;
-    start = buf;
-    while (start) {
-        char *sep, *next = NULL;
-        start += strspn(start, " ,");
-        sep = start + strcspn(start, " ,");
-        if (*sep) {
-            next = sep + 1;
-            *sep = '\0';
-        }
-        if (match_host_pattern(start, hostname)) {
-            ret = 1;
-            break;
-        }
-        start = next;
-    }
-    av_free(buf);
-    return ret;
-}
 
 void ff_log_net_error(void *ctx, int level, const char* prefix)
 {
